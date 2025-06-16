@@ -13,7 +13,7 @@ const formSchema = new mongoose.Schema({
     },
     vacationType: {
         type: String,
-        enum: ['annual', 'casual', 'unpaid'],
+        enum: ['annual', 'unpaid'],
         required: false
     },
     startDate: {
@@ -37,6 +37,8 @@ const formSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    fromHour: String,
+    toHour: String,
     createdAt: {
         type: Date,
         default: Date.now
@@ -44,7 +46,26 @@ const formSchema = new mongoose.Schema({
     updatedAt: {
         type: Date,
         default: Date.now
-    }
+    },
+    modificationHistory: [{
+        modifiedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+        modifiedAt: {
+            type: Date,
+            default: Date.now
+        },
+        reason: {
+            type: String,
+            required: true
+        },
+        changes: {
+            before: mongoose.Schema.Types.Mixed,
+            after: mongoose.Schema.Types.Mixed
+        }
+    }]
 });
 
 module.exports = mongoose.model('Form', formSchema); 

@@ -1,66 +1,150 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Login from './components/Auth/Login';
-import Register from './components/Auth/Register';
 import EmployeeDashboard from './components/EmployeeDashboard';
 import AdminDashboard from './components/AdminDashboard';
+import SuperAdminDashboard from './components/SuperAdminDashboard';
 import ResetPassword from './components/Auth/ResetPassword';
 import './App.css';
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
-function AppContent() {
-  const [showLogin, setShowLogin] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  const userRole = localStorage.getItem('userRole');
+  const location = useLocation();
+
+  if (!token) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Check if user is trying to access a route they shouldn't
+  const path = location.pathname;
+  if (userRole === 'employee' && path !== '/employee') {
+    return <Navigate to="/employee" replace />;
+  }
+  if (userRole === 'admin' && path !== '/admin') {
+    return <Navigate to="/admin" replace />;
+  }
+  if (userRole === 'super_admin' && path !== '/super-admin') {
+    return <Navigate to="/super-admin" replace />;
+  }
+
+  return children;
+};
+
+const AuthenticatedApp = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('userRole');
+    
+    if (token && role) {
+      setIsAuthenticated(true);
+      setUserRole(role);
+    }
+    setLoading(false);
+  }, []);
 
   const handleLogin = () => {
-    setIsLoggedIn(true);
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('userRole');
+    
+    if (token && role) {
+      setIsAuthenticated(true);
+      setUserRole(role);
+    }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('email');
-    setIsLoggedIn(false);
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userName');
+    setIsAuthenticated(false);
+    setUserRole(null);
   };
 
-  // For demo: store email in localStorage on login (update Login.js to do this)
-  const userEmail = localStorage.getItem('email');
-  const isAdmin = userEmail === 'admin@company.com';
-
-  const location = useLocation();
-  // If the path is /reset-password/:token, show the reset password page
-  if (location.pathname.startsWith('/reset-password/')) {
+  if (loading) {
     return (
-      <div className="njd-page">
-        <ResetPassword />
-      </div>
-    );
-  }
-
-  if (isLoggedIn) {
-    return (
-      <div className="njd-page">
-        <button className="njd-btn" onClick={handleLogout}>Logout</button>
-        {isAdmin ? <AdminDashboard /> : <EmployeeDashboard />}
+      <div className="dashboard-container">
+        <div className="spinner-elegant"></div>
       </div>
     );
   }
 
   return (
-    <div className="njd-page">
-      <button className="njd-btn" onClick={() => setShowLogin(true)}>Login</button>
-      <button className="njd-btn" onClick={() => setShowLogin(false)}>Register</button>
-      {showLogin ? <Login onLogin={handleLogin} /> : <Register />}
-    </div>
-  );
-}
+    <Routes>
+      <Route path="/login" element={<Login onLogin={handleLogin} />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
+      
+      <Route
+        path="/employee"
+        element={
+          <ProtectedRoute>
+            <EmployeeDashboard />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/super-admin"
+        element={
+          <ProtectedRoute>
+            <SuperAdminDashboard />
+          </ProtectedRoute>
+        }
+      />
 
-function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/*" element={<AppContent />} />
-      </Routes>
-    </Router>
+      {/* Redirect root to appropriate dashboard or login */}
+      <Route
+        path="/"
+        element={
+          isAuthenticated && userRole ? (
+            <Navigate
+              to={`/${userRole === 'super_admin' 
+                ? 'super-admin' 
+                : userRole === 'admin'
+                ? 'admin'
+                : 'employee'}`}
+              replace
+            />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
+      {/* Catch all route for undefined paths */}
+      <Route
+        path="*"
+        element={
+          <Navigate to="/" replace />
+        }
+      />
+    </Routes>
   );
-}
+};
+
+const App = () => {
+  return (
+    <BrowserRouter>
+      <div className="App">
+        <AuthenticatedApp />
+      </div>
+    </BrowserRouter>
+  );
+};
 
 export default App;

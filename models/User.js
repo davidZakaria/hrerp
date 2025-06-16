@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['employee', 'admin'],
+        enum: ['employee', 'admin', 'super_admin'],
         default: 'employee'
     },
     department: {
@@ -35,6 +35,28 @@ const userSchema = new mongoose.Schema({
         type: String
     },
     resetPasswordExpires: {
+        type: Date
+    },
+    modificationHistory: [{
+        field: String,
+        oldValue: mongoose.Schema.Types.Mixed,
+        newValue: mongoose.Schema.Types.Mixed,
+        modifiedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        modifiedAt: {
+            type: Date,
+            default: Date.now
+        },
+        reason: String
+    }],
+    status: {
+        type: String,
+        enum: ['active', 'inactive', 'suspended', 'pending'],
+        default: 'active'
+    },
+    lastLogin: {
         type: Date
     }
 });

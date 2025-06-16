@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import FormSubmission from './FormSubmission';
+import LogoutButton from './LogoutButton';
 
 const EmployeeDashboard = () => {
   const [showForm, setShowForm] = useState(false);
@@ -68,34 +69,149 @@ const EmployeeDashboard = () => {
     fetchForms();
   };
 
+  const getStatusBadge = (status) => {
+    const statusClass = status === 'approved' ? 'badge-success' : 
+                       status === 'pending' ? 'badge-warning' : 'badge-danger';
+    return <span className={`badge-elegant ${statusClass}`}>{status}</span>;
+  };
+
   return (
-    <div>
-      <h3>Annual Vacation Days Left: {vacationDaysLeft !== null ? vacationDaysLeft : '...'}</h3>
-      <button className="njd-btn" onClick={handlePreview}>Preview Submitted Forms</button>
-      <button className="njd-btn" onClick={handleShowForm}>Submit New Form</button>
-      {showForm && <FormSubmission onFormSubmitted={handleFormSubmitted} />}
-      {showPreview && (
-        <div style={{ marginTop: 20 }}>
-          <h3>My Submitted Forms</h3>
-          {loading && <p>Loading...</p>}
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-          {forms.length === 0 && !loading && <p>No forms submitted yet.</p>}
-          <ul>
-            {forms.map(form => (
-              <li key={form._id} style={{ marginBottom: 10, border: '1px solid #ccc', padding: 10 }}>
-                <strong>Type:</strong> {form.type}<br />
-                {form.type === 'vacation' && <><strong>Vacation Type:</strong> {form.vacationType || '-'}<br /></>}
-                {form.type === 'vacation' && <><strong>Start:</strong> {form.startDate?.slice(0,10)}<br /><strong>End:</strong> {form.endDate?.slice(0,10)}<br /></>}
-                {form.type === 'excuse' && <><strong>From:</strong> {form.fromHour}<br /><strong>To:</strong> {form.toHour}<br /></>}
-                <strong>Reason:</strong> {form.reason}<br />
-                <strong>Status:</strong> {form.status}<br />
-                {form.adminComment && <><strong>Admin Comment:</strong> {form.adminComment}<br /></>}
-                <strong>Submitted:</strong> {new Date(form.createdAt).toLocaleString()}
-              </li>
-            ))}
-          </ul>
+    <div className="dashboard-container fade-in">
+      {/* Header */}
+      <div className="app-header">
+        <h1 className="app-title">Employee Dashboard</h1>
+        <LogoutButton />
+      </div>
+
+      {/* Main Content */}
+      <div className="main-content">
+        {/* Vacation Days Card */}
+        <div className="elegant-card hover-lift" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
+            Annual Vacation Days
+          </h2>
+          <div className="stats-number" style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
+            {vacationDaysLeft !== null ? vacationDaysLeft : '...'}
+          </div>
+          <div className="stats-label">Days Remaining</div>
         </div>
-      )}
+
+        {/* Action Buttons */}
+        <div className="action-buttons">
+          <button 
+            className="btn-elegant btn-success"
+            onClick={handlePreview}
+          >
+            Preview Submitted Forms
+          </button>
+          <button 
+            className="btn-elegant"
+            onClick={handleShowForm}
+          >
+            Submit New Form
+          </button>
+        </div>
+
+        {/* Form Submission */}
+        {showForm && (
+          <div className="elegant-card slide-in-left">
+            <FormSubmission onFormSubmitted={handleFormSubmitted} />
+          </div>
+        )}
+        
+        {/* Forms Preview */}
+        {showPreview && (
+          <div className="elegant-card slide-in-right">
+            <h2 className="section-title" style={{ fontSize: '1.8rem', marginBottom: '1.5rem' }}>
+              Your Submitted Forms
+            </h2>
+            
+            {loading && <div className="spinner-elegant"></div>}
+            
+            {error && (
+              <div className="notification error" style={{ position: 'relative', top: 'auto', right: 'auto' }}>
+                {error}
+              </div>
+            )}
+            
+            {!loading && forms.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                <p>No forms submitted yet.</p>
+              </div>
+            )}
+            
+            {forms.length > 0 && (
+              <div className="grid-2">
+                {forms.map(form => (
+                  <div key={form._id} className="glass-card hover-lift">
+                    <div style={{ marginBottom: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span className="form-label-elegant">Type:</span>
+                        <span className="text-elegant">{form.type}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span className="form-label-elegant">Status:</span>
+                        {getStatusBadge(form.status)}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span className="form-label-elegant">Submitted:</span>
+                        <span className="text-elegant">{new Date(form.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      
+                      {form.type === 'vacation' && (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">Start Date:</span>
+                            <span className="text-elegant">{new Date(form.startDate).toLocaleDateString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">End Date:</span>
+                            <span className="text-elegant">{new Date(form.endDate).toLocaleDateString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">Days:</span>
+                            <span className="text-elegant">{form.days}</span>
+                          </div>
+                        </>
+                      )}
+                      
+                      {form.reason && (
+                        <div style={{ marginTop: '1rem' }}>
+                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>Reason:</div>
+                          <div className="text-elegant" style={{ 
+                            background: 'rgba(255, 255, 255, 0.5)', 
+                            padding: '0.75rem', 
+                            borderRadius: '8px',
+                            fontSize: '0.9rem'
+                          }}>
+                            {form.reason}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {form.adminComment && (
+                        <div style={{ marginTop: '1rem' }}>
+                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>Admin Comment:</div>
+                          <div style={{ 
+                            background: 'rgba(52, 152, 219, 0.1)', 
+                            padding: '0.75rem', 
+                            borderRadius: '8px',
+                            fontSize: '0.9rem',
+                            fontStyle: 'italic',
+                            color: '#2980b9'
+                          }}>
+                            {form.adminComment}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -132,58 +132,128 @@ const FormSubmission = ({ onFormSubmitted }) => {
         )}
 
         {form.type === 'vacation' ? (
-          <div className="grid-2">
-            <div className="form-group-elegant">
-              <label className="form-label-elegant">Start Date</label>
-              <input 
-                name="startDate" 
-                type="date" 
-                value={form.startDate} 
-                onChange={handleChange} 
-                className="form-input-elegant"
-                required 
-              />
+          <div className="date-selection-section">
+            <h4 className="form-section-title">📅 Select Your Vacation Dates</h4>
+            <div className="grid-2">
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">
+                  <span className="label-icon">📅</span>
+                  Start Date
+                </label>
+                <input 
+                  name="startDate" 
+                  type="date" 
+                  value={form.startDate} 
+                  onChange={handleChange} 
+                  className="form-input-elegant date-input"
+                  min={new Date().toISOString().split('T')[0]} // Prevent past dates
+                  required 
+                  title="Select the first day of your vacation"
+                />
+                <small className="input-helper">Choose the first day of your vacation</small>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">
+                  <span className="label-icon">📅</span>
+                  End Date
+                </label>
+                <input 
+                  name="endDate" 
+                  type="date" 
+                  value={form.endDate} 
+                  onChange={handleChange} 
+                  className="form-input-elegant date-input"
+                  min={form.startDate || new Date().toISOString().split('T')[0]} // End date must be after start date
+                  required 
+                  title="Select the last day of your vacation"
+                />
+                <small className="input-helper">Choose the last day of your vacation</small>
+              </div>
             </div>
-            <div className="form-group-elegant">
-              <label className="form-label-elegant">End Date</label>
-              <input 
-                name="endDate" 
-                type="date" 
-                value={form.endDate} 
-                onChange={handleChange} 
-                className="form-input-elegant"
-                required 
-              />
-            </div>
+            {form.startDate && form.endDate && (
+              <div className="date-summary">
+                <div className="summary-card">
+                  <h5>📊 Vacation Summary</h5>
+                  <div className="summary-details">
+                    <div className="summary-item">
+                      <span className="summary-label">From:</span>
+                      <span className="summary-value">{new Date(form.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label">To:</span>
+                      <span className="summary-value">{new Date(form.endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
+                    <div className="summary-item total-days">
+                      <span className="summary-label">Total Days:</span>
+                      <span className="summary-value">{Math.ceil((new Date(form.endDate) - new Date(form.startDate)) / (1000 * 60 * 60 * 24)) + 1} days</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="grid-2">
-            <div className="form-group-elegant">
-              <label className="form-label-elegant">From Time</label>
-              <input 
-                name="fromHour" 
-                type="time" 
-                value={form.fromHour} 
-                onChange={handleChange} 
-                className="form-input-elegant"
-                min="10:30" 
-                max="18:30" 
-                required 
-              />
+          <div className="time-selection-section">
+            <h4 className="form-section-title">🕐 Select Your Excuse Time</h4>
+            <div className="grid-2">
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">
+                  <span className="label-icon">🕐</span>
+                  From Time
+                </label>
+                <input 
+                  name="fromHour" 
+                  type="time" 
+                  value={form.fromHour} 
+                  onChange={handleChange} 
+                  className="form-input-elegant time-input"
+                  min="10:30" 
+                  max="18:30" 
+                  required 
+                  title="Select start time (10:30 AM - 6:30 PM)"
+                />
+                <small className="input-helper">Working hours: 10:30 AM - 6:30 PM</small>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">
+                  <span className="label-icon">🕐</span>
+                  To Time
+                </label>
+                <input 
+                  name="toHour" 
+                  type="time" 
+                  value={form.toHour} 
+                  onChange={handleChange} 
+                  className="form-input-elegant time-input"
+                  min="10:30" 
+                  max="18:30" 
+                  required 
+                  title="Select end time (10:30 AM - 6:30 PM)"
+                />
+                <small className="input-helper">Must be after start time</small>
+              </div>
             </div>
-            <div className="form-group-elegant">
-              <label className="form-label-elegant">To Time</label>
-              <input 
-                name="toHour" 
-                type="time" 
-                value={form.toHour} 
-                onChange={handleChange} 
-                className="form-input-elegant"
-                min="10:30" 
-                max="18:30" 
-                required 
-              />
-            </div>
+            {form.fromHour && form.toHour && (
+              <div className="time-summary">
+                <div className="summary-card">
+                  <h5>⏰ Time Summary</h5>
+                  <div className="summary-details">
+                    <div className="summary-item">
+                      <span className="summary-label">From:</span>
+                      <span className="summary-value">{new Date(`2000-01-01T${form.fromHour}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label">To:</span>
+                      <span className="summary-value">{new Date(`2000-01-01T${form.toHour}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                    </div>
+                    <div className="summary-item total-days">
+                      <span className="summary-label">Duration:</span>
+                      <span className="summary-value">{((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

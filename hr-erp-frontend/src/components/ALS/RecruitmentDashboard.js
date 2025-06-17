@@ -4,38 +4,68 @@ const Modal = ({ show, onClose, children }) => {
   if (!show) return null;
   return (
     <div style={{
-      position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-      background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-      backdropFilter: 'blur(5px)'
+      position: 'fixed', 
+      top: 0, 
+      left: 0, 
+      width: '100vw', 
+      height: '100vh',
+      background: 'rgba(0,0,0,0.85)', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      zIndex: 10000,
+      backdropFilter: 'blur(8px)',
+      padding: '20px',
+      boxSizing: 'border-box'
     }}>
       <div style={{ 
-        background: 'linear-gradient(145deg, rgba(0, 0, 0, 0.9), rgba(26, 26, 26, 0.95))', 
-        padding: 24, 
-        borderRadius: 12, 
-        minWidth: 350, 
-        maxWidth: 500, 
-        width: '100%', 
+        background: 'linear-gradient(145deg, rgba(0, 0, 0, 0.95), rgba(26, 26, 26, 0.98))', 
+        padding: '32px', 
+        borderRadius: '16px', 
+        minWidth: '500px', 
+        maxWidth: '700px', 
+        width: '90%', 
+        maxHeight: '90vh',
+        overflowY: 'auto',
         position: 'relative',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
+        border: '2px solid rgba(255, 255, 255, 0.2)',
         backdropFilter: 'blur(20px)',
-        boxShadow: '0 8px 30px rgba(255, 255, 255, 0.2)',
-        color: '#ffffff'
+        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
+        color: '#ffffff',
+        animation: 'modalFadeIn 0.3s ease-out'
       }}>
         <button onClick={onClose} style={{ 
           position: 'absolute', 
-          top: 8, 
-          right: 8, 
-          background: 'none', 
-          border: 'none', 
-          fontSize: 20, 
+          top: '12px', 
+          right: '12px', 
+          background: 'rgba(255, 255, 255, 0.1)', 
+          border: '1px solid rgba(255, 255, 255, 0.2)', 
+          fontSize: '18px', 
           cursor: 'pointer',
-          color: 'rgba(255, 255, 255, 0.8)',
-          padding: '0.2rem',
+          color: 'rgba(255, 255, 255, 0.9)',
+          padding: '8px',
           borderRadius: '50%',
-          transition: 'all 0.3s ease'
+          transition: 'all 0.3s ease',
+          width: '36px',
+          height: '36px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}>&times;</button>
         {children}
       </div>
+      <style>{`
+        @keyframes modalFadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9) translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };
@@ -261,10 +291,34 @@ const RecruitmentDashboard = () => {
         .dashboard-title {
           font-size: 2rem;
           font-weight: 700;
-          margin-bottom: 2rem;
+          margin-bottom: 1rem;
           color: #ffffff;
           text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
           text-align: center;
+        }
+        
+        .instructions-panel {
+          display: flex;
+          justify-content: center;
+          gap: 2rem;
+          margin-bottom: 2rem;
+          padding: 1rem;
+          background: rgba(0, 0, 0, 0.4);
+          border-radius: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .instruction-item {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 0.9rem;
+          font-weight: 500;
+        }
+        
+        .instruction-icon {
+          font-size: 1.2rem;
         }
         
         .stats-section {
@@ -379,62 +433,122 @@ const RecruitmentDashboard = () => {
         .table-container {
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 12px;
-          overflow: hidden;
+          overflow-x: auto;
+          overflow-y: hidden;
           background: rgba(0, 0, 0, 0.6);
           backdrop-filter: blur(10px);
+          max-width: 100%;
+          /* Enhanced scrollbar styling */
+          scrollbar-width: thin;
+          scrollbar-color: rgba(102, 126, 234, 0.6) rgba(255, 255, 255, 0.1);
+        }
+        
+        .table-container::-webkit-scrollbar {
+          height: 12px;
+        }
+        
+        .table-container::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
+        }
+        
+        .table-container::-webkit-scrollbar-thumb {
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          border-radius: 6px;
+          border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .table-container::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(135deg, #764ba2, #667eea);
+          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
         }
         
         .recruitment-table {
           width: 100%;
           border-collapse: collapse;
-          min-width: 1000px;
+          min-width: 1400px; /* Ensure table is wide enough for all columns */
+          table-layout: fixed; /* Fixed layout for better column control */
         }
         
         .recruitment-table th {
           background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-          padding: 1rem;
+          padding: 1rem 0.75rem;
           text-align: left;
           font-weight: 700;
           color: #ffffff;
           border-bottom: 2px solid rgba(100, 181, 246, 0.3);
+          position: sticky;
+          top: 0;
+          z-index: 10;
           white-space: nowrap;
           cursor: pointer;
           transition: all 0.3s ease;
           text-transform: uppercase;
           letter-spacing: 1px;
           font-size: 0.875rem;
+          /* Column widths */
+          width: auto;
         }
         
-        .recruitment-table th:hover {
-          background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-        }
+        /* Specific column widths */
+        .recruitment-table th:nth-child(1) { width: 100px; } /* Source */
+        .recruitment-table th:nth-child(2) { width: 150px; } /* Name */
+        .recruitment-table th:nth-child(3) { width: 130px; } /* Phone */
+        .recruitment-table th:nth-child(4) { width: 200px; } /* Email */
+        .recruitment-table th:nth-child(5) { width: 150px; } /* Position */
+        .recruitment-table th:nth-child(6) { width: 140px; } /* HR Interviewer */
+        .recruitment-table th:nth-child(7) { width: 160px; } /* Technical Interviewer */
+        .recruitment-table th:nth-child(8) { width: 130px; } /* HR Assessment */
+        .recruitment-table th:nth-child(9) { width: 140px; } /* Technical Assessment */
+        .recruitment-table th:nth-child(10) { width: 120px; } /* Final Status */
+        .recruitment-table th:nth-child(11) { width: 180px; } /* Actions */
         
         .recruitment-table td {
-          padding: 1rem;
+          padding: 1rem 0.75rem;
           border-bottom: 1px solid rgba(255, 255, 255, 0.1);
           color: #ffffff;
           transition: all 0.3s ease;
+          word-wrap: break-word;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         
         .recruitment-table tr:hover {
           background: rgba(100, 181, 246, 0.1);
         }
         
+        /* Status badges styling */
+        .status-badge {
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: capitalize;
+          white-space: nowrap;
+          display: inline-block;
+          min-width: 80px;
+          text-align: center;
+        }
+        
         .action-buttons {
           display: flex;
           gap: 0.5rem;
+          flex-wrap: wrap;
+          justify-content: flex-start;
         }
         
         .action-buttons button {
-          padding: 8px 16px;
+          padding: 6px 12px;
           border: none;
           border-radius: 6px;
           cursor: pointer;
-          font-size: 0.875rem;
+          font-size: 0.75rem;
           font-weight: 600;
           transition: all 0.3s ease;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          white-space: nowrap;
+          min-width: 70px;
         }
         
         .action-buttons .edit-btn {
@@ -456,6 +570,16 @@ const RecruitmentDashboard = () => {
           opacity: 0.6;
           cursor: not-allowed;
           transform: none;
+        }
+        
+        /* Table scroll indicator */
+        .table-scroll-indicator {
+          text-align: center;
+          padding: 1rem;
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 0.9rem;
+          background: rgba(0, 0, 0, 0.3);
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .pagination {
@@ -610,11 +734,12 @@ const RecruitmentDashboard = () => {
         
         @media (max-width: 768px) {
           .recruitment-dashboard {
-            padding: 1rem;
+            padding: 0.5rem;
           }
           
           .dashboard-title {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
+            padding: 1rem 0.5rem;
           }
           
           .filters-section {
@@ -623,24 +748,248 @@ const RecruitmentDashboard = () => {
             padding: 1rem;
           }
           
+          .filters-section input,
+          .filters-section select,
+          .filters-section button {
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            border-radius: 8px;
+          }
+          
           .table-container {
-            margin: 0 -1rem;
-            border-radius: 0;
+            margin: 0 -0.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+          
+          .recruitment-table {
+            font-size: 0.75rem;
+            min-width: 800px;
+          }
+          
+          .recruitment-table th,
+          .recruitment-table td {
+            padding: 8px 6px;
+            min-width: 80px;
+          }
+          
+          .action-buttons {
+            flex-direction: column;
+            gap: 4px;
+            min-width: 120px;
+          }
+          
+          .action-buttons button {
+            padding: 6px 10px;
+            font-size: 0.7rem;
+            width: 100%;
           }
           
           .pagination {
             flex-wrap: wrap;
             justify-content: center;
             gap: 0.5rem;
+            padding: 1rem;
+          }
+          
+          .pagination button {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            min-width: 60px;
+          }
+          
+          .page-info {
+            font-size: 0.8rem;
+            order: -1;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 0.5rem;
           }
           
           .stats-section {
             grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin: 1rem 0;
+          }
+          
+          .stat-card {
+            padding: 12px;
+          }
+          
+          .stat-number {
+            font-size: 1.5rem;
+          }
+          
+          .stat-label {
+            font-size: 0.7rem;
+          }
+          
+          .instructions-panel {
+            flex-direction: column;
+            gap: 0.5rem;
+            text-align: center;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+          }
+          
+          .instruction-item {
+            justify-content: center;
+            font-size: 0.8rem;
+          }
+          
+          .instruction-icon {
+            font-size: 1rem;
+          }
+          
+          .table-scroll-indicator {
+            font-size: 0.75rem;
+            padding: 8px;
+            text-align: center;
+            background: rgba(102, 126, 234, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+          }
+          
+          .loading-message,
+          .error-message {
+            font-size: 0.9rem;
+            padding: 1rem;
+            margin: 1rem 0;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .recruitment-dashboard {
+            padding: 0.25rem;
+          }
+          
+          .dashboard-title {
+            font-size: 1.1rem;
+            padding: 0.75rem 0.25rem;
+          }
+          
+          .filters-section {
+            padding: 0.75rem;
+            gap: 0.5rem;
+          }
+          
+          .filters-section input,
+          .filters-section select,
+          .filters-section button {
+            padding: 10px 12px;
+            font-size: 0.85rem;
+          }
+          
+          .recruitment-table {
+            font-size: 0.7rem;
+            min-width: 700px;
+          }
+          
+          .recruitment-table th,
+          .recruitment-table td {
+            padding: 6px 4px;
+            min-width: 70px;
+          }
+          
+          .action-buttons button {
+            padding: 4px 8px;
+            font-size: 0.65rem;
+          }
+          
+          .pagination button {
+            padding: 6px 8px;
+            font-size: 0.7rem;
+            min-width: 50px;
+          }
+          
+          .stats-section {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+          }
+          
+          .stat-card {
+            padding: 10px;
+          }
+          
+          .stat-number {
+            font-size: 1.3rem;
+          }
+          
+          .stat-label {
+            font-size: 0.65rem;
+          }
+          
+          .instructions-panel {
+            padding: 0.5rem;
+          }
+          
+          .instruction-item {
+            font-size: 0.75rem;
+          }
+          
+          .instruction-icon {
+            font-size: 0.9rem;
+          }
+        }
+        
+        @media (max-width: 360px) {
+          .dashboard-title {
+            font-size: 1rem;
+          }
+          
+          .filters-section {
+            padding: 0.5rem;
+          }
+          
+          .recruitment-table {
+            font-size: 0.65rem;
+            min-width: 600px;
+          }
+          
+          .recruitment-table th,
+          .recruitment-table td {
+            padding: 4px 3px;
+            min-width: 60px;
+          }
+          
+          .action-buttons button {
+            padding: 3px 6px;
+            font-size: 0.6rem;
+          }
+          
+          .pagination button {
+            padding: 4px 6px;
+            font-size: 0.65rem;
+            min-width: 40px;
+          }
+          
+          .stat-number {
+            font-size: 1.1rem;
+          }
+          
+          .stat-label {
+            font-size: 0.6rem;
           }
         }
       `}</style>
 
       <div className="dashboard-title">📊 Recruitment Dashboard</div>
+      
+      {/* Instructions Panel */}
+      <div className="instructions-panel">
+        <div className="instruction-item">
+          <span className="instruction-icon">👆</span>
+          <span>Click column headers to sort</span>
+        </div>
+        <div className="instruction-item">
+          <span className="instruction-icon">↔️</span>
+          <span>Scroll horizontally to view all columns</span>
+        </div>
+        <div className="instruction-item">
+          <span className="instruction-icon">🔍</span>
+          <span>Use filters to narrow results</span>
+        </div>
+      </div>
       
       {/* Stats Section */}
       <div className="stats-section">
@@ -707,57 +1056,58 @@ const RecruitmentDashboard = () => {
       {error && <div className="error-message">❌ {error}</div>}
 
       <div className="table-container">
-        <div style={{ overflowX: 'auto' }}>
-          <table className="recruitment-table">
-            <thead>
-              <tr>
-                {columns.map(col => (
-                  <th key={col.key} onClick={() => handleSort(col.key)}>
-                    {col.label}{sortArrow(col.key, sortBy, sortDir)}
-                  </th>
-                ))}
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedRecruits.map(recruit => (
-                <tr key={recruit._id}>
-                  {columns.map(col => (
-                    <td key={col.key}>
-                      {col.key === 'hrAssessment' || col.key === 'finalStatus' 
-                        ? getStatusBadge(recruit[col.key])
-                        : recruit[col.key] || '-'
-                      }
-                    </td>
-                  ))}
-                  <td>
-                    <div className="action-buttons">
-                      <button
-                        className="edit-btn"
-                        onClick={() => handleEditClick(recruit)}
-                      >
-                        ✏️ Edit
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(recruit._id)}
-                        disabled={deletingId === recruit._id}
-                      >
-                        {deletingId === recruit._id ? '⏳ Deleting...' : '🗑️ Delete'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+        <table className="recruitment-table">
+          <thead>
+            <tr>
+              {columns.map(col => (
+                <th key={col.key} onClick={() => handleSort(col.key)}>
+                  {col.label}{sortArrow(col.key, sortBy, sortDir)}
+                </th>
               ))}
-              {paginatedRecruits.length === 0 && !loading && (
-                <tr>
-                  <td colSpan={columns.length + 1} className="no-records">
-                    📭 No records found.
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedRecruits.map(recruit => (
+              <tr key={recruit._id}>
+                {columns.map(col => (
+                  <td key={col.key}>
+                    {col.key === 'hrAssessment' || col.key === 'finalStatus' || col.key === 'technicalAssessment'
+                      ? getStatusBadge(recruit[col.key])
+                      : recruit[col.key] || '-'
+                    }
                   </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                ))}
+                <td>
+                  <div className="action-buttons">
+                    <button
+                      className="edit-btn"
+                      onClick={() => handleEditClick(recruit)}
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button
+                      className="delete-btn"
+                      onClick={() => handleDelete(recruit._id)}
+                      disabled={deletingId === recruit._id}
+                    >
+                      {deletingId === recruit._id ? '⏳ Deleting...' : '🗑️ Delete'}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {paginatedRecruits.length === 0 && !loading && (
+              <tr>
+                <td colSpan={columns.length + 1} className="no-records">
+                  📭 No records found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+        <div className="table-scroll-indicator">
+          ← Scroll horizontally to view all columns →
         </div>
       </div>
 

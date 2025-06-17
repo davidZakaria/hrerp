@@ -11,22 +11,42 @@ const ForgotPassword = ({ onBack }) => {
     e.preventDefault();
     setMessage('');
     setLoading(true);
+    
     try {
       const res = await fetch('http://localhost:5000/api/auth/reset-password-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
+      
       const data = await res.json();
+      
       if (res.ok) {
         setSuccess(true);
-        setMessage('If an account with that email exists, a password reset link has been sent. Please check your email.');
+        setMessage(data.msg || 'If an account with that email exists, a password reset link has been sent. Please check your email.');
       } else {
-        setMessage(data.msg || 'Failed to send reset email.');
+        setSuccess(false);
+        // Handle specific error cases
+        if (res.status === 500 && data.msg && data.msg.includes('not configured')) {
+          setMessage('Password reset is temporarily unavailable. Please contact your administrator or try again later.');
+        } else if (res.status === 400) {
+          setMessage(data.msg || 'Please enter a valid email address.');
+        } else {
+          setMessage(data.msg || 'Failed to send reset email. Please try again.');
+        }
       }
     } catch (err) {
-      setMessage('Error connecting to server.');
+      console.error('Password reset request failed:', err);
+      setSuccess(false);
+      
+      // Check if it's a network error
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        setMessage('Unable to connect to server. Please check your internet connection and try again.');
+      } else {
+        setMessage('An unexpected error occurred. Please try again later.');
+      }
     }
+    
     setLoading(false);
   };
 

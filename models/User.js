@@ -16,13 +16,16 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['employee', 'admin', 'super_admin'],
+        enum: ['employee', 'manager', 'admin', 'super_admin'],
         default: 'employee'
     },
     department: {
         type: String,
         required: true
     },
+    managedDepartments: [{
+        type: String
+    }],
     vacationDaysLeft: {
         type: Number,
         default: 21

@@ -71,8 +71,15 @@ const EmployeeDashboard = () => {
 
   const getStatusBadge = (status) => {
     const statusClass = status === 'approved' ? 'badge-success' : 
-                       status === 'pending' ? 'badge-warning' : 'badge-danger';
-    return <span className={`badge-elegant ${statusClass}`}>{status}</span>;
+                       status === 'manager_approved' ? 'badge-info' :
+                       status === 'pending' ? 'badge-warning' : 
+                       status === 'manager_rejected' ? 'badge-danger' : 'badge-danger';
+    
+    const statusText = status === 'manager_approved' ? 'Manager Approved' :
+                      status === 'manager_rejected' ? 'Manager Rejected' :
+                      status;
+    
+    return <span className={`badge-elegant ${statusClass}`}>{statusText}</span>;
   };
 
   return (
@@ -189,6 +196,22 @@ const EmployeeDashboard = () => {
                         </div>
                       )}
                       
+                      {form.managerComment && (
+                        <div style={{ marginTop: '1rem' }}>
+                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>Manager Comment:</div>
+                          <div style={{ 
+                            background: 'rgba(156, 39, 176, 0.1)', 
+                            padding: '0.75rem', 
+                            borderRadius: '8px',
+                            fontSize: '0.9rem',
+                            fontStyle: 'italic',
+                            color: '#7B1FA2'
+                          }}>
+                            {form.managerComment}
+                          </div>
+                        </div>
+                      )}
+
                       {form.adminComment && (
                         <div style={{ marginTop: '1rem' }}>
                           <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>Admin Comment:</div>

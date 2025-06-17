@@ -36,6 +36,7 @@ const Login = ({ onLogin }) => {
         localStorage.setItem('userRole', data.role);
         localStorage.setItem('userId', data.userId);
         localStorage.setItem('userName', data.name);
+        localStorage.setItem('managedDepartments', JSON.stringify(data.managedDepartments || []));
         
         // Redirect based on user role
         setTimeout(() => {
@@ -43,6 +44,8 @@ const Login = ({ onLogin }) => {
             navigate('/super-admin');
           } else if (data.role === 'admin') {
             navigate('/admin');
+          } else if (data.role === 'manager') {
+            navigate('/manager');
           } else {
             navigate('/employee');
           }

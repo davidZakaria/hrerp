@@ -527,13 +527,15 @@ const AdminDashboard = () => {
                 <h3 className="subsection-title">
                   Pending Registrations ({pendingUsers.length})
                 </h3>
-                <div style={{ overflowX: 'auto' }}>
+                <div className="table-container">
                   <table className="table-elegant">
                     <thead>
                       <tr>
                         <th>Name</th>
                         <th>Email</th>
+                        <th>Role</th>
                         <th>Department</th>
+                        <th>Managed Departments</th>
                         <th>Registration Date</th>
                         <th>Actions</th>
                       </tr>
@@ -543,7 +545,29 @@ const AdminDashboard = () => {
                         <tr key={user._id} className="hover-lift">
                           <td className="text-elegant">{user.name}</td>
                           <td className="text-elegant">{user.email}</td>
+                          <td>
+                            <span className={`role-badge role-${user.role}`}>
+                              {user.role === 'manager' ? 'Manager' : 'Employee'}
+                            </span>
+                          </td>
                           <td className="text-elegant">{user.department}</td>
+                          <td className="text-elegant">
+                            {user.role === 'manager' ? (
+                              user.managedDepartments && user.managedDepartments.length > 0 ? (
+                                <div className="managed-departments">
+                                  {user.managedDepartments.map((dept, index) => (
+                                    <span key={index} className="department-tag">
+                                      {dept}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="no-departments">No departments assigned</span>
+                              )
+                            ) : (
+                              <span className="not-applicable">N/A</span>
+                            )}
+                          </td>
                           <td className="text-elegant">
                             {new Date(user.createdAt).toLocaleDateString()}
                           </td>
@@ -576,7 +600,7 @@ const AdminDashboard = () => {
               <h3 className="subsection-title">
                 Active Users ({users.length})
               </h3>
-              <div style={{ overflowX: 'auto' }}>
+              <div className="table-container">
                 <table className="table-elegant">
                   <thead>
                     <tr>
@@ -619,11 +643,11 @@ const AdminDashboard = () => {
         {activeTab === 'forms' && (
           <div className="forms-section">
             <div className="section-header">
-              <h2 className="section-title">Forms Management</h2>
+              <h2 className="section-title">📋 Forms Management Dashboard</h2>
               <div className="section-actions">
                 <input
                   type="text"
-                  placeholder="Search by employee name..."
+                  placeholder="🔍 Search by employee name, email, or department..."
                   value={formsSearch}
                   onChange={(e) => setFormsSearch(e.target.value)}
                   className="search-input"
@@ -631,11 +655,112 @@ const AdminDashboard = () => {
               </div>
             </div>
 
+            {/* Forms Summary Cards */}
+            <div className="grid-4" style={{ marginBottom: '2rem' }}>
+              <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #ff9800, #f57c00)' }}>
+                <div className="stats-number">{forms.filter(f => f.status === 'pending').length}</div>
+                <div className="stats-label">Pending Manager</div>
+              </div>
+              <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #2196f3, #1976d2)' }}>
+                <div className="stats-number">{forms.filter(f => f.status === 'manager_approved').length}</div>
+                <div className="stats-label">Awaiting HR</div>
+              </div>
+              <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #4caf50, #388e3c)' }}>
+                <div className="stats-number">{forms.filter(f => f.status === 'approved').length}</div>
+                <div className="stats-label">Approved</div>
+              </div>
+              <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #f44336, #d32f2f)' }}>
+                <div className="stats-number">{forms.filter(f => f.status === 'rejected').length}</div>
+                <div className="stats-label">Rejected</div>
+              </div>
+            </div>
+
             {formsError && <div className="error-message">{formsError}</div>}
             {formsLoading && <div className="spinner-elegant"></div>}
 
-            <div className="elegant-card">
-              <div style={{ overflowX: 'auto' }}>
+            {/* Pending Manager Approval Section */}
+            <div className="elegant-card" style={{ marginBottom: '2rem' }}>
+              <h3 className="subsection-title" style={{ color: '#ff9800', marginBottom: '1rem' }}>
+                ⏳ Pending Manager Approval ({forms.filter(f => f.status === 'pending').length})
+              </h3>
+              <div className="table-container">
+                <table className="table-elegant">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Department</th>
+                      <th>Manager</th>
+                      <th>Type</th>
+                      <th>Duration</th>
+                      <th>Reason</th>
+                      <th>Status</th>
+                      <th>Submitted</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {forms.filter(form => 
+                      form.status === 'pending' && 
+                      (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
+                       form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()))
+                    ).map(form => (
+                      <tr key={form._id} className="hover-lift">
+                        <td>
+                          <div className="employee-info">
+                            <div className="employee-name">{form.user?.name}</div>
+                            <div className="employee-email">{form.user?.email}</div>
+                          </div>
+                        </td>
+                        <td className="text-elegant">{form.user?.department}</td>
+                        <td className="text-elegant">
+                          <span style={{ color: '#666', fontStyle: 'italic' }}>
+                            Awaiting manager review
+                          </span>
+                        </td>
+                        <td className="text-elegant">{form.type}</td>
+                        <td className="text-elegant">
+                          {form.type === 'vacation' ? (
+                            <>
+                              <div>From: {form.startDate?.slice(0,10)}</div>
+                              <div>To: {form.endDate?.slice(0,10)}</div>
+                            </>
+                          ) : (
+                            <>
+                              <div>From: {form.fromHour || '-'}</div>
+                              <div>To: {form.toHour || '-'}</div>
+                            </>
+                          )}
+                        </td>
+                        <td className="text-elegant">
+                          <div className="reason-text">{form.reason}</div>
+                        </td>
+                        <td>
+                          <span className="status-badge status-pending">
+                            Pending Manager
+                          </span>
+                        </td>
+                        <td className="text-elegant">
+                          {new Date(form.createdAt).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                    {forms.filter(f => f.status === 'pending').length === 0 && (
+                      <tr>
+                        <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                          No forms pending manager approval
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Awaiting HR Approval Section */}
+            <div className="elegant-card" style={{ marginBottom: '2rem' }}>
+              <h3 className="subsection-title" style={{ color: '#2196f3', marginBottom: '1rem' }}>
+                👨‍💼 Awaiting HR Approval ({forms.filter(f => f.status === 'manager_approved').length})
+              </h3>
+              <div className="table-container">
                 <table className="table-elegant">
                   <thead>
                     <tr>
@@ -643,15 +768,18 @@ const AdminDashboard = () => {
                       <th>Department</th>
                       <th>Days Left</th>
                       <th>Type</th>
-                      <th>Vacation Type</th>
                       <th>Duration</th>
                       <th>Reason</th>
-                      <th>Status</th>
-                      <th>Actions</th>
+                      <th>Manager Approval</th>
+                      <th>HR Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredForms.map(form => (
+                    {forms.filter(form => 
+                      form.status === 'manager_approved' && 
+                      (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
+                       form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()))
+                    ).map(form => (
                       <tr key={form._id} className="hover-lift">
                         <td>
                           <div className="employee-info">
@@ -678,7 +806,6 @@ const AdminDashboard = () => {
                           ) : '-'}
                         </td>
                         <td className="text-elegant">{form.type}</td>
-                        <td className="text-elegant">{form.type === 'vacation' ? (form.vacationType || '-') : '-'}</td>
                         <td className="text-elegant">
                           {form.type === 'vacation' ? (
                             <>
@@ -693,50 +820,150 @@ const AdminDashboard = () => {
                           )}
                         </td>
                         <td className="text-elegant">
-                          <div className="reason-text">
-                            {form.reason}
+                          <div className="reason-text">{form.reason}</div>
+                        </td>
+                        <td className="text-elegant">
+                          <div className="manager-approval-info">
+                            <div style={{ color: '#4caf50', fontWeight: 'bold', marginBottom: '4px' }}>
+                              ✅ Approved by Manager
+                            </div>
+                            {form.managerApprovedAt && (
+                              <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                                {new Date(form.managerApprovedAt).toLocaleDateString()}
+                              </div>
+                            )}
+                            {form.managerComment && (
+                              <div style={{ fontSize: '0.85rem', color: '#555', marginTop: '4px', fontStyle: 'italic' }}>
+                                "{form.managerComment}"
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td>
-                          <span className={`status-badge status-${form.status}`}>
-                            {form.status}
-                          </span>
-                        </td>
-                        <td>
                           <div className="form-actions">
-                            {form.status === 'pending' && (
-                              <div className="action-buttons-inline">
-                                <button
-                                  onClick={() => handleFormAction(form._id, 'approved')}
-                                  className="btn-elegant btn-success btn-sm"
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() => handleFormAction(form._id, 'rejected')}
-                                  className="btn-elegant btn-danger btn-sm"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            )}
+                            <div className="action-buttons-inline" style={{ marginBottom: '8px' }}>
+                              <button
+                                onClick={() => handleFormAction(form._id, 'approved')}
+                                className="btn-elegant btn-success btn-sm"
+                              >
+                                Final Approve
+                              </button>
+                              <button
+                                onClick={() => handleFormAction(form._id, 'rejected')}
+                                className="btn-elegant btn-danger btn-sm"
+                              >
+                                Reject
+                              </button>
+                            </div>
                             <textarea
-                              placeholder="Admin comment"
+                              placeholder="HR comment..."
                               value={comments[form._id] || ''}
                               onChange={(e) => handleCommentChange(form._id, e.target.value)}
                               className="comment-textarea"
+                              style={{ fontSize: '0.8rem' }}
                             />
-                            <button
-                              onClick={() => handleDeleteForm(form._id)}
-                              className="btn-elegant btn-danger btn-sm"
-                              style={{ marginTop: '5px' }}
-                            >
-                              Delete
-                            </button>
                           </div>
                         </td>
                       </tr>
                     ))}
+                    {forms.filter(f => f.status === 'manager_approved').length === 0 && (
+                      <tr>
+                        <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                          No forms awaiting HR approval
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Completed Forms Section */}
+            <div className="elegant-card">
+              <h3 className="subsection-title" style={{ color: '#666', marginBottom: '1rem' }}>
+                📋 All Forms History ({forms.filter(f => ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length})
+              </h3>
+              <div className="table-container">
+                <table className="table-elegant">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Department</th>
+                      <th>Type</th>
+                      <th>Duration</th>
+                      <th>Reason</th>
+                      <th>Final Status</th>
+                      <th>Comments</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {forms.filter(form => 
+                      ['approved', 'rejected', 'manager_rejected'].includes(form.status) &&
+                      (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
+                       form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()))
+                    ).map(form => (
+                      <tr key={form._id} className="hover-lift">
+                        <td>
+                          <div className="employee-info">
+                            <div className="employee-name">{form.user?.name}</div>
+                            <div className="employee-email">{form.user?.email}</div>
+                          </div>
+                        </td>
+                        <td className="text-elegant">{form.user?.department}</td>
+                        <td className="text-elegant">{form.type}</td>
+                        <td className="text-elegant">
+                          {form.type === 'vacation' ? (
+                            <>
+                              <div>From: {form.startDate?.slice(0,10)}</div>
+                              <div>To: {form.endDate?.slice(0,10)}</div>
+                            </>
+                          ) : (
+                            <>
+                              <div>From: {form.fromHour || '-'}</div>
+                              <div>To: {form.toHour || '-'}</div>
+                            </>
+                          )}
+                        </td>
+                        <td className="text-elegant">
+                          <div className="reason-text">{form.reason}</div>
+                        </td>
+                        <td>
+                          <span className={`status-badge status-${form.status}`}>
+                            {form.status === 'manager_rejected' ? 'Rejected by Manager' : form.status}
+                          </span>
+                        </td>
+                        <td className="text-elegant">
+                          <div style={{ fontSize: '0.8rem' }}>
+                            {form.managerComment && (
+                              <div style={{ marginBottom: '4px' }}>
+                                <strong>Manager:</strong> {form.managerComment}
+                              </div>
+                            )}
+                            {form.adminComment && (
+                              <div>
+                                <strong>HR:</strong> {form.adminComment}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <button
+                            onClick={() => handleDeleteForm(form._id)}
+                            className="btn-elegant btn-danger btn-sm"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {forms.filter(f => ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length === 0 && (
+                      <tr>
+                        <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                          No completed forms found
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -748,9 +975,16 @@ const AdminDashboard = () => {
         {activeTab === 'ats' && (
           <div className="ats-section">
             <div className="section-header">
-              <h2 className="section-title">Applicant Tracking System (ATS)</h2>
+              <h2 className="section-title">🎯 Applicant Tracking System</h2>
+              <div className="section-actions">
+                <div className="ats-info-badge">
+                  Professional Recruitment Management
+                </div>
+              </div>
             </div>
-            <ALS />
+            <div className="ats-wrapper">
+              <ALS />
+            </div>
           </div>
         )}
       </div>
@@ -841,9 +1075,41 @@ const AdminDashboard = () => {
 
       {/* Vacation Manager Modal */}
       {showVacationManager && (
-        <div className="modal-elegant">
-          <div className="modal-content-elegant" style={{ maxWidth: '800px' }}>
-            <h2 className="text-gradient">Manage Vacation Days</h2>
+        <div className="modal-elegant" onClick={() => setShowVacationManager(false)}>
+          <div className="modal-content-elegant" style={{ maxWidth: '800px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header" style={{ position: 'relative', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 className="text-gradient" style={{ margin: 0 }}>Manage Vacation Days</h2>
+              <button 
+                className="close-btn" 
+                onClick={() => setShowVacationManager(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '50%',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  color: '#666',
+                  transition: 'all 0.3s ease',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: '1'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.color = '#333';
+                  e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.color = '#666';
+                  e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                }}
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
             <input
               type="text"
               placeholder="Search by name..."
@@ -856,7 +1122,7 @@ const AdminDashboard = () => {
             {vacationManagerError && <div className="error-message">{vacationManagerError}</div>}
             {vacationManagerSuccess && <div className="success-message">{vacationManagerSuccess}</div>}
             
-            <div style={{ overflowX: 'auto' }}>
+            <div className="table-container">
               <table className="table-elegant">
                 <thead>
                   <tr>
@@ -926,7 +1192,7 @@ const AdminDashboard = () => {
             {reportError && <div className="error-message">{reportError}</div>}
             
             {!reportLoading && !reportError && (
-              <div style={{ overflowX: 'auto' }}>
+              <div className="table-container">
                 <table className="table-elegant">
                   <thead>
                     <tr>

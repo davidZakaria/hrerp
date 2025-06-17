@@ -7,15 +7,26 @@ const Register = ({ onBack, onRegisterSuccess }) => {
     email: '',
     password: '',
     confirmPassword: '',
-    department: ''
+    department: '',
+    role: 'employee',
+    managedDepartments: []
   });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    if (name === 'managedDepartments') {
+      const options = Array.from(e.target.selectedOptions, option => option.value);
+      setForm({ ...form, [name]: options });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
+
+  const departments = ['Human Resources', 'Finance', 'Marketing', 'Sales', 'IT', 'Operations', 'Customer Service', 'Legal', 'Engineering', 'Other'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,6 +43,11 @@ const Register = ({ onBack, onRegisterSuccess }) => {
       return;
     }
 
+    if (form.role === 'manager' && form.managedDepartments.length === 0) {
+      setMessage('Managers must select at least one department to manage.');
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch('http://localhost:5000/api/auth/register', {
@@ -42,7 +58,8 @@ const Register = ({ onBack, onRegisterSuccess }) => {
           email: form.email,
           password: form.password,
           department: form.department,
-          role: 'employee' // Always register as employee
+          role: form.role,
+          managedDepartments: form.role === 'manager' ? form.managedDepartments : []
         })
       });
       const data = await res.json();
@@ -55,7 +72,9 @@ const Register = ({ onBack, onRegisterSuccess }) => {
           email: '',
           password: '',
           confirmPassword: '',
-          department: ''
+          department: '',
+          role: 'employee',
+          managedDepartments: []
         });
         
         // Redirect back to login after 3 seconds
@@ -80,7 +99,7 @@ const Register = ({ onBack, onRegisterSuccess }) => {
           Join Our Team
         </h1>
         <p className="text-elegant" style={{ marginBottom: '2rem', fontSize: '1rem', opacity: 0.8 }}>
-          Register as an Employee
+          Register for HR ERP System
         </p>
 
         <form className="form-elegant" onSubmit={handleSubmit}>
@@ -111,7 +130,21 @@ const Register = ({ onBack, onRegisterSuccess }) => {
           </div>
 
           <div className="form-group-elegant">
-            <label className="form-label-elegant">Department</label>
+            <label className="form-label-elegant">Role</label>
+            <select
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              className="form-input-elegant focus-elegant"
+              required
+            >
+              <option value="employee">Employee</option>
+              <option value="manager">Manager</option>
+            </select>
+          </div>
+
+          <div className="form-group-elegant">
+            <label className="form-label-elegant">Your Department</label>
             <select
               name="department"
               value={form.department}
@@ -119,18 +152,35 @@ const Register = ({ onBack, onRegisterSuccess }) => {
               className="form-input-elegant focus-elegant"
               required
             >
-              <option value="">Select Department</option>
-              <option value="Human Resources">Human Resources</option>
-              <option value="Finance">Finance</option>
-              <option value="Marketing">Marketing</option>
-              <option value="Sales">Sales</option>
-              <option value="IT">Information Technology</option>
-              <option value="Operations">Operations</option>
-              <option value="Customer Service">Customer Service</option>
-              <option value="Legal">Legal</option>
-              <option value="Other">Other</option>
+              <option value="">Select Your Department</option>
+              {departments.map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
             </select>
           </div>
+
+          {form.role === 'manager' && (
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">Departments You Will Manage</label>
+              <select
+                name="managedDepartments"
+                value={form.managedDepartments}
+                onChange={handleChange}
+                className="form-input-elegant focus-elegant"
+                multiple
+                size="4"
+                required
+                style={{ height: 'auto', minHeight: '120px' }}
+              >
+                {departments.map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+              <small style={{ color: '#666', fontSize: '0.8rem', marginTop: '0.5rem', display: 'block' }}>
+                Hold Ctrl (Cmd on Mac) to select multiple departments
+              </small>
+            </div>
+          )}
 
           <div className="grid-2">
             <div className="form-group-elegant">
@@ -174,17 +224,17 @@ const Register = ({ onBack, onRegisterSuccess }) => {
                   Registering...
                 </>
               ) : (
-                'Register as Employee'
+                `Register as ${form.role.charAt(0).toUpperCase() + form.role.slice(1)}`
               )}
             </button>
             
-            <button 
-              type="button" 
+                        <button
+              type="button"
               className="btn-elegant"
               onClick={onBack}
-              style={{ 
+              style={{
                 background: 'rgba(255, 255, 255, 0.2)',
-                color: '#333'
+                color: 'white'
               }}
             >
               Back to Login

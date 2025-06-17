@@ -4,6 +4,7 @@ import Login from './components/Auth/Login';
 import EmployeeDashboard from './components/EmployeeDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
+import ManagerDashboard from './components/ManagerDashboard';
 import ResetPassword from './components/Auth/ResetPassword';
 import './App.css';
 
@@ -20,6 +21,9 @@ const ProtectedRoute = ({ children }) => {
   const path = location.pathname;
   if (userRole === 'employee' && path !== '/employee') {
     return <Navigate to="/employee" replace />;
+  }
+  if (userRole === 'manager' && path !== '/manager') {
+    return <Navigate to="/manager" replace />;
   }
   if (userRole === 'admin' && path !== '/admin') {
     return <Navigate to="/admin" replace />;
@@ -90,6 +94,22 @@ const AuthenticatedApp = () => {
       />
       
       <Route
+        path="/manager"
+        element={
+          <ProtectedRoute>
+            <ManagerDashboard 
+              user={{
+                name: localStorage.getItem('userName'),
+                email: localStorage.getItem('email'),
+                managedDepartments: JSON.parse(localStorage.getItem('managedDepartments') || '[]')
+              }}
+              onLogout={handleLogout}
+            />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
         path="/admin"
         element={
           <ProtectedRoute>
@@ -117,6 +137,8 @@ const AuthenticatedApp = () => {
                 ? 'super-admin' 
                 : userRole === 'admin'
                 ? 'admin'
+                : userRole === 'manager'
+                ? 'manager'
                 : 'employee'}`}
               replace
             />

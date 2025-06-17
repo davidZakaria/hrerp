@@ -30,12 +30,23 @@ const formSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'approved', 'rejected'],
+        enum: ['pending', 'manager_approved', 'approved', 'rejected', 'manager_rejected'],
         default: 'pending'
     },
     adminComment: {
         type: String,
         default: ''
+    },
+    managerComment: {
+        type: String,
+        default: ''
+    },
+    managerApprovedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    managerApprovedAt: {
+        type: Date
     },
     fromHour: String,
     toHour: String,

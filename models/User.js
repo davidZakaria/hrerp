@@ -30,6 +30,14 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 21
     },
+    excuseHoursLeft: {
+        type: Number,
+        default: 2 // 2 hours per period for excuse requests
+    },
+    sickDaysLeft: {
+        type: Number,
+        default: null // Unlimited sick days - no restrictions
+    },
     createdAt: {
         type: Date,
         default: Date.now

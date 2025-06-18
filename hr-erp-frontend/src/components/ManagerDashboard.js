@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import FormSubmission from './FormSubmission';
 
 const ManagerDashboard = ({ user, onLogout }) => {
   const [pendingForms, setPendingForms] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  
+  // Form submission state
+  const [showForm, setShowForm] = useState(false);
+  const [showMyForms, setShowMyForms] = useState(false);
+  const [myForms, setMyForms] = useState([]);
+  const [vacationDaysLeft, setVacationDaysLeft] = useState(null);
+  const [excuseHoursLeft, setExcuseHoursLeft] = useState(null);
   
   // Comment modal state
   const [showCommentModal, setShowCommentModal] = useState(false);
@@ -17,7 +25,90 @@ const ManagerDashboard = ({ user, onLogout }) => {
   useEffect(() => {
     fetchPendingForms();
     fetchTeamMembers();
+    fetchVacationDays();
+    fetchExcuseHours();
   }, []);
+
+  const fetchVacationDays = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch('http://localhost:5000/api/forms/vacation-days', {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setVacationDaysLeft(data.vacationDaysLeft);
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const fetchExcuseHours = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch('http://localhost:5000/api/forms/excuse-hours', {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setExcuseHoursLeft(data.excuseHoursLeft);
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const fetchMyForms = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/forms/my-forms', {
+        headers: { 'x-auth-token': token }
+      });
+      setMyForms(response.data);
+    } catch (error) {
+      console.error('Error fetching my forms:', error);
+      setMessage('Error loading your forms');
+    }
+  };
+
+  const handleShowForm = () => {
+    setShowForm(true);
+    setShowMyForms(false);
+    fetchVacationDays();
+    fetchExcuseHours();
+  };
+
+  const handleShowMyForms = () => {
+    setShowMyForms(true);
+    setShowForm(false);
+    fetchMyForms();
+    fetchVacationDays();
+    fetchExcuseHours();
+  };
+
+  const handleFormSubmitted = () => {
+    fetchVacationDays();
+    fetchExcuseHours();
+    setShowForm(false);
+    setShowMyForms(true);
+    fetchMyForms();
+  };
+
+  const getStatusBadge = (status) => {
+    const badgeClass = status === 'pending' ? 'badge-warning' :
+                     status === 'manager_approved' ? 'badge-info' :
+                     status === 'manager_submitted' ? 'badge-info' :
+                     status === 'approved' ? 'badge-success' :
+                     status.includes('rejected') ? 'badge-danger' : 'badge-secondary';
+    
+    const statusText = status === 'manager_approved' ? 'Manager Approved' :
+                      status === 'manager_submitted' ? 'Awaiting HR Approval' :
+                      status === 'manager_rejected' ? 'Manager Rejected' :
+                      status.charAt(0).toUpperCase() + status.slice(1);
+    
+    return <span className={`badge-elegant ${badgeClass}`}>{statusText}</span>;
+  };
 
   const fetchPendingForms = async () => {
     try {
@@ -178,6 +269,120 @@ const ManagerDashboard = ({ user, onLogout }) => {
         </div>
       </div>
 
+      {/* Manager's Personal Section */}
+      <div className="section">
+        <h2>My Personal Forms</h2>
+        
+        {/* Vacation and Excuse Days Cards */}
+        <div className="stats-section" style={{ marginBottom: '20px' }}>
+          <div className="stat-card">
+            <h3>{vacationDaysLeft !== null ? vacationDaysLeft : '...'}</h3>
+            <p>Vacation Days Left</p>
+            <small>Annual allowance remaining</small>
+          </div>
+          <div className="stat-card">
+            <h3>{excuseHoursLeft !== null ? excuseHoursLeft : '...'}</h3>
+            <p>Excuse Hours Left</p>
+            <small>Annual allowance remaining</small>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="action-buttons">
+          <button 
+            className="btn-action submit-btn"
+            onClick={handleShowForm}
+          >
+            Submit New Form
+          </button>
+          <button 
+            className="btn-action view-btn"
+            onClick={handleShowMyForms}
+          >
+            View My Forms
+          </button>
+        </div>
+      </div>
+
+      {/* Form Submission */}
+      {showForm && (
+        <div className="section">
+          <FormSubmission onFormSubmitted={handleFormSubmitted} />
+        </div>
+      )}
+
+      {/* My Forms Preview */}
+      {showMyForms && (
+        <div className="section">
+          <h2>My Submitted Forms</h2>
+          {myForms.length > 0 ? (
+            <div className="my-forms-grid">
+              {myForms.map(form => (
+                <div key={form._id} className="my-form-card">
+                  <div className="form-header">
+                    <h4>{form.type.toUpperCase()}</h4>
+                    {getStatusBadge(form.status)}
+                  </div>
+                  
+                  <div className="form-details">
+                    <p><strong>Submitted:</strong> {formatDate(form.createdAt)}</p>
+                    
+                    {form.type === 'vacation' && (
+                      <>
+                        <p><strong>Dates:</strong> {formatDate(form.startDate)} - {formatDate(form.endDate)}</p>
+                        <p><strong>Duration:</strong> {calculateDays(form.startDate, form.endDate)} days</p>
+                        {form.vacationType && <p><strong>Type:</strong> {form.vacationType}</p>}
+                      </>
+                    )}
+                    
+                    {form.type === 'excuse' && (
+                      <>
+                        <p><strong>Excuse Date:</strong> {formatDate(form.excuseDate)}</p>
+                        <p><strong>Time:</strong> {form.fromHour} - {form.toHour}</p>
+                        <p><strong>Duration:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours</p>
+                      </>
+                    )}
+                    
+                    {form.type === 'wfh' && (
+                      <>
+                        <p><strong>Hours:</strong> {form.wfhHours} hours</p>
+                        <p><strong>Description:</strong> {form.wfhDescription?.substring(0, 50)}...</p>
+                      </>
+                    )}
+                    
+                    {form.type === 'sick_leave' && (
+                      <>
+                        <p><strong>Dates:</strong> {formatDate(form.sickLeaveStartDate)} - {formatDate(form.sickLeaveEndDate)}</p>
+                        <p><strong>Duration:</strong> {Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</p>
+                        {form.medicalDocument && <p><strong>Document:</strong> 📄 Attached</p>}
+                      </>
+                    )}
+                    
+                    <p><strong>Reason:</strong> {form.reason?.substring(0, 80)}...</p>
+                    
+                    {form.managerComment && (
+                      <div className="comment-section">
+                        <strong>Manager Comment:</strong>
+                        <p>{form.managerComment}</p>
+                      </div>
+                    )}
+                    
+                    {form.adminComment && (
+                      <div className="comment-section">
+                        <strong>Admin Comment:</strong>
+                        <p>{form.adminComment}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="no-requests">No forms submitted yet</p>
+          )}
+        </div>
+      )}
+
       {/* Team Members */}
       <div className="section">
         <h2>My Team Members</h2>
@@ -212,10 +417,40 @@ const ManagerDashboard = ({ user, onLogout }) => {
                 <div className="request-info">
                   <h4>{form.user.name} - {form.type.toUpperCase()}</h4>
                   <p><strong>Department:</strong> {form.user.department}</p>
-                  <p><strong>Dates:</strong> {formatDate(form.startDate)} - {formatDate(form.endDate)}</p>
-                  <p><strong>Duration:</strong> {calculateDays(form.startDate, form.endDate)} days</p>
+                  
+                  {/* Display different information based on form type */}
+                  {form.type === 'vacation' && (
+                    <>
+                      <p><strong>Dates:</strong> {formatDate(form.startDate)} - {formatDate(form.endDate)}</p>
+                      <p><strong>Duration:</strong> {calculateDays(form.startDate, form.endDate)} days</p>
+                      {form.vacationType && <p><strong>Type:</strong> {form.vacationType}</p>}
+                    </>
+                  )}
+                  
+                  {form.type === 'excuse' && (
+                    <>
+                      <p><strong>Excuse Date:</strong> {formatDate(form.excuseDate)}</p>
+                      <p><strong>Time Period:</strong> {form.fromHour} - {form.toHour}</p>
+                      <p><strong>Duration:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours</p>
+                    </>
+                  )}
+                  
+                  {form.type === 'wfh' && (
+                    <>
+                      <p><strong>Work From Home Hours:</strong> {form.wfhHours} hours</p>
+                      <p><strong>Work Description:</strong> {form.wfhDescription}</p>
+                    </>
+                  )}
+                  
+                  {form.type === 'sick_leave' && (
+                    <>
+                      <p><strong>Sick Leave Dates:</strong> {formatDate(form.sickLeaveStartDate)} - {formatDate(form.sickLeaveEndDate)}</p>
+                      <p><strong>Duration:</strong> {Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</p>
+                      {form.medicalDocument && <p><strong>Medical Document:</strong> 📄 Attached</p>}
+                    </>
+                  )}
+                  
                   <p><strong>Reason:</strong> {form.reason}</p>
-                  {form.vacationType && <p><strong>Type:</strong> {form.vacationType}</p>}
                   <p><strong>Submitted:</strong> {formatDate(form.createdAt)}</p>
                 </div>
                 <div className="request-actions">
@@ -256,8 +491,39 @@ const ManagerDashboard = ({ user, onLogout }) => {
                 <div className="request-summary">
                   <h4>{selectedForm.user.name} - {selectedForm.type.toUpperCase()}</h4>
                   <p><strong>Department:</strong> {selectedForm.user.department}</p>
-                  <p><strong>Dates:</strong> {formatDate(selectedForm.startDate)} - {formatDate(selectedForm.endDate)}</p>
-                  <p><strong>Duration:</strong> {calculateDays(selectedForm.startDate, selectedForm.endDate)} days</p>
+                  
+                  {/* Display different information based on form type */}
+                  {selectedForm.type === 'vacation' && (
+                    <>
+                      <p><strong>Dates:</strong> {formatDate(selectedForm.startDate)} - {formatDate(selectedForm.endDate)}</p>
+                      <p><strong>Duration:</strong> {calculateDays(selectedForm.startDate, selectedForm.endDate)} days</p>
+                      {selectedForm.vacationType && <p><strong>Type:</strong> {selectedForm.vacationType}</p>}
+                    </>
+                  )}
+                  
+                  {selectedForm.type === 'excuse' && (
+                    <>
+                      <p><strong>Excuse Date:</strong> {formatDate(selectedForm.excuseDate)}</p>
+                      <p><strong>Time Period:</strong> {selectedForm.fromHour} - {selectedForm.toHour}</p>
+                      <p><strong>Duration:</strong> {((new Date(`2000-01-01T${selectedForm.toHour}`) - new Date(`2000-01-01T${selectedForm.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours</p>
+                    </>
+                  )}
+                  
+                  {selectedForm.type === 'wfh' && (
+                    <>
+                      <p><strong>Work From Home Hours:</strong> {selectedForm.wfhHours} hours</p>
+                      <p><strong>Work Description:</strong> {selectedForm.wfhDescription}</p>
+                    </>
+                  )}
+                  
+                  {selectedForm.type === 'sick_leave' && (
+                    <>
+                      <p><strong>Sick Leave Dates:</strong> {formatDate(selectedForm.sickLeaveStartDate)} - {formatDate(selectedForm.sickLeaveEndDate)}</p>
+                      <p><strong>Duration:</strong> {Math.ceil((new Date(selectedForm.sickLeaveEndDate) - new Date(selectedForm.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</p>
+                      {selectedForm.medicalDocument && <p><strong>Medical Document:</strong> 📄 Document attached</p>}
+                    </>
+                  )}
+                  
                   <p><strong>Reason:</strong> {selectedForm.reason}</p>
                 </div>
                 
@@ -668,6 +934,142 @@ const ManagerDashboard = ({ user, onLogout }) => {
         .cancel-btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+
+        /* Form submission styles */
+        .action-buttons {
+          display: flex;
+          gap: 15px;
+          justify-content: center;
+          margin-top: 20px;
+        }
+
+        .btn-action {
+          padding: 12px 24px;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: bold;
+          transition: all 0.3s ease;
+          color: white;
+          font-size: 16px;
+        }
+
+        .submit-btn {
+          background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+
+        .submit-btn:hover {
+          background: linear-gradient(135deg, #45a049, #3d8b40);
+          transform: translateY(-2px);
+        }
+
+        .view-btn {
+          background: linear-gradient(135deg, #2196F3, #1976D2);
+        }
+
+        .view-btn:hover {
+          background: linear-gradient(135deg, #1976D2, #1565C0);
+          transform: translateY(-2px);
+        }
+
+        /* My forms grid */
+        .my-forms-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+          gap: 20px;
+          margin-top: 20px;
+        }
+
+        .my-form-card {
+          background: rgba(255, 255, 255, 0.95);
+          border-radius: 12px;
+          padding: 20px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+          border-left: 4px solid #667eea;
+          transition: transform 0.3s ease;
+        }
+
+        .my-form-card:hover {
+          transform: translateY(-2px);
+        }
+
+        .form-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 15px;
+          padding-bottom: 10px;
+          border-bottom: 1px solid #eee;
+        }
+
+        .form-header h4 {
+          margin: 0;
+          color: #333;
+          font-size: 1.2rem;
+        }
+
+        .form-details p {
+          margin: 8px 0;
+          color: #666;
+          font-size: 0.9rem;
+        }
+
+        .form-details strong {
+          color: #333;
+        }
+
+        .my-form-card .comment-section {
+          background: rgba(102, 126, 234, 0.1);
+          padding: 10px;
+          border-radius: 6px;
+          margin-top: 10px;
+        }
+
+        .my-form-card .comment-section strong {
+          color: #667eea;
+          font-size: 0.9rem;
+        }
+
+        .my-form-card .comment-section p {
+          margin: 5px 0 0 0;
+          color: #555;
+          font-style: italic;
+        }
+
+        /* Badge styles */
+        .badge-elegant {
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 0.8rem;
+          font-weight: bold;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .badge-success {
+          background: linear-gradient(135deg, #4CAF50, #45a049);
+          color: white;
+        }
+
+        .badge-warning {
+          background: linear-gradient(135deg, #FF9800, #F57C00);
+          color: white;
+        }
+
+        .badge-info {
+          background: linear-gradient(135deg, #2196F3, #1976D2);
+          color: white;
+        }
+
+        .badge-danger {
+          background: linear-gradient(135deg, #f44336, #d32f2f);
+          color: white;
+        }
+
+        .badge-secondary {
+          background: linear-gradient(135deg, #9E9E9E, #757575);
+          color: white;
         }
       `}</style>
     </div>

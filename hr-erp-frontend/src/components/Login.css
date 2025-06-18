@@ -1,14 +1,3 @@
-.njd-card {
-    width: 100%;
-    max-width: 400px;
-    margin: 50px auto;
-    padding: 2rem;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    box-sizing: border-box;
-}
-
 .njd-title {
     text-align: center;
     font-size: 1.5rem;
@@ -28,9 +17,6 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    width: 100%;
-    max-width: 320px;
-    margin: 0 auto;
 }
 
 .njd-form label {
@@ -39,34 +25,10 @@
     font-size: 0.9rem;
 }
 
-.njd-form input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    box-sizing: border-box;
-}
-
 .njd-form input:focus {
     outline: none;
     border-color: #4a90e2;
     box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
-}
-
-button {
-    width: auto !important;
-    min-width: 120px;
-    padding: 0.75rem 1.5rem !important;
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    margin: 1rem auto !important;
-    display: block !important;
 }
 
 button:hover {
@@ -97,22 +59,11 @@ button:disabled {
     text-align: center;
     margin-top: 1rem;
     padding: 0.75rem;
-    border-radius: 4px;
+    border-radius: 8px;
     font-size: 0.9rem;
-    max-width: 320px;
+    max-width: 100%;
     margin-left: auto;
     margin-right: auto;
-}
-
-body {
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #f5f5f5;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* Make sure form elements don't exceed their container */
@@ -120,20 +71,50 @@ body {
     box-sizing: border-box;
 }
 
-/* Responsive adjustments */
-@media (max-width: 480px) {
-    .njd-card {
-        margin: 20px;
-        padding: 1.5rem;
-    }
+/* ===== RESPONSIVE LOGIN STYLES ===== */
 
-    .njd-form {
-        max-width: 100%;
-    }
+/* Mobile First (Base styles) */
+.njd-card {
+    width: 100%;
+    max-width: 100%;
+    margin: 1rem;
+    padding: 2rem 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+}
 
-    button {
-        width: 100% !important;
-    }
+.njd-form {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+}
+
+.njd-form input {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    min-height: 44px; /* Touch-friendly */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+button {
+    width: 100% !important;
+    min-width: auto !important;
+    padding: 1rem 1.5rem !important;
+    min-height: 44px !important; /* Touch-friendly */
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin: 1rem 0 !important;
+    display: block !important;
 }
 
 .login-container {
@@ -141,16 +122,99 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    padding: 1rem;
     background-color: #f5f5f5;
 }
 
 .login-box {
     background: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 2rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     width: 100%;
-    max-width: 400px;
+    max-width: 100%;
+    margin: 1rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    min-height: 44px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+/* Tablet styles (768px and up) */
+@media (min-width: 768px) {
+    .njd-card {
+        max-width: 500px;
+        margin: 2rem auto;
+        padding: 2.5rem;
+    }
+
+    .njd-form {
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .login-container {
+        padding: 2rem;
+    }
+
+    .login-box {
+        max-width: 500px;
+        padding: 2.5rem;
+        margin: 0;
+    }
+
+    button {
+        width: auto !important;
+        min-width: 200px !important;
+        margin: 1.5rem auto !important;
+    }
+}
+
+/* Desktop styles (1024px and up) */
+@media (min-width: 1024px) {
+    .njd-card {
+        max-width: 450px;
+        padding: 3rem;
+    }
+
+    .njd-form {
+        max-width: 350px;
+    }
+
+    .login-box {
+        max-width: 450px;
+        padding: 3rem;
+    }
+
+    .njd-form input,
+    .form-group input {
+        padding: 0.75rem;
+        font-size: 0.95rem;
+    }
+
+    button {
+        padding: 0.75rem 2rem !important;
+        font-size: 0.95rem;
+    }
+}
+
+/* Touch device enhancements */
+@media (pointer: coarse) {
+    .njd-form input,
+    .form-group input,
+    button {
+        min-height: 48px;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+
+    button {
+        min-height: 48px !important;
+    }
 }
 
 .login-box h2 {
@@ -169,14 +233,6 @@ body {
     color: #666;
 }
 
-.form-group input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-}
-
 .form-group input:focus {
     outline: none;
     border-color: #4a90e2;
@@ -189,6 +245,6 @@ body {
     border: 1px solid #f5c6cb;
     padding: 0.75rem;
     margin-bottom: 1rem;
-    border-radius: 4px;
+    border-radius: 8px;
     text-align: center;
 } 

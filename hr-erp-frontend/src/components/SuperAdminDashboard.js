@@ -31,8 +31,45 @@ const SuperAdminDashboard = () => {
     department: '',
     role: '',
     vacationDaysLeft: 0,
-    status: ''
+    status: '',
+    managedDepartments: []
   });
+
+  // Create User state
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    department: '',
+    role: 'employee',
+    status: 'active',
+    vacationDaysLeft: 21,
+    managedDepartments: []
+  });
+
+  // Available departments
+  const availableDepartments = [
+    'Human Resources',
+    'Finance', 
+    'Marketing',
+    'Sales',
+    'Information Technology',
+    'Operations',
+    'Customer Service',
+    'Legal',
+    'Personal Assistant',
+    'Service',
+    'Driver',
+    'Reception',
+    'Jamila Engineer',
+    'Jura Engineer', 
+    'Green Icon Engineer',
+    'Green Avenue Engineer',
+    'Architectural Engineer',
+    'Technical Office Engineer',
+    'Other'
+  ];
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -141,7 +178,8 @@ const SuperAdminDashboard = () => {
       department: user.department,
       role: user.role,
       vacationDaysLeft: user.vacationDaysLeft,
-      status: user.status
+      status: user.status,
+      managedDepartments: user.managedDepartments || []
     });
   };
 
@@ -164,7 +202,8 @@ const SuperAdminDashboard = () => {
         },
         body: JSON.stringify({
           ...userEdit,
-          modificationReason: modificationReason
+          modificationReason: modificationReason,
+          managedDepartments: userEdit.role === 'manager' ? userEdit.managedDepartments : []
         })
       });
       const data = await res.json();
@@ -180,6 +219,78 @@ const SuperAdminDashboard = () => {
       setError('Error connecting to server');
     }
     setLoading(false);
+  };
+
+  // Create new user
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch('http://localhost:5000/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify(newUser)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess('User created successfully');
+        setNewUser({
+          name: '',
+          email: '',
+          password: '',
+          department: '',
+          role: 'employee',
+          status: 'active',
+          vacationDaysLeft: 21,
+          managedDepartments: []
+        });
+        setShowCreateUserModal(false);
+        fetchUsers();
+      } else {
+        setError(data.msg || 'Failed to create user');
+      }
+    } catch (err) {
+      setError('Error connecting to server');
+    }
+    setLoading(false);
+  };
+
+  // Handle department selection for managers (new user)
+  const handleDepartmentChange = (department) => {
+    const currentDepts = newUser.managedDepartments || [];
+    if (currentDepts.includes(department)) {
+      setNewUser({
+        ...newUser,
+        managedDepartments: currentDepts.filter(d => d !== department)
+      });
+    } else {
+      setNewUser({
+        ...newUser,
+        managedDepartments: [...currentDepts, department]
+      });
+    }
+  };
+
+  // Handle department selection for managers (edit user)
+  const handleEditDepartmentChange = (department) => {
+    const currentDepts = userEdit.managedDepartments || [];
+    if (currentDepts.includes(department)) {
+      setUserEdit({
+        ...userEdit,
+        managedDepartments: currentDepts.filter(d => d !== department)
+      });
+    } else {
+      setUserEdit({
+        ...userEdit,
+        managedDepartments: [...currentDepts, department]
+      });
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -291,7 +402,16 @@ const SuperAdminDashboard = () => {
           {activeTab === 'users' && (
             <div className="grid-2">
               <div>
-                <h3 className="text-gradient" style={{ marginBottom: '1rem' }}>User List</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h3 className="text-gradient" style={{ margin: 0 }}>User List</h3>
+                  <button 
+                    className="btn-elegant btn-success"
+                    onClick={() => setShowCreateUserModal(true)}
+                    style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+                  >
+                    👤 Create New User
+                  </button>
+                </div>
                 <div className="table-container">
                   <table className="table-elegant">
                     <thead>
@@ -370,6 +490,7 @@ const SuperAdminDashboard = () => {
                         className="form-input-elegant"
                       >
                         <option value="employee">Employee</option>
+                        <option value="manager">Manager</option>
                         <option value="admin">Admin</option>
                         <option value="super_admin">Super Admin</option>
                       </select>
@@ -395,6 +516,53 @@ const SuperAdminDashboard = () => {
                         className="form-input-elegant"
                       />
                     </div>
+                    
+                    {userEdit.role === 'manager' && (
+                      <div className="form-group-elegant">
+                        <label className="form-label-elegant">
+                          Managed Departments ({userEdit.managedDepartments?.length || 0} selected)
+                        </label>
+                        <div className="selection-help" style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                          Click on the department cards below to assign departments this manager will oversee.
+                        </div>
+                        <div className="departments-grid" style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
+                          gap: '0.5rem',
+                          marginTop: '0.5rem',
+                          maxHeight: '200px',
+                          overflowY: 'auto'
+                        }}>
+                          {availableDepartments.map(dept => (
+                            <div 
+                              key={dept}
+                              onClick={() => handleEditDepartmentChange(dept)}
+                              style={{
+                                padding: '0.6rem',
+                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                backgroundColor: userEdit.managedDepartments?.includes(dept) ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255, 255, 255, 0.1)',
+                                borderColor: userEdit.managedDepartments?.includes(dept) ? '#3b82f6' : 'rgba(255, 255, 255, 0.2)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                fontSize: '0.85rem'
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={userEdit.managedDepartments?.includes(dept) || false}
+                                onChange={() => {}}
+                                style={{ marginRight: '0.4rem' }}
+                              />
+                              <span style={{ color: '#fff' }}>{dept}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="form-group-elegant">
                       <label className="form-label-elegant">Modification Reason</label>
                       <textarea
@@ -671,6 +839,190 @@ const SuperAdminDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Create User Modal */}
+      {showCreateUserModal && (
+        <div className="modal-elegant" onClick={() => setShowCreateUserModal(false)}>
+          <div className="modal-content-elegant" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header" style={{ position: 'relative', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 className="text-gradient" style={{ margin: 0 }}>Create New User</h2>
+              <button 
+                className="close-btn" 
+                onClick={() => setShowCreateUserModal(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '50%',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  color: '#666',
+                  transition: 'all 0.3s ease',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: '1'
+                }}
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
+            
+            <form className="form-elegant" onSubmit={handleCreateUser}>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Name</label>
+                <input
+                  type="text"
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                  className="form-input-elegant"
+                  required
+                />
+              </div>
+              
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Email</label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                  className="form-input-elegant"
+                  required
+                />
+              </div>
+              
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Password</label>
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                  className="form-input-elegant"
+                  required
+                  minLength="6"
+                />
+              </div>
+              
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Department</label>
+                <select
+                  value={newUser.department}
+                  onChange={(e) => setNewUser({...newUser, department: e.target.value})}
+                  className="form-input-elegant"
+                  required
+                >
+                  <option value="">Select Department</option>
+                  {availableDepartments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Role</label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({
+                    ...newUser, 
+                    role: e.target.value, 
+                    managedDepartments: e.target.value === 'manager' ? newUser.managedDepartments : []
+                  })}
+                  className="form-input-elegant"
+                >
+                  <option value="employee">Employee</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+              </div>
+              
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Status</label>
+                <select
+                  value={newUser.status}
+                  onChange={(e) => setNewUser({...newUser, status: e.target.value})}
+                  className="form-input-elegant"
+                >
+                  <option value="active">Active</option>
+                  <option value="pending">Pending</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Vacation Days</label>
+                <input
+                  type="number"
+                  value={newUser.vacationDaysLeft}
+                  onChange={(e) => setNewUser({...newUser, vacationDaysLeft: parseInt(e.target.value) || 0})}
+                  className="form-input-elegant"
+                  min="0"
+                  max="365"
+                />
+              </div>
+              
+              {newUser.role === 'manager' && (
+                <div className="form-group-elegant">
+                  <label className="form-label-elegant">
+                    Managed Departments ({newUser.managedDepartments?.length || 0} selected)
+                  </label>
+                  <div className="selection-help" style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                    Click on the department cards below to assign departments this manager will oversee. Selected departments will be highlighted in blue.
+                  </div>
+                  <div className="departments-grid" style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                    gap: '0.5rem',
+                    marginTop: '0.5rem'
+                  }}>
+                    {availableDepartments.map(dept => (
+                      <div 
+                        key={dept}
+                        className={`department-card ${newUser.managedDepartments?.includes(dept) ? 'selected' : ''}`}
+                        onClick={() => handleDepartmentChange(dept)}
+                        style={{
+                          padding: '0.8rem',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease',
+                          backgroundColor: newUser.managedDepartments?.includes(dept) ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255, 255, 255, 0.1)',
+                          borderColor: newUser.managedDepartments?.includes(dept) ? '#3b82f6' : 'rgba(255, 255, 255, 0.2)',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={newUser.managedDepartments?.includes(dept) || false}
+                          onChange={() => {}}
+                          style={{ marginRight: '0.5rem' }}
+                        />
+                        <span className="department-name" style={{ color: '#fff', fontSize: '0.9rem' }}>{dept}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="action-buttons" style={{ marginTop: '2rem' }}>
+                <button type="submit" className="btn-elegant btn-success">
+                  Create User
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-elegant"
+                  onClick={() => setShowCreateUserModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

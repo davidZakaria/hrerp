@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import logo from '../assets/njd-logo.png';
 
 const FormSubmission = ({ onFormSubmitted }) => {
@@ -7,12 +7,42 @@ const FormSubmission = ({ onFormSubmitted }) => {
     vacationType: '',
     startDate: '',
     endDate: '',
+    excuseDate: '',
+    sickLeaveStartDate: '',
+    sickLeaveEndDate: '',
+    medicalDocument: null,
     reason: '',
     fromHour: '',
-    toHour: ''
+    toHour: '',
+    wfhDescription: '',
+    wfhHours: ''
   });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [excuseHoursLeft, setExcuseHoursLeft] = useState(null);
+
+  // Fetch excuse hours left
+  const fetchExcuseHours = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      const res = await fetch('http://localhost:5000/api/forms/excuse-hours', {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setExcuseHoursLeft(data.excuseHoursLeft);
+      }
+    } catch (err) {
+      console.error('Failed to fetch excuse hours:', err);
+    }
+  };
+
+  // Load excuse hours when component mounts
+  useEffect(() => {
+    fetchExcuseHours();
+  }, []);
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -20,6 +50,10 @@ const FormSubmission = ({ onFormSubmitted }) => {
 
   const handleVacationTypeChange = e => {
     setForm({ ...form, vacationType: e.target.value });
+  };
+
+  const handleFileChange = e => {
+    setForm({ ...form, medicalDocument: e.target.files[0] });
   };
 
   const handleSubmit = async e => {
@@ -33,7 +67,9 @@ const FormSubmission = ({ onFormSubmitted }) => {
       return;
     }
 
-    let payload = {};
+    let payload;
+    let isFileUpload = false;
+
     if (form.type === 'vacation') {
       payload = {
         type: 'vacation',
@@ -42,28 +78,82 @@ const FormSubmission = ({ onFormSubmitted }) => {
         endDate: form.endDate,
         reason: form.reason
       };
-    } else {
+    } else if (form.type === 'excuse') {
+      // Check if user has enough excuse hours before submitting
+      if (excuseHoursLeft !== null) {
+        const fromTime = new Date(`2000-01-01T${form.fromHour}`);
+        const toTime = new Date(`2000-01-01T${form.toHour}`);
+        const hoursRequested = (toTime - fromTime) / (1000 * 60 * 60);
+        
+        if (excuseHoursLeft < hoursRequested) {
+          setMessage(`Cannot submit: You only have ${excuseHoursLeft} excuse hours left, but requesting ${hoursRequested.toFixed(1)} hours.`);
+          setLoading(false);
+          return;
+        }
+      }
+      
       payload = {
         type: 'excuse',
+        excuseDate: form.excuseDate,
         fromHour: form.fromHour,
         toHour: form.toHour,
+        reason: form.reason
+      };
+    } else if (form.type === 'sick_leave') {
+      // Use FormData for file upload
+      payload = new FormData();
+      payload.append('type', 'sick_leave');
+      payload.append('sickLeaveStartDate', form.sickLeaveStartDate);
+      payload.append('sickLeaveEndDate', form.sickLeaveEndDate);
+      payload.append('reason', form.reason);
+      if (form.medicalDocument) {
+        payload.append('medicalDocument', form.medicalDocument);
+      }
+      isFileUpload = true;
+    } else {
+      payload = {
+        type: 'wfh',
+        wfhDescription: form.wfhDescription,
+        wfhHours: parseInt(form.wfhHours),
         reason: form.reason
       };
     }
 
     try {
+      const headers = {
+        'x-auth-token': token
+      };
+      
+      // Don't set Content-Type for FormData, let browser set it
+      if (!isFileUpload) {
+        headers['Content-Type'] = 'application/json';
+        payload = JSON.stringify(payload);
+      }
+
       const res = await fetch('http://localhost:5000/api/forms', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-auth-token': token
-        },
-        body: JSON.stringify(payload)
+        headers: headers,
+        body: payload
       });
       const data = await res.json();
       if (res.ok) {
         setMessage('Form submitted successfully!');
-        setForm({ type: 'vacation', vacationType: '', startDate: '', endDate: '', reason: '', fromHour: '', toHour: '' });
+        setForm({ 
+          type: 'vacation', 
+          vacationType: '', 
+          startDate: '', 
+          endDate: '', 
+          excuseDate: '', 
+          sickLeaveStartDate: '', 
+          sickLeaveEndDate: '', 
+          medicalDocument: null, 
+          reason: '', 
+          fromHour: '', 
+          toHour: '', 
+          wfhDescription: '', 
+          wfhHours: '' 
+        });
+        fetchExcuseHours(); // Refresh excuse hours after submission
         if (onFormSubmitted) onFormSubmitted();
       } else {
         setMessage(data.msg || 'Submission failed.');
@@ -86,6 +176,17 @@ const FormSubmission = ({ onFormSubmitted }) => {
         </p>
       </div>
 
+      {form.type === 'excuse' && excuseHoursLeft !== null && (
+        <div className="elegant-card" style={{ marginBottom: '1rem', textAlign: 'center', backgroundColor: 'rgba(100, 181, 246, 0.1)' }}>
+          <h4 style={{ margin: '0 0 0.5rem 0', color: '#64b5f6' }}>
+            ⏰ Excuse Hours Remaining
+          </h4>
+          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ffffff' }}>
+            {excuseHoursLeft} hours
+          </div>
+        </div>
+      )}
+
       <form className="form-elegant" onSubmit={handleSubmit}>
         <div className="form-group-elegant">
           <label className="form-label-elegant">Form Type</label>
@@ -98,6 +199,8 @@ const FormSubmission = ({ onFormSubmitted }) => {
           >
             <option value="vacation">Vacation Request</option>
             <option value="excuse">Excuse Request</option>
+            <option value="wfh">Working From Home</option>
+            <option value="sick_leave">Sick Leave</option>
           </select>
         </div>
 
@@ -146,7 +249,7 @@ const FormSubmission = ({ onFormSubmitted }) => {
                   value={form.startDate} 
                   onChange={handleChange} 
                   className="form-input-elegant date-input"
-                  min={new Date().toISOString().split('T')[0]} // Prevent past dates
+                  min={new Date().toISOString().split('T')[0]}
                   required 
                   title="Select the first day of your vacation"
                 />
@@ -163,7 +266,7 @@ const FormSubmission = ({ onFormSubmitted }) => {
                   value={form.endDate} 
                   onChange={handleChange} 
                   className="form-input-elegant date-input"
-                  min={form.startDate || new Date().toISOString().split('T')[0]} // End date must be after start date
+                  min={form.startDate || new Date().toISOString().split('T')[0]}
                   required 
                   title="Select the last day of your vacation"
                 />
@@ -192,9 +295,26 @@ const FormSubmission = ({ onFormSubmitted }) => {
               </div>
             )}
           </div>
-        ) : (
+        ) : form.type === 'excuse' ? (
           <div className="time-selection-section">
-            <h4 className="form-section-title">🕐 Select Your Excuse Time</h4>
+            <h4 className="form-section-title">🕐 Select Your Excuse Details</h4>
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">
+                <span className="label-icon">📅</span>
+                Excuse Date
+              </label>
+              <input 
+                name="excuseDate" 
+                type="date" 
+                value={form.excuseDate} 
+                onChange={handleChange} 
+                className="form-input-elegant date-input"
+                max={new Date().toISOString().split('T')[0]}
+                required 
+                title="Select the date when you took the excuse"
+              />
+              <small className="input-helper">Choose the date when you took the excuse</small>
+            </div>
             <div className="grid-2">
               <div className="form-group-elegant">
                 <label className="form-label-elegant">
@@ -207,12 +327,10 @@ const FormSubmission = ({ onFormSubmitted }) => {
                   value={form.fromHour} 
                   onChange={handleChange} 
                   className="form-input-elegant time-input"
-                  min="10:30" 
-                  max="18:30" 
                   required 
-                  title="Select start time (10:30 AM - 6:30 PM)"
+                  title="Select start time"
                 />
-                <small className="input-helper">Working hours: 10:30 AM - 6:30 PM</small>
+                <small className="input-helper">Select the start time for your excuse</small>
               </div>
               <div className="form-group-elegant">
                 <label className="form-label-elegant">
@@ -225,19 +343,21 @@ const FormSubmission = ({ onFormSubmitted }) => {
                   value={form.toHour} 
                   onChange={handleChange} 
                   className="form-input-elegant time-input"
-                  min="10:30" 
-                  max="18:30" 
                   required 
-                  title="Select end time (10:30 AM - 6:30 PM)"
+                  title="Select end time"
                 />
                 <small className="input-helper">Must be after start time</small>
               </div>
             </div>
-            {form.fromHour && form.toHour && (
+            {form.excuseDate && form.fromHour && form.toHour && (
               <div className="time-summary">
                 <div className="summary-card">
-                  <h5>⏰ Time Summary</h5>
+                  <h5>⏰ Excuse Summary</h5>
                   <div className="summary-details">
+                    <div className="summary-item">
+                      <span className="summary-label">Date:</span>
+                      <span className="summary-value">{new Date(form.excuseDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
                     <div className="summary-item">
                       <span className="summary-label">From:</span>
                       <span className="summary-value">{new Date(`2000-01-01T${form.fromHour}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
@@ -249,6 +369,144 @@ const FormSubmission = ({ onFormSubmitted }) => {
                     <div className="summary-item total-days">
                       <span className="summary-label">Duration:</span>
                       <span className="summary-value">{((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : form.type === 'sick_leave' ? (
+          <div className="sick-leave-selection-section">
+            <h4 className="form-section-title">🏥 Sick Leave Details</h4>
+            <div className="grid-2">
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">
+                  <span className="label-icon">📅</span>
+                  Start Date
+                </label>
+                <input 
+                  name="sickLeaveStartDate" 
+                  type="date" 
+                  value={form.sickLeaveStartDate} 
+                  onChange={handleChange} 
+                  className="form-input-elegant date-input"
+                  required 
+                  title="Select the first day of your sick leave"
+                />
+                <small className="input-helper">Choose the first day of your sick leave</small>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">
+                  <span className="label-icon">📅</span>
+                  End Date
+                </label>
+                <input 
+                  name="sickLeaveEndDate" 
+                  type="date" 
+                  value={form.sickLeaveEndDate} 
+                  onChange={handleChange} 
+                  className="form-input-elegant date-input"
+                  min={form.sickLeaveStartDate}
+                  required 
+                  title="Select the last day of your sick leave"
+                />
+                <small className="input-helper">Choose the last day of your sick leave</small>
+              </div>
+            </div>
+            
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">
+                <span className="label-icon">📄</span>
+                Medical Document (Optional)
+              </label>
+              <input 
+                type="file" 
+                onChange={handleFileChange} 
+                className="form-input-elegant"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                title="Upload medical certificate or doctor's note"
+              />
+              <small className="input-helper">
+                Upload medical certificate, doctor's note, or hospital report (PDF, Word, or Image files, max 5MB)
+              </small>
+            </div>
+
+            {form.sickLeaveStartDate && form.sickLeaveEndDate && (
+              <div className="sick-leave-summary">
+                <div className="summary-card">
+                  <h5>🏥 Sick Leave Summary</h5>
+                  <div className="summary-details">
+                    <div className="summary-item">
+                      <span className="summary-label">From:</span>
+                      <span className="summary-value">{new Date(form.sickLeaveStartDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label">To:</span>
+                      <span className="summary-value">{new Date(form.sickLeaveEndDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
+                    <div className="summary-item total-days">
+                      <span className="summary-label">Total Days:</span>
+                      <span className="summary-value">{Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</span>
+                    </div>
+                    {form.medicalDocument && (
+                      <div className="summary-item">
+                        <span className="summary-label">Document:</span>
+                        <span className="summary-value">📄 {form.medicalDocument.name}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="wfh-selection-section">
+            <h4 className="form-section-title">🏠 Working From Home Details</h4>
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">
+                <span className="label-icon">📝</span>
+                Work Description
+              </label>
+              <textarea 
+                name="wfhDescription" 
+                placeholder="Describe the tasks you will be working on from home..." 
+                value={form.wfhDescription} 
+                onChange={handleChange} 
+                className="form-input-elegant"
+                rows="3"
+                required 
+                title="Describe what you'll be working on"
+              />
+              <small className="input-helper">Provide details about your work activities</small>
+            </div>
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">
+                <span className="label-icon">⏱️</span>
+                Number of Hours
+              </label>
+              <input 
+                name="wfhHours" 
+                type="number" 
+                value={form.wfhHours} 
+                onChange={handleChange} 
+                className="form-input-elegant"
+                required 
+                title="Number of hours you'll work from home"
+              />
+              <small className="input-helper">Enter the number of hours you'll work from home</small>
+            </div>
+            {form.wfhHours && (
+              <div className="wfh-summary">
+                <div className="summary-card">
+                  <h5>🏠 Work From Home Summary</h5>
+                  <div className="summary-details">
+                    <div className="summary-item">
+                      <span className="summary-label">Hours:</span>
+                      <span className="summary-value">{form.wfhHours} hour{form.wfhHours != 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label">Work Type:</span>
+                      <span className="summary-value">Remote Work</span>
                     </div>
                   </div>
                 </div>
@@ -299,4 +557,4 @@ const FormSubmission = ({ onFormSubmitted }) => {
   );
 };
 
-export default FormSubmission; 
+export default FormSubmission;

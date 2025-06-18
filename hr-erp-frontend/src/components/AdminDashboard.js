@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import ALS from './ALS/ALS';
 import LogoutButton from './LogoutButton';
+import ExportPrintButtons from './ExportPrintButtons';
 
 const AdminDashboard = () => {
   // Navigation state
@@ -14,6 +15,8 @@ const AdminDashboard = () => {
   const [comments, setComments] = useState({});
   const [formsSearch, setFormsSearch] = useState('');
   const [vacationDaysMap, setVacationDaysMap] = useState({});
+  const [excuseHoursMap, setExcuseHoursMap] = useState({});
+  const [activeFormType, setActiveFormType] = useState('vacation');
   
   // User Management state
   const [users, setUsers] = useState([]);
@@ -46,9 +49,47 @@ const AdminDashboard = () => {
     email: '', 
     password: '', 
     department: '', 
-    role: 'employee' 
+    role: 'employee',
+    managedDepartments: []
   });
   const [message, setMessage] = useState('');
+
+  // Current user state
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Edit User state
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editUserData, setEditUserData] = useState({
+    name: '',
+    email: '',
+    department: '',
+    role: 'employee',
+    managedDepartments: []
+  });
+
+  // Available departments
+  const availableDepartments = [
+    'Human Resources',
+    'Finance', 
+    'Marketing',
+    'Sales',
+    'Information Technology',
+    'Operations',
+    'Customer Service',
+    'Legal',
+    'Personal Assistant',
+    'Service',
+    'Driver',
+    'Reception',
+    'Jamila Engineer',
+    'Jura Engineer', 
+    'Green Icon Engineer',
+    'Green Avenue Engineer',
+    'Architectural Engineer',
+    'Technical Office Engineer',
+    'Other'
+  ];
 
   // Fetch vacation days for a user
   const fetchVacationDays = useCallback(async (userId) => {
@@ -67,6 +108,23 @@ const AdminDashboard = () => {
     }
   }, [vacationDaysMap]);
 
+  // Fetch excuse hours for a user
+  const fetchExcuseHours = useCallback(async (userId) => {
+    if (!userId || excuseHoursMap[userId] !== undefined) return;
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`http://localhost:5000/api/forms/excuse-hours/${userId}`, {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setExcuseHoursMap(prev => ({ ...prev, [userId]: data.excuseHoursLeft }));
+      }
+    } catch (err) {
+      // ignore
+    }
+  }, [excuseHoursMap]);
+
   // Fetch all forms
   const fetchForms = useCallback(async () => {
     setFormsLoading(true);
@@ -78,9 +136,12 @@ const AdminDashboard = () => {
       });
       const data = res.data;
       setForms(data);
-      // Fetch vacation days for each unique user
+      // Fetch vacation days and excuse hours for each unique user
       const userIds = Array.from(new Set(data.map(f => f.user?._id).filter(Boolean)));
-      userIds.forEach(userId => fetchVacationDays(userId));
+      userIds.forEach(userId => {
+        fetchVacationDays(userId);
+        fetchExcuseHours(userId);
+      });
     } catch (err) {
       console.error('Forms fetch error:', err);
       if (err.response) {
@@ -95,7 +156,20 @@ const AdminDashboard = () => {
       }
     }
     setFormsLoading(false);
-  }, [fetchVacationDays]);
+  }, [fetchVacationDays, fetchExcuseHours]);
+
+  // Fetch current user info
+  const fetchCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('http://localhost:5000/api/auth', {
+        headers: { 'x-auth-token': token }
+      });
+      setCurrentUser(res.data);
+    } catch (err) {
+      console.error('Error fetching current user:', err);
+    }
+  };
 
   // Fetch all users (active and pending)
   const fetchUsers = async () => {
@@ -157,7 +231,7 @@ const AdminDashboard = () => {
         { headers: { 'x-auth-token': token } }
       );
       setMessage('User created successfully');
-      setNewUser({ name: '', email: '', password: '', department: '', role: 'employee' });
+      setNewUser({ name: '', email: '', password: '', department: '', role: 'employee', managedDepartments: [] });
       setShowCreateUserModal(false);
       fetchUsers();
     } catch (err) {
@@ -165,8 +239,91 @@ const AdminDashboard = () => {
     }
   };
 
+  // Open edit user modal
+  const handleEditUser = (user) => {
+    // Prevent regular admins from editing super admin or admin users
+    if (user.role === 'super_admin' && currentUser?.role !== 'super_admin') {
+      setMessage('Super admin accounts cannot be edited');
+      return;
+    }
+    if (user.role === 'admin' && currentUser?.role !== 'super_admin') {
+      setMessage('Only super admins can edit admin accounts');
+      return;
+    }
+    
+    setEditingUser(user);
+    setEditUserData({
+      name: user.name,
+      email: user.email,
+      department: user.department,
+      role: user.role,
+      managedDepartments: user.managedDepartments || []
+    });
+    setShowEditUserModal(true);
+  };
+
+  // Update user
+  const handleUpdateUser = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`http://localhost:5000/api/users/${editingUser._id}`, 
+        editUserData,
+        { headers: { 'x-auth-token': token } }
+      );
+      setMessage('User updated successfully');
+      setShowEditUserModal(false);
+      setEditingUser(null);
+      fetchUsers();
+    } catch (err) {
+      setMessage(err.response?.data?.msg || 'Error updating user');
+    }
+  };
+
+  // Handle department selection for managers
+  const handleDepartmentChange = (department, isCreating = false) => {
+    if (isCreating) {
+      const currentDepts = newUser.managedDepartments || [];
+      if (currentDepts.includes(department)) {
+        setNewUser({
+          ...newUser,
+          managedDepartments: currentDepts.filter(d => d !== department)
+        });
+      } else {
+        setNewUser({
+          ...newUser,
+          managedDepartments: [...currentDepts, department]
+        });
+      }
+    } else {
+      const currentDepts = editUserData.managedDepartments || [];
+      if (currentDepts.includes(department)) {
+        setEditUserData({
+          ...editUserData,
+          managedDepartments: currentDepts.filter(d => d !== department)
+        });
+      } else {
+        setEditUserData({
+          ...editUserData,
+          managedDepartments: [...currentDepts, department]
+        });
+      }
+    }
+  };
+
   // Delete user
   const handleDeleteUser = async (userId) => {
+    // Check if trying to delete a super admin or admin user
+    const userToDelete = users.find(u => u._id === userId);
+    if (userToDelete?.role === 'super_admin' && currentUser?.role !== 'super_admin') {
+      setMessage('Super admin accounts cannot be deleted');
+      return;
+    }
+    if (userToDelete?.role === 'admin' && currentUser?.role !== 'super_admin') {
+      setMessage('Only super admins can delete admin accounts');
+      return;
+    }
+
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         const token = localStorage.getItem('token');
@@ -205,7 +362,10 @@ const AdminDashboard = () => {
       if (res.ok) {
         fetchForms();
         const form = forms.find(f => f._id === id);
-        if (form && form.user?._id) fetchVacationDays(form.user._id);
+        if (form && form.user?._id) {
+          fetchVacationDays(form.user._id);
+          fetchExcuseHours(form.user._id);
+        }
       } else {
         setFormsError(data.msg || 'Failed to update form.');
         if (data.msg?.includes('insufficient vacation days')) {
@@ -336,15 +496,23 @@ const AdminDashboard = () => {
     form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase())
   );
 
-  const filteredUsers = users.filter(user =>
-    user.name?.toLowerCase().includes(usersSearch.toLowerCase()) ||
-    user.email?.toLowerCase().includes(usersSearch.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    // Hide super admin accounts from regular admins
+    if (user.role === 'super_admin' && currentUser?.role !== 'super_admin') {
+      return false;
+    }
+    return user.name?.toLowerCase().includes(usersSearch.toLowerCase()) ||
+           user.email?.toLowerCase().includes(usersSearch.toLowerCase());
+  });
 
-  const filteredPendingUsers = pendingUsers.filter(user =>
-    user.name?.toLowerCase().includes(usersSearch.toLowerCase()) ||
-    user.email?.toLowerCase().includes(usersSearch.toLowerCase())
-  );
+  const filteredPendingUsers = pendingUsers.filter(user => {
+    // Hide super admin accounts from regular admins
+    if (user.role === 'super_admin' && currentUser?.role !== 'super_admin') {
+      return false;
+    }
+    return user.name?.toLowerCase().includes(usersSearch.toLowerCase()) ||
+           user.email?.toLowerCase().includes(usersSearch.toLowerCase());
+  });
 
   // Load data based on active tab
   useEffect(() => {
@@ -357,6 +525,7 @@ const AdminDashboard = () => {
 
   // Initial load
   useEffect(() => {
+    fetchCurrentUser();
     fetchUsers();
     fetchForms();
   }, [fetchForms]);
@@ -415,11 +584,19 @@ const AdminDashboard = () => {
             {/* Stats Cards */}
             <div className="grid-4">
               <div className="stats-card hover-lift">
-                <div className="stats-number">{users.length}</div>
+                <div className="stats-number">
+                  {currentUser?.role === 'super_admin' 
+                    ? users.length 
+                    : users.filter(u => u.role !== 'super_admin').length}
+                </div>
                 <div className="stats-label">Active Users</div>
               </div>
               <div className="stats-card hover-lift">
-                <div className="stats-number">{pendingUsers.length}</div>
+                <div className="stats-number">
+                  {currentUser?.role === 'super_admin' 
+                    ? pendingUsers.length 
+                    : pendingUsers.filter(u => u.role !== 'super_admin').length}
+                </div>
                 <div className="stats-label">Pending Approvals</div>
               </div>
               <div className="stats-card hover-lift">
@@ -525,7 +702,9 @@ const AdminDashboard = () => {
             {pendingUsers.length > 0 && (
               <div className="elegant-card">
                 <h3 className="subsection-title">
-                  Pending Registrations ({pendingUsers.length})
+                  Pending Registrations ({currentUser?.role === 'super_admin' 
+                    ? pendingUsers.length 
+                    : pendingUsers.filter(u => u.role !== 'super_admin').length})
                 </h3>
                 <div className="table-container">
                   <table className="table-elegant">
@@ -598,7 +777,9 @@ const AdminDashboard = () => {
             {/* Active Users Section */}
             <div className="elegant-card">
               <h3 className="subsection-title">
-                Active Users ({users.length})
+                Active Users ({currentUser?.role === 'super_admin' 
+                  ? users.length 
+                  : users.filter(u => u.role !== 'super_admin').length})
               </h3>
               <div className="table-container">
                 <table className="table-elegant">
@@ -608,6 +789,7 @@ const AdminDashboard = () => {
                       <th>Email</th>
                       <th>Department</th>
                       <th>Role</th>
+                      <th>Managed Departments</th>
                       <th>Last Login</th>
                       <th>Actions</th>
                     </tr>
@@ -618,17 +800,47 @@ const AdminDashboard = () => {
                         <td className="text-elegant">{user.name}</td>
                         <td className="text-elegant">{user.email}</td>
                         <td className="text-elegant">{user.department}</td>
-                        <td className="text-elegant">{user.role}</td>
+                        <td>
+                          <span className={`role-badge role-${user.role}`}>
+                            {user.role === 'manager' ? 'Manager' : user.role === 'admin' ? 'Admin' : 'Employee'}
+                          </span>
+                        </td>
+                        <td className="text-elegant">
+                          {user.role === 'manager' ? (
+                            user.managedDepartments && user.managedDepartments.length > 0 ? (
+                              <div className="managed-departments">
+                                {user.managedDepartments.map((dept, index) => (
+                                  <span key={index} className="department-tag">
+                                    {dept}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="no-departments">No departments assigned</span>
+                            )
+                          ) : (
+                            <span className="not-applicable">N/A</span>
+                          )}
+                        </td>
                         <td className="text-elegant">
                           {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
                         </td>
                         <td>
-                          <button 
-                            className="btn-elegant btn-danger btn-sm"
-                            onClick={() => handleDeleteUser(user._id)}
-                          >
-                            Delete
-                          </button>
+                          <div className="action-buttons-inline">
+                            <button 
+                              className="btn-elegant btn-primary btn-sm"
+                              onClick={() => handleEditUser(user)}
+                              style={{ marginRight: '0.5rem' }}
+                            >
+                              Edit
+                            </button>
+                            <button 
+                              className="btn-elegant btn-danger btn-sm"
+                              onClick={() => handleDeleteUser(user._id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -652,25 +864,72 @@ const AdminDashboard = () => {
                   onChange={(e) => setFormsSearch(e.target.value)}
                   className="search-input"
                 />
+                <button 
+                  className="btn-elegant btn-primary"
+                  onClick={() => {
+                    setShowVacationManager(true);
+                    fetchAllEmployees();
+                  }}
+                  style={{ marginLeft: '1rem' }}
+                >
+                  🏖️ Manage Vacation Days
+                </button>
+                <button 
+                  className="btn-elegant"
+                  onClick={handleShowReport}
+                  style={{ marginLeft: '0.5rem' }}
+                >
+                  📊 Vacation Report
+                </button>
               </div>
             </div>
 
-            {/* Forms Summary Cards */}
+            {/* Form Type Navigation */}
+            <div className="elegant-card" style={{ marginBottom: '2rem' }}>
+              <div className="form-type-navigation">
+                <button 
+                  className={`form-type-tab ${activeFormType === 'vacation' ? 'active' : ''}`}
+                  onClick={() => setActiveFormType('vacation')}
+                >
+                  🏖️ Vacation Requests ({forms.filter(f => f.type === 'vacation').length})
+                </button>
+                <button 
+                  className={`form-type-tab ${activeFormType === 'excuse' ? 'active' : ''}`}
+                  onClick={() => setActiveFormType('excuse')}
+                >
+                  🕐 Excuse Requests ({forms.filter(f => f.type === 'excuse').length})
+                </button>
+                <button 
+                  className={`form-type-tab ${activeFormType === 'wfh' ? 'active' : ''}`}
+                  onClick={() => setActiveFormType('wfh')}
+                >
+                  🏠 Work From Home ({forms.filter(f => f.type === 'wfh').length})
+                </button>
+                <button 
+                  className={`form-type-tab ${activeFormType === 'sick_leave' ? 'active' : ''}`}
+                  onClick={() => setActiveFormType('sick_leave')}
+                >
+                  🏥 Sick Leave ({forms.filter(f => f.type === 'sick_leave').length})
+                </button>
+              </div>
+            </div>
+
+            {/* Forms Summary Cards for Selected Type */}
             <div className="grid-4" style={{ marginBottom: '2rem' }}>
               <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #ff9800, #f57c00)' }}>
-                <div className="stats-number">{forms.filter(f => f.status === 'pending').length}</div>
+                <div className="stats-number">{forms.filter(f => f.type === activeFormType && f.status === 'pending').length}</div>
                 <div className="stats-label">Pending Manager</div>
               </div>
               <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #2196f3, #1976d2)' }}>
-                <div className="stats-number">{forms.filter(f => f.status === 'manager_approved').length}</div>
+                <div className="stats-number">{forms.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length}</div>
                 <div className="stats-label">Awaiting HR</div>
               </div>
               <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #4caf50, #388e3c)' }}>
-                <div className="stats-number">{forms.filter(f => f.status === 'approved').length}</div>
+                <div className="stats-number">{forms.filter(f => f.type === activeFormType && f.status === 'approved').length}</div>
                 <div className="stats-label">Approved</div>
               </div>
               <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #f44336, #d32f2f)' }}>
-                <div className="stats-number">{forms.filter(f => f.status === 'rejected').length}</div>
+                <div className="stats-number">{forms.filter(f => f.type === activeFormType && (f.status === 'rejected' || f.status === 'manager_rejected')).length}</div>
                 <div className="stats-label">Rejected</div>
               </div>
             </div>
@@ -680,9 +939,17 @@ const AdminDashboard = () => {
 
             {/* Pending Manager Approval Section */}
             <div className="elegant-card" style={{ marginBottom: '2rem' }}>
-              <h3 className="subsection-title" style={{ color: '#ff9800', marginBottom: '1rem' }}>
-                ⏳ Pending Manager Approval ({forms.filter(f => f.status === 'pending').length})
-              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 className="subsection-title" style={{ color: '#ff9800', margin: 0 }}>
+                  ⏳ Pending Manager Approval - {activeFormType.toUpperCase()} ({forms.filter(f => f.type === activeFormType && f.status === 'pending').length})
+                </h3>
+                <ExportPrintButtons 
+                  forms={forms}
+                  activeFormType={activeFormType}
+                  sectionType="pending"
+                  sectionTitle="Pending Manager Approval"
+                />
+              </div>
               <div className="table-container">
                 <table className="table-elegant">
                   <thead>
@@ -699,6 +966,7 @@ const AdminDashboard = () => {
                   </thead>
                   <tbody>
                     {forms.filter(form => 
+                      form.type === activeFormType &&
                       form.status === 'pending' && 
                       (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
                        form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()))
@@ -743,10 +1011,10 @@ const AdminDashboard = () => {
                         </td>
                       </tr>
                     ))}
-                    {forms.filter(f => f.status === 'pending').length === 0 && (
+                    {forms.filter(f => f.type === activeFormType && f.status === 'pending').length === 0 && (
                       <tr>
                         <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-                          No forms pending manager approval
+                          No {activeFormType} forms pending manager approval
                         </td>
                       </tr>
                     )}
@@ -757,9 +1025,17 @@ const AdminDashboard = () => {
 
             {/* Awaiting HR Approval Section */}
             <div className="elegant-card" style={{ marginBottom: '2rem' }}>
-              <h3 className="subsection-title" style={{ color: '#2196f3', marginBottom: '1rem' }}>
-                👨‍💼 Awaiting HR Approval ({forms.filter(f => f.status === 'manager_approved').length})
-              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 className="subsection-title" style={{ color: '#2196f3', margin: 0 }}>
+                  👨‍💼 Awaiting HR Approval - {activeFormType.toUpperCase()} ({forms.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length})
+                </h3>
+                <ExportPrintButtons 
+                  forms={forms}
+                  activeFormType={activeFormType}
+                  sectionType="awaiting"
+                  sectionTitle="Awaiting HR Approval"
+                />
+              </div>
               <div className="table-container">
                 <table className="table-elegant">
                   <thead>
@@ -776,7 +1052,8 @@ const AdminDashboard = () => {
                   </thead>
                   <tbody>
                     {forms.filter(form => 
-                      form.status === 'manager_approved' && 
+                      form.type === activeFormType &&
+                      (form.status === 'manager_approved' || form.status === 'manager_submitted') && 
                       (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
                        form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()))
                     ).map(form => (
@@ -866,10 +1143,10 @@ const AdminDashboard = () => {
                         </td>
                       </tr>
                     ))}
-                    {forms.filter(f => f.status === 'manager_approved').length === 0 && (
+                    {forms.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length === 0 && (
                       <tr>
                         <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-                          No forms awaiting HR approval
+                          No {activeFormType} forms awaiting HR approval
                         </td>
                       </tr>
                     )}
@@ -880,9 +1157,17 @@ const AdminDashboard = () => {
 
             {/* Completed Forms Section */}
             <div className="elegant-card">
-              <h3 className="subsection-title" style={{ color: '#666', marginBottom: '1rem' }}>
-                📋 All Forms History ({forms.filter(f => ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length})
-              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 className="subsection-title" style={{ color: '#666', margin: 0 }}>
+                  📋 {activeFormType.toUpperCase()} Forms History ({forms.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length})
+                </h3>
+                <ExportPrintButtons 
+                  forms={forms}
+                  activeFormType={activeFormType}
+                  sectionType="history"
+                  sectionTitle="Forms History"
+                />
+              </div>
               <div className="table-container">
                 <table className="table-elegant">
                   <thead>
@@ -899,6 +1184,7 @@ const AdminDashboard = () => {
                   </thead>
                   <tbody>
                     {forms.filter(form => 
+                      form.type === activeFormType &&
                       ['approved', 'rejected', 'manager_rejected'].includes(form.status) &&
                       (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
                        form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()))
@@ -957,10 +1243,10 @@ const AdminDashboard = () => {
                         </td>
                       </tr>
                     ))}
-                    {forms.filter(f => ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length === 0 && (
+                    {forms.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length === 0 && (
                       <tr>
                         <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-                          No completed forms found
+                          No completed {activeFormType} forms found
                         </td>
                       </tr>
                     )}
@@ -1034,28 +1320,57 @@ const AdminDashboard = () => {
                   required
                 >
                   <option value="">Select Department</option>
-                  <option value="Human Resources">Human Resources</option>
-                  <option value="Finance">Finance</option>
-                  <option value="Marketing">Marketing</option>
-                  <option value="Sales">Sales</option>
-                  <option value="IT">Information Technology</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Customer Service">Customer Service</option>
-                  <option value="Legal">Legal</option>
-                  <option value="Other">Other</option>
+                  {availableDepartments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
                 </select>
               </div>
               <div className="form-group-elegant">
                 <label className="form-label-elegant">Role</label>
                 <select
                   value={newUser.role}
-                  onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                  onChange={(e) => setNewUser({...newUser, role: e.target.value, managedDepartments: e.target.value === 'manager' ? newUser.managedDepartments : []})}
                   className="form-input-elegant"
                 >
                   <option value="employee">Employee</option>
-                  <option value="admin">Admin</option>
+                  <option value="manager">Manager</option>
+                  {currentUser?.role === 'super_admin' && (
+                    <option value="admin">Admin</option>
+                  )}
                 </select>
               </div>
+              {newUser.role === 'manager' && (
+                <div className="form-group-elegant">
+                  <label className="form-label-elegant">
+                    Managed Departments ({newUser.managedDepartments?.length || 0} selected)
+                  </label>
+                  <div className="selection-help">
+                    Click on the department cards below to assign departments this manager will oversee. Selected departments will be highlighted in blue.
+                  </div>
+                  <div className="departments-grid" style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                    gap: '0.5rem',
+                    marginTop: '0.5rem'
+                  }}>
+                    {availableDepartments.map(dept => (
+                      <div 
+                        key={dept}
+                        className={`department-card ${newUser.managedDepartments?.includes(dept) ? 'selected' : ''}`}
+                        onClick={() => handleDepartmentChange(dept, true)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={newUser.managedDepartments?.includes(dept) || false}
+                          onChange={() => {}}
+                          style={{ marginRight: '0.5rem' }}
+                        />
+                        <span className="department-name">{dept}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="action-buttons">
                 <button type="submit" className="btn-elegant btn-success">
                   Create User
@@ -1064,6 +1379,109 @@ const AdminDashboard = () => {
                   type="button" 
                   className="btn-elegant"
                   onClick={() => setShowCreateUserModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditUserModal && (
+        <div className="modal-elegant">
+          <div className="modal-content-elegant">
+            <h2 className="text-gradient">Edit User</h2>
+            <form className="form-elegant" onSubmit={handleUpdateUser}>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Name</label>
+                <input
+                  type="text"
+                  value={editUserData.name}
+                  onChange={(e) => setEditUserData({...editUserData, name: e.target.value})}
+                  className="form-input-elegant"
+                  required
+                />
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Email</label>
+                <input
+                  type="email"
+                  value={editUserData.email}
+                  onChange={(e) => setEditUserData({...editUserData, email: e.target.value})}
+                  className="form-input-elegant"
+                  required
+                />
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Department</label>
+                <select
+                  value={editUserData.department}
+                  onChange={(e) => setEditUserData({...editUserData, department: e.target.value})}
+                  className="form-input-elegant"
+                  required
+                >
+                  <option value="">Select Department</option>
+                  {availableDepartments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Role</label>
+                <select
+                  value={editUserData.role}
+                  onChange={(e) => setEditUserData({...editUserData, role: e.target.value, managedDepartments: e.target.value === 'manager' ? editUserData.managedDepartments : []})}
+                  className="form-input-elegant"
+                >
+                  <option value="employee">Employee</option>
+                  <option value="manager">Manager</option>
+                  {currentUser?.role === 'super_admin' && (
+                    <option value="admin">Admin</option>
+                  )}
+                </select>
+              </div>
+              {editUserData.role === 'manager' && (
+                <div className="form-group-elegant">
+                  <label className="form-label-elegant">
+                    Managed Departments ({editUserData.managedDepartments?.length || 0} selected)
+                  </label>
+                  <div className="selection-help">
+                    Click on the department cards below to assign departments this manager will oversee. Selected departments will be highlighted in blue.
+                  </div>
+                  <div className="departments-grid" style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                    gap: '0.5rem',
+                    marginTop: '0.5rem'
+                  }}>
+                    {availableDepartments.map(dept => (
+                      <div 
+                        key={dept}
+                        className={`department-card ${editUserData.managedDepartments?.includes(dept) ? 'selected' : ''}`}
+                        onClick={() => handleDepartmentChange(dept, false)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={editUserData.managedDepartments?.includes(dept) || false}
+                          onChange={() => {}}
+                          style={{ marginRight: '0.5rem' }}
+                        />
+                        <span className="department-name">{dept}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="action-buttons">
+                <button type="submit" className="btn-elegant btn-success">
+                  Update User
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-elegant"
+                  onClick={() => setShowEditUserModal(false)}
                 >
                   Cancel
                 </button>

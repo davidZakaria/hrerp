@@ -9,6 +9,7 @@ const EmployeeDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [vacationDaysLeft, setVacationDaysLeft] = useState(null);
+  const [excuseHoursLeft, setExcuseHoursLeft] = useState(null);
 
   const fetchVacationDays = async () => {
     const token = localStorage.getItem('token');
@@ -25,8 +26,24 @@ const EmployeeDashboard = () => {
     }
   };
 
+  const fetchExcuseHours = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch('http://localhost:5000/api/forms/excuse-hours', {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setExcuseHoursLeft(data.excuseHoursLeft);
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     fetchVacationDays();
+    fetchExcuseHours();
   }, []);
 
   const fetchForms = async () => {
@@ -54,32 +71,37 @@ const EmployeeDashboard = () => {
     setShowForm(false);
     fetchForms();
     fetchVacationDays();
+    fetchExcuseHours();
   };
 
   const handleShowForm = () => {
     setShowForm(true);
     setShowPreview(false);
     fetchVacationDays();
+    fetchExcuseHours();
   };
 
   const handleFormSubmitted = () => {
     fetchVacationDays();
+    fetchExcuseHours();
     setShowForm(false);
     setShowPreview(true);
     fetchForms();
   };
 
   const getStatusBadge = (status) => {
-    const statusClass = status === 'approved' ? 'badge-success' : 
-                       status === 'manager_approved' ? 'badge-info' :
-                       status === 'pending' ? 'badge-warning' : 
-                       status === 'manager_rejected' ? 'badge-danger' : 'badge-danger';
+    const badgeClass = status === 'pending' ? 'badge-warning' :
+                     status === 'manager_approved' ? 'badge-info' :
+                     status === 'manager_submitted' ? 'badge-info' :
+                     status === 'approved' ? 'badge-success' :
+                     status.includes('rejected') ? 'badge-danger' : 'badge-secondary';
     
     const statusText = status === 'manager_approved' ? 'Manager Approved' :
+                      status === 'manager_submitted' ? 'Awaiting HR Approval' :
                       status === 'manager_rejected' ? 'Manager Rejected' :
-                      status;
+                      status.charAt(0).toUpperCase() + status.slice(1);
     
-    return <span className={`badge-elegant ${statusClass}`}>{statusText}</span>;
+    return <span className={`badge-elegant ${badgeClass}`}>{statusText}</span>;
   };
 
   return (
@@ -101,6 +123,17 @@ const EmployeeDashboard = () => {
             {vacationDaysLeft !== null ? vacationDaysLeft : '...'}
           </div>
           <div className="stats-label">Days Remaining</div>
+        </div>
+
+        {/* Excuse Hours Card */}
+        <div className="elegant-card hover-lift" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
+            Monthly Excuse Hours
+          </h2>
+          <div className="stats-number" style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
+            {excuseHoursLeft !== null ? excuseHoursLeft : '...'}
+          </div>
+          <div className="stats-label">Hours Remaining</div>
         </div>
 
         {/* Action Buttons */}
@@ -179,6 +212,59 @@ const EmployeeDashboard = () => {
                             <span className="form-label-elegant">Days:</span>
                             <span className="text-elegant">{form.days}</span>
                           </div>
+                        </>
+                      )}
+                      
+                      {form.type === 'excuse' && (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">Excuse Date:</span>
+                            <span className="text-elegant">{new Date(form.excuseDate).toLocaleDateString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">Time Period:</span>
+                            <span className="text-elegant">{form.fromHour} - {form.toHour}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">Duration:</span>
+                            <span className="text-elegant">{((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours</span>
+                          </div>
+                        </>
+                      )}
+                      
+                      {form.type === 'wfh' && (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">Work Hours:</span>
+                            <span className="text-elegant">{form.wfhHours} hours</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">Description:</span>
+                            <span className="text-elegant">{form.wfhDescription?.substring(0, 50)}...</span>
+                          </div>
+                        </>
+                      )}
+                      
+                      {form.type === 'sick_leave' && (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">Start Date:</span>
+                            <span className="text-elegant">{new Date(form.sickLeaveStartDate).toLocaleDateString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">End Date:</span>
+                            <span className="text-elegant">{new Date(form.sickLeaveEndDate).toLocaleDateString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">Duration:</span>
+                            <span className="text-elegant">{Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</span>
+                          </div>
+                          {form.medicalDocument && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                              <span className="form-label-elegant">Medical Document:</span>
+                              <span className="text-elegant">📄 Attached</span>
+                            </div>
+                          )}
                         </>
                       )}
                       

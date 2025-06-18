@@ -2,14 +2,60 @@ const express = require('express');
 const router = express.Router();
 const Form = require('../models/Form');
 const User = require('../models/User');
+const multer = require('multer');
+const path = require('path');
 
 // Middleware to verify JWT token
 const auth = require('../middleware/auth');
 
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/medical-documents/');
+    },
+    filename: function (req, file, cb) {
+        // Create unique filename with timestamp
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'medical-doc-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const fileFilter = (req, file, cb) => {
+    // Accept only PDF, DOC, DOCX, JPG, PNG files
+    if (file.mimetype.startsWith('image/') || 
+        file.mimetype === 'application/pdf' ||
+        file.mimetype === 'application/msword' ||
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        cb(null, true);
+    } else {
+        cb(new Error('Only image files, PDF, and Word documents are allowed!'), false);
+    }
+};
+
+const upload = multer({ 
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
+});
+
 // Submit a new form
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, upload.single('medicalDocument'), async (req, res) => {
     try {
-        const { type, startDate, endDate, reason, vacationType, fromHour, toHour } = req.body;
+        const { type, startDate, endDate, excuseDate, sickLeaveStartDate, sickLeaveEndDate, reason, vacationType, fromHour, toHour, wfhDescription, wfhHours } = req.body;
+        
+        // Get the submitting user to check their role
+        const submittingUser = await User.findById(req.user.id);
+        if (!submittingUser) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        
+        // Handle file upload for sick leave
+        let medicalDocumentPath = null;
+        if (type === 'sick_leave' && req.file) {
+            medicalDocumentPath = req.file.path;
+        }
         
         // Duplicate vacation form check
         if (type === 'vacation' && startDate && endDate) {
@@ -20,22 +66,35 @@ router.post('/', auth, async (req, res) => {
                     // Overlap: new start is between existing start and end
                     { startDate: { $lte: endDate }, endDate: { $gte: startDate } }
                 ],
-                status: { $in: ['pending', 'approved', 'manager_approved'] }
+                status: { $in: ['pending', 'approved', 'manager_approved', 'manager_submitted'] }
             });
             if (overlap) {
                 return res.status(400).json({ msg: 'You already have a vacation request for these dates.' });
             }
         }
 
+        // Determine initial status based on user role
+        let initialStatus = 'pending'; // Default for employees
+        if (submittingUser.role === 'manager') {
+            initialStatus = 'manager_submitted'; // Managers' forms go directly to admin
+        }
+
         const newForm = new Form({
             user: req.user.id,
             type,
+            status: initialStatus,
             startDate,
             endDate,
+            excuseDate,
+            sickLeaveStartDate,
+            sickLeaveEndDate,
+            medicalDocument: medicalDocumentPath,
             reason,
             vacationType,
             fromHour,
-            toHour
+            toHour,
+            wfhDescription,
+            wfhHours
         });
 
         const form = await newForm.save();
@@ -67,10 +126,10 @@ router.get('/manager/pending', auth, async (req, res) => {
 
         const teamMemberIds = teamMembers.map(member => member._id);
 
-        // Find forms from team members only
+        // Find forms from team members only (exclude manager's own submissions)
         const forms = await Form.find({
             status: 'pending',
-            user: { $in: teamMemberIds }
+            user: { $in: teamMemberIds, $ne: manager._id } // Exclude manager's own forms
         })
         .populate('user', 'name email department')
         .sort({ createdAt: -1 });
@@ -103,9 +162,14 @@ router.get('/manager/team-forms', auth, async (req, res) => {
 
         const teamMemberIds = teamMembers.map(member => member._id);
 
-        // Find all forms from team members
+        // Find all forms from team members and manager's own forms
         const forms = await Form.find({
-            user: { $in: teamMemberIds }
+            $or: [
+                { user: { $in: teamMemberIds } }, // Team member forms
+                { user: manager._id, status: 'manager_submitted' }, // Manager's own submissions
+                { user: manager._id, status: 'approved' }, // Manager's approved forms
+                { user: manager._id, status: 'rejected' } // Manager's rejected forms
+            ]
         })
         .populate('user', 'name email department')
         .populate('managerApprovedBy', 'name')
@@ -155,10 +219,37 @@ router.put('/manager/:id', auth, async (req, res) => {
         }
 
         if (action === 'approve') {
-            form.status = 'manager_approved';
-            form.managerComment = managerComment || '';
-            form.managerApprovedBy = req.user.id;
-            form.managerApprovedAt = Date.now();
+            // For excuse forms, manager approval is final
+            if (form.type === 'excuse') {
+                // Handle excuse form approval - deduct from excuse hours allowance immediately
+                const fromTime = new Date(`2000-01-01T${form.fromHour}`);
+                const toTime = new Date(`2000-01-01T${form.toHour}`);
+                const hoursRequested = (toTime - fromTime) / (1000 * 60 * 60);
+                const employee = await User.findById(form.user._id);
+                
+                // Check if employee has enough excuse hours
+                if (employee && (employee.excuseHoursLeft || 0) < hoursRequested) {
+                    return res.status(400).json({ 
+                        msg: `Cannot approve: Employee has insufficient excuse hours (${employee.excuseHoursLeft} hours remaining, ${hoursRequested.toFixed(1)} hours requested)`
+                    });
+                }
+
+                if (employee) {
+                    employee.excuseHoursLeft = Math.max(0, (employee.excuseHoursLeft || 2) - hoursRequested);
+                    await employee.save();
+                }
+
+                form.status = 'approved'; // Final approval for excuse forms
+                form.managerComment = managerComment || '';
+                form.managerApprovedBy = req.user.id;
+                form.managerApprovedAt = Date.now();
+            } else {
+                // For other form types, manager approval still requires admin final approval
+                form.status = 'manager_approved';
+                form.managerComment = managerComment || '';
+                form.managerApprovedBy = req.user.id;
+                form.managerApprovedAt = Date.now();
+            }
         } else if (action === 'reject') {
             form.status = 'manager_rejected';
             form.managerComment = managerComment || 'Rejected by manager';
@@ -230,7 +321,7 @@ router.put('/:id', auth, async (req, res) => {
             form.type === 'vacation' &&
             form.vacationType === 'annual' &&
             status === 'approved' &&
-            (form.status === 'pending' || form.status === 'manager_approved')
+            (form.status === 'pending' || form.status === 'manager_approved' || form.status === 'manager_submitted')
         ) {
             // Calculate number of days (inclusive)
             const start = new Date(form.startDate);
@@ -253,12 +344,35 @@ router.put('/:id', auth, async (req, res) => {
             form.type === 'vacation' &&
             form.vacationType === 'unpaid' &&
             status === 'approved' &&
-            (form.status === 'pending' || form.status === 'manager_approved')
+            (form.status === 'pending' || form.status === 'manager_approved' || form.status === 'manager_submitted')
         ) {
             // For unpaid vacation, we don't need to check or deduct vacation days
             // Just approve it without affecting the balance
             console.log('Approving unpaid vacation without deducting days');
+        } else if (
+            form.type === 'excuse' &&
+            status === 'approved' &&
+            (form.status === 'pending' || form.status === 'manager_approved' || form.status === 'manager_submitted')
+        ) {
+            // Handle excuse form approval - deduct from excuse hours allowance
+            const fromTime = new Date(`2000-01-01T${form.fromHour}`);
+            const toTime = new Date(`2000-01-01T${form.toHour}`);
+            const hoursRequested = (toTime - fromTime) / (1000 * 60 * 60);
+            const employee = await User.findById(form.user);
+            
+            // Check if employee has enough excuse hours
+            if (employee && (employee.excuseHoursLeft || 0) < hoursRequested) {
+                return res.status(400).json({ 
+                    msg: `Cannot approve: Employee has insufficient excuse hours (${employee.excuseHoursLeft} hours remaining, ${hoursRequested.toFixed(1)} hours requested)`
+                });
+            }
+
+            if (employee) {
+                employee.excuseHoursLeft = Math.max(0, (employee.excuseHoursLeft || 2) - hoursRequested);
+                await employee.save();
+            }
         }
+        // Note: Sick leave and WFH forms don't affect any day allowances
 
         form.status = status;
         form.adminComment = adminComment;
@@ -305,6 +419,20 @@ router.get('/vacation-days', auth, async (req, res) => {
     }
 });
 
+// Get current user's excuse hours left
+router.get('/excuse-hours', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        res.json({ excuseHoursLeft: user.excuseHoursLeft });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+});
+
 // Get any user's vacation days left (admin only)
 router.get('/vacation-days/:userId', auth, async (req, res) => {
     try {
@@ -323,6 +451,24 @@ router.get('/vacation-days/:userId', auth, async (req, res) => {
     }
 });
 
+// Get any user's excuse hours left (admin only)
+router.get('/excuse-hours/:userId', auth, async (req, res) => {
+    try {
+        const admin = await User.findById(req.user.id);
+        if (admin.role !== 'admin') {
+            return res.status(403).json({ msg: 'Not authorized' });
+        }
+        const user = await User.findById(req.params.userId);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        res.json({ excuseHoursLeft: user.excuseHoursLeft });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+});
+
 // Admin: Get report of all users and their vacation days left
 router.get('/vacation-days-report', auth, async (req, res) => {
     try {
@@ -330,7 +476,7 @@ router.get('/vacation-days-report', auth, async (req, res) => {
         if (admin.role !== 'admin') {
             return res.status(403).json({ msg: 'Not authorized' });
         }
-        const users = await User.find({}, 'name email department vacationDaysLeft');
+        const users = await User.find({}, 'name email department vacationDaysLeft excuseHoursLeft');
         res.json(users);
     } catch (err) {
         console.error(err.message);
@@ -454,6 +600,20 @@ router.get('/history/:formId', auth, async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server error');
+    }
+});
+
+// Serve uploaded medical documents (authenticated)
+router.get('/document/:filename', auth, (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, '..', 'uploads', 'medical-documents', filename);
+    
+    // Check if file exists
+    const fs = require('fs');
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).json({ msg: 'Document not found' });
     }
 });
 

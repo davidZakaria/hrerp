@@ -8,7 +8,7 @@ const formSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['vacation', 'excuse'],
+        enum: ['vacation', 'excuse', 'wfh', 'sick_leave'],
         required: true
     },
     vacationType: {
@@ -18,11 +18,38 @@ const formSchema = new mongoose.Schema({
     },
     startDate: {
         type: Date,
-        required: true
+        required: function() {
+            return this.type === 'vacation';
+        }
     },
     endDate: {
         type: Date,
-        required: true
+        required: function() {
+            return this.type === 'vacation';
+        }
+    },
+    excuseDate: {
+        type: Date,
+        required: function() {
+            return this.type === 'excuse';
+        }
+    },
+    // Sick leave specific fields
+    sickLeaveStartDate: {
+        type: Date,
+        required: function() {
+            return this.type === 'sick_leave';
+        }
+    },
+    sickLeaveEndDate: {
+        type: Date,
+        required: function() {
+            return this.type === 'sick_leave';
+        }
+    },
+    medicalDocument: {
+        type: String, // Store file path/URL
+        required: false
     },
     reason: {
         type: String,
@@ -30,7 +57,7 @@ const formSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'manager_approved', 'approved', 'rejected', 'manager_rejected'],
+        enum: ['pending', 'manager_approved', 'manager_submitted', 'approved', 'rejected', 'manager_rejected'],
         default: 'pending'
     },
     adminComment: {
@@ -50,6 +77,9 @@ const formSchema = new mongoose.Schema({
     },
     fromHour: String,
     toHour: String,
+    // Working from home fields
+    wfhDescription: String,
+    wfhHours: Number,
     createdAt: {
         type: Date,
         default: Date.now

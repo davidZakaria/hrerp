@@ -17,16 +17,26 @@ const Register = ({ onBack, onRegisterSuccess }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    if (name === 'managedDepartments') {
-      const options = Array.from(e.target.selectedOptions, option => option.value);
-      setForm({ ...form, [name]: options });
-    } else {
-      setForm({ ...form, [name]: value });
-    }
+    setForm({ ...form, [name]: value });
   };
 
-  const departments = ['Human Resources', 'Finance', 'Marketing', 'Sales', 'IT', 'Operations', 'Customer Service', 'Legal', 'Engineering', 'Other'];
+  const handleDepartmentCheckbox = (departmentName) => {
+    const updatedDepartments = form.managedDepartments.includes(departmentName)
+      ? form.managedDepartments.filter(dept => dept !== departmentName)
+      : [...form.managedDepartments, departmentName];
+    
+    setForm({ ...form, managedDepartments: updatedDepartments });
+  };
+
+  const handleSelectAllDepartments = () => {
+    setForm({ ...form, managedDepartments: [...departments] });
+  };
+
+  const handleClearAllDepartments = () => {
+    setForm({ ...form, managedDepartments: [] });
+  };
+
+  const departments = ['Human Resources', 'Finance', 'Marketing', 'Sales', 'IT', 'Operations', 'Customer Service', 'Legal', 'Reception', 'Jamila Engineer', 'Jura Engineer', 'Green Icon Engineer', 'Green Avenue Engineer', 'Architectural Engineer', 'Technical Office Engineer', 'Personal Assistant', 'Service', 'Driver', 'Other'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -162,23 +172,46 @@ const Register = ({ onBack, onRegisterSuccess }) => {
           {form.role === 'manager' && (
             <div className="form-group-elegant">
               <label className="form-label-elegant">Departments You Will Manage</label>
-              <select
-                name="managedDepartments"
-                value={form.managedDepartments}
-                onChange={handleChange}
-                className="form-input-elegant focus-elegant"
-                multiple
-                size="4"
-                required
-                style={{ height: 'auto', minHeight: '120px' }}
-              >
+              <p style={{ color: '#666', fontSize: '0.85rem', marginBottom: '1rem', textAlign: 'left' }}>
+                Select all departments you will be responsible for managing. You can select multiple departments by clicking on each one:
+              </p>
+              <div className="departments-selection">
                 {departments.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
+                  <label 
+                    key={dept} 
+                    className={`department-checkbox ${form.managedDepartments.includes(dept) ? 'checked' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={form.managedDepartments.includes(dept)}
+                      onChange={() => handleDepartmentCheckbox(dept)}
+                      className="checkbox-input"
+                    />
+                    <span className="checkmark"></span>
+                    <span className="department-name">{dept}</span>
+                  </label>
                 ))}
-              </select>
-              <small style={{ color: '#666', fontSize: '0.8rem', marginTop: '0.5rem', display: 'block' }}>
-                Hold Ctrl (Cmd on Mac) to select multiple departments
-              </small>
+              </div>
+              {form.managedDepartments.length > 0 && (
+                <div className="selected-departments">
+                  <small style={{ color: '#4CAF50', fontWeight: 'bold' }}>
+                    ✓ Selected ({form.managedDepartments.length}): {form.managedDepartments.join(', ')}
+                  </small>
+                </div>
+              )}
+              {form.role === 'manager' && form.managedDepartments.length === 0 && (
+                <div style={{ 
+                  marginTop: '0.5rem', 
+                  padding: '0.5rem', 
+                  background: 'rgba(255, 193, 7, 0.1)', 
+                  borderRadius: '4px',
+                  textAlign: 'left'
+                }}>
+                  <small style={{ color: '#FFA000', fontStyle: 'italic' }}>
+                    ⚠️ Please select at least one department to manage
+                  </small>
+                </div>
+              )}
             </div>
           )}
 
@@ -260,6 +293,84 @@ const Register = ({ onBack, onRegisterSuccess }) => {
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        /* Department selection styles */
+        .departments-selection {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 0.75rem;
+          margin: 1rem 0;
+          text-align: left;
+        }
+
+        .department-checkbox {
+          display: flex;
+          align-items: center;
+          padding: 0.75rem;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          border: 2px solid transparent;
+        }
+
+        .department-checkbox:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: translateY(-1px);
+        }
+
+        .department-checkbox.checked {
+          background: rgba(76, 175, 80, 0.2);
+          border-color: #4CAF50;
+        }
+
+        .checkbox-input {
+          display: none;
+        }
+
+        .checkmark {
+          width: 20px;
+          height: 20px;
+          border: 2px solid rgba(255, 255, 255, 0.5);
+          border-radius: 4px;
+          margin-right: 0.75rem;
+          position: relative;
+          transition: all 0.3s ease;
+          background: transparent;
+        }
+
+        .checkbox-input:checked + .checkmark {
+          background: #4CAF50;
+          border-color: #4CAF50;
+        }
+
+        .checkbox-input:checked + .checkmark::after {
+          content: '';
+          position: absolute;
+          left: 6px;
+          top: 3px;
+          width: 5px;
+          height: 10px;
+          border: solid white;
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+        }
+
+        .department-name {
+          color: white;
+          font-weight: 500;
+          font-size: 0.9rem;
+        }
+
+        .selected-departments {
+          margin-top: 1rem;
+          padding: 0.75rem;
+          background: rgba(76, 175, 80, 0.1);
+          border-radius: 6px;
+          text-align: left;
+        }
+      `}</style>
     </div>
   );
 };

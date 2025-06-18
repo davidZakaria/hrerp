@@ -22,12 +22,13 @@ const AuditSchema = new mongoose.Schema({
       'SYSTEM_ACCESS',
       'PASSWORD_RESET',
       'VACATION_DAYS_MODIFIED',
-      'SUPER_ADMIN_ACTION'
+      'SUPER_ADMIN_ACTION',
+      'MONTHLY_EXCUSE_HOURS_RESET',
+      'MANUAL_EXCUSE_HOURS_RESET'
     ]
   },
   performedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: mongoose.Schema.Types.Mixed, // Can be ObjectId for users or String for system actions
     required: true
   },
   targetUser: {

@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('config');
 const { createAuditLog } = require('./audit');
+const Audit = require('../models/Audit');
 
 // Get all users (for admin)
 router.get('/', auth, async (req, res) => {
@@ -30,7 +31,7 @@ router.post('/', auth, async (req, res) => {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
-    const { name, email, password, department, role, status } = req.body;
+    const { name, email, password, department, role, status, managedDepartments } = req.body;
 
     // Check if user exists
     let user = await User.findOne({ email });
@@ -46,7 +47,9 @@ router.post('/', auth, async (req, res) => {
       department,
       role: role || 'employee',
       status: status || 'active',
-      vacationDaysLeft: 21
+      vacationDaysLeft: 21,
+      excuseHoursLeft: 2,
+      managedDepartments: (role === 'manager' && managedDepartments) ? managedDepartments : []
     });
 
     // Hash password
@@ -68,7 +71,8 @@ router.post('/', auth, async (req, res) => {
         email: user.email,
         department: user.department,
         role: user.role,
-        status: user.status
+        status: user.status,
+        managedDepartments: user.managedDepartments
       },
       ipAddress: req.ip || req.connection.remoteAddress,
       userAgent: req.get('User-Agent'),
@@ -82,7 +86,7 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// Update user status (approve/reject pending users)
+// Update user status (approve/reject pending users) - MOVED BEFORE GENERAL UPDATE
 router.put('/:userId/status', auth, async (req, res) => {
   try {
     const admin = await User.findById(req.user.id);
@@ -110,28 +114,7 @@ router.put('/:userId/status', auth, async (req, res) => {
   }
 });
 
-// Delete user (admin only)
-router.delete('/:userId', auth, async (req, res) => {
-  try {
-    const admin = await User.findById(req.user.id);
-    if (admin.role !== 'admin' && admin.role !== 'super_admin') {
-      return res.status(403).json({ msg: 'Not authorized' });
-    }
-
-    const user = await User.findById(req.params.userId);
-    if (!user) {
-      return res.status(404).json({ msg: 'User not found' });
-    }
-
-    await User.findByIdAndDelete(req.params.userId);
-    res.json({ msg: 'User deleted successfully' });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
-  }
-});
-
-// Admin: Update an employee's vacation days left
+// Admin: Update an employee's vacation days left - MOVED BEFORE GENERAL UPDATE  
 router.put('/:userId/vacation-days', auth, async (req, res) => {
   try {
     const admin = await User.findById(req.user.id);
@@ -149,6 +132,86 @@ router.put('/:userId/vacation-days', auth, async (req, res) => {
     user.vacationDaysLeft = vacationDaysLeft;
     await user.save();
     res.json({ msg: 'Vacation days updated', user });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+});
+
+// Update user (admin only) - MAIN UPDATE ROUTE
+router.put('/:userId', auth, async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id);
+    if (admin.role !== 'admin' && admin.role !== 'super_admin') {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+
+    const { name, email, department, role, managedDepartments } = req.body;
+
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    // Check if email is already taken by another user
+    if (email !== user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ msg: 'Email already in use by another user' });
+      }
+    }
+
+    // Update user fields
+    user.name = name;
+    user.email = email;
+    user.department = department;
+    user.role = role;
+    user.managedDepartments = (role === 'manager' && managedDepartments) ? managedDepartments : [];
+
+    await user.save();
+    
+    // Create audit log
+    await createAuditLog({
+      action: 'USER_UPDATED',
+      performedBy: admin._id,
+      targetUser: user._id,
+      targetResource: 'user',
+      targetResourceId: user._id,
+      description: `User ${user.name} (${user.email}) updated by admin ${admin.name}`,
+      details: {
+        name: user.name,
+        email: user.email,
+        department: user.department,
+        role: user.role,
+        managedDepartments: user.managedDepartments
+      },
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      severity: 'MEDIUM'
+    });
+    
+    res.json({ msg: 'User updated successfully', user: { ...user.toObject(), password: undefined } });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+});
+
+// Delete user (admin only)
+router.delete('/:userId', auth, async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id);
+    if (admin.role !== 'admin' && admin.role !== 'super_admin') {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    await User.findByIdAndDelete(req.params.userId);
+    res.json({ msg: 'User deleted successfully' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -325,6 +388,83 @@ router.get('/team-members', auth, async (req, res) => {
         console.error(err.message);
         res.status(500).send('Server error');
     }
+});
+
+// Manual excuse hours reset (Admin and Super Admin only)
+router.post('/reset-excuse-hours', auth, async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id);
+    if (admin.role !== 'admin' && admin.role !== 'super_admin') {
+      return res.status(403).json({ msg: 'Not authorized - Admin or Super Admin role required' });
+    }
+
+    console.log(`Manual excuse hours reset initiated by ${admin.name} (${admin.email})`);
+    
+    const result = await User.updateMany(
+      { role: { $in: ['employee', 'manager', 'admin', 'super_admin'] } },
+      { $set: { excuseHoursLeft: 2 } }
+    );
+
+    console.log(`Manual excuse hours reset completed. Updated ${result.modifiedCount} users.`);
+
+    // Create audit log in database
+    await createAuditLog({
+      action: 'MANUAL_EXCUSE_HOURS_RESET',
+      performedBy: admin._id,
+      targetResource: 'user',
+      description: `Manual reset of excuse hours for all users performed by ${admin.name}`,
+      details: {
+        usersUpdated: result.modifiedCount,
+        resetValue: 2,
+        resetDate: new Date(),
+        initiatedBy: admin.name,
+        initiatedByEmail: admin.email
+      },
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      severity: 'MEDIUM'
+    });
+
+    console.log(`Audit log created for manual excuse hours reset affecting ${result.modifiedCount} users.`);
+
+    res.json({ 
+      success: true,
+      message: `Excuse hours successfully reset for ${result.modifiedCount} users`,
+      usersUpdated: result.modifiedCount,
+      resetValue: 2
+    });
+
+  } catch (error) {
+    console.error('Error during manual excuse hours reset:', error);
+    
+    // Log the error in audit as well
+    try {
+      const admin = await User.findById(req.user.id);
+      await createAuditLog({
+        action: 'MANUAL_EXCUSE_HOURS_RESET',
+        performedBy: admin._id,
+        targetResource: 'user',
+        description: `Failed manual excuse hours reset attempted by ${admin.name}`,
+        details: {
+          error: error.message,
+          failureDate: new Date(),
+          attemptedBy: admin.name,
+          attemptedByEmail: admin.email
+        },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        severity: 'HIGH'
+      });
+    } catch (auditError) {
+      console.error('Failed to create audit log for reset error:', auditError);
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      message: 'Error during excuse hours reset',
+      error: error.message 
+    });
+  }
 });
 
 module.exports = router; 

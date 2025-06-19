@@ -1,0 +1,2 @@
+# This file ensures the uploads/medical-documents directory is tracked by git
+# Medical documents uploaded through the HR-ERP system will be stored here 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import FormSubmission from './FormSubmission';
 import LogoutButton from './LogoutButton';
+import MedicalDocumentViewer from './MedicalDocumentViewer';
 
 const EmployeeDashboard = () => {
   const [showForm, setShowForm] = useState(false);
@@ -259,12 +260,9 @@ const EmployeeDashboard = () => {
                             <span className="form-label-elegant">Duration:</span>
                             <span className="text-elegant">{Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</span>
                           </div>
-                          {form.medicalDocument && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                              <span className="form-label-elegant">Medical Document:</span>
-                              <span className="text-elegant">📄 Attached</span>
-                            </div>
-                          )}
+                          <div style={{ marginTop: '1rem' }}>
+                            <MedicalDocumentViewer form={form} userRole="employee" />
+                          </div>
                         </>
                       )}
                       

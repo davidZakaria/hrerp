@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import FormSubmission from './FormSubmission';
+import MedicalDocumentViewer from './MedicalDocumentViewer';
 
-const ManagerDashboard = ({ user, onLogout }) => {
+const ManagerDashboard = ({ onLogout }) => {
   const [pendingForms, setPendingForms] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [user, setUser] = useState(null);
   
   // Form submission state
   const [showForm, setShowForm] = useState(false);
   const [showMyForms, setShowMyForms] = useState(false);
+  const [showTeamForms, setShowTeamForms] = useState(false);
   const [myForms, setMyForms] = useState([]);
+  const [teamForms, setTeamForms] = useState([]);
   const [vacationDaysLeft, setVacationDaysLeft] = useState(null);
   const [excuseHoursLeft, setExcuseHoursLeft] = useState(null);
   
@@ -23,11 +27,47 @@ const ManagerDashboard = ({ user, onLogout }) => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    fetchUserData();
     fetchPendingForms();
     fetchTeamMembers();
     fetchVacationDays();
     fetchExcuseHours();
   }, []);
+
+  const fetchUserData = async () => {
+    try {
+      // First, get basic user info from localStorage
+      const userName = localStorage.getItem('userName');
+      const managedDepartments = JSON.parse(localStorage.getItem('managedDepartments') || '[]');
+      
+      if (userName) {
+        setUser({
+          name: userName,
+          managedDepartments: managedDepartments
+        });
+      } else {
+        // If not in localStorage, fetch from API
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:5000/api/auth/user', {
+          headers: { 'x-auth-token': token }
+        });
+        
+        if (response.data) {
+          setUser(response.data);
+          // Update localStorage for future use
+          localStorage.setItem('userName', response.data.name);
+          localStorage.setItem('managedDepartments', JSON.stringify(response.data.managedDepartments || []));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      // Fallback to whatever we can get from localStorage
+      setUser({
+        name: localStorage.getItem('userName') || 'Manager',
+        managedDepartments: JSON.parse(localStorage.getItem('managedDepartments') || '[]')
+      });
+    }
+  };
 
   const fetchVacationDays = async () => {
     const token = localStorage.getItem('token');
@@ -62,19 +102,33 @@ const ManagerDashboard = ({ user, onLogout }) => {
   const fetchMyForms = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/forms/my-forms', {
+      console.log('Fetching manager personal forms...');
+      
+      // Use dedicated endpoint for manager's personal forms only
+      const response = await axios.get('http://localhost:5000/api/forms/manager/personal-forms', {
         headers: { 'x-auth-token': token }
       });
+      
+      console.log('Manager personal forms received:', response.data);
       setMyForms(response.data);
+      
+      if (response.data.length === 0) {
+        console.log('No personal forms found for this manager');
+      }
     } catch (error) {
-      console.error('Error fetching my forms:', error);
-      setMessage('Error loading your forms');
+      console.error('Error fetching manager personal forms:', error);
+      if (error.response?.status === 403) {
+        setMessage('Access denied - Manager role required');
+      } else {
+        setMessage('Error loading your personal forms');
+      }
     }
   };
 
   const handleShowForm = () => {
     setShowForm(true);
     setShowMyForms(false);
+    setShowTeamForms(false);
     fetchVacationDays();
     fetchExcuseHours();
   };
@@ -82,9 +136,43 @@ const ManagerDashboard = ({ user, onLogout }) => {
   const handleShowMyForms = () => {
     setShowMyForms(true);
     setShowForm(false);
+    setShowTeamForms(false);
     fetchMyForms();
     fetchVacationDays();
     fetchExcuseHours();
+  };
+
+  const handleShowTeamForms = () => {
+    setShowTeamForms(true);
+    setShowForm(false);
+    setShowMyForms(false);
+    fetchTeamForms();
+  };
+
+  const fetchTeamForms = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      console.log('Fetching team members forms...');
+      
+      // Fetch all forms from team members in managed departments
+      const response = await axios.get('http://localhost:5000/api/forms/manager/team-forms', {
+        headers: { 'x-auth-token': token }
+      });
+      
+      console.log('Team members forms received:', response.data);
+      setTeamForms(response.data);
+      
+      if (response.data.length === 0) {
+        console.log('No team forms found');
+      }
+    } catch (error) {
+      console.error('Error fetching team members forms:', error);
+      if (error.response?.status === 403) {
+        setMessage('Access denied - Manager role required');
+      } else {
+        setMessage('Error loading team members forms');
+      }
+    }
   };
 
   const handleFormSubmitted = () => {
@@ -113,13 +201,26 @@ const ManagerDashboard = ({ user, onLogout }) => {
   const fetchPendingForms = async () => {
     try {
       const token = localStorage.getItem('token');
+      console.log('Fetching pending team requests...');
+      
       const response = await axios.get('http://localhost:5000/api/forms/manager/pending', {
         headers: { 'x-auth-token': token }
       });
+      
+      console.log('Pending team requests received:', {
+        count: response.data.length,
+        requests: response.data.map(form => ({
+          id: form._id,
+          type: form.type,
+          submittedBy: form.user?.name,
+          department: form.user?.department
+        }))
+      });
+      
       setPendingForms(response.data);
     } catch (error) {
-      console.error('Error fetching pending forms:', error);
-      setMessage('Error loading pending requests');
+      console.error('Error fetching pending team requests:', error);
+      setMessage('Error loading pending team requests');
     }
   };
 
@@ -195,7 +296,7 @@ const ManagerDashboard = ({ user, onLogout }) => {
     return diffDays;
   };
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
@@ -234,8 +335,8 @@ const ManagerDashboard = ({ user, onLogout }) => {
       <div className="dashboard-header">
         <div className="user-info">
           <h1>Manager Dashboard</h1>
-          <p>Welcome, {user.name}</p>
-          <p className="departments">Managing: {user.managedDepartments?.join(', ') || 'No departments'}</p>
+          <p>Welcome, {user?.name || 'Manager'}</p>
+          <p className="departments">Managing: {user?.managedDepartments?.join(', ') || 'No departments'}</p>
           <small style={{ color: 'rgba(255, 255, 255, 0.6)', fontStyle: 'italic' }}>
             You can only see and manage requests from your assigned departments
           </small>
@@ -263,62 +364,85 @@ const ManagerDashboard = ({ user, onLogout }) => {
           <small>Awaiting your approval</small>
         </div>
         <div className="stat-card">
-          <h3>{user.managedDepartments?.length || 0}</h3>
+          <h3>{user?.managedDepartments?.length || 0}</h3>
           <p>Managed Departments</p>
           <small>Under your supervision</small>
         </div>
       </div>
 
       {/* Manager's Personal Section */}
-      <div className="section">
-        <h2>My Personal Forms</h2>
+      <div className="section manager-personal-section">
+        <div className="section-header">
+          <h2>📋 My Personal Forms & Requests</h2>
+          <small className="section-subtitle">Submit and view your own forms (separate from team management)</small>
+        </div>
         
         {/* Vacation and Excuse Days Cards */}
-        <div className="stats-section" style={{ marginBottom: '20px' }}>
-          <div className="stat-card">
+        <div className="stats-section manager-stats" style={{ marginBottom: '20px' }}>
+          <div className="stat-card manager-stat-card">
+            <div className="stat-icon">🏖️</div>
             <h3>{vacationDaysLeft !== null ? vacationDaysLeft : '...'}</h3>
             <p>Vacation Days Left</p>
-            <small>Annual allowance remaining</small>
+            <small>Your annual allowance remaining</small>
           </div>
-          <div className="stat-card">
+          <div className="stat-card manager-stat-card">
+            <div className="stat-icon">⏰</div>
             <h3>{excuseHoursLeft !== null ? excuseHoursLeft : '...'}</h3>
             <p>Excuse Hours Left</p>
-            <small>Annual allowance remaining</small>
+            <small>Your monthly allowance remaining</small>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="action-buttons">
+        <div className="action-buttons manager-actions">
           <button 
-            className="btn-action submit-btn"
+            className="btn-manager submit-btn"
             onClick={handleShowForm}
           >
-            Submit New Form
+            <span className="btn-icon">📝</span>
+            Submit My Form
           </button>
           <button 
-            className="btn-action view-btn"
+            className="btn-manager view-btn"
             onClick={handleShowMyForms}
           >
+            <span className="btn-icon">📋</span>
             View My Forms
+          </button>
+          <button 
+            className="btn-manager team-forms-btn"
+            onClick={handleShowTeamForms}
+          >
+            <span className="btn-icon">👥</span>
+            My Team Members Forms
           </button>
         </div>
       </div>
 
       {/* Form Submission */}
       {showForm && (
-        <div className="section">
-          <FormSubmission onFormSubmitted={handleFormSubmitted} />
+        <div className="section manager-form-section">
+          <div className="section-header">
+            <h2>📝 Submit New Personal Form</h2>
+            <small className="section-subtitle">This is for your own personal requests (vacation, sick leave, etc.)</small>
+          </div>
+          <div className="form-container">
+            <FormSubmission onFormSubmitted={handleFormSubmitted} />
+          </div>
         </div>
       )}
 
       {/* My Forms Preview */}
       {showMyForms && (
-        <div className="section">
-          <h2>My Submitted Forms</h2>
+        <div className="section manager-forms-view-section">
+          <div className="section-header">
+            <h2>📋 My Submitted Forms</h2>
+            <small className="section-subtitle">Your personal form submissions and their status</small>
+          </div>
           {myForms.length > 0 ? (
             <div className="my-forms-grid">
               {myForms.map(form => (
-                <div key={form._id} className="my-form-card">
+                <div key={form._id} className="my-form-card manager-own-form">
                   <div className="form-header">
                     <h4>{form.type.toUpperCase()}</h4>
                     {getStatusBadge(form.status)}
@@ -354,7 +478,7 @@ const ManagerDashboard = ({ user, onLogout }) => {
                       <>
                         <p><strong>Dates:</strong> {formatDate(form.sickLeaveStartDate)} - {formatDate(form.sickLeaveEndDate)}</p>
                         <p><strong>Duration:</strong> {Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</p>
-                        {form.medicalDocument && <p><strong>Document:</strong> 📄 Attached</p>}
+                        <MedicalDocumentViewer form={form} userRole="manager" />
                       </>
                     )}
                     
@@ -378,42 +502,135 @@ const ManagerDashboard = ({ user, onLogout }) => {
               ))}
             </div>
           ) : (
-            <p className="no-requests">No forms submitted yet</p>
+            <div className="no-content">
+              <span className="no-content-icon">📋</span>
+              <p>No personal forms submitted yet</p>
+              <small>These are YOUR own forms (vacation, sick leave, etc.). Submit your first personal form using the "Submit My Form" button above.</small>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Team Members Forms */}
+      {showTeamForms && (
+        <div className="section team-management-section">
+          <div className="section-header">
+            <h2>👥 My Team Members Forms</h2>
+            <small className="section-subtitle">All forms submitted by your team members from managed departments</small>
+          </div>
+          {teamForms.length > 0 ? (
+            <div className="my-forms-grid">
+              {teamForms.map(form => (
+                <div key={form._id} className="my-form-card team-request-card">
+                  <div className="form-header">
+                    <h4>{form.user.name} - {form.type.toUpperCase()}</h4>
+                    {getStatusBadge(form.status)}
+                  </div>
+                  
+                  <div className="form-details">
+                    <p><strong>Employee:</strong> {form.user.name}</p>
+                    <p><strong>Department:</strong> {form.user.department}</p>
+                    <p><strong>Submitted:</strong> {formatDate(form.createdAt)}</p>
+                    
+                    {form.type === 'vacation' && (
+                      <>
+                        <p><strong>Dates:</strong> {formatDate(form.startDate)} - {formatDate(form.endDate)}</p>
+                        <p><strong>Duration:</strong> {calculateDays(form.startDate, form.endDate)} days</p>
+                        {form.vacationType && <p><strong>Type:</strong> {form.vacationType}</p>}
+                      </>
+                    )}
+                    
+                    {form.type === 'excuse' && (
+                      <>
+                        <p><strong>Excuse Date:</strong> {formatDate(form.excuseDate)}</p>
+                        <p><strong>Time:</strong> {form.fromHour} - {form.toHour}</p>
+                        <p><strong>Duration:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours</p>
+                      </>
+                    )}
+                    
+                    {form.type === 'wfh' && (
+                      <>
+                        <p><strong>Hours:</strong> {form.wfhHours} hours</p>
+                        <p><strong>Description:</strong> {form.wfhDescription?.substring(0, 50)}...</p>
+                      </>
+                    )}
+                    
+                    {form.type === 'sick_leave' && (
+                      <>
+                        <p><strong>Dates:</strong> {formatDate(form.sickLeaveStartDate)} - {formatDate(form.sickLeaveEndDate)}</p>
+                        <p><strong>Duration:</strong> {Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</p>
+                        <MedicalDocumentViewer form={form} userRole="manager" />
+                      </>
+                    )}
+                    
+                    <p><strong>Reason:</strong> {form.reason?.substring(0, 80)}...</p>
+                    
+                    {form.managerComment && (
+                      <div className="comment-section">
+                        <strong>Manager Comment:</strong>
+                        <p>{form.managerComment}</p>
+                      </div>
+                    )}
+                    
+                    {form.adminComment && (
+                      <div className="comment-section">
+                        <strong>Admin Comment:</strong>
+                        <p>{form.adminComment}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="no-content">
+              <span className="no-content-icon">👥</span>
+              <p>No forms found from your team members</p>
+              <small>Your team members haven't submitted any forms yet, or you don't have any managed departments assigned.</small>
+            </div>
           )}
         </div>
       )}
 
       {/* Team Members */}
-      <div className="section">
-        <h2>My Team Members</h2>
-        <p style={{ color: '#666', marginBottom: '20px', fontStyle: 'italic' }}>
-          Showing only employees from your managed departments: {user.managedDepartments?.join(', ') || 'None'}
-        </p>
+      <div className="section team-management-section">
+        <div className="section-header">
+          <h2>👥 My Team Members</h2>
+          <small className="section-subtitle">
+            Employees from your managed departments: {user.managedDepartments?.join(', ') || 'None'}
+          </small>
+        </div>
         {teamMembers.length > 0 ? (
           <div className="team-grid">
             {teamMembers.map(member => (
-              <div key={member._id} className="team-card">
+              <div key={member._id} className="team-card team-member-card">
+                <div className="member-avatar">👤</div>
                 <h4>{member.name}</h4>
-                <p>{member.department}</p>
-                <span className="vacation-days">{member.vacationDaysLeft} days left</span>
+                <p className="member-department">{member.department}</p>
+                <span className="vacation-days team-stat">{member.vacationDaysLeft} days left</span>
               </div>
             ))}
           </div>
         ) : (
-          <p className="no-requests">No team members found in your managed departments</p>
+          <div className="no-content">
+            <span className="no-content-icon">👥</span>
+            <p>No team members found in your managed departments</p>
+          </div>
         )}
       </div>
 
       {/* Pending Requests */}
-      <div className="section">
-        <h2>Pending Team Requests</h2>
-        <p style={{ color: '#666', marginBottom: '20px', fontStyle: 'italic' }}>
-          Showing only requests from employees in your managed departments
-        </p>
+      <div className="section team-requests-section">
+        <div className="section-header">
+          <h2>⏳ Pending Team Requests</h2>
+          <small className="section-subtitle">
+            Employee requests awaiting your approval from managed departments
+          </small>
+        </div>
         {pendingForms.length > 0 ? (
           <div className="requests-list">
             {pendingForms.map(form => (
-              <div key={form._id} className="request-card">
+              <div key={form._id} className="request-card team-request-card">
                 <div className="request-info">
                   <h4>{form.user.name} - {form.type.toUpperCase()}</h4>
                   <p><strong>Department:</strong> {form.user.department}</p>
@@ -446,7 +663,7 @@ const ManagerDashboard = ({ user, onLogout }) => {
                     <>
                       <p><strong>Sick Leave Dates:</strong> {formatDate(form.sickLeaveStartDate)} - {formatDate(form.sickLeaveEndDate)}</p>
                       <p><strong>Duration:</strong> {Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</p>
-                      {form.medicalDocument && <p><strong>Medical Document:</strong> 📄 Attached</p>}
+                      <MedicalDocumentViewer form={form} userRole="manager" />
                     </>
                   )}
                   
@@ -471,7 +688,11 @@ const ManagerDashboard = ({ user, onLogout }) => {
             ))}
           </div>
         ) : (
-          <p className="no-requests">No pending requests from your team</p>
+          <div className="no-content">
+            <span className="no-content-icon">⏳</span>
+            <p>No pending requests from your team</p>
+            <small>All caught up! Your team hasn't submitted any requests needing approval.</small>
+          </div>
         )}
       </div>
 
@@ -520,7 +741,7 @@ const ManagerDashboard = ({ user, onLogout }) => {
                     <>
                       <p><strong>Sick Leave Dates:</strong> {formatDate(selectedForm.sickLeaveStartDate)} - {formatDate(selectedForm.sickLeaveEndDate)}</p>
                       <p><strong>Duration:</strong> {Math.ceil((new Date(selectedForm.sickLeaveEndDate) - new Date(selectedForm.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</p>
-                      {selectedForm.medicalDocument && <p><strong>Medical Document:</strong> 📄 Document attached</p>}
+                      <MedicalDocumentViewer form={selectedForm} userRole="manager" />
                     </>
                   )}
                   
@@ -574,25 +795,30 @@ const ManagerDashboard = ({ user, onLogout }) => {
       <style jsx>{`
         .manager-dashboard {
           min-height: 100vh;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
           padding: 20px;
+          color: #ffffff;
         }
 
         .dashboard-header {
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
+          background: rgba(0, 0, 0, 0.3);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 15px;
           padding: 20px;
           margin-bottom: 20px;
           display: flex;
           justify-content: space-between;
           align-items: center;
+          box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
         }
 
         .user-info h1 {
-          color: white;
+          color: #ffffff;
           margin: 0 0 10px 0;
           font-size: 2rem;
+          font-weight: 700;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         }
 
         .user-info p {
@@ -603,20 +829,24 @@ const ManagerDashboard = ({ user, onLogout }) => {
         .departments {
           font-style: italic;
           font-size: 0.9rem;
+          color: rgba(255, 255, 255, 0.7);
         }
 
         .logout-btn {
-          background: rgba(255, 255, 255, 0.2);
+          background: linear-gradient(135deg, #667eea, #764ba2);
           color: white;
           border: 1px solid rgba(255, 255, 255, 0.3);
           padding: 10px 20px;
           border-radius: 8px;
           cursor: pointer;
           transition: all 0.3s ease;
+          font-weight: 600;
         }
 
         .logout-btn:hover {
-          background: rgba(255, 255, 255, 0.3);
+          background: linear-gradient(135deg, #764ba2, #667eea);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
         .message {
@@ -627,15 +857,15 @@ const ManagerDashboard = ({ user, onLogout }) => {
         }
 
         .message.success {
-          background: rgba(76, 175, 80, 0.1);
-          color: #2E7D32;
-          border: 1px solid rgba(76, 175, 80, 0.3);
+          background: rgba(76, 175, 80, 0.2);
+          color: #4caf50;
+          border: 1px solid rgba(76, 175, 80, 0.4);
         }
 
         .message.error {
-          background: rgba(244, 67, 54, 0.1);
-          color: #C62828;
-          border: 1px solid rgba(244, 67, 54, 0.3);
+          background: rgba(244, 67, 54, 0.2);
+          color: #f44336;
+          border: 1px solid rgba(244, 67, 54, 0.4);
         }
 
         .stats-section {
@@ -646,38 +876,60 @@ const ManagerDashboard = ({ user, onLogout }) => {
         }
 
         .stat-card {
-          background: rgba(255, 255, 255, 0.9);
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           padding: 30px;
           border-radius: 15px;
           text-align: center;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
+          transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 12px 40px rgba(255, 255, 255, 0.15);
+          background: rgba(0, 0, 0, 0.7);
         }
 
         .stat-card h3 {
           font-size: 2.5rem;
           margin: 0 0 10px 0;
-          color: #667eea;
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
           font-weight: bold;
         }
 
         .stat-card p {
-          color: #666;
+          color: rgba(255, 255, 255, 0.8);
           margin: 0;
           font-size: 1.1rem;
+          font-weight: 600;
+        }
+
+        .stat-card small {
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 0.9rem;
         }
 
         .section {
-          background: rgba(255, 255, 255, 0.9);
+          background: rgba(0, 0, 0, 0.3);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 15px;
           padding: 25px;
           margin-bottom: 20px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
         }
 
         .section h2 {
           margin: 0 0 20px 0;
-          color: #333;
+          color: #ffffff;
           font-size: 1.5rem;
+          font-weight: 700;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         }
 
         .team-grid {
@@ -687,25 +939,30 @@ const ManagerDashboard = ({ user, onLogout }) => {
         }
 
         .team-card {
-          background: rgba(102, 126, 234, 0.1);
-          padding: 20px;
-          border-radius: 10px;
-          border-left: 4px solid #667eea;
+          background: rgba(0, 0, 0, 0.7) !important;
+          backdrop-filter: blur(10px) !important;
+          border: 1px solid rgba(255, 255, 255, 0.2) !important;
+          padding: 20px !important;
+          border-radius: 10px !important;
+          border-left: 4px solid #667eea !important;
+          text-align: center !important;
+          transition: all 0.3s ease !important;
         }
 
         .team-card h4 {
           margin: 0 0 5px 0;
-          color: #333;
+          color: #ffffff;
+          font-weight: 600;
         }
 
         .team-card p {
           margin: 0 0 10px 0;
-          color: #666;
+          color: rgba(255, 255, 255, 0.7);
         }
 
         .vacation-days {
-          background: rgba(76, 175, 80, 0.2);
-          color: #2E7D32;
+          background: linear-gradient(135deg, #4CAF50, #45a049);
+          color: white;
           padding: 4px 8px;
           border-radius: 4px;
           font-size: 0.8rem;
@@ -723,9 +980,18 @@ const ManagerDashboard = ({ user, onLogout }) => {
           align-items: flex-start;
           padding: 20px;
           margin-bottom: 15px;
-          background: rgba(102, 126, 234, 0.05);
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 10px;
           border-left: 4px solid #667eea;
+          transition: all 0.3s ease;
+        }
+
+        .request-card:hover {
+          background: rgba(0, 0, 0, 0.6);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
         }
 
         .request-info {
@@ -734,13 +1000,18 @@ const ManagerDashboard = ({ user, onLogout }) => {
 
         .request-info h4 {
           margin: 0 0 10px 0;
-          color: #333;
+          color: #ffffff;
+          font-weight: 600;
         }
 
         .request-info p {
           margin: 5px 0;
-          color: #666;
+          color: rgba(255, 255, 255, 0.7);
           font-size: 0.9rem;
+        }
+
+        .request-info strong {
+          color: #ffffff;
         }
 
         .request-actions {
@@ -790,7 +1061,7 @@ const ManagerDashboard = ({ user, onLogout }) => {
 
         .no-requests {
           text-align: center;
-          color: #666;
+          color: rgba(255, 255, 255, 0.7);
           font-style: italic;
           padding: 40px;
         }
@@ -802,7 +1073,8 @@ const ManagerDashboard = ({ user, onLogout }) => {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.7);
+          background: rgba(0, 0, 0, 0.8);
+          backdrop-filter: blur(5px);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -811,13 +1083,15 @@ const ManagerDashboard = ({ user, onLogout }) => {
         }
 
         .modal-content {
-          background: white;
+          background: rgba(0, 0, 0, 0.9);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
           border-radius: 15px;
           max-width: 500px;
           width: 100%;
           max-height: 90vh;
           overflow-y: auto;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 20px 60px rgba(255, 255, 255, 0.1);
         }
 
         .modal-header {
@@ -825,13 +1099,14 @@ const ManagerDashboard = ({ user, onLogout }) => {
           justify-content: space-between;
           align-items: center;
           padding: 20px 25px;
-          border-bottom: 1px solid #eee;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .modal-header h3 {
           margin: 0;
-          color: #333;
+          color: #ffffff;
           font-size: 1.4rem;
+          font-weight: 600;
         }
 
         .close-btn {
@@ -839,17 +1114,20 @@ const ManagerDashboard = ({ user, onLogout }) => {
           border: none;
           font-size: 1.5rem;
           cursor: pointer;
-          color: #999;
+          color: rgba(255, 255, 255, 0.7);
           padding: 0;
           width: 30px;
           height: 30px;
           display: flex;
           align-items: center;
           justify-content: center;
+          border-radius: 50%;
+          transition: all 0.3s ease;
         }
 
         .close-btn:hover {
-          color: #333;
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.1);
         }
 
         .modal-body {
@@ -857,7 +1135,8 @@ const ManagerDashboard = ({ user, onLogout }) => {
         }
 
         .request-summary {
-          background: rgba(102, 126, 234, 0.1);
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           padding: 15px;
           border-radius: 8px;
           margin-bottom: 20px;
@@ -865,52 +1144,402 @@ const ManagerDashboard = ({ user, onLogout }) => {
 
         .request-summary h4 {
           margin: 0 0 10px 0;
-          color: #333;
+          color: #ffffff;
+          font-weight: 600;
         }
 
         .request-summary p {
           margin: 5px 0;
-          color: #666;
+          color: rgba(255, 255, 255, 0.7);
           font-size: 0.9rem;
+        }
+
+        .request-summary strong {
+          color: #ffffff;
         }
 
         .comment-section label {
           display: block;
           margin-bottom: 8px;
           font-weight: 600;
-          color: #333;
+          color: #ffffff;
         }
 
         .comment-section textarea {
           width: 100%;
           padding: 12px;
-          border: 2px solid #ddd;
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          background: rgba(0, 0, 0, 0.5);
+          color: #ffffff;
           border-radius: 8px;
           font-family: inherit;
           font-size: 14px;
           resize: vertical;
-          transition: border-color 0.3s ease;
+          transition: all 0.3s ease;
         }
 
         .comment-section textarea:focus {
           outline: none;
           border-color: #667eea;
+          background: rgba(0, 0, 0, 0.7);
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .comment-section textarea::placeholder {
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Enhanced Input Field Styling */
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="number"],
+        input[type="date"],
+        input[type="time"],
+        input[type="search"],
+        select,
+        textarea {
+          background: rgba(0, 0, 0, 0.6) !important;
+          color: #ffffff !important;
+          border: 2px solid rgba(255, 255, 255, 0.2) !important;
+          border-radius: 8px !important;
+          padding: 12px 16px !important;
+          font-size: 14px !important;
+          transition: all 0.3s ease !important;
+          backdrop-filter: blur(10px) !important;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="number"]:focus,
+        input[type="date"]:focus,
+        input[type="time"]:focus,
+        input[type="search"]:focus,
+        select:focus,
+        textarea:focus {
+          outline: none !important;
+          border-color: #667eea !important;
+          background: rgba(0, 0, 0, 0.8) !important;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3) !important;
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+          color: rgba(255, 255, 255, 0.5) !important;
+          font-style: italic;
+        }
+
+        /* Select dropdown specific styling */
+        select option {
+          background: rgba(0, 0, 0, 0.95) !important;
+          color: #ffffff !important;
+          padding: 10px !important;
+        }
+
+        /* Form labels */
+        label {
+          color: #ffffff !important;
+          font-weight: 600 !important;
+          margin-bottom: 8px !important;
+          display: block !important;
+        }
+
+        /* Form groups */
+        .form-group,
+        .form-field,
+        .input-group {
+          margin-bottom: 20px;
+        }
+
+        .form-group label,
+        .form-field label,
+        .input-group label {
+          color: #ffffff !important;
+          font-weight: 600;
+          margin-bottom: 8px;
+          display: block;
+        }
+
+        /* Button improvements */
+        button:not(.logout-btn):not(.close-btn) {
+          background: linear-gradient(135deg, #667eea, #764ba2) !important;
+          color: white !important;
+          border: none !important;
+          padding: 12px 24px !important;
+          border-radius: 8px !important;
+          font-weight: 600 !important;
+          cursor: pointer !important;
+          transition: all 0.3s ease !important;
+        }
+
+        button:not(.logout-btn):not(.close-btn):hover {
+          background: linear-gradient(135deg, #764ba2, #667eea) !important;
+          transform: translateY(-2px) !important;
+          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+        }
+
+        /* Search inputs specific styling */
+        .search-input,
+        input[type="search"] {
+          background: rgba(0, 0, 0, 0.5) !important;
+          color: #ffffff !important;
+          border: 2px solid rgba(255, 255, 255, 0.2) !important;
+          border-radius: 25px !important;
+          padding: 12px 20px !important;
+          font-size: 14px !important;
+          width: 100% !important;
+        }
+
+        .search-input:focus,
+        input[type="search"]:focus {
+          border-color: #667eea !important;
+          background: rgba(0, 0, 0, 0.7) !important;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
+        }
+
+        /* Card content text clarity */
+        .stat-card h3,
+        .team-card h4,
+        .request-card h4,
+        .my-form-card h4 {
+          color: #ffffff !important;
+          font-weight: 600 !important;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        .stat-card p,
+        .team-card p,
+        .request-card p,
+        .my-form-card p {
+          color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .stat-card small,
+        .team-card small,
+        .request-card small,
+        .my-form-card small {
+          color: rgba(255, 255, 255, 0.6) !important;
+        }
+
+        /* Enhanced contrast for specific elements */
+        strong {
+          color: #ffffff !important;
+          font-weight: 700 !important;
+        }
+
+        /* Form container improvements */
+        .form-container input,
+        .form-container textarea,
+        .form-container select {
+          background: rgba(0, 0, 0, 0.7) !important;
+          color: #ffffff !important;
+          border: 2px solid rgba(76, 175, 80, 0.3) !important;
+        }
+
+        .form-container input:focus,
+        .form-container textarea:focus,
+        .form-container select:focus {
+          border-color: #4caf50 !important;
+          box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2) !important;
+        }
+
+        /* File input styling */
+        input[type="file"] {
+          background: rgba(0, 0, 0, 0.6) !important;
+          color: #ffffff !important;
+          border: 2px dashed rgba(255, 255, 255, 0.3) !important;
+          border-radius: 8px !important;
+          padding: 16px !important;
+          cursor: pointer !important;
+          transition: all 0.3s ease !important;
+        }
+
+        input[type="file"]:hover {
+          border-color: #667eea !important;
+          background: rgba(0, 0, 0, 0.8) !important;
+        }
+
+        input[type="file"]:focus {
+          outline: none !important;
+          border-color: #667eea !important;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
+        }
+
+        /* Radio buttons and checkboxes */
+        input[type="radio"],
+        input[type="checkbox"] {
+          accent-color: #667eea !important;
+          transform: scale(1.2) !important;
+          margin-right: 8px !important;
+        }
+
+        /* Date picker improvements */
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
+          filter: invert(1) !important;
+          cursor: pointer !important;
+        }
+
+        /* Number input spinner styling */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+          -webkit-appearance: none !important;
+          margin: 0 !important;
+        }
+
+        /* Manager Dashboard specific text improvements */
+        .manager-dashboard h1,
+        .manager-dashboard h2,
+        .manager-dashboard h3,
+        .manager-dashboard h4,
+        .manager-dashboard h5,
+        .manager-dashboard h6 {
+          color: #ffffff !important;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        .manager-dashboard p,
+        .manager-dashboard span,
+        .manager-dashboard div {
+          color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .manager-dashboard strong,
+        .manager-dashboard b {
+          color: #ffffff !important;
+          font-weight: 700 !important;
+        }
+
+        /* Table styling if present */
+        table,
+        .table {
+          background: rgba(0, 0, 0, 0.4) !important;
+          border-radius: 8px !important;
+          overflow: hidden !important;
+        }
+
+        table th,
+        .table th {
+          background: rgba(0, 0, 0, 0.6) !important;
+          color: #ffffff !important;
+          font-weight: 600 !important;
+          border: none !important;
+          padding: 12px 16px !important;
+        }
+
+        table td,
+        .table td {
+          background: rgba(0, 0, 0, 0.3) !important;
+          color: rgba(255, 255, 255, 0.8) !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          padding: 12px 16px !important;
+        }
+
+        table tr:hover td,
+        .table tr:hover td {
+          background: rgba(0, 0, 0, 0.5) !important;
+        }
+
+        /* Enhanced visibility for all text elements */
+        .manager-dashboard *:not(input):not(textarea):not(select):not(button) {
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Universal override for any white backgrounds */
+        .manager-dashboard .card,
+        .manager-dashboard .stat-card,
+        .manager-dashboard .team-card,
+        .manager-dashboard .request-card,
+        .manager-dashboard [class*="card"],
+        .manager-dashboard [class*="Card"] {
+          background: rgba(0, 0, 0, 0.7) !important;
+          color: #ffffff !important;
+        }
+
+        /* Ensure all card text is white */
+        .manager-dashboard .card *,
+        .manager-dashboard .stat-card *,
+        .manager-dashboard .team-card *,
+        .manager-dashboard .request-card *,
+        .manager-dashboard [class*="card"] *,
+        .manager-dashboard [class*="Card"] * {
+          color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        .manager-dashboard .card h1,
+        .manager-dashboard .card h2,
+        .manager-dashboard .card h3,
+        .manager-dashboard .card h4,
+        .manager-dashboard .card h5,
+        .manager-dashboard .card h6,
+        .manager-dashboard .stat-card h1,
+        .manager-dashboard .stat-card h2,
+        .manager-dashboard .stat-card h3,
+        .manager-dashboard .stat-card h4,
+        .manager-dashboard .stat-card h5,
+        .manager-dashboard .stat-card h6,
+        .manager-dashboard .team-card h1,
+        .manager-dashboard .team-card h2,
+        .manager-dashboard .team-card h3,
+        .manager-dashboard .team-card h4,
+        .manager-dashboard .team-card h5,
+        .manager-dashboard .team-card h6,
+        .manager-dashboard .request-card h1,
+        .manager-dashboard .request-card h2,
+        .manager-dashboard .request-card h3,
+        .manager-dashboard .request-card h4,
+        .manager-dashboard .request-card h5,
+        .manager-dashboard .request-card h6,
+        .manager-dashboard [class*="card"] h1,
+        .manager-dashboard [class*="card"] h2,
+        .manager-dashboard [class*="card"] h3,
+        .manager-dashboard [class*="card"] h4,
+        .manager-dashboard [class*="card"] h5,
+        .manager-dashboard [class*="card"] h6,
+        .manager-dashboard [class*="Card"] h1,
+        .manager-dashboard [class*="Card"] h2,
+        .manager-dashboard [class*="Card"] h3,
+        .manager-dashboard [class*="Card"] h4,
+        .manager-dashboard [class*="Card"] h5,
+        .manager-dashboard [class*="Card"] h6 {
+          color: #ffffff !important;
+          font-weight: 600 !important;
+        }
+
+        /* Ensure proper contrast for all interactive elements */
+        .manager-dashboard [role="button"],
+        .manager-dashboard .clickable {
+          background: rgba(0, 0, 0, 0.5) !important;
+          color: #ffffff !important;
+          border: 1px solid rgba(255, 255, 255, 0.2) !important;
+          border-radius: 6px !important;
+          padding: 8px 16px !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .manager-dashboard [role="button"]:hover,
+        .manager-dashboard .clickable:hover {
+          background: rgba(0, 0, 0, 0.7) !important;
+          border-color: #667eea !important;
         }
 
         .comment-section textarea.required-field {
           border-color: #f44336;
+          box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.2);
         }
 
         .error-text {
-          color: #f44336;
+          color: #ff5252;
           font-size: 0.8rem;
           margin-top: 5px;
           display: block;
+          font-weight: 500;
         }
 
         .modal-actions {
           padding: 20px 25px;
-          border-top: 1px solid #eee;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
           display: flex;
           gap: 10px;
           justify-content: flex-end;
@@ -918,9 +1547,9 @@ const ManagerDashboard = ({ user, onLogout }) => {
 
         .cancel-btn {
           padding: 10px 20px;
-          border: 1px solid #ddd;
-          background: white;
-          color: #666;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: rgba(0, 0, 0, 0.5);
+          color: rgba(255, 255, 255, 0.8);
           border-radius: 6px;
           cursor: pointer;
           font-weight: 500;
@@ -928,7 +1557,8 @@ const ManagerDashboard = ({ user, onLogout }) => {
         }
 
         .cancel-btn:hover {
-          background: #f5f5f5;
+          background: rgba(255, 255, 255, 0.1);
+          color: #ffffff;
         }
 
         .cancel-btn:disabled {
@@ -982,16 +1612,20 @@ const ManagerDashboard = ({ user, onLogout }) => {
         }
 
         .my-form-card {
-          background: rgba(255, 255, 255, 0.95);
-          border-radius: 12px;
-          padding: 20px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-          border-left: 4px solid #667eea;
-          transition: transform 0.3s ease;
+          background: rgba(0, 0, 0, 0.7) !important;
+          backdrop-filter: blur(10px) !important;
+          border: 1px solid rgba(255, 255, 255, 0.2) !important;
+          border-radius: 12px !important;
+          padding: 20px !important;
+          box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1) !important;
+          border-left: 4px solid #667eea !important;
+          transition: all 0.3s ease !important;
         }
 
         .my-form-card:hover {
           transform: translateY(-2px);
+          background: rgba(0, 0, 0, 0.6);
+          box-shadow: 0 8px 30px rgba(255, 255, 255, 0.15);
         }
 
         .form-header {
@@ -1000,40 +1634,42 @@ const ManagerDashboard = ({ user, onLogout }) => {
           align-items: center;
           margin-bottom: 15px;
           padding-bottom: 10px;
-          border-bottom: 1px solid #eee;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .form-header h4 {
           margin: 0;
-          color: #333;
+          color: #ffffff;
           font-size: 1.2rem;
+          font-weight: 600;
         }
 
         .form-details p {
           margin: 8px 0;
-          color: #666;
+          color: rgba(255, 255, 255, 0.7);
           font-size: 0.9rem;
         }
 
         .form-details strong {
-          color: #333;
+          color: #ffffff;
         }
 
         .my-form-card .comment-section {
-          background: rgba(102, 126, 234, 0.1);
+          background: rgba(102, 126, 234, 0.2);
+          border: 1px solid rgba(102, 126, 234, 0.3);
           padding: 10px;
           border-radius: 6px;
           margin-top: 10px;
         }
 
         .my-form-card .comment-section strong {
-          color: #667eea;
+          color: #64b5f6;
           font-size: 0.9rem;
         }
 
         .my-form-card .comment-section p {
           margin: 5px 0 0 0;
-          color: #555;
+          color: rgba(255, 255, 255, 0.8);
           font-style: italic;
         }
 
@@ -1070,6 +1706,339 @@ const ManagerDashboard = ({ user, onLogout }) => {
         .badge-secondary {
           background: linear-gradient(135deg, #9E9E9E, #757575);
           color: white;
+        }
+
+        /* Manager Personal Section Styles */
+        .manager-personal-section {
+          background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05));
+          border: 2px solid rgba(76, 175, 80, 0.3);
+          border-radius: 20px;
+          position: relative;
+        }
+
+        .manager-personal-section::before {
+          content: "👤 PERSONAL";
+          position: absolute;
+          top: -12px;
+          left: 20px;
+          background: linear-gradient(135deg, #4CAF50, #45a049);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 12px;
+          font-size: 0.7rem;
+          font-weight: bold;
+          letter-spacing: 1px;
+          box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .manager-form-section {
+          background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05));
+          border: 2px solid rgba(76, 175, 80, 0.3);
+          border-radius: 20px;
+          position: relative;
+        }
+
+        .manager-form-section::before {
+          content: "📝 PERSONAL FORM";
+          position: absolute;
+          top: -12px;
+          left: 20px;
+          background: linear-gradient(135deg, #4CAF50, #45a049);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 12px;
+          font-size: 0.7rem;
+          font-weight: bold;
+          letter-spacing: 1px;
+          box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .manager-forms-view-section {
+          background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05));
+          border: 2px solid rgba(76, 175, 80, 0.3);
+          border-radius: 20px;
+          position: relative;
+        }
+
+        .manager-forms-view-section::before {
+          content: "📋 MY FORMS";
+          position: absolute;
+          top: -12px;
+          left: 20px;
+          background: linear-gradient(135deg, #4CAF50, #45a049);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 12px;
+          font-size: 0.7rem;
+          font-weight: bold;
+          letter-spacing: 1px;
+          box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        /* Team Management Section Styles */
+        .team-management-section {
+          background: linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(33, 150, 243, 0.05));
+          border: 2px solid rgba(33, 150, 243, 0.3);
+          border-radius: 20px;
+          position: relative;
+        }
+
+        .team-management-section::before {
+          content: "👥 TEAM MANAGEMENT";
+          position: absolute;
+          top: -12px;
+          left: 20px;
+          background: linear-gradient(135deg, #2196F3, #1976D2);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 12px;
+          font-size: 0.7rem;
+          font-weight: bold;
+          letter-spacing: 1px;
+          box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+        }
+
+        .team-requests-section {
+          background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 152, 0, 0.05));
+          border: 2px solid rgba(255, 152, 0, 0.3);
+          border-radius: 20px;
+          position: relative;
+        }
+
+        .team-requests-section::before {
+          content: "⏳ TEAM REQUESTS";
+          position: absolute;
+          top: -12px;
+          left: 20px;
+          background: linear-gradient(135deg, #FF9800, #F57C00);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 12px;
+          font-size: 0.7rem;
+          font-weight: bold;
+          letter-spacing: 1px;
+          box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+        }
+
+        /* Section Headers */
+        .section-header {
+          margin-bottom: 25px;
+          padding-top: 10px;
+        }
+
+        .section-header h2 {
+          margin: 0 0 8px 0;
+          color: #ffffff;
+          font-size: 1.6rem;
+          font-weight: 700;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .section-subtitle {
+          color: rgba(255, 255, 255, 0.7);
+          font-style: italic;
+          font-size: 0.9rem;
+          line-height: 1.4;
+        }
+
+        /* Manager Buttons */
+        .manager-actions {
+          display: flex;
+          gap: 20px;
+          justify-content: center;
+          margin-top: 25px;
+        }
+
+        .btn-manager {
+          padding: 14px 28px;
+          border: none;
+          border-radius: 12px;
+          cursor: pointer;
+          font-weight: bold;
+          transition: all 0.3s ease;
+          color: white;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-manager.submit-btn {
+          background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+
+        .btn-manager.submit-btn:hover {
+          background: linear-gradient(135deg, #45a049, #3d8b40);
+          transform: translateY(-3px);
+          box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-manager.view-btn {
+          background: linear-gradient(135deg, #4CAF50, #2E7D32);
+        }
+
+        .btn-manager.view-btn:hover {
+          background: linear-gradient(135deg, #2E7D32, #1B5E20);
+          transform: translateY(-3px);
+          box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
+        }
+
+        .btn-manager.team-forms-btn {
+          background: linear-gradient(135deg, #2196F3, #1976D2);
+        }
+
+        .btn-manager.team-forms-btn:hover {
+          background: linear-gradient(135deg, #1976D2, #1565C0);
+          transform: translateY(-3px);
+          box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn-icon {
+          font-size: 1.1rem;
+        }
+
+        /* Manager Stats */
+        .manager-stats .manager-stat-card {
+          background: rgba(0, 0, 0, 0.7) !important;
+          border: 2px solid #4CAF50 !important;
+          border-radius: 16px !important;
+          position: relative !important;
+          overflow: hidden !important;
+        }
+
+        .manager-stats .manager-stat-card::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, #4CAF50, #45a049);
+        }
+
+        .stat-icon {
+          font-size: 2.5rem;
+          margin-bottom: 10px;
+        }
+
+        /* Team Member Cards */
+        .team-member-card {
+          background: rgba(0, 0, 0, 0.7) !important;
+          border: 2px solid #2196F3 !important;
+          border-radius: 16px !important;
+          text-align: center !important;
+          position: relative !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .team-member-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 8px 25px rgba(33, 150, 243, 0.3);
+        }
+
+        .member-avatar {
+          font-size: 2.5rem;
+          margin-bottom: 10px;
+        }
+
+        .member-department {
+          color: #2196F3;
+          font-weight: 500;
+          font-size: 0.9rem;
+        }
+
+        .team-stat {
+          background: linear-gradient(135deg, #2196F3, #1976D2);
+          color: white;
+          padding: 6px 12px;
+          border-radius: 8px;
+          font-size: 0.8rem;
+          font-weight: bold;
+          display: inline-block;
+          margin-top: 8px;
+        }
+
+        /* Team Request Cards */
+        .team-request-card {
+          background: rgba(0, 0, 0, 0.7) !important;
+          border: 2px solid #FF9800 !important;
+          border-left: 6px solid #FF9800 !important;
+          border-radius: 12px !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .team-request-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(255, 152, 0, 0.2);
+        }
+
+        /* Manager's Own Form Cards */
+        .manager-own-form {
+          background: rgba(0, 0, 0, 0.7) !important;
+          border: 2px solid #4CAF50 !important;
+          border-left: 6px solid #4CAF50 !important;
+          border-radius: 12px !important;
+        }
+
+        /* Form Container */
+        .form-container {
+          background: rgba(0, 0, 0, 0.2);
+          backdrop-filter: blur(10px);
+          border-radius: 16px;
+          padding: 25px;
+          margin-top: 20px;
+          border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        /* No Content Styling */
+        .no-content {
+          text-align: center;
+          padding: 40px 20px;
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        .no-content-icon {
+          font-size: 3rem;
+          display: block;
+          margin-bottom: 15px;
+          opacity: 0.6;
+        }
+
+        .no-content p {
+          margin: 0 0 8px 0;
+          font-size: 1.1rem;
+          color: rgba(255, 255, 255, 0.8);
+        }
+
+        .no-content small {
+          color: rgba(255, 255, 255, 0.6);
+          font-style: italic;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+          .manager-actions {
+            flex-direction: column;
+            align-items: center;
+          }
+
+          .btn-manager {
+            width: 100%;
+            max-width: 280px;
+          }
+
+          .stats-section {
+            grid-template-columns: 1fr;
+          }
+
+          .my-forms-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .team-grid {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </div>

@@ -118,7 +118,7 @@ router.put('/:userId/status', auth, async (req, res) => {
 router.put('/:userId/vacation-days', auth, async (req, res) => {
   try {
     const admin = await User.findById(req.user.id);
-    if (admin.role !== 'admin') {
+    if (admin.role !== 'admin' && admin.role !== 'super_admin') {
       return res.status(403).json({ msg: 'Not authorized' });
     }
     const { vacationDaysLeft } = req.body;
@@ -129,8 +129,41 @@ router.put('/:userId/vacation-days', auth, async (req, res) => {
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
+    
+    // Store old value for audit logging
+    const oldVacationDays = user.vacationDaysLeft;
+    
+    // Update vacation days
     user.vacationDaysLeft = vacationDaysLeft;
     await user.save();
+    
+    // Create audit log for vacation days modification
+    await createAuditLog({
+      action: 'VACATION_DAYS_MODIFIED',
+      performedBy: admin._id,
+      targetUser: user._id,
+      targetResource: 'user',
+      targetResourceId: user._id,
+      description: `Vacation days for ${user.name} (${user.email}) changed from ${oldVacationDays} to ${vacationDaysLeft} by admin ${admin.name}`,
+      oldValues: {
+        vacationDaysLeft: oldVacationDays
+      },
+      newValues: {
+        vacationDaysLeft: vacationDaysLeft
+      },
+      details: {
+        targetUserName: user.name,
+        targetUserEmail: user.email,
+        targetUserDepartment: user.department,
+        adminName: admin.name,
+        adminEmail: admin.email,
+        changeAmount: vacationDaysLeft - oldVacationDays
+      },
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      severity: 'MEDIUM'
+    });
+    
     res.json({ msg: 'Vacation days updated', user });
   } catch (err) {
     console.error(err.message);
@@ -265,6 +298,10 @@ router.put('/super/:userId', auth, async (req, res) => {
     if (vacationDaysLeft !== user.vacationDaysLeft) modifications.push({ field: 'vacationDaysLeft', oldValue: user.vacationDaysLeft, newValue: vacationDaysLeft });
     if (status !== user.status) modifications.push({ field: 'status', oldValue: user.status, newValue: status });
 
+    // Check if vacation days are being modified for separate audit logging
+    const oldVacationDays = user.vacationDaysLeft;
+    const vacationDaysChanged = vacationDaysLeft !== user.vacationDaysLeft;
+
     // Update user fields
     user.name = name;
     user.email = email;
@@ -283,6 +320,39 @@ router.put('/super/:userId', auth, async (req, res) => {
     });
 
     await user.save();
+    
+    // Create separate audit log for vacation days modification if changed
+    if (vacationDaysChanged) {
+      await createAuditLog({
+        action: 'VACATION_DAYS_MODIFIED',
+        performedBy: superAdmin._id,
+        targetUser: user._id,
+        targetResource: 'user',
+        targetResourceId: user._id,
+        description: `Vacation days for ${user.name} (${user.email}) changed from ${oldVacationDays} to ${vacationDaysLeft} by super admin ${superAdmin.name}`,
+        oldValues: {
+          vacationDaysLeft: oldVacationDays
+        },
+        newValues: {
+          vacationDaysLeft: vacationDaysLeft
+        },
+        details: {
+          targetUserName: user.name,
+          targetUserEmail: user.email,
+          targetUserDepartment: user.department,
+          adminName: superAdmin.name,
+          adminEmail: superAdmin.email,
+          changeAmount: vacationDaysLeft - oldVacationDays,
+          modificationReason: modificationReason,
+          modifiedBy: 'super_admin'
+        },
+        reason: modificationReason,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        severity: 'HIGH'
+      });
+    }
+    
     res.json({ msg: 'User updated successfully', user });
   } catch (err) {
     console.error(err.message);

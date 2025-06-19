@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import logo from '../../assets/njd-logo.png';
 
 const Register = ({ onBack, onRegisterSuccess }) => {
   const [form, setForm] = useState({
@@ -36,7 +35,7 @@ const Register = ({ onBack, onRegisterSuccess }) => {
     setForm({ ...form, managedDepartments: [] });
   };
 
-  const departments = ['Human Resources', 'Finance', 'Marketing', 'Sales', 'IT', 'Operations', 'Customer Service', 'Legal', 'Reception', 'Jamila Engineer', 'Jura Engineer', 'Green Icon Engineer', 'Green Avenue Engineer', 'Architectural Engineer', 'Technical Office Engineer', 'Personal Assistant', 'Service', 'Driver', 'Other'];
+  const departments = ['Human Resources', 'Finance', 'Marketing', 'Sales', 'IT', 'Operations', 'Engineer', 'Customer Service', 'Legal', 'Reception', 'Jamila Engineer', 'Jura Engineer', 'Green Icon Engineer', 'Green Avenue Engineer', 'Architectural Engineer', 'Technical Office Engineer', 'Personal Assistant', 'Service', 'Driver', 'Other'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -104,7 +103,6 @@ const Register = ({ onBack, onRegisterSuccess }) => {
   return (
     <div className="auth-container">
       <div className="elegant-card fade-in" style={{ maxWidth: '450px', textAlign: 'center' }}>
-        <img src={logo} alt="NJD Logo" className="app-logo" style={{ margin: '0 auto 2rem auto', display: 'block' }} />
         <h1 className="text-gradient" style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>
           Join Our Team
         </h1>

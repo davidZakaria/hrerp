@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import logo from '../../assets/njd-logo.png';
 import ForgotPassword from './ForgotPassword';
 import Register from './Register';
 
@@ -78,7 +77,6 @@ const Login = ({ onLogin }) => {
   return (
     <div className="auth-container">
       <div className="elegant-card fade-in" style={{ maxWidth: '400px', textAlign: 'center' }}>
-        <img src={logo} alt="NJD Logo" className="app-logo" style={{ margin: '0 auto 2rem auto', display: 'block' }} />
         <h1 className="text-gradient" style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>
           NEW JERSEY DEVELOPMENTS
         </h1>

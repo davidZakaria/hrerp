@@ -1,59 +1,104 @@
 import React from 'react';
 import logo from '../assets/njd-logo.png';
 
-const LoadingScreen = ({ message = "Loading..." }) => {
+const LoadingScreen = ({ message = "Loading...", size = "default", overlay = true }) => {
+  const sizeConfig = {
+    small: { logo: '80px', title: '1.5rem', spinner: '40px' },
+    default: { logo: '120px', title: '2rem', spinner: '60px' },
+    large: { logo: '160px', title: '2.5rem', spinner: '80px' }
+  };
+
+  const config = sizeConfig[size];
+
   return (
-    <div className="loading-screen">
+    <div className={`loading-screen ${overlay ? 'overlay' : 'inline'}`}>
       <style>{`
         .loading-screen {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          z-index: 9999;
+          color: white;
+        }
+        
+        .loading-screen.overlay {
           position: fixed;
           top: 0;
           left: 0;
           width: 100%;
           height: 100%;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          z-index: 9999;
+        }
+        
+        .loading-screen.inline {
+          min-height: 400px;
+          border-radius: 12px;
+          margin: 1rem;
         }
         
         .loading-content {
           text-align: center;
-          animation: fadeInUp 0.8s ease-out;
+          animation: fadeInUp 0.6s ease-out;
+          max-width: 90%;
         }
         
         .loading-logo {
-          width: 120px;
+          width: ${config.logo};
           height: auto;
-          margin-bottom: 2rem;
-          filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-          animation: pulse 2s ease-in-out infinite;
+          margin-bottom: 1.5rem;
+          filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+          animation: pulse 2.5s ease-in-out infinite;
         }
         
         .loading-title {
-          font-size: 2rem;
+          font-size: ${config.title};
           font-weight: 700;
           color: white;
+          margin-bottom: 0.5rem;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+          letter-spacing: 1px;
+        }
+        
+        .loading-subtitle {
+          font-size: 1rem;
+          color: rgba(255, 255, 255, 0.8);
           margin-bottom: 1rem;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+          font-style: italic;
         }
         
         .loading-message {
-          font-size: 1.1rem;
+          font-size: 1rem;
           color: rgba(255, 255, 255, 0.9);
           margin-bottom: 2rem;
+          font-weight: 500;
         }
         
         .loading-spinner {
-          width: 60px;
-          height: 60px;
-          border: 4px solid rgba(255, 255, 255, 0.3);
+          width: ${config.spinner};
+          height: ${config.spinner};
+          border: 4px solid rgba(255, 255, 255, 0.2);
           border-top: 4px solid white;
           border-radius: 50%;
           animation: spin 1s linear infinite;
-          margin: 0 auto;
+          margin: 0 auto 1rem auto;
+        }
+        
+        .progress-indicator {
+          width: 200px;
+          height: 6px;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 3px;
+          margin: 1.5rem auto;
+          overflow: hidden;
+          position: relative;
+        }
+        
+        .progress-bar {
+          height: 100%;
+          background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 1));
+          border-radius: 3px;
+          animation: progress 2s ease-in-out infinite;
         }
         
         .loading-dots {
@@ -64,8 +109,8 @@ const LoadingScreen = ({ message = "Loading..." }) => {
         }
         
         .loading-dot {
-          width: 12px;
-          height: 12px;
+          width: 10px;
+          height: 10px;
           background: rgba(255, 255, 255, 0.7);
           border-radius: 50%;
           animation: bounce 1.4s ease-in-out infinite both;
@@ -78,7 +123,7 @@ const LoadingScreen = ({ message = "Loading..." }) => {
         @keyframes fadeInUp {
           from {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(20px);
           }
           to {
             opacity: 1;
@@ -109,22 +154,6 @@ const LoadingScreen = ({ message = "Loading..." }) => {
           }
         }
         
-        .progress-bar {
-          width: 200px;
-          height: 4px;
-          background: rgba(255, 255, 255, 0.3);
-          border-radius: 2px;
-          margin: 1rem auto;
-          overflow: hidden;
-        }
-        
-        .progress-fill {
-          height: 100%;
-          background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 1));
-          border-radius: 2px;
-          animation: progress 2s ease-in-out infinite;
-        }
-        
         @keyframes progress {
           0% {
             width: 0%;
@@ -139,17 +168,35 @@ const LoadingScreen = ({ message = "Loading..." }) => {
             transform: translateX(100%);
           }
         }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+          .loading-title {
+            font-size: 1.5rem;
+          }
+          .loading-logo {
+            width: 100px;
+          }
+          .loading-spinner {
+            width: 50px;
+            height: 50px;
+          }
+          .progress-indicator {
+            width: 150px;
+          }
+        }
       `}</style>
       
       <div className="loading-content">
         <img src={logo} alt="NJD Logo" className="loading-logo" />
         <h1 className="loading-title">NEW JERSEY DEVELOPMENTS</h1>
+        <p className="loading-subtitle">It's all about The Experience</p>
         <p className="loading-message">{message}</p>
         
         <div className="loading-spinner"></div>
         
-        <div className="progress-bar">
-          <div className="progress-fill"></div>
+        <div className="progress-indicator">
+          <div className="progress-bar"></div>
         </div>
         
         <div className="loading-dots">
@@ -162,4 +209,4 @@ const LoadingScreen = ({ message = "Loading..." }) => {
   );
 };
 
-export default LoadingScreen; 
+export default React.memo(LoadingScreen); 

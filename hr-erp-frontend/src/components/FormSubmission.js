@@ -20,6 +20,25 @@ const FormSubmission = ({ onFormSubmitted }) => {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [excuseHoursLeft, setExcuseHoursLeft] = useState(null);
+  const [userInfo, setUserInfo] = useState(null);
+
+  // Fetch user info
+  const fetchUserInfo = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/user', {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUserInfo(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch user info:', err);
+    }
+  };
 
   // Fetch excuse hours left
   const fetchExcuseHours = async () => {
@@ -39,8 +58,9 @@ const FormSubmission = ({ onFormSubmitted }) => {
     }
   };
 
-  // Load excuse hours when component mounts
+  // Load user info and excuse hours when component mounts
   useEffect(() => {
+    fetchUserInfo();
     fetchExcuseHours();
   }, []);
 
@@ -171,9 +191,45 @@ const FormSubmission = ({ onFormSubmitted }) => {
         <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
           NEW JERSEY DEVELOPMENTS
         </h2>
-        <p className="text-elegant" style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-          Submit Your Request
-        </p>
+                 <div style={{ 
+           background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(129, 199, 132, 0.2))',
+           border: '1px solid rgba(76, 175, 80, 0.3)',
+           borderRadius: '12px',
+           padding: '1rem',
+           marginBottom: '1rem'
+         }}>
+           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+             <span style={{ fontSize: '1.2rem' }}>👤</span>
+             <h3 style={{ margin: 0, color: '#4caf50', fontSize: '1.1rem' }}>
+               {userInfo?.role === 'manager' ? 'Manager Personal Leave Request' : 
+                userInfo?.role === 'admin' ? 'Admin Personal Leave Request' :
+                'Personal Leave Request'}
+             </h3>
+           </div>
+           {userInfo && (
+             <div style={{ marginBottom: '0.5rem' }}>
+               <span style={{ fontSize: '0.8rem', color: '#4caf50', fontWeight: 'bold' }}>
+                 👋 Hello, {userInfo.name}
+               </span>
+               {(userInfo.role === 'manager' || userInfo.role === 'admin') && (
+                 <span style={{ fontSize: '0.75rem', opacity: 0.8, marginLeft: '0.5rem' }}>
+                   ({userInfo.role === 'manager' ? 'Manager' : 'Admin'})
+                 </span>
+               )}
+             </div>
+           )}
+           <p className="text-elegant" style={{ fontSize: '0.85rem', opacity: 0.9, margin: 0 }}>
+             Submit your own personal vacation, sick leave, or other requests
+           </p>
+           <small style={{ fontSize: '0.75rem', opacity: 0.7, fontStyle: 'italic' }}>
+             {userInfo?.role === 'manager' ? 
+               'This is for YOUR personal leave (not team member requests)' :
+               userInfo?.role === 'admin' ?
+               'This is for YOUR personal leave (not for other users)' :
+               'This form is for YOUR personal leave requests that will require approval'
+             }
+           </small>
+         </div>
       </div>
 
       {form.type === 'excuse' && excuseHoursLeft !== null && (
@@ -189,19 +245,45 @@ const FormSubmission = ({ onFormSubmitted }) => {
 
       <form className="form-elegant" onSubmit={handleSubmit}>
         <div className="form-group-elegant">
-          <label className="form-label-elegant">Form Type</label>
+          <label className="form-label-elegant">
+            <span className="label-icon">📋</span>
+            Request Type
+          </label>
           <select 
             name="type" 
             value={form.type} 
             onChange={handleChange} 
             className="form-input-elegant"
             required
+            style={{ 
+              background: 'rgba(0, 0, 0, 0.7)',
+              border: '2px solid rgba(76, 175, 80, 0.3)',
+              fontWeight: '500',
+              padding: '12px 16px',
+              fontSize: '1rem',
+              color: '#ffffff',
+              borderRadius: '8px',
+              minHeight: '50px',
+              appearance: 'none',
+              backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 12px center',
+              backgroundSize: '20px',
+              paddingRight: '50px',
+              backdropFilter: 'blur(10px)'
+            }}
           >
-            <option value="vacation">Vacation Request</option>
-            <option value="excuse">Excuse Request</option>
-            <option value="wfh">Working From Home</option>
-            <option value="sick_leave">Sick Leave</option>
+            <option value="vacation">🏖️ Vacation Request (Annual/Unpaid Leave)</option>
+            <option value="excuse">⏰ Excuse Hours Request (Partial Day Off)</option>
+            <option value="wfh">🏠 Working From Home Request</option>
+            <option value="sick_leave">🏥 Sick Leave Request (Medical Leave)</option>
           </select>
+          <small className="input-helper" style={{ marginTop: '0.5rem', display: 'block' }}>
+            {form.type === 'vacation' && 'Request time off for vacation, personal days, or unpaid leave'}
+            {form.type === 'excuse' && 'Request a few hours off during a work day'}
+            {form.type === 'wfh' && 'Request to work from home for specific hours/tasks'}
+            {form.type === 'sick_leave' && 'Request medical leave due to illness or health issues'}
+          </small>
         </div>
 
         {form.type === 'vacation' && (
@@ -516,33 +598,95 @@ const FormSubmission = ({ onFormSubmitted }) => {
         )}
 
         <div className="form-group-elegant">
-          <label className="form-label-elegant">Reason</label>
+          <label className="form-label-elegant">
+            <span className="label-icon">✏️</span>
+            Reason for Request
+          </label>
           <textarea 
             name="reason" 
-            placeholder="Please provide a detailed reason for your request..." 
+            placeholder={
+              userInfo?.role === 'manager' ? 
+                "Provide details about your personal leave request (e.g., family vacation, personal appointment, etc.)..." :
+                "Please provide a detailed reason for your request..."
+            }
             value={form.reason} 
             onChange={handleChange} 
             className="form-input-elegant"
             rows="4"
             required 
+            style={{ 
+              border: '2px solid rgba(76, 175, 80, 0.3)',
+              background: 'rgba(0, 0, 0, 0.7)',
+              color: '#ffffff',
+              backdropFilter: 'blur(10px)'
+            }}
           />
+          <small className="input-helper">
+            {userInfo?.role === 'manager' ? 
+              'As a manager, your request will go to HR/Admin for approval' :
+              'Provide clear details to help with the approval process'
+            }
+          </small>
         </div>
+
+        {(userInfo?.role === 'manager' || userInfo?.role === 'admin') && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(30, 136, 229, 0.1))',
+            border: '1px solid rgba(33, 150, 243, 0.3)',
+            borderRadius: '8px',
+            padding: '0.75rem',
+            marginBottom: '1rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <span>ℹ️</span>
+              <strong style={{ color: '#2196f3', fontSize: '0.9rem' }}>
+                {userInfo?.role === 'manager' ? 'Manager' : 'Admin'} Approval Process
+              </strong>
+            </div>
+            <small style={{ fontSize: '0.75rem', opacity: 0.9, lineHeight: '1.4' }}>
+              {userInfo?.role === 'manager' ? 
+                'As a manager, your personal leave requests will be sent directly to HR/Admin for approval. This is separate from the team requests you manage for your employees.' :
+                'As an admin, your personal leave requests will be sent to HR/Super Admin for approval. This is separate from the requests you manage for other users.'
+              }
+            </small>
+          </div>
+        )}
 
         <button 
           type="submit" 
           className="btn-elegant btn-success"
           disabled={loading}
-          style={{ width: '100%' }}
+          style={{ 
+            width: '100%',
+            background: loading ? 'rgba(76, 175, 80, 0.5)' : 'linear-gradient(135deg, #4caf50, #66bb6a)',
+            transform: loading ? 'scale(0.98)' : 'scale(1)',
+            fontSize: '1rem',
+            padding: '0.75rem 2rem',
+            fontWeight: 'bold',
+            boxShadow: loading ? 'none' : '0 4px 15px rgba(76, 175, 80, 0.3)'
+          }}
         >
           {loading ? (
             <>
               <div className="spinner-elegant" style={{ width: '20px', height: '20px', display: 'inline-block', marginRight: '8px' }}></div>
-              Submitting...
+              ⏳ Submitting Your Personal Request...
             </>
           ) : (
-            'Submit Request'
+            `🚀 Submit ${userInfo?.role === 'manager' || userInfo?.role === 'admin' ? 'Personal' : 'My'} Request`
           )}
         </button>
+        
+        {(userInfo?.role === 'manager' || userInfo?.role === 'admin') && (
+          <div style={{ 
+            textAlign: 'center', 
+            marginTop: '1rem',
+            fontSize: '0.75rem',
+            opacity: 0.7,
+            fontStyle: 'italic'
+          }}>
+            💡 Remember: You can manage {userInfo?.role === 'manager' ? 'your team\'s' : 'all user'} requests from the {userInfo?.role === 'manager' ? 'Manager' : 'Admin'} Dashboard
+          </div>
+        )}
       </form>
 
       {message && (

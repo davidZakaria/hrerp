@@ -48,6 +48,12 @@ const SuperAdminDashboard = () => {
     managedDepartments: []
   });
 
+  // Form Management state
+  const [selectedForm, setSelectedForm] = useState(null);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [formEditData, setFormEditData] = useState({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+
   // Available departments
   const availableDepartments = [
     'Human Resources',
@@ -56,6 +62,7 @@ const SuperAdminDashboard = () => {
     'Sales',
     'Information Technology',
     'Operations',
+    'Engineer',
     'Customer Service',
     'Legal',
     'Personal Assistant',
@@ -299,6 +306,119 @@ const SuperAdminDashboard = () => {
     return <span className={`badge-elegant ${statusClass}`}>{status}</span>;
   };
 
+  // Form Management Functions
+  const handleViewForm = (form) => {
+    setSelectedForm(form);
+    setShowFormModal(true);
+  };
+
+  const handleCorrectForm = (form) => {
+    setSelectedForm(form);
+    setFormEditData({
+      type: form.type,
+      startDate: form.startDate ? new Date(form.startDate).toISOString().split('T')[0] : '',
+      endDate: form.endDate ? new Date(form.endDate).toISOString().split('T')[0] : '',
+      days: form.days || '',
+      reason: form.reason || '',
+      status: form.status
+    });
+    setShowFormModal(true);
+  };
+
+  const handleDeleteForm = (formId) => {
+    setShowDeleteConfirm(formId);
+  };
+
+  const confirmDeleteForm = async (formId) => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`http://localhost:5000/api/forms/${formId}`, {
+        method: 'DELETE',
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess('Form deleted successfully');
+        fetchForms();
+        setShowDeleteConfirm(null);
+      } else {
+        setError(data.msg || 'Failed to delete form');
+      }
+    } catch (err) {
+      setError('Error connecting to server');
+    }
+    setLoading(false);
+  };
+
+  const handleFormUpdate = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`http://localhost:5000/api/forms/${selectedForm._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify(formEditData)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess('Form updated successfully');
+        fetchForms();
+        setShowFormModal(false);
+        setSelectedForm(null);
+      } else {
+        setError(data.msg || 'Failed to update form');
+      }
+    } catch (err) {
+      setError('Error connecting to server');
+    }
+    setLoading(false);
+  };
+
+  const handleExportForms = () => {
+    try {
+      // Create CSV content
+      const headers = ['Employee', 'Email', 'Department', 'Form Type', 'Status', 'Start Date', 'End Date', 'Days', 'Reason', 'Submitted Date'];
+      const csvContent = [
+        headers.join(','),
+        ...forms.map(form => [
+          `"${form.user?.name || 'Unknown'}"`,
+          `"${form.user?.email || 'Unknown'}"`,
+          `"${form.user?.department || 'N/A'}"`,
+          `"${form.type?.replace('_', ' ') || 'N/A'}"`,
+          `"${form.status || 'N/A'}"`,
+          `"${form.startDate ? new Date(form.startDate).toLocaleDateString() : 'N/A'}"`,
+          `"${form.endDate ? new Date(form.endDate).toLocaleDateString() : 'N/A'}"`,
+          `"${form.days || 'N/A'}"`,
+          `"${form.reason?.replace(/"/g, '""') || 'N/A'}"`,
+          `"${new Date(form.createdAt).toLocaleDateString()}"`
+        ].join(','))
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `forms_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setSuccess('Forms exported successfully');
+    } catch (err) {
+      setError('Error exporting forms');
+    }
+  };
+
   return (
     <div className="dashboard-container fade-in">
       <div className="app-header">
@@ -400,194 +520,300 @@ const SuperAdminDashboard = () => {
           {loading && <div className="spinner-elegant"></div>}
 
           {activeTab === 'users' && (
-            <div className="grid-2">
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 className="text-gradient" style={{ margin: 0 }}>User List</h3>
-                  <button 
-                    className="btn-elegant btn-success"
-                    onClick={() => setShowCreateUserModal(true)}
-                    style={{ padding: '8px 16px', fontSize: '0.9rem' }}
-                  >
-                    👤 Create New User
-                  </button>
+            <div>
+              <div className="section-header-redesign">
+                <div className="section-info">
+                  <h3 className="text-gradient">User Management</h3>
+                  <p className="section-description">Manage system users, roles, and permissions</p>
                 </div>
-                <div className="table-container">
-                  <table className="table-elegant">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {users
-                        .filter(user => 
-                          user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-                        )
-                        .map(user => (
-                          <tr key={user._id}>
-                            <td className="text-elegant">{user.name}</td>
-                            <td className="text-elegant">{user.email}</td>
-                            <td className="text-elegant">{user.role}</td>
-                            <td>{getStatusBadge(user.status)}</td>
-                            <td>
-                              <button 
-                                className="btn-elegant"
-                                onClick={() => handleUserSelect(user)}
-                                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                              >
-                                Edit
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                <div className="section-actions">
+                  <button 
+                    className="btn-elegant btn-create-user"
+                    onClick={() => setShowCreateUserModal(true)}
+                  >
+                    <span className="btn-icon">👤</span>
+                    Create New User
+                  </button>
                 </div>
               </div>
 
-              {selectedUser && (
-                <div className="glass-card">
-                  <h3 className="text-gradient" style={{ marginBottom: '1rem' }}>Edit User</h3>
-                  <form className="form-elegant" onSubmit={(e) => { e.preventDefault(); handleUserUpdate(); }}>
-                    <div className="form-group-elegant">
-                      <label className="form-label-elegant">Name</label>
-                      <input
-                        type="text"
-                        value={userEdit.name}
-                        onChange={(e) => setUserEdit({...userEdit, name: e.target.value})}
-                        className="form-input-elegant"
-                      />
-                    </div>
-                    <div className="form-group-elegant">
-                      <label className="form-label-elegant">Email</label>
-                      <input
-                        type="email"
-                        value={userEdit.email}
-                        onChange={(e) => setUserEdit({...userEdit, email: e.target.value})}
-                        className="form-input-elegant"
-                      />
-                    </div>
-                    <div className="form-group-elegant">
-                      <label className="form-label-elegant">Department</label>
-                      <input
-                        type="text"
-                        value={userEdit.department}
-                        onChange={(e) => setUserEdit({...userEdit, department: e.target.value})}
-                        className="form-input-elegant"
-                      />
-                    </div>
-                    <div className="form-group-elegant">
-                      <label className="form-label-elegant">Role</label>
-                      <select
-                        value={userEdit.role}
-                        onChange={(e) => setUserEdit({...userEdit, role: e.target.value})}
-                        className="form-input-elegant"
-                      >
-                        <option value="employee">Employee</option>
-                        <option value="manager">Manager</option>
-                        <option value="admin">Admin</option>
-                        <option value="super_admin">Super Admin</option>
-                      </select>
-                    </div>
-                    <div className="form-group-elegant">
-                      <label className="form-label-elegant">Status</label>
-                      <select
-                        value={userEdit.status}
-                        onChange={(e) => setUserEdit({...userEdit, status: e.target.value})}
-                        className="form-input-elegant"
-                      >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="pending">Pending</option>
-                      </select>
-                    </div>
-                    <div className="form-group-elegant">
-                      <label className="form-label-elegant">Vacation Days Left</label>
-                      <input
-                        type="number"
-                        value={userEdit.vacationDaysLeft}
-                        onChange={(e) => setUserEdit({...userEdit, vacationDaysLeft: parseInt(e.target.value)})}
-                        className="form-input-elegant"
-                      />
-                    </div>
-                    
-                    {userEdit.role === 'manager' && (
-                      <div className="form-group-elegant">
-                        <label className="form-label-elegant">
-                          Managed Departments ({userEdit.managedDepartments?.length || 0} selected)
-                        </label>
-                        <div className="selection-help" style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                          Click on the department cards below to assign departments this manager will oversee.
-                        </div>
-                        <div className="departments-grid" style={{ 
-                          display: 'grid', 
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
-                          gap: '0.5rem',
-                          marginTop: '0.5rem',
-                          maxHeight: '200px',
-                          overflowY: 'auto'
-                        }}>
-                          {availableDepartments.map(dept => (
-                            <div 
-                              key={dept}
-                              onClick={() => handleEditDepartmentChange(dept)}
-                              style={{
-                                padding: '0.6rem',
-                                border: '1px solid rgba(255, 255, 255, 0.2)',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                transition: 'all 0.3s ease',
-                                backgroundColor: userEdit.managedDepartments?.includes(dept) ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255, 255, 255, 0.1)',
-                                borderColor: userEdit.managedDepartments?.includes(dept) ? '#3b82f6' : 'rgba(255, 255, 255, 0.2)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                fontSize: '0.85rem'
-                              }}
+              <div className="users-container">
+                {users
+                  .filter(user => 
+                    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    user.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    user.department?.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map(user => {
+                    const getRoleIcon = (role) => {
+                      switch(role) {
+                        case 'super_admin': return '⚡';
+                        case 'admin': return '👑';
+                        case 'manager': return '👔';
+                        case 'employee': return '👤';
+                        default: return '👤';
+                      }
+                    };
+
+                    const getRoleColor = (role) => {
+                      switch(role) {
+                        case 'super_admin': return '#9c27b0';
+                        case 'admin': return '#4caf50';
+                        case 'manager': return '#ff9800';
+                        case 'employee': return '#2196f3';
+                        default: return '#747d8c';
+                      }
+                    };
+
+                    const getStatusColor = (status) => {
+                      switch(status) {
+                        case 'active': return '#4caf50';
+                        case 'inactive': return '#f44336';
+                        case 'pending': return '#ff9800';
+                        default: return '#747d8c';
+                      }
+                    };
+
+                    return (
+                      <div key={user._id} className="user-card">
+                        <div className="user-card-header">
+                          <div className="user-avatar">
+                            <span className="avatar-icon">{getRoleIcon(user.role)}</span>
+                          </div>
+                          <div className="user-basic-info">
+                            <div className="user-name">{user.name}</div>
+                            <div className="user-email">{user.email}</div>
+                          </div>
+                          <div className="user-status-badges">
+                            <span 
+                              className="role-badge-modern"
+                              style={{ backgroundColor: getRoleColor(user.role) }}
                             >
-                              <input
-                                type="checkbox"
-                                checked={userEdit.managedDepartments?.includes(dept) || false}
-                                onChange={() => {}}
-                                style={{ marginRight: '0.4rem' }}
-                              />
-                              <span style={{ color: '#fff' }}>{dept}</span>
+                              {user.role.replace('_', ' ')}
+                            </span>
+                            <span 
+                              className="status-badge-modern"
+                              style={{ backgroundColor: getStatusColor(user.status) }}
+                            >
+                              {user.status}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="user-card-content">
+                          <div className="user-info-grid">
+                            <div className="info-item">
+                              <span className="info-label">Department:</span>
+                              <span className="info-value">{user.department || 'Not assigned'}</span>
                             </div>
-                          ))}
+                            <div className="info-item">
+                              <span className="info-label">Vacation Days:</span>
+                              <span className="info-value vacation-days">{user.vacationDaysLeft || 0} days</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Joined:</span>
+                              <span className="info-value">{new Date(user.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Last Login:</span>
+                              <span className="info-value">{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}</span>
+                            </div>
+                          </div>
+                          
+                          {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
+                            <div className="managed-departments-display">
+                              <span className="info-label">Manages:</span>
+                              <div className="departments-tags">
+                                {user.managedDepartments.map(dept => (
+                                  <span key={dept} className="department-tag-small">{dept}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="user-card-actions">
+                          <button 
+                            className="btn-elegant btn-edit-user"
+                            onClick={() => handleUserSelect(user)}
+                          >
+                            <span className="btn-icon">✏️</span>
+                            Edit User
+                          </button>
+                          <button 
+                            className="btn-elegant btn-view-user"
+                            onClick={() => {/* Add view user functionality */}}
+                          >
+                            <span className="btn-icon">👁️</span>
+                            View Details
+                          </button>
                         </div>
                       </div>
-                    )}
-                    
-                    <div className="form-group-elegant">
-                      <label className="form-label-elegant">Modification Reason</label>
-                      <textarea
-                        value={modificationReason}
-                        onChange={(e) => setModificationReason(e.target.value)}
-                        className="form-input-elegant"
-                        rows="3"
-                        placeholder="Explain why you're making this change..."
-                        required
-                      />
-                    </div>
-                    <div className="action-buttons">
-                      <button type="submit" className="btn-elegant btn-success">
-                        Update User
-                      </button>
+                    );
+                  })}
+                  
+                {users.filter(user => 
+                  user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  user.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  user.department?.toLowerCase().includes(searchTerm.toLowerCase())
+                ).length === 0 && (
+                  <div className="no-users-message">
+                    <div className="no-users-icon">👥</div>
+                    <h3>No users found</h3>
+                    <p>Try adjusting your search terms or create a new user.</p>
+                  </div>
+                )}
+              </div>
+
+              {selectedUser && (
+                <div className="modal-elegant" onClick={() => setSelectedUser(null)}>
+                  <div className="modal-content-elegant edit-user-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                      <h2 className="text-gradient">Edit User: {selectedUser.name}</h2>
                       <button 
-                        type="button" 
-                        className="btn-elegant"
+                        className="close-btn" 
                         onClick={() => setSelectedUser(null)}
-                        style={{ background: 'rgba(255, 255, 255, 0.2)', color: '#333' }}
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          borderRadius: '50%',
+                          fontSize: '18px',
+                          cursor: 'pointer',
+                          color: '#fff',
+                          transition: 'all 0.3s ease',
+                          width: '32px',
+                          height: '32px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          lineHeight: '1'
+                        }}
                       >
-                        Cancel
+                        ×
                       </button>
                     </div>
-                  </form>
+                    
+                    <form className="form-elegant" onSubmit={(e) => { e.preventDefault(); handleUserUpdate(); }}>
+                      <div className="form-group-elegant">
+                        <label className="form-label-elegant">Name</label>
+                        <input
+                          type="text"
+                          value={userEdit.name}
+                          onChange={(e) => setUserEdit({...userEdit, name: e.target.value})}
+                          className="form-input-elegant"
+                        />
+                      </div>
+                      <div className="form-group-elegant">
+                        <label className="form-label-elegant">Email</label>
+                        <input
+                          type="email"
+                          value={userEdit.email}
+                          onChange={(e) => setUserEdit({...userEdit, email: e.target.value})}
+                          className="form-input-elegant"
+                        />
+                      </div>
+                      <div className="form-group-elegant">
+                        <label className="form-label-elegant">Department</label>
+                        <select
+                          value={userEdit.department}
+                          onChange={(e) => setUserEdit({...userEdit, department: e.target.value})}
+                          className="form-input-elegant"
+                        >
+                          <option value="">Select Department</option>
+                          {availableDepartments.map(dept => (
+                            <option key={dept} value={dept}>{dept}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group-elegant">
+                        <label className="form-label-elegant">Role</label>
+                        <select
+                          value={userEdit.role}
+                          onChange={(e) => setUserEdit({...userEdit, role: e.target.value})}
+                          className="form-input-elegant"
+                        >
+                          <option value="employee">Employee</option>
+                          <option value="manager">Manager</option>
+                          <option value="admin">Admin</option>
+                          <option value="super_admin">Super Admin</option>
+                        </select>
+                      </div>
+                      <div className="form-group-elegant">
+                        <label className="form-label-elegant">Status</label>
+                        <select
+                          value={userEdit.status}
+                          onChange={(e) => setUserEdit({...userEdit, status: e.target.value})}
+                          className="form-input-elegant"
+                        >
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                          <option value="pending">Pending</option>
+                        </select>
+                      </div>
+                      <div className="form-group-elegant">
+                        <label className="form-label-elegant">Vacation Days Left</label>
+                        <input
+                          type="number"
+                          value={userEdit.vacationDaysLeft}
+                          onChange={(e) => setUserEdit({...userEdit, vacationDaysLeft: parseInt(e.target.value)})}
+                          className="form-input-elegant"
+                        />
+                      </div>
+                      
+                      {userEdit.role === 'manager' && (
+                        <div className="form-group-elegant">
+                          <label className="form-label-elegant">
+                            Managed Departments ({userEdit.managedDepartments?.length || 0} selected)
+                          </label>
+                          <div className="selection-help">
+                            Click on the department cards below to assign departments this manager will oversee.
+                          </div>
+                          <div className="departments-grid">
+                            {availableDepartments.map(dept => (
+                              <div 
+                                key={dept}
+                                className={`department-card ${userEdit.managedDepartments?.includes(dept) ? 'selected' : ''}`}
+                                onClick={() => handleEditDepartmentChange(dept)}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={userEdit.managedDepartments?.includes(dept) || false}
+                                  onChange={() => {}}
+                                />
+                                <span className="department-name">{dept}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="form-group-elegant">
+                        <label className="form-label-elegant">Modification Reason</label>
+                        <textarea
+                          value={modificationReason}
+                          onChange={(e) => setModificationReason(e.target.value)}
+                          className="form-input-elegant"
+                          rows="3"
+                          placeholder="Explain why you're making this change..."
+                          required
+                        />
+                      </div>
+                      <div className="action-buttons">
+                        <button type="submit" className="btn-elegant btn-success">
+                          Update User
+                        </button>
+                        <button 
+                          type="button" 
+                          className="btn-elegant"
+                          onClick={() => setSelectedUser(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               )}
             </div>
@@ -595,43 +821,170 @@ const SuperAdminDashboard = () => {
 
           {activeTab === 'forms' && (
             <div>
-              <h3 className="text-gradient" style={{ marginBottom: '1rem' }}>Form Management</h3>
-              <div className="table-container">
-                <table className="table-elegant">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Type</th>
-                      <th>Status</th>
-                      <th>Date</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {forms
-                      .filter(form => 
-                        form.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        form.type?.toLowerCase().includes(searchTerm.toLowerCase())
-                      )
-                      .map(form => (
-                        <tr key={form._id}>
-                          <td className="text-elegant">{form.user?.name}</td>
-                          <td className="text-elegant">{form.type}</td>
-                          <td>{getStatusBadge(form.status)}</td>
-                          <td className="text-elegant">{new Date(form.createdAt).toLocaleDateString()}</td>
-                          <td>
-                            <button 
-                              className="btn-elegant"
-                              onClick={() => {}}
-                              style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+              <div className="section-header-redesign">
+                <div className="section-info">
+                  <h3 className="text-gradient">Form Management</h3>
+                  <p className="section-description">Monitor and manage all system forms and applications</p>
+                </div>
+                <div className="section-actions">
+                  <button 
+                    className="btn-elegant btn-export"
+                    onClick={handleExportForms}
+                  >
+                    <span className="btn-icon">📊</span>
+                    Export Forms
+                  </button>
+                </div>
+              </div>
+
+              <div className="forms-container">
+                {forms
+                  .filter(form => 
+                    form.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    form.type?.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map(form => {
+                    const getFormIcon = (type) => {
+                      switch(type) {
+                        case 'sick_leave': return '🏥';
+                        case 'annual_vacation': return '🏖️';
+                        case 'maternity_leave': return '👶';
+                        case 'paternity_leave': return '👨‍👶';
+                        case 'excuse_hours': return '⏰';
+                        default: return '📝';
+                      }
+                    };
+
+                    const getFormTypeColor = (type) => {
+                      switch(type) {
+                        case 'sick_leave': return '#f44336';
+                        case 'annual_vacation': return '#2196f3';
+                        case 'maternity_leave': return '#e91e63';
+                        case 'paternity_leave': return '#9c27b0';
+                        case 'excuse_hours': return '#ff9800';
+                        default: return '#757575';
+                      }
+                    };
+
+                    const getStatusColor = (status) => {
+                      switch(status) {
+                        case 'approved': return '#4caf50';
+                        case 'rejected': return '#f44336';
+                        case 'manager_rejected': return '#f44336';
+                        case 'pending': return '#ff9800';
+                        default: return '#757575';
+                      }
+                    };
+
+                    return (
+                      <div key={form._id} className="form-card">
+                        <div className="form-card-header">
+                          <div className="form-icon">
+                            <span className="icon-symbol">{getFormIcon(form.type)}</span>
+                          </div>
+                          <div className="form-basic-info">
+                            <div className="form-type">{form.type.replace('_', ' ')}</div>
+                            <div className="form-employee">{form.user?.name || 'Unknown User'}</div>
+                          </div>
+                          <div className="form-status-badges">
+                            <span 
+                              className="form-type-badge"
+                              style={{ backgroundColor: getFormTypeColor(form.type) }}
                             >
-                              Correct
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+                              {form.type.replace('_', ' ')}
+                            </span>
+                            <span 
+                              className="form-status-badge"
+                              style={{ backgroundColor: getStatusColor(form.status) }}
+                            >
+                              {form.status === 'manager_rejected' ? 'rejected' : form.status}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="form-card-content">
+                          <div className="form-info-grid">
+                            <div className="info-item">
+                              <span className="info-label">Submitted:</span>
+                              <span className="info-value">{new Date(form.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Department:</span>
+                              <span className="info-value">{form.user?.department || 'N/A'}</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Duration:</span>
+                              <span className="info-value">
+                                {form.startDate && form.endDate ? 
+                                  `${new Date(form.startDate).toLocaleDateString()} - ${new Date(form.endDate).toLocaleDateString()}` : 
+                                  'N/A'
+                                }
+                              </span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Days Requested:</span>
+                              <span className="info-value">{form.days || 'N/A'} days</span>
+                            </div>
+                          </div>
+                          
+                          {form.reason && (
+                            <div className="form-reason-display">
+                              <span className="info-label">Reason:</span>
+                              <div className="reason-text-display">{form.reason}</div>
+                            </div>
+                          )}
+                          
+                          {form.comments && form.comments.length > 0 && (
+                            <div className="form-comments-display">
+                              <span className="info-label">Comments:</span>
+                              <div className="comments-list">
+                                {form.comments.map((comment, index) => (
+                                  <div key={index} className="comment-item">
+                                    <strong>{comment.by || 'System'}:</strong> {comment.text}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="form-card-actions">
+                          <button 
+                            className="btn-elegant btn-view-form"
+                            onClick={() => handleViewForm(form)}
+                          >
+                            <span className="btn-icon">👁️</span>
+                            View Details
+                          </button>
+                          <button 
+                            className="btn-elegant btn-correct-form"
+                            onClick={() => handleCorrectForm(form)}
+                          >
+                            <span className="btn-icon">✏️</span>
+                            Correct
+                          </button>
+                          <button 
+                            className="btn-elegant btn-delete-form"
+                            onClick={() => handleDeleteForm(form._id)}
+                          >
+                            <span className="btn-icon">🗑️</span>
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                {forms.filter(form => 
+                  form.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  form.type?.toLowerCase().includes(searchTerm.toLowerCase())
+                ).length === 0 && (
+                  <div className="no-forms-message">
+                    <div className="no-forms-icon">📋</div>
+                    <h3>No forms found</h3>
+                    <p>Try adjusting your search terms or check back later for new submissions.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -679,6 +1032,7 @@ const SuperAdminDashboard = () => {
                       <option value="FORM_CREATED">Form Created</option>
                       <option value="FORM_APPROVED">Form Approved</option>
                       <option value="FORM_REJECTED">Form Rejected</option>
+                      <option value="VACATION_DAYS_MODIFIED">Vacation Days Modified</option>
                       <option value="SUPER_ADMIN_ACTION">Super Admin Action</option>
                     </select>
                   </div>
@@ -746,88 +1100,148 @@ const SuperAdminDashboard = () => {
 
               {auditLoading && <div className="spinner-elegant"></div>}
 
-              <div className="table-container">
-                <table className="table-elegant">
-                  <thead>
-                    <tr>
-                      <th>Timestamp</th>
-                      <th>Action</th>
-                      <th>Performed By</th>
-                      <th>Target User</th>
-                      <th>Description</th>
-                      <th>Severity</th>
-                      <th>IP Address</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {auditLogs.map(log => (
-                      <tr key={log._id}>
-                        <td className="text-elegant">
-                          {new Date(log.timestamp).toLocaleString()}
-                        </td>
-                        <td className="text-elegant">{log.action.replace(/_/g, ' ')}</td>
-                        <td className="text-elegant">
-                          {log.performedBy ? `${log.performedBy.name} (${log.performedBy.email})` : 'System'}
-                        </td>
-                        <td className="text-elegant">
-                          {log.targetUser ? `${log.targetUser.name} (${log.targetUser.email})` : '-'}
-                        </td>
-                        <td className="text-elegant" style={{ maxWidth: '300px', wordWrap: 'break-word' }}>
-                          {log.description}
-                        </td>
-                        <td>
+              <div className="audit-logs-container">
+                {auditLogs.map(log => {
+                  const getActionIcon = (action) => {
+                    switch(action) {
+                      case 'USER_LOGIN': return '🔐';
+                      case 'USER_CREATED': return '👤';
+                      case 'USER_UPDATED': return '✏️';
+                      case 'USER_DELETED': return '🗑️';
+                      case 'FORM_CREATED': return '📝';
+                      case 'FORM_APPROVED': return '✅';
+                      case 'FORM_REJECTED': return '❌';
+                      case 'VACATION_DAYS_MODIFIED': return '🏖️';
+                      case 'SUPER_ADMIN_ACTION': return '⚡';
+                      default: return '📋';
+                    }
+                  };
+
+                  const getSeverityColor = (severity) => {
+                    switch(severity) {
+                      case 'CRITICAL': return '#ff4757';
+                      case 'HIGH': return '#ff6b6b';
+                      case 'MEDIUM': return '#ffa502';
+                      case 'LOW': return '#2ed573';
+                      default: return '#747d8c';
+                    }
+                  };
+
+                  return (
+                    <div key={log._id} className="audit-log-card">
+                      <div className="audit-log-header">
+                        <div className="audit-log-action">
+                          <span className="action-icon">{getActionIcon(log.action)}</span>
+                          <span className="action-text">{log.action.replace(/_/g, ' ')}</span>
+                        </div>
+                        <div className="audit-log-meta">
+                          <span className="audit-timestamp">
+                            {new Date(log.timestamp).toLocaleDateString()} at {new Date(log.timestamp).toLocaleTimeString()}
+                          </span>
                           <span 
-                            className={`badge-elegant ${
-                              log.severity === 'CRITICAL' ? 'badge-danger' :
-                              log.severity === 'HIGH' ? 'badge-warning' :
-                              log.severity === 'MEDIUM' ? 'badge-warning' : 'badge-success'
-                            }`}
+                            className="severity-badge"
+                            style={{ backgroundColor: getSeverityColor(log.severity) }}
                           >
                             {log.severity}
                           </span>
-                        </td>
-                        <td className="text-elegant">{log.ipAddress || '-'}</td>
-                      </tr>
-                    ))}
-                    {auditLogs.length === 0 && !auditLoading && (
-                      <tr>
-                        <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-                          No audit logs found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                      
+                      <div className="audit-log-content">
+                        <div className="audit-log-description">
+                          {log.description}
+                        </div>
+                        
+                        {log.action === 'VACATION_DAYS_MODIFIED' && log.oldValues && log.newValues && (
+                          <div className="vacation-change-details">
+                            <div className="vacation-change-header">
+                              <span className="vacation-icon">🏖️</span>
+                              <span>Vacation Days Change Details</span>
+                            </div>
+                            <div className="vacation-change-grid">
+                              <div className="change-item from">
+                                <label>From:</label>
+                                <span>{log.oldValues.vacationDaysLeft} days</span>
+                              </div>
+                              <div className="change-item to">
+                                <label>To:</label>
+                                <span>{log.newValues.vacationDaysLeft} days</span>
+                              </div>
+                              <div className="change-item difference">
+                                <label>Change:</label>
+                                <span className={log.newValues.vacationDaysLeft - log.oldValues.vacationDaysLeft >= 0 ? 'positive' : 'negative'}>
+                                  {log.newValues.vacationDaysLeft - log.oldValues.vacationDaysLeft > 0 ? '+' : ''}
+                                  {log.newValues.vacationDaysLeft - log.oldValues.vacationDaysLeft} days
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="audit-log-footer">
+                        <div className="performer-info">
+                          <span className="performer-label">Performed by:</span>
+                          <span className="performer-name">
+                            {log.performedBy ? `${log.performedBy.name} (${log.performedBy.email})` : 'System'}
+                          </span>
+                        </div>
+                        
+                        <div className="target-info">
+                          <span className="target-label">Target:</span>
+                          <span className="target-name">
+                            {log.targetUser ? `${log.targetUser.name} (${log.targetUser.email})` : 'N/A'}
+                          </span>
+                        </div>
+                        
+                        {log.ipAddress && (
+                          <div className="ip-info">
+                            <span className="ip-label">IP:</span>
+                            <span className="ip-address">{log.ipAddress}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {auditLogs.length === 0 && !auditLoading && (
+                  <div className="no-logs-message">
+                    <div className="no-logs-icon">📋</div>
+                    <h3>No audit logs found</h3>
+                    <p>Try adjusting your filters or check back later.</p>
+                  </div>
+                )}
               </div>
 
               {auditPagination.pages > 1 && (
-                <div className="action-buttons" style={{ marginTop: '2rem', justifyContent: 'center' }}>
+                <div className="pagination-container">
                   <button 
-                    className="btn-elegant"
+                    className="btn-elegant pagination-btn"
                     onClick={() => setAuditPage(1)}
                     disabled={auditPage === 1}
                   >
                     First
                   </button>
                   <button 
-                    className="btn-elegant"
+                    className="btn-elegant pagination-btn"
                     onClick={() => setAuditPage(auditPage - 1)}
                     disabled={auditPage === 1}
                   >
                     Previous
                   </button>
-                  <span style={{ padding: '0 1rem', color: '#ffffff' }}>
+                  <span className="pagination-info">
                     Page {auditPage} of {auditPagination.pages}
                   </span>
                   <button 
-                    className="btn-elegant"
+                    className="btn-elegant pagination-btn"
                     onClick={() => setAuditPage(auditPage + 1)}
                     disabled={auditPage === auditPagination.pages}
                   >
                     Next
                   </button>
                   <button 
-                    className="btn-elegant"
+                    className="btn-elegant pagination-btn"
                     onClick={() => setAuditPage(auditPagination.pages)}
                     disabled={auditPage === auditPagination.pages}
                   >
@@ -839,6 +1253,262 @@ const SuperAdminDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Form View/Edit Modal */}
+      {showFormModal && selectedForm && (
+        <div className="modal-elegant" onClick={() => setShowFormModal(false)}>
+          <div className="modal-content-elegant" style={{ maxWidth: '700px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="text-gradient">
+                {Object.keys(formEditData).length > 0 ? 'Edit Form' : 'View Form'}: {selectedForm.type?.replace('_', ' ')}
+              </h2>
+              <button 
+                className="close-btn" 
+                onClick={() => setShowFormModal(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '50%',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  color: '#fff',
+                  transition: 'all 0.3s ease',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: '1'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            {Object.keys(formEditData).length > 0 ? (
+              // Edit Form
+              <form className="form-elegant" onSubmit={(e) => { e.preventDefault(); handleFormUpdate(); }}>
+                <div className="form-group-elegant">
+                  <label className="form-label-elegant">Form Type</label>
+                  <input
+                    type="text"
+                    value={formEditData.type?.replace('_', ' ') || ''}
+                    className="form-input-elegant"
+                    disabled
+                  />
+                </div>
+                
+                <div className="form-group-elegant">
+                  <label className="form-label-elegant">Start Date</label>
+                  <input
+                    type="date"
+                    value={formEditData.startDate}
+                    onChange={(e) => setFormEditData({...formEditData, startDate: e.target.value})}
+                    className="form-input-elegant"
+                  />
+                </div>
+                
+                <div className="form-group-elegant">
+                  <label className="form-label-elegant">End Date</label>
+                  <input
+                    type="date"
+                    value={formEditData.endDate}
+                    onChange={(e) => setFormEditData({...formEditData, endDate: e.target.value})}
+                    className="form-input-elegant"
+                  />
+                </div>
+                
+                <div className="form-group-elegant">
+                  <label className="form-label-elegant">Days</label>
+                  <input
+                    type="number"
+                    value={formEditData.days}
+                    onChange={(e) => setFormEditData({...formEditData, days: parseInt(e.target.value) || ''})}
+                    className="form-input-elegant"
+                    min="1"
+                  />
+                </div>
+                
+                <div className="form-group-elegant">
+                  <label className="form-label-elegant">Reason</label>
+                  <textarea
+                    value={formEditData.reason}
+                    onChange={(e) => setFormEditData({...formEditData, reason: e.target.value})}
+                    className="form-input-elegant"
+                    rows="4"
+                  />
+                </div>
+                
+                <div className="form-group-elegant">
+                  <label className="form-label-elegant">Status</label>
+                  <select
+                    value={formEditData.status}
+                    onChange={(e) => setFormEditData({...formEditData, status: e.target.value})}
+                    className="form-input-elegant"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="manager_rejected">Manager Rejected</option>
+                  </select>
+                </div>
+                
+                <div className="action-buttons">
+                  <button type="submit" className="btn-elegant btn-success">
+                    Update Form
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn-elegant"
+                    onClick={() => setShowFormModal(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              // View Form
+              <div className="form-view-content">
+                <div className="form-info-section">
+                  <h4 style={{ color: '#64b5f6', marginBottom: '1rem' }}>Form Information</h4>
+                  <div className="form-info-grid">
+                    <div className="info-item">
+                      <span className="info-label">Employee:</span>
+                      <span className="info-value">{selectedForm.user?.name || 'Unknown'}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Email:</span>
+                      <span className="info-value">{selectedForm.user?.email || 'Unknown'}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Department:</span>
+                      <span className="info-value">{selectedForm.user?.department || 'N/A'}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Form Type:</span>
+                      <span className="info-value">{selectedForm.type?.replace('_', ' ') || 'N/A'}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Status:</span>
+                      <span className="info-value status-display">{selectedForm.status || 'N/A'}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Submitted:</span>
+                      <span className="info-value">{new Date(selectedForm.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Start Date:</span>
+                      <span className="info-value">{selectedForm.startDate ? new Date(selectedForm.startDate).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">End Date:</span>
+                      <span className="info-value">{selectedForm.endDate ? new Date(selectedForm.endDate).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Days Requested:</span>
+                      <span className="info-value">{selectedForm.days || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {selectedForm.reason && (
+                  <div className="form-reason-section">
+                    <h4 style={{ color: '#64b5f6', marginBottom: '1rem' }}>Reason</h4>
+                    <div className="reason-display-box">
+                      {selectedForm.reason}
+                    </div>
+                  </div>
+                )}
+                
+                {selectedForm.comments && selectedForm.comments.length > 0 && (
+                  <div className="form-comments-section">
+                    <h4 style={{ color: '#64b5f6', marginBottom: '1rem' }}>Comments</h4>
+                    <div className="comments-display">
+                      {selectedForm.comments.map((comment, index) => (
+                        <div key={index} className="comment-display-item">
+                          <strong>{comment.by || 'System'}:</strong> {comment.text}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="action-buttons">
+                  <button 
+                    className="btn-elegant btn-warning"
+                    onClick={() => handleCorrectForm(selectedForm)}
+                  >
+                    Edit Form
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn-elegant"
+                    onClick={() => setShowFormModal(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="modal-elegant" onClick={() => setShowDeleteConfirm(null)}>
+          <div className="modal-content-elegant" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="text-gradient">Confirm Delete</h2>
+              <button 
+                className="close-btn" 
+                onClick={() => setShowDeleteConfirm(null)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '50%',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  color: '#fff',
+                  transition: 'all 0.3s ease',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: '1'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div style={{ padding: '1rem 0' }}>
+              <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '1.1rem', marginBottom: '1.5rem' }}>
+                Are you sure you want to delete this form? This action cannot be undone.
+              </p>
+              
+              <div className="action-buttons">
+                <button 
+                  className="btn-elegant btn-danger"
+                  onClick={() => confirmDeleteForm(showDeleteConfirm)}
+                  disabled={loading}
+                >
+                  {loading ? 'Deleting...' : 'Delete Form'}
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-elegant"
+                  onClick={() => setShowDeleteConfirm(null)}
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create User Modal */}
       {showCreateUserModal && (

@@ -3,6 +3,7 @@ import axios from 'axios';
 import ALS from './ALS/ALS';
 import LogoutButton from './LogoutButton';
 import ExportPrintButtons from './ExportPrintButtons';
+import MedicalDocumentViewer from './MedicalDocumentViewer';
 
 const AdminDashboard = () => {
   // Navigation state
@@ -76,6 +77,7 @@ const AdminDashboard = () => {
     'Sales',
     'Information Technology',
     'Operations',
+    'Engineer',
     'Customer Service',
     'Legal',
     'Personal Assistant',
@@ -678,11 +680,11 @@ const AdminDashboard = () => {
         {activeTab === 'users' && (
           <div className="users-section">
             <div className="section-header">
-              <h2 className="section-title">User Management</h2>
+              <h2 className="section-title">👥 User Management</h2>
               <div className="section-actions">
                 <input
                   type="text"
-                  placeholder="Search users..."
+                  placeholder="🔍 Search users by name, email, or department..."
                   value={usersSearch}
                   onChange={(e) => setUsersSearch(e.target.value)}
                   className="search-input"
@@ -691,7 +693,7 @@ const AdminDashboard = () => {
                   className="btn-elegant btn-success"
                   onClick={() => setShowCreateUserModal(true)}
                 >
-                  Create New User
+                  👤 Create New User
                 </button>
               </div>
             </div>
@@ -700,152 +702,143 @@ const AdminDashboard = () => {
 
             {/* Pending Users Section */}
             {pendingUsers.length > 0 && (
-              <div className="elegant-card">
-                <h3 className="subsection-title">
-                  Pending Registrations ({currentUser?.role === 'super_admin' 
-                    ? pendingUsers.length 
-                    : pendingUsers.filter(u => u.role !== 'super_admin').length})
-                </h3>
-                <div className="table-container">
-                  <table className="table-elegant">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Department</th>
-                        <th>Managed Departments</th>
-                        <th>Registration Date</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredPendingUsers.map(user => (
-                        <tr key={user._id} className="hover-lift">
-                          <td className="text-elegant">{user.name}</td>
-                          <td className="text-elegant">{user.email}</td>
-                          <td>
-                            <span className={`role-badge role-${user.role}`}>
-                              {user.role === 'manager' ? 'Manager' : 'Employee'}
-                            </span>
-                          </td>
-                          <td className="text-elegant">{user.department}</td>
-                          <td className="text-elegant">
-                            {user.role === 'manager' ? (
-                              user.managedDepartments && user.managedDepartments.length > 0 ? (
-                                <div className="managed-departments">
-                                  {user.managedDepartments.map((dept, index) => (
-                                    <span key={index} className="department-tag">
-                                      {dept}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="no-departments">No departments assigned</span>
-                              )
-                            ) : (
-                              <span className="not-applicable">N/A</span>
-                            )}
-                          </td>
-                          <td className="text-elegant">
+              <div className="super-admin-section">
+                <div className="section-title-container">
+                  <h3 className="section-title">
+                    ⏳ Pending Registrations ({currentUser?.role === 'super_admin' 
+                      ? pendingUsers.length 
+                      : pendingUsers.filter(u => u.role !== 'super_admin').length})
+                  </h3>
+                </div>
+                <div className="super-admin-card-grid">
+                  {filteredPendingUsers.map(user => (
+                    <div key={user._id} className="super-admin-card user-card">
+                      <div className="card-header">
+                        <div className="user-avatar">
+                          {user.role === 'manager' ? '👔' : '👤'}
+                        </div>
+                        <div className="user-info">
+                          <h4 className="user-name">{user.name}</h4>
+                          <p className="user-email">{user.email}</p>
+                        </div>
+                      </div>
+                      <div className="card-content">
+                        <div className="info-row">
+                          <span className="info-label">Role:</span>
+                          <span className={`role-badge role-${user.role}`}>
+                            {user.role === 'manager' ? 'Manager' : 'Employee'}
+                          </span>
+                        </div>
+                        <div className="info-row">
+                          <span className="info-label">Department:</span>
+                          <span className="info-value">{user.department}</span>
+                        </div>
+                        <div className="info-row">
+                          <span className="info-label">Registration Date:</span>
+                          <span className="info-value">
                             {new Date(user.createdAt).toLocaleDateString()}
-                          </td>
-                          <td>
-                            <div className="action-buttons-inline">
-                              <button 
-                                className="btn-elegant btn-success btn-sm"
-                                onClick={() => handleApproveUser(user._id)}
-                              >
-                                Approve
-                              </button>
-                              <button 
-                                className="btn-elegant btn-danger btn-sm"
-                                onClick={() => handleRejectUser(user._id)}
-                              >
-                                Reject
-                              </button>
+                          </span>
+                        </div>
+                        {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
+                          <div className="info-row">
+                            <span className="info-label">Managed Departments:</span>
+                            <div className="department-tags">
+                              {user.managedDepartments.map((dept, index) => (
+                                <span key={index} className="department-tag">
+                                  {dept}
+                                </span>
+                              ))}
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </div>
+                        )}
+                      </div>
+                      <div className="card-actions">
+                        <button 
+                          className="btn-elegant btn-success btn-sm"
+                          onClick={() => handleApproveUser(user._id)}
+                        >
+                          ✅ Approve
+                        </button>
+                        <button 
+                          className="btn-elegant btn-danger btn-sm"
+                          onClick={() => handleRejectUser(user._id)}
+                        >
+                          ❌ Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
             {/* Active Users Section */}
-            <div className="elegant-card">
-              <h3 className="subsection-title">
-                Active Users ({currentUser?.role === 'super_admin' 
-                  ? users.length 
-                  : users.filter(u => u.role !== 'super_admin').length})
-              </h3>
-              <div className="table-container">
-                <table className="table-elegant">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Department</th>
-                      <th>Role</th>
-                      <th>Managed Departments</th>
-                      <th>Last Login</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredUsers.map(user => (
-                      <tr key={user._id} className="hover-lift">
-                        <td className="text-elegant">{user.name}</td>
-                        <td className="text-elegant">{user.email}</td>
-                        <td className="text-elegant">{user.department}</td>
-                        <td>
-                          <span className={`role-badge role-${user.role}`}>
-                            {user.role === 'manager' ? 'Manager' : user.role === 'admin' ? 'Admin' : 'Employee'}
-                          </span>
-                        </td>
-                        <td className="text-elegant">
-                          {user.role === 'manager' ? (
-                            user.managedDepartments && user.managedDepartments.length > 0 ? (
-                              <div className="managed-departments">
-                                {user.managedDepartments.map((dept, index) => (
-                                  <span key={index} className="department-tag">
-                                    {dept}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="no-departments">No departments assigned</span>
-                            )
-                          ) : (
-                            <span className="not-applicable">N/A</span>
-                          )}
-                        </td>
-                        <td className="text-elegant">
+            <div className="super-admin-section">
+              <div className="section-title-container">
+                <h3 className="section-title">
+                  👥 Active Users ({currentUser?.role === 'super_admin' 
+                    ? users.length 
+                    : users.filter(u => u.role !== 'super_admin').length})
+                </h3>
+              </div>
+              <div className="super-admin-card-grid">
+                {filteredUsers.map(user => (
+                  <div key={user._id} className="super-admin-card user-card">
+                    <div className="card-header">
+                      <div className="user-avatar">
+                        {user.role === 'admin' ? '👑' : user.role === 'manager' ? '👔' : '👤'}
+                      </div>
+                      <div className="user-info">
+                        <h4 className="user-name">{user.name}</h4>
+                        <p className="user-email">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="card-content">
+                      <div className="info-row">
+                        <span className="info-label">Role:</span>
+                        <span className={`role-badge role-${user.role}`}>
+                          {user.role === 'admin' ? 'Admin' : user.role === 'manager' ? 'Manager' : 'Employee'}
+                        </span>
+                      </div>
+                      <div className="info-row">
+                        <span className="info-label">Department:</span>
+                        <span className="info-value">{user.department}</span>
+                      </div>
+                      <div className="info-row">
+                        <span className="info-label">Last Login:</span>
+                        <span className="info-value">
                           {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
-                        </td>
-                        <td>
-                          <div className="action-buttons-inline">
-                            <button 
-                              className="btn-elegant btn-primary btn-sm"
-                              onClick={() => handleEditUser(user)}
-                              style={{ marginRight: '0.5rem' }}
-                            >
-                              Edit
-                            </button>
-                            <button 
-                              className="btn-elegant btn-danger btn-sm"
-                              onClick={() => handleDeleteUser(user._id)}
-                            >
-                              Delete
-                            </button>
+                        </span>
+                      </div>
+                      {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
+                        <div className="info-row">
+                          <span className="info-label">Managed Departments:</span>
+                          <div className="department-tags">
+                            {user.managedDepartments.map((dept, index) => (
+                              <span key={index} className="department-tag">
+                                {dept}
+                              </span>
+                            ))}
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      )}
+                    </div>
+                    <div className="card-actions">
+                      <button 
+                        className="btn-elegant btn-primary btn-sm"
+                        onClick={() => handleEditUser(user)}
+                      >
+                        ✏️ Edit User
+                      </button>
+                      <button 
+                        className="btn-elegant btn-danger btn-sm"
+                        onClick={() => handleDeleteUser(user._id)}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -864,23 +857,50 @@ const AdminDashboard = () => {
                   onChange={(e) => setFormsSearch(e.target.value)}
                   className="search-input"
                 />
-                <button 
-                  className="btn-elegant btn-primary"
+              </div>
+            </div>
+
+            {/* Vacation Management Cards */}
+            <div className="vacation-management-section">
+              <div className="vacation-management-cards">
+                <div 
+                  className="vacation-action-card manage-card"
                   onClick={() => {
                     setShowVacationManager(true);
                     fetchAllEmployees();
                   }}
-                  style={{ marginLeft: '1rem' }}
                 >
-                  🏖️ Manage Vacation Days
-                </button>
-                <button 
-                  className="btn-elegant"
+                  <div className="vacation-card-header">
+                    <div className="vacation-card-icon manage-icon">
+                      🏖️
+                    </div>
+                    <div className="vacation-card-content">
+                      <h3 className="vacation-card-title">Manage Vacation Days</h3>
+                      <p className="vacation-card-description">Update and modify employee vacation balances</p>
+                    </div>
+                  </div>
+                  <div className="vacation-card-footer">
+                    <span className="vacation-card-action">Click to Manage →</span>
+                  </div>
+                </div>
+
+                <div 
+                  className="vacation-action-card report-card"
                   onClick={handleShowReport}
-                  style={{ marginLeft: '0.5rem' }}
                 >
-                  📊 Vacation Report
-                </button>
+                  <div className="vacation-card-header">
+                    <div className="vacation-card-icon report-icon">
+                      📊
+                    </div>
+                    <div className="vacation-card-content">
+                      <h3 className="vacation-card-title">Vacation Report</h3>
+                      <p className="vacation-card-description">View comprehensive vacation days analytics</p>
+                    </div>
+                  </div>
+                  <div className="vacation-card-footer">
+                    <span className="vacation-card-action">Generate Report →</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -938,9 +958,9 @@ const AdminDashboard = () => {
             {formsLoading && <div className="spinner-elegant"></div>}
 
             {/* Pending Manager Approval Section */}
-            <div className="elegant-card" style={{ marginBottom: '2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 className="subsection-title" style={{ color: '#ff9800', margin: 0 }}>
+            <div className="super-admin-section">
+              <div className="section-title-container">
+                <h3 className="section-title" style={{ color: '#ff9800' }}>
                   ⏳ Pending Manager Approval - {activeFormType.toUpperCase()} ({forms.filter(f => f.type === activeFormType && f.status === 'pending').length})
                 </h3>
                 <ExportPrintButtons 
@@ -950,83 +970,81 @@ const AdminDashboard = () => {
                   sectionTitle="Pending Manager Approval"
                 />
               </div>
-              <div className="table-container">
-                <table className="table-elegant">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Department</th>
-                      <th>Manager</th>
-                      <th>Type</th>
-                      <th>Duration</th>
-                      <th>Reason</th>
-                      <th>Status</th>
-                      <th>Submitted</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {forms.filter(form => 
-                      form.type === activeFormType &&
-                      form.status === 'pending' && 
-                      (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
-                       form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()))
-                    ).map(form => (
-                      <tr key={form._id} className="hover-lift">
-                        <td>
-                          <div className="employee-info">
-                            <div className="employee-name">{form.user?.name}</div>
-                            <div className="employee-email">{form.user?.email}</div>
-                          </div>
-                        </td>
-                        <td className="text-elegant">{form.user?.department}</td>
-                        <td className="text-elegant">
-                          <span style={{ color: '#666', fontStyle: 'italic' }}>
-                            Awaiting manager review
-                          </span>
-                        </td>
-                        <td className="text-elegant">{form.type}</td>
-                        <td className="text-elegant">
+              <div className="super-admin-card-grid">
+                {forms.filter(form => 
+                  form.type === activeFormType &&
+                  form.status === 'pending' && 
+                  (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
+                   form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()) ||
+                   form.user?.department?.toLowerCase().includes(formsSearch.toLowerCase()))
+                ).map(form => (
+                  <div key={form._id} className="super-admin-card form-card">
+                    <div className="card-header">
+                      <div className="form-type-icon">
+                        {form.type === 'vacation' ? '🏖️' : 
+                         form.type === 'sick_leave' ? '🏥' : 
+                         form.type === 'excuse' ? '🕐' : '🏠'}
+                      </div>
+                      <div className="form-info">
+                        <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
+                        <p className="employee-details">{form.user?.email} • {form.user?.department}</p>
+                      </div>
+                    </div>
+                    <div className="card-content">
+                      <div className="info-row">
+                        <span className="info-label">Type:</span>
+                        <span className="info-value">{form.type}</span>
+                      </div>
+                      <div className="info-row">
+                        <span className="info-label">Duration:</span>
+                        <span className="info-value">
                           {form.type === 'vacation' ? (
-                            <>
-                              <div>From: {form.startDate?.slice(0,10)}</div>
-                              <div>To: {form.endDate?.slice(0,10)}</div>
-                            </>
+                            `${form.startDate?.slice(0,10)} to ${form.endDate?.slice(0,10)}`
                           ) : (
-                            <>
-                              <div>From: {form.fromHour || '-'}</div>
-                              <div>To: {form.toHour || '-'}</div>
-                            </>
+                            `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
-                        </td>
-                        <td className="text-elegant">
-                          <div className="reason-text">{form.reason}</div>
-                        </td>
-                        <td>
-                          <span className="status-badge status-pending">
-                            Pending Manager
-                          </span>
-                        </td>
-                        <td className="text-elegant">
+                        </span>
+                      </div>
+                      <div className="info-row">
+                        <span className="info-label">Submitted:</span>
+                        <span className="info-value">
                           {new Date(form.createdAt).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                    {forms.filter(f => f.type === activeFormType && f.status === 'pending').length === 0 && (
-                      <tr>
-                        <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-                          No {activeFormType} forms pending manager approval
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                        </span>
+                      </div>
+                      <div className="info-row">
+                        <span className="info-label">Status:</span>
+                        <span className="status-badge status-pending">
+                          Pending Manager
+                        </span>
+                      </div>
+                      {form.reason && (
+                        <div className="reason-section">
+                          <span className="info-label">Reason:</span>
+                          <div className="reason-content">{form.reason}</div>
+                        </div>
+                      )}
+                      {form.type === 'sick_leave' && (
+                        <div className="medical-document-section">
+                          <MedicalDocumentViewer form={form} userRole="admin" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {forms.filter(f => f.type === activeFormType && f.status === 'pending').length === 0 && (
+                  <div className="no-items-message">
+                    <div className="no-items-icon">📋</div>
+                    <h3>No Pending Forms</h3>
+                    <p>No {activeFormType} forms are pending manager approval at this time.</p>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Awaiting HR Approval Section */}
-            <div className="elegant-card" style={{ marginBottom: '2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 className="subsection-title" style={{ color: '#2196f3', margin: 0 }}>
+            <div className="super-admin-section">
+              <div className="section-title-container">
+                <h3 className="section-title" style={{ color: '#2196f3' }}>
                   👨‍💼 Awaiting HR Approval - {activeFormType.toUpperCase()} ({forms.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length})
                 </h3>
                 <ExportPrintButtons 
@@ -1036,129 +1054,127 @@ const AdminDashboard = () => {
                   sectionTitle="Awaiting HR Approval"
                 />
               </div>
-              <div className="table-container">
-                <table className="table-elegant">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Department</th>
-                      <th>Days Left</th>
-                      <th>Type</th>
-                      <th>Duration</th>
-                      <th>Reason</th>
-                      <th>Manager Approval</th>
-                      <th>HR Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {forms.filter(form => 
-                      form.type === activeFormType &&
-                      (form.status === 'manager_approved' || form.status === 'manager_submitted') && 
-                      (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
-                       form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()))
-                    ).map(form => (
-                      <tr key={form._id} className="hover-lift">
-                        <td>
-                          <div className="employee-info">
-                            <div className="employee-name">{form.user?.name}</div>
-                            <div className="employee-email">{form.user?.email}</div>
-                          </div>
-                        </td>
-                        <td className="text-elegant">{form.user?.department}</td>
-                        <td className="text-elegant">
-                          {form.user?._id ? (
-                            <>
-                              {vacationDaysMap[form.user._id] !== undefined ? (
-                                <>
-                                  {vacationDaysMap[form.user._id]}
-                                  {vacationDaysMap[form.user._id] === 0 && (
-                                    <span className="no-days-warning">
-                                      (No days left!)
-                                    </span>
-                                  )}
-                                </>
-                              ) : '...'
-                              }
-                            </>
-                          ) : '-'}
-                        </td>
-                        <td className="text-elegant">{form.type}</td>
-                        <td className="text-elegant">
+              <div className="super-admin-card-grid">
+                {forms.filter(form => 
+                  form.type === activeFormType &&
+                  (form.status === 'manager_approved' || form.status === 'manager_submitted') && 
+                  (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
+                   form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()) ||
+                   form.user?.department?.toLowerCase().includes(formsSearch.toLowerCase()))
+                ).map(form => (
+                  <div key={form._id} className="super-admin-card form-card">
+                    <div className="card-header">
+                      <div className="form-type-icon">
+                        {form.type === 'vacation' ? '🏖️' : 
+                         form.type === 'sick_leave' ? '🏥' : 
+                         form.type === 'excuse' ? '🕐' : '🏠'}
+                      </div>
+                      <div className="form-info">
+                        <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
+                        <p className="employee-details">{form.user?.email} • {form.user?.department}</p>
+                      </div>
+                    </div>
+                    <div className="card-content">
+                      <div className="info-row">
+                        <span className="info-label">Type:</span>
+                        <span className="info-value">{form.type}</span>
+                      </div>
+                      <div className="info-row">
+                        <span className="info-label">Duration:</span>
+                        <span className="info-value">
                           {form.type === 'vacation' ? (
-                            <>
-                              <div>From: {form.startDate?.slice(0,10)}</div>
-                              <div>To: {form.endDate?.slice(0,10)}</div>
-                            </>
+                            `${form.startDate?.slice(0,10)} to ${form.endDate?.slice(0,10)}`
                           ) : (
-                            <>
-                              <div>From: {form.fromHour || '-'}</div>
-                              <div>To: {form.toHour || '-'}</div>
-                            </>
+                            `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
-                        </td>
-                        <td className="text-elegant">
-                          <div className="reason-text">{form.reason}</div>
-                        </td>
-                        <td className="text-elegant">
-                          <div className="manager-approval-info">
-                            <div style={{ color: '#4caf50', fontWeight: 'bold', marginBottom: '4px' }}>
-                              ✅ Approved by Manager
-                            </div>
-                            {form.managerApprovedAt && (
-                              <div style={{ fontSize: '0.8rem', color: '#666' }}>
-                                {new Date(form.managerApprovedAt).toLocaleDateString()}
-                              </div>
-                            )}
-                            {form.managerComment && (
-                              <div style={{ fontSize: '0.85rem', color: '#555', marginTop: '4px', fontStyle: 'italic' }}>
-                                "{form.managerComment}"
-                              </div>
-                            )}
+                        </span>
+                      </div>
+                      <div className="info-row">
+                        <span className="info-label">Days Left:</span>
+                        <span className="info-value">
+                          {form.user?._id ? (
+                            vacationDaysMap[form.user._id] !== undefined ? (
+                              <>
+                                {vacationDaysMap[form.user._id]}
+                                {vacationDaysMap[form.user._id] === 0 && (
+                                  <span className="no-days-warning"> (No days left!)</span>
+                                )}
+                              </>
+                            ) : '...'
+                          ) : '-'}
+                        </span>
+                      </div>
+                      <div className="info-row">
+                        <span className="info-label">Manager Approval:</span>
+                        <div className="manager-approval-info">
+                          <div style={{ color: '#4caf50', fontWeight: 'bold' }}>
+                            ✅ Approved by Manager
                           </div>
-                        </td>
-                        <td>
-                          <div className="form-actions">
-                            <div className="action-buttons-inline" style={{ marginBottom: '8px' }}>
-                              <button
-                                onClick={() => handleFormAction(form._id, 'approved')}
-                                className="btn-elegant btn-success btn-sm"
-                              >
-                                Final Approve
-                              </button>
-                              <button
-                                onClick={() => handleFormAction(form._id, 'rejected')}
-                                className="btn-elegant btn-danger btn-sm"
-                              >
-                                Reject
-                              </button>
+                          {form.managerApprovedAt && (
+                            <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                              {new Date(form.managerApprovedAt).toLocaleDateString()}
                             </div>
-                            <textarea
-                              placeholder="HR comment..."
-                              value={comments[form._id] || ''}
-                              onChange={(e) => handleCommentChange(form._id, e.target.value)}
-                              className="comment-textarea"
-                              style={{ fontSize: '0.8rem' }}
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {forms.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length === 0 && (
-                      <tr>
-                        <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-                          No {activeFormType} forms awaiting HR approval
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                          )}
+                          {form.managerComment && (
+                            <div style={{ fontSize: '0.85rem', color: '#555', marginTop: '4px', fontStyle: 'italic' }}>
+                              "{form.managerComment}"
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {form.reason && (
+                        <div className="reason-section">
+                          <span className="info-label">Reason:</span>
+                          <div className="reason-content">{form.reason}</div>
+                        </div>
+                      )}
+                      {form.type === 'sick_leave' && (
+                        <div className="medical-document-section">
+                          <MedicalDocumentViewer form={form} userRole="admin" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="card-actions hr-actions">
+                      <div className="action-buttons-section">
+                        <button
+                          onClick={() => handleFormAction(form._id, 'approved')}
+                          className="btn-elegant btn-success btn-sm"
+                        >
+                          ✅ FINAL APPROVAL
+                        </button>
+                        <button
+                          onClick={() => handleFormAction(form._id, 'rejected')}
+                          className="btn-elegant btn-danger btn-sm"
+                        >
+                          ❌ REJECT
+                        </button>
+                      </div>
+                      <div className="comment-section">
+                        <textarea
+                          placeholder="HR comment..."
+                          value={comments[form._id] || ''}
+                          onChange={(e) => handleCommentChange(form._id, e.target.value)}
+                          className="comment-textarea"
+                          rows="2"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {forms.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length === 0 && (
+                  <div className="no-items-message">
+                    <div className="no-items-icon">👨‍💼</div>
+                    <h3>No Forms Awaiting HR</h3>
+                    <p>No {activeFormType} forms are awaiting HR approval at this time.</p>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Completed Forms Section */}
-            <div className="elegant-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 className="subsection-title" style={{ color: '#666', margin: 0 }}>
+            <div className="super-admin-section">
+              <div className="section-title-container">
+                <h3 className="section-title" style={{ color: '#666' }}>
                   📋 {activeFormType.toUpperCase()} Forms History ({forms.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length})
                 </h3>
                 <ExportPrintButtons 
@@ -1168,90 +1184,97 @@ const AdminDashboard = () => {
                   sectionTitle="Forms History"
                 />
               </div>
-              <div className="table-container">
-                <table className="table-elegant">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Department</th>
-                      <th>Type</th>
-                      <th>Duration</th>
-                      <th>Reason</th>
-                      <th>Final Status</th>
-                      <th>Comments</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {forms.filter(form => 
-                      form.type === activeFormType &&
-                      ['approved', 'rejected', 'manager_rejected'].includes(form.status) &&
-                      (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
-                       form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()))
-                    ).map(form => (
-                      <tr key={form._id} className="hover-lift">
-                        <td>
-                          <div className="employee-info">
-                            <div className="employee-name">{form.user?.name}</div>
-                            <div className="employee-email">{form.user?.email}</div>
-                          </div>
-                        </td>
-                        <td className="text-elegant">{form.user?.department}</td>
-                        <td className="text-elegant">{form.type}</td>
-                        <td className="text-elegant">
+              <div className="super-admin-card-grid">
+                {forms.filter(form => 
+                  form.type === activeFormType &&
+                  ['approved', 'rejected', 'manager_rejected'].includes(form.status) &&
+                  (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
+                   form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()) ||
+                   form.user?.department?.toLowerCase().includes(formsSearch.toLowerCase()))
+                ).map(form => (
+                  <div key={form._id} className="super-admin-card form-card history-card">
+                    <div className="card-header">
+                      <div className="form-type-icon">
+                        {form.type === 'vacation' ? '🏖️' : 
+                         form.type === 'sick_leave' ? '🏥' : 
+                         form.type === 'excuse' ? '🕐' : '🏠'}
+                      </div>
+                      <div className="form-info">
+                        <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
+                        <p className="employee-details">{form.user?.email} • {form.user?.department}</p>
+                      </div>
+                    </div>
+                    <div className="card-content">
+                      <div className="info-row">
+                        <span className="info-label">Type:</span>
+                        <span className="info-value">{form.type}</span>
+                      </div>
+                      <div className="info-row">
+                        <span className="info-label">Duration:</span>
+                        <span className="info-value">
                           {form.type === 'vacation' ? (
-                            <>
-                              <div>From: {form.startDate?.slice(0,10)}</div>
-                              <div>To: {form.endDate?.slice(0,10)}</div>
-                            </>
+                            `${form.startDate?.slice(0,10)} to ${form.endDate?.slice(0,10)}`
                           ) : (
-                            <>
-                              <div>From: {form.fromHour || '-'}</div>
-                              <div>To: {form.toHour || '-'}</div>
-                            </>
+                            `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
-                        </td>
-                        <td className="text-elegant">
-                          <div className="reason-text">{form.reason}</div>
-                        </td>
-                        <td>
-                          <span className={`status-badge status-${form.status}`}>
+                        </span>
+                      </div>
+                      <div className="info-row">
+                        <span className="info-label">Final Status:</span>
+                        <div className={`status-badge-history status-${form.status}`}>
+                          <span className="status-icon">
+                            {form.status === 'approved' ? '✅' : '❌'}
+                          </span>
+                          <span className="status-text">
                             {form.status === 'manager_rejected' ? 'Rejected by Manager' : form.status}
                           </span>
-                        </td>
-                        <td className="text-elegant">
-                          <div style={{ fontSize: '0.8rem' }}>
-                            {form.managerComment && (
-                              <div style={{ marginBottom: '4px' }}>
-                                <strong>Manager:</strong> {form.managerComment}
-                              </div>
-                            )}
-                            {form.adminComment && (
-                              <div>
-                                <strong>HR:</strong> {form.adminComment}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td>
-                          <button
-                            onClick={() => handleDeleteForm(form._id)}
-                            className="btn-elegant btn-danger btn-sm"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {forms.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length === 0 && (
-                      <tr>
-                        <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-                          No completed {activeFormType} forms found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                      {form.reason && (
+                        <div className="reason-section">
+                          <span className="info-label">Reason:</span>
+                          <div className="reason-content">{form.reason}</div>
+                        </div>
+                      )}
+                      {(form.managerComment || form.adminComment) && (
+                        <div className="comments-section">
+                          <span className="info-label">Comments:</span>
+                          {form.managerComment && (
+                            <div className="comment-block manager-comment">
+                              <strong>Manager:</strong> {form.managerComment}
+                            </div>
+                          )}
+                          {form.adminComment && (
+                            <div className="comment-block admin-comment">
+                              <strong>HR:</strong> {form.adminComment}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {form.type === 'sick_leave' && (
+                        <div className="medical-document-section">
+                          <MedicalDocumentViewer form={form} userRole="admin" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="card-actions">
+                      <button
+                        onClick={() => handleDeleteForm(form._id)}
+                        className="btn-elegant btn-danger btn-sm"
+                        title="Delete this form record"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {forms.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length === 0 && (
+                  <div className="no-items-message">
+                    <div className="no-items-icon">📋</div>
+                    <h3>No Historical Forms</h3>
+                    <p>No completed {activeFormType} forms found in the history.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1494,95 +1517,113 @@ const AdminDashboard = () => {
       {/* Vacation Manager Modal */}
       {showVacationManager && (
         <div className="modal-elegant" onClick={() => setShowVacationManager(false)}>
-          <div className="modal-content-elegant" style={{ maxWidth: '800px' }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header" style={{ position: 'relative', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 className="text-gradient" style={{ margin: 0 }}>Manage Vacation Days</h2>
+          <div className="vacation-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="vacation-modal-header">
+              <div className="modal-title-section">
+                <div className="modal-icon">🏖️</div>
+                <div>
+                  <h2 className="vacation-modal-title">Manage Vacation Days</h2>
+                  <p className="vacation-modal-subtitle">Update employee vacation balances</p>
+                </div>
+              </div>
               <button 
-                className="close-btn" 
+                className="vacation-close-btn" 
                 onClick={() => setShowVacationManager(false)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  borderRadius: '50%',
-                  fontSize: '18px',
-                  cursor: 'pointer',
-                  color: '#666',
-                  transition: 'all 0.3s ease',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  lineHeight: '1'
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.color = '#333';
-                  e.target.style.background = 'rgba(255, 255, 255, 0.3)';
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.color = '#666';
-                  e.target.style.background = 'rgba(255, 255, 255, 0.2)';
-                }}
                 title="Close"
               >
-                ×
+                ✕
               </button>
             </div>
-            <input
-              type="text"
-              placeholder="Search by name..."
-              value={vacationManagerSearch}
-              onChange={e => setVacationManagerSearch(e.target.value)}
-              className="search-input"
-              style={{ marginBottom: '1rem' }}
-            />
-            {vacationManagerLoading && <div className="spinner-elegant"></div>}
-            {vacationManagerError && <div className="error-message">{vacationManagerError}</div>}
-            {vacationManagerSuccess && <div className="success-message">{vacationManagerSuccess}</div>}
+
+            <div className="vacation-modal-search">
+              <input
+                type="text"
+                placeholder="🔍 Search by employee name..."
+                value={vacationManagerSearch}
+                onChange={e => setVacationManagerSearch(e.target.value)}
+                className="vacation-search-input"
+              />
+            </div>
+
+            {vacationManagerLoading && (
+              <div className="vacation-loading">
+                <div className="spinner-elegant"></div>
+                <p>Loading employees...</p>
+              </div>
+            )}
+
+            {vacationManagerError && (
+              <div className="vacation-message error">
+                <span className="message-icon">⚠️</span>
+                {vacationManagerError}
+              </div>
+            )}
+
+            {vacationManagerSuccess && (
+              <div className="vacation-message success">
+                <span className="message-icon">✅</span>
+                {vacationManagerSuccess}
+              </div>
+            )}
             
-            <div className="table-container">
-              <table className="table-elegant">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Department</th>
-                    <th>Vacation Days Left</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allEmployees.filter(emp => emp.name.toLowerCase().includes(vacationManagerSearch.toLowerCase())).map(emp => (
-                    <tr key={emp._id}>
-                      <td>{emp.name}</td>
-                      <td>{emp.email}</td>
-                      <td>{emp.department}</td>
-                      <td>
+            <div className="vacation-employees-grid">
+              {allEmployees.filter(emp => emp.name.toLowerCase().includes(vacationManagerSearch.toLowerCase())).map(emp => (
+                <div key={emp._id} className="vacation-employee-card">
+                  <div className="vacation-card-header">
+                    <div className="employee-avatar">
+                      👤
+                    </div>
+                    <div className="employee-basic-info">
+                      <h4 className="employee-card-name">{emp.name}</h4>
+                      <p className="employee-card-email">{emp.email}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="vacation-card-content">
+                    <div className="vacation-info-row">
+                      <span className="vacation-info-label">Department:</span>
+                      <span className="vacation-info-value">{emp.department}</span>
+                    </div>
+                    
+                    <div className="vacation-days-section">
+                      <label className="vacation-days-label">Vacation Days Balance:</label>
+                      <div className="vacation-input-group">
                         <input
                           type="number"
                           min="0"
+                          max="50"
                           value={vacationEdits[emp._id] !== undefined ? vacationEdits[emp._id] : emp.vacationDaysLeft}
                           onChange={e => handleVacationEdit(emp._id, e.target.value)}
-                          className="vacation-input"
+                          className="vacation-days-input"
                         />
-                      </td>
-                      <td>
-                        <button 
-                          className="btn-elegant btn-success btn-sm" 
-                          onClick={() => handleVacationSave(emp._id)}
-                        >
-                          Save
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <span className="vacation-input-suffix">days</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="vacation-card-actions">
+                    <button 
+                      className="btn-vacation-save" 
+                      onClick={() => handleVacationSave(emp._id)}
+                    >
+                      💾 Save Changes
+                    </button>
+                  </div>
+                </div>
+              ))}
+              
+              {allEmployees.filter(emp => emp.name.toLowerCase().includes(vacationManagerSearch.toLowerCase())).length === 0 && (
+                <div className="vacation-no-results">
+                  <div className="no-results-icon">👥</div>
+                  <h3>No employees found</h3>
+                  <p>Try adjusting your search criteria</p>
+                </div>
+              )}
             </div>
             
-            <div className="action-buttons">
+            <div className="vacation-modal-footer">
               <button 
-                className="btn-elegant"
+                className="btn-vacation-close"
                 onClick={() => setShowVacationManager(false)}
               >
                 Close
@@ -1595,56 +1636,126 @@ const AdminDashboard = () => {
       {/* Vacation Days Report Modal */}
       {showReport && (
         <div className="modal-elegant">
-          <div className="modal-content-elegant" style={{ maxWidth: '900px' }}>
-            <div className="modal-header">
-              <h2 className="text-gradient">Vacation Days Report</h2>
-              <button 
-                className="btn-elegant"
-                onClick={handlePrint}
-              >
-                Print Report
-              </button>
+          <div className="report-modal-content">
+            <div className="report-modal-header">
+              <div className="modal-title-section">
+                <div className="modal-icon">📊</div>
+                <div>
+                  <h2 className="report-modal-title">Vacation Days Report</h2>
+                  <p className="report-modal-subtitle">Comprehensive overview of employee vacation balances</p>
+                </div>
+              </div>
+              <div className="report-actions">
+                <button 
+                  className="btn-print-report"
+                  onClick={handlePrint}
+                >
+                  🖨️ Print Report
+                </button>
+                <button 
+                  className="report-close-btn" 
+                  onClick={() => setShowReport(false)}
+                  title="Close"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
-            {reportLoading && <div className="spinner-elegant"></div>}
-            {reportError && <div className="error-message">{reportError}</div>}
-            
-            {!reportLoading && !reportError && (
-              <div className="table-container">
-                <table className="table-elegant">
-                  <thead>
-                    <tr>
-                      <th>Employee Name</th>
-                      <th>Department</th>
-                      <th>Email</th>
-                      <th>Vacation Days Left</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reportData.map(employee => (
-                      <tr key={employee._id}>
-                        <td>{employee.name}</td>
-                        <td>{employee.department}</td>
-                        <td>{employee.email}</td>
-                        <td className={employee.vacationDaysLeft === 0 ? 'no-days-left' : ''}>
-                          {employee.vacationDaysLeft}
-                          {employee.vacationDaysLeft === 0 && (
-                            <span className="no-days-warning"> (No days left!)</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {reportLoading && (
+              <div className="report-loading">
+                <div className="spinner-elegant"></div>
+                <p>Generating report...</p>
+              </div>
+            )}
+
+            {reportError && (
+              <div className="report-message error">
+                <span className="message-icon">⚠️</span>
+                {reportError}
               </div>
             )}
             
-            <div className="action-buttons">
+            {!reportLoading && !reportError && (
+              <>
+                <div className="report-summary">
+                  <div className="summary-card">
+                    <div className="summary-icon">👥</div>
+                    <div className="summary-content">
+                      <div className="summary-number">{reportData.length}</div>
+                      <div className="summary-label">Total Employees</div>
+                    </div>
+                  </div>
+                  <div className="summary-card">
+                    <div className="summary-icon">⚠️</div>
+                    <div className="summary-content">
+                      <div className="summary-number">{reportData.filter(emp => emp.vacationDaysLeft === 0).length}</div>
+                      <div className="summary-label">No Days Left</div>
+                    </div>
+                  </div>
+                  <div className="summary-card">
+                    <div className="summary-icon">🏖️</div>
+                    <div className="summary-content">
+                      <div className="summary-number">{Math.round(reportData.reduce((acc, emp) => acc + emp.vacationDaysLeft, 0) / reportData.length) || 0}</div>
+                      <div className="summary-label">Average Days</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="report-employees-grid">
+                  {reportData.map(employee => (
+                    <div key={employee._id} className="report-employee-card">
+                      <div className="report-card-header">
+                        <div className="employee-avatar">
+                          👤
+                        </div>
+                        <div className="employee-basic-info">
+                          <h4 className="employee-card-name">{employee.name}</h4>
+                          <p className="employee-card-email">{employee.email}</p>
+                        </div>
+                        <div className={`vacation-badge ${employee.vacationDaysLeft === 0 ? 'critical' : employee.vacationDaysLeft <= 5 ? 'warning' : 'good'}`}>
+                          {employee.vacationDaysLeft} days
+                        </div>
+                      </div>
+                      
+                      <div className="report-card-content">
+                        <div className="report-info-row">
+                          <span className="report-info-label">Department:</span>
+                          <span className="report-info-value">{employee.department}</span>
+                        </div>
+                        
+                        <div className="vacation-progress-section">
+                          <div className="vacation-progress-label">
+                            <span>Vacation Days Balance</span>
+                            <span className="vacation-status">
+                              {employee.vacationDaysLeft === 0 ? '❌ Depleted' : 
+                               employee.vacationDaysLeft <= 5 ? '⚠️ Low' : '✅ Available'}
+                            </span>
+                          </div>
+                          <div className="vacation-progress-bar">
+                            <div 
+                              className="vacation-progress-fill"
+                              style={{ 
+                                width: `${Math.min((employee.vacationDaysLeft / 30) * 100, 100)}%`,
+                                backgroundColor: employee.vacationDaysLeft === 0 ? '#f44336' : 
+                                               employee.vacationDaysLeft <= 5 ? '#ff9800' : '#4caf50'
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            
+            <div className="report-modal-footer">
               <button 
-                className="btn-elegant"
+                className="btn-report-close"
                 onClick={() => setShowReport(false)}
               >
-                Close
+                Close Report
               </button>
             </div>
           </div>

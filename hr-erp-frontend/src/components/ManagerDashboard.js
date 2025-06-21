@@ -25,6 +25,8 @@ const ManagerDashboard = ({ onLogout }) => {
   const [actionType, setActionType] = useState('');
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [processingForms, setProcessingForms] = useState(new Set());
+  const [refreshingPending, setRefreshingPending] = useState(false);
 
   useEffect(() => {
     fetchUserData();
@@ -32,6 +34,29 @@ const ManagerDashboard = ({ onLogout }) => {
     fetchTeamMembers();
     fetchVacationDays();
     fetchExcuseHours();
+  }, []);
+
+  // Auto-refresh pending forms every 20 seconds to keep data synchronized
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('Auto-refreshing pending forms...');
+      fetchPendingForms();
+    }, 20000); // 20 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Refresh when page becomes visible (user switches back to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Page became visible, refreshing pending forms...');
+        fetchPendingForms();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   const fetchUserData = async () => {
@@ -48,7 +73,7 @@ const ManagerDashboard = ({ onLogout }) => {
       } else {
         // If not in localStorage, fetch from API
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/auth/user', {
+        const response = await axios.get('http://localhost:5000/api/auth/me', {
           headers: { 'x-auth-token': token }
         });
         
@@ -200,27 +225,35 @@ const ManagerDashboard = ({ onLogout }) => {
 
   const fetchPendingForms = async () => {
     try {
+      setRefreshingPending(true);
       const token = localStorage.getItem('token');
-      console.log('Fetching pending team requests...');
+      console.log('🔄 Fetching pending team requests...');
       
       const response = await axios.get('http://localhost:5000/api/forms/manager/pending', {
         headers: { 'x-auth-token': token }
       });
       
-      console.log('Pending team requests received:', {
+      console.log('✅ Pending team requests received:', {
         count: response.data.length,
         requests: response.data.map(form => ({
           id: form._id,
           type: form.type,
+          status: form.status,
           submittedBy: form.user?.name,
           department: form.user?.department
         }))
       });
       
       setPendingForms(response.data);
+      
+      // Log after state update to confirm
+      console.log(`📊 Updated pending forms state: ${response.data.length} forms`);
+      
     } catch (error) {
-      console.error('Error fetching pending team requests:', error);
+      console.error('❌ Error fetching pending team requests:', error);
       setMessage('Error loading pending team requests');
+    } finally {
+      setRefreshingPending(false);
     }
   };
 
@@ -262,25 +295,97 @@ const ManagerDashboard = ({ onLogout }) => {
       return;
     }
 
+    // Prevent duplicate submissions
+    if (processingForms.has(selectedForm._id)) {
+      console.log('Form already being processed, ignoring duplicate request');
+      return;
+    }
+
     setSubmitting(true);
+    setProcessingForms(prev => new Set([...prev, selectedForm._id]));
+
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/forms/manager/${selectedForm._id}`, {
+      console.log('Submitting form action:', {
+        formId: selectedForm._id,
+        action: actionType,
+        formType: selectedForm.type,
+        hasComment: !!comment.trim()
+      });
+
+      const response = await axios.put(`http://localhost:5000/api/forms/manager/${selectedForm._id}`, {
         action: actionType,
         managerComment: comment.trim()
       }, {
-        headers: { 'x-auth-token': token }
+        headers: { 'x-auth-token': token },
+        timeout: 30000 // 30 second timeout
       });
       
-      setMessage(`Request ${actionType}d successfully`);
-      fetchPendingForms();
-      closeCommentModal();
-      
-      setTimeout(() => setMessage(''), 3000);
+      // Check if response is successful
+      if (response.status === 200) {
+        setMessage(`✅ Request ${actionType}d successfully! Refreshing...`);
+        closeCommentModal();
+        
+        // Immediate refresh to get updated data from server
+        // Don't do optimistic updates - let the server be the source of truth
+        await fetchPendingForms();
+        await fetchTeamForms();
+        
+        // Double-check with another refresh after a delay to ensure consistency
+        setTimeout(async () => {
+          console.log('🔄 Second refresh to ensure consistency...');
+          await fetchPendingForms();
+          setMessage('');
+        }, 2000);
+      } else {
+        throw new Error(`Unexpected response status: ${response.status}`);
+      }
     } catch (error) {
       console.error('Error updating form:', error);
-      setMessage('Error updating request');
+      
+      // Provide more detailed error messages
+      let errorMessage = 'Error updating request';
+      if (error.response) {
+        // Server responded with error status
+        const responseData = error.response.data;
+        errorMessage = responseData?.msg || `Server error: ${error.response.status}`;
+        
+        // If it's a status conflict, refresh to show current state
+        if (error.response.status === 400 && (
+          (responseData?.msg && responseData.msg.includes('not in') && responseData.msg.includes('status')) ||
+          responseData?.isAlreadyProcessed
+        )) {
+          errorMessage = responseData?.msg || 'Form has already been processed by another user. Refreshing...';
+          setTimeout(() => {
+            fetchPendingForms();
+            fetchTeamForms();
+          }, 1000);
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = 'No response from server. Please check your connection.';
+      } else if (error.code === 'ECONNABORTED') {
+        // Request timeout
+        errorMessage = 'Request timed out. Please try again.';
+      } else {
+        // Something else happened
+        errorMessage = `Network error: ${error.message}`;
+      }
+      
+      setMessage(errorMessage);
+      
+      // Refresh forms data to ensure UI is in sync with server
+      setTimeout(() => {
+        fetchPendingForms();
+        fetchTeamForms();
+      }, 2000);
+    } finally {
       setSubmitting(false);
+      setProcessingForms(prev => {
+        const updated = new Set(prev);
+        updated.delete(selectedForm._id);
+        return updated;
+      });
     }
   };
 
@@ -484,9 +589,25 @@ const ManagerDashboard = ({ onLogout }) => {
                     
                     <p><strong>Reason:</strong> {form.reason?.substring(0, 80)}...</p>
                     
+                    {form.managerApprovedBy && (
+                      <div className="comment-section manager-action-section">
+                        <strong>
+                          {form.status === 'manager_rejected' ? 'Rejected by Manager:' : 'Approved by Manager:'}
+                        </strong>
+                        <p style={{ color: form.status === 'manager_rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
+                          👔 {form.managerApprovedBy.name}
+                          {form.managerApprovedAt && (
+                            <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
+                              {' '}on {new Date(form.managerApprovedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+
                     {form.managerComment && (
                       <div className="comment-section">
-                        <strong>Manager Comment:</strong>
+                        <strong>Manager Comment{form.managerApprovedBy ? ` (${form.managerApprovedBy.name})` : ''}:</strong>
                         <p>{form.managerComment}</p>
                       </div>
                     )}
@@ -565,9 +686,25 @@ const ManagerDashboard = ({ onLogout }) => {
                     
                     <p><strong>Reason:</strong> {form.reason?.substring(0, 80)}...</p>
                     
+                    {form.managerApprovedBy && (
+                      <div className="comment-section manager-action-section">
+                        <strong>
+                          {form.status === 'manager_rejected' ? 'Rejected by Manager:' : 'Approved by Manager:'}
+                        </strong>
+                        <p style={{ color: form.status === 'manager_rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
+                          👔 {form.managerApprovedBy.name}
+                          {form.managerApprovedAt && (
+                            <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
+                              {' '}on {new Date(form.managerApprovedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+
                     {form.managerComment && (
                       <div className="comment-section">
-                        <strong>Manager Comment:</strong>
+                        <strong>Manager Comment{form.managerApprovedBy ? ` (${form.managerApprovedBy.name})` : ''}:</strong>
                         <p>{form.managerComment}</p>
                       </div>
                     )}
@@ -622,10 +759,31 @@ const ManagerDashboard = ({ onLogout }) => {
       {/* Pending Requests */}
       <div className="section team-requests-section">
         <div className="section-header">
-          <h2>⏳ Pending Team Requests</h2>
+          <h2>⏳ Pending Team Requests {refreshingPending ? '(Refreshing...)' : ''}</h2>
           <small className="section-subtitle">
             Employee requests awaiting your approval from managed departments
           </small>
+          <button 
+            className="btn-manager refresh-btn"
+            onClick={() => {
+              console.log('Manual refresh pending forms');
+              fetchPendingForms();
+            }}
+            title="Refresh pending requests"
+            disabled={refreshingPending}
+            style={{ 
+              marginTop: '10px',
+              padding: '8px 16px',
+              fontSize: '0.9rem',
+              background: refreshingPending ? '#ccc' : 'linear-gradient(135deg, #667eea, #764ba2)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: refreshingPending ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {refreshingPending ? '⏳ Refreshing...' : '🔄 Refresh'}
+          </button>
         </div>
         {pendingForms.length > 0 ? (
           <div className="requests-list">
@@ -674,14 +832,18 @@ const ManagerDashboard = ({ onLogout }) => {
                   <button 
                     onClick={() => openCommentModal(form, 'approve')}
                     className="approve-btn"
+                    title={`Approve ${form.type} request from ${form.user.name}`}
+                    disabled={processingForms.has(form._id)}
                   >
-                    Approve
+                    {processingForms.has(form._id) ? '⏳ Processing...' : 'Approve'}
                   </button>
                   <button 
                     onClick={() => openCommentModal(form, 'reject')}
                     className="reject-btn"
+                    title={`Reject ${form.type} request from ${form.user.name}`}
+                    disabled={processingForms.has(form._id)}
                   >
-                    Reject
+                    {processingForms.has(form._id) ? '⏳ Processing...' : 'Reject'}
                   </button>
                 </div>
               </div>

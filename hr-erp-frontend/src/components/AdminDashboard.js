@@ -18,6 +18,8 @@ const AdminDashboard = () => {
   const [vacationDaysMap, setVacationDaysMap] = useState({});
   const [excuseHoursMap, setExcuseHoursMap] = useState({});
   const [activeFormType, setActiveFormType] = useState('vacation');
+  const [processingForms, setProcessingForms] = useState(new Set());
+  const [refreshingForms, setRefreshingForms] = useState(false);
   
   // User Management state
   const [users, setUsers] = useState([]);
@@ -130,14 +132,18 @@ const AdminDashboard = () => {
   // Fetch all forms
   const fetchForms = useCallback(async () => {
     setFormsLoading(true);
+    setRefreshingForms(true);
     setFormsError('');
     const token = localStorage.getItem('token');
     try {
+      console.log('🔄 Fetching admin forms...');
       const res = await axios.get('http://localhost:5000/api/forms/admin', {
         headers: { 'x-auth-token': token }
       });
       const data = res.data;
       setForms(data);
+      console.log(`✅ Admin forms received: ${data.length} forms`);
+      
       // Fetch vacation days and excuse hours for each unique user
       const userIds = Array.from(new Set(data.map(f => f.user?._id).filter(Boolean)));
       userIds.forEach(userId => {
@@ -145,7 +151,7 @@ const AdminDashboard = () => {
         fetchExcuseHours(userId);
       });
     } catch (err) {
-      console.error('Forms fetch error:', err);
+      console.error('❌ Forms fetch error:', err);
       if (err.response) {
         // Server responded with error status
         setFormsError(err.response.data?.msg || `Server error: ${err.response.status}`);
@@ -156,8 +162,10 @@ const AdminDashboard = () => {
         // Something else happened
         setFormsError(`Error: ${err.message}`);
       }
+    } finally {
+      setFormsLoading(false);
+      setRefreshingForms(false);
     }
-    setFormsLoading(false);
   }, [fetchVacationDays, fetchExcuseHours]);
 
   // Fetch current user info
@@ -348,7 +356,32 @@ const AdminDashboard = () => {
   const handleFormAction = async (id, status) => {
     const token = localStorage.getItem('token');
     setFormsError('');
+    
+    if (!token) {
+      setFormsError('Authentication required. Please log in again.');
+      return;
+    }
+
+    // Prevent duplicate submissions by checking if this form is already being processed
+    if (processingForms.has(id)) {
+      console.log('Form already being processed, ignoring duplicate request');
+      return;
+    }
+
+    // Add to processing set
+    setProcessingForms(prev => new Set([...prev, id]));
+
     try {
+      console.log('Admin form action:', {
+        formId: id,
+        status: status,
+        adminComment: comments[id] || 'No comment'
+      });
+
+      // Create timeout controller
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const res = await fetch(`http://localhost:5000/api/forms/${id}`, {
         method: 'PUT',
         headers: {
@@ -358,24 +391,107 @@ const AdminDashboard = () => {
         body: JSON.stringify({
           status,
           adminComment: comments[id] || ''
-        })
+        }),
+        signal: controller.signal
       });
+
+      // Clear timeout if request completes
+      clearTimeout(timeoutId);
+
       const data = await res.json();
+      
       if (res.ok) {
-        fetchForms();
+        console.log('Form action successful:', data);
+        setFormsError(''); // Clear any previous errors
+        
+        // Show success message and refresh immediately
+        const successMessage = `✅ Form ${status} successfully! Refreshing...`;
+        setFormsError(successMessage);
+        
+        // Immediate refresh to get updated data from server
+        // Don't do optimistic updates - let the server be the source of truth
+        await fetchForms();
+        
         const form = forms.find(f => f._id === id);
         if (form && form.user?._id) {
           fetchVacationDays(form.user._id);
           fetchExcuseHours(form.user._id);
         }
+        
+        // Clear the comment for this form
+        setComments(prev => {
+          const updated = { ...prev };
+          delete updated[id];
+          return updated;
+        });
+        
+        // Double-check with another refresh after a delay to ensure consistency
+        setTimeout(async () => {
+          console.log('🔄 Second refresh to ensure consistency...');
+          await fetchForms();
+          setFormsError('');
+        }, 2000);
+        
       } else {
-        setFormsError(data.msg || 'Failed to update form.');
+        console.error('Form action failed:', {
+          status: res.status,
+          statusText: res.statusText,
+          data: data
+        });
+        
+        let errorMessage = data.msg || `Failed to ${status} form.`;
+        
+        // Handle specific error cases
+        if (res.status === 403) {
+          errorMessage = 'Not authorized to perform this action';
+        } else if (res.status === 404) {
+          errorMessage = 'Form not found or has been deleted';
+          // Refresh forms to remove deleted form from UI
+          setTimeout(() => fetchForms(), 1000);
+        } else if (res.status === 400) {
+          errorMessage = data.msg || 'Invalid request parameters';
+          // If it's a status conflict, refresh immediately to show current state
+          if (data.msg && data.msg.includes('not in') && data.msg.includes('status')) {
+            errorMessage = 'Form has already been processed by another user. Refreshing...';
+            setTimeout(() => fetchForms(), 1000);
+          }
+        } else if (res.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+        
+        setFormsError(errorMessage);
+        
         if (data.msg?.includes('insufficient vacation days')) {
           handleCommentChange(id, data.msg);
         }
+        
+        // Refresh forms to ensure UI is in sync with server
+        setTimeout(() => fetchForms(), 2000);
       }
     } catch (err) {
-      setFormsError('Error connecting to server.');
+      console.error('Admin form action error:', err);
+      
+      let errorMessage = 'Error connecting to server.';
+      
+      if (err.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (err.message) {
+        errorMessage = `Network error: ${err.message}`;
+      }
+      
+      setFormsError(errorMessage);
+      
+      // Refresh forms to ensure UI is in sync with server
+      setTimeout(() => fetchForms(), 2000);
+    } finally {
+      // Remove from processing set
+      setProcessingForms(prev => {
+        const updated = new Set(prev);
+        updated.delete(id);
+        return updated;
+      });
     }
   };
 
@@ -383,18 +499,31 @@ const AdminDashboard = () => {
     if (window.confirm('Are you sure you want to delete this form?')) {
       const token = localStorage.getItem('token');
       setFormsError('');
+      
+      const deleteUrl = `http://localhost:5000/api/forms/${id}`;
+      console.log('🗑️ Deleting form with URL:', deleteUrl);
+      console.log('🗑️ Form ID:', id);
+      
       try {
-        const res = await fetch(`http://localhost:5000/api/forms/${id}`, {
+        const res = await fetch(deleteUrl, {
           method: 'DELETE',
           headers: { 'x-auth-token': token }
         });
+        
+        console.log('🗑️ Delete response status:', res.status);
+        
         if (res.ok) {
-          fetchForms();
+          console.log('✅ Form deleted successfully');
+          setFormsError('✅ Form deleted successfully! Refreshing...');
+          await fetchForms();
+          setTimeout(() => setFormsError(''), 3000);
         } else {
           const data = await res.json();
+          console.error('❌ Delete failed:', data);
           setFormsError(data.msg || 'Failed to delete form.');
         }
       } catch (err) {
+        console.error('❌ Delete error:', err);
         setFormsError('Error connecting to server.');
       }
     }
@@ -531,6 +660,31 @@ const AdminDashboard = () => {
     fetchUsers();
     fetchForms();
   }, [fetchForms]);
+
+  // Auto-refresh forms every 30 seconds to keep data synchronized
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (activeTab === 'forms') {
+        console.log('Auto-refreshing forms data...');
+        fetchForms();
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [activeTab, fetchForms]);
+
+  // Refresh when page becomes visible (user switches back to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && activeTab === 'forms') {
+        console.log('Page became visible, refreshing forms...');
+        fetchForms();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [activeTab, fetchForms]);
 
   if (usersLoading && activeTab === 'overview') {
     return (
@@ -848,7 +1002,7 @@ const AdminDashboard = () => {
         {activeTab === 'forms' && (
           <div className="forms-section">
             <div className="section-header">
-              <h2 className="section-title">📋 Forms Management Dashboard</h2>
+              <h2 className="section-title">📋 Forms Management Dashboard {refreshingForms ? '(Refreshing...)' : ''}</h2>
               <div className="section-actions">
                 <input
                   type="text"
@@ -857,6 +1011,22 @@ const AdminDashboard = () => {
                   onChange={(e) => setFormsSearch(e.target.value)}
                   className="search-input"
                 />
+                <button 
+                  className="btn-elegant"
+                  onClick={() => {
+                    console.log('Manual refresh triggered');
+                    fetchForms();
+                  }}
+                  disabled={formsLoading || refreshingForms}
+                  title="Refresh forms data"
+                  style={{ 
+                    marginLeft: '10px',
+                    background: (formsLoading || refreshingForms) ? '#ccc' : undefined,
+                    cursor: (formsLoading || refreshingForms) ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {(formsLoading || refreshingForms) ? '⏳ Refreshing...' : '🔄 Refresh'}
+                </button>
               </div>
             </div>
 
@@ -954,7 +1124,11 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {formsError && <div className="error-message">{formsError}</div>}
+            {formsError && (
+              <div className={formsError.includes('✅') ? 'success-message' : 'error-message'}>
+                {formsError}
+              </div>
+            )}
             {formsLoading && <div className="spinner-elegant"></div>}
 
             {/* Pending Manager Approval Section */}
@@ -1108,7 +1282,7 @@ const AdminDashboard = () => {
                         <span className="info-label">Manager Approval:</span>
                         <div className="manager-approval-info">
                           <div style={{ color: '#4caf50', fontWeight: 'bold' }}>
-                            ✅ Approved by Manager
+                            ✅ Approved by {form.managerApprovedBy?.name ? `👔 ${form.managerApprovedBy.name}` : 'Manager'}
                           </div>
                           {form.managerApprovedAt && (
                             <div style={{ fontSize: '0.8rem', color: '#666' }}>
@@ -1139,14 +1313,16 @@ const AdminDashboard = () => {
                         <button
                           onClick={() => handleFormAction(form._id, 'approved')}
                           className="btn-elegant btn-success btn-sm"
+                          disabled={processingForms.has(form._id) || form._isProcessing}
                         >
-                          ✅ FINAL APPROVAL
+                          {processingForms.has(form._id) || form._isProcessing ? '⏳ Processing...' : '✅ FINAL APPROVAL'}
                         </button>
                         <button
                           onClick={() => handleFormAction(form._id, 'rejected')}
                           className="btn-elegant btn-danger btn-sm"
+                          disabled={processingForms.has(form._id) || form._isProcessing}
                         >
-                          ❌ REJECT
+                          {processingForms.has(form._id) || form._isProcessing ? '⏳ Processing...' : '❌ REJECT'}
                         </button>
                       </div>
                       <div className="comment-section">
@@ -1236,12 +1412,25 @@ const AdminDashboard = () => {
                           <div className="reason-content">{form.reason}</div>
                         </div>
                       )}
+                      {form.managerApprovedBy && (
+                        <div className="info-row">
+                          <span className="info-label">
+                            {form.status === 'manager_rejected' ? 'Rejected by Manager:' : 'Manager Action:'}
+                          </span>
+                          <span className="info-value manager-name">
+                            👔 {form.managerApprovedBy.name}
+                            {form.managerApprovedAt && (
+                              <span className="approval-date"> ({new Date(form.managerApprovedAt).toLocaleDateString()})</span>
+                            )}
+                          </span>
+                        </div>
+                      )}
                       {(form.managerComment || form.adminComment) && (
                         <div className="comments-section">
                           <span className="info-label">Comments:</span>
                           {form.managerComment && (
                             <div className="comment-block manager-comment">
-                              <strong>Manager:</strong> {form.managerComment}
+                              <strong>Manager ({form.managerApprovedBy?.name || 'Unknown'}):</strong> {form.managerComment}
                             </div>
                           )}
                           {form.adminComment && (

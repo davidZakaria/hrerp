@@ -280,9 +280,37 @@ const EmployeeDashboard = () => {
                         </div>
                       )}
                       
+                      {form.managerApprovedBy && (
+                        <div style={{ marginTop: '1rem' }}>
+                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>
+                            Manager Action:
+                          </div>
+                          <div style={{ 
+                            background: form.status === 'manager_rejected' ? 'rgba(244, 67, 54, 0.1)' : 'rgba(76, 175, 80, 0.1)', 
+                            padding: '0.75rem', 
+                            borderRadius: '8px',
+                            fontSize: '0.9rem',
+                            color: form.status === 'manager_rejected' ? '#d32f2f' : '#388e3c'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+                              <span style={{ fontWeight: 'bold' }}>
+                                {form.status === 'manager_rejected' ? '❌ Rejected by' : '✅ Approved by'} 👔 {form.managerApprovedBy.name}
+                              </span>
+                            </div>
+                            {form.managerApprovedAt && (
+                              <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+                                {new Date(form.managerApprovedAt).toLocaleDateString()} at {new Date(form.managerApprovedAt).toLocaleTimeString()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {form.managerComment && (
                         <div style={{ marginTop: '1rem' }}>
-                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>Manager Comment:</div>
+                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>
+                            Manager Comment{form.managerApprovedBy ? ` (${form.managerApprovedBy.name})` : ''}:
+                          </div>
                           <div style={{ 
                             background: 'rgba(156, 39, 176, 0.1)', 
                             padding: '0.75rem', 

@@ -28,7 +28,7 @@ const FormSubmission = ({ onFormSubmitted }) => {
     if (!token) return;
     
     try {
-      const res = await fetch('http://localhost:5000/api/auth/user', {
+      const res = await fetch('http://localhost:5000/api/auth/me', {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -176,10 +176,18 @@ const FormSubmission = ({ onFormSubmitted }) => {
         fetchExcuseHours(); // Refresh excuse hours after submission
         if (onFormSubmitted) onFormSubmitted();
       } else {
-        setMessage(data.msg || 'Submission failed.');
+        // Provide specific error messages for common issues
+        let errorMessage = data.msg || 'Submission failed.';
+        if (errorMessage.includes('File too large')) {
+          errorMessage = 'Medical document is too large. Please compress your file to under 15MB or use a smaller image/PDF.';
+        } else if (errorMessage.includes('Invalid file type')) {
+          errorMessage = 'Invalid file type. Please upload only PDF, Word documents (DOC/DOCX), or images (JPG/PNG).';
+        }
+        setMessage(errorMessage);
       }
     } catch (err) {
-      setMessage('Error connecting to server.');
+      console.error('Form submission error:', err);
+      setMessage('Error connecting to server. Please check your connection and try again.');
     }
     setLoading(false);
   };
@@ -508,9 +516,9 @@ const FormSubmission = ({ onFormSubmitted }) => {
                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                 title="Upload medical certificate or doctor's note"
               />
-              <small className="input-helper">
-                Upload medical certificate, doctor's note, or hospital report (PDF, Word, or Image files, max 5MB)
-              </small>
+                      <small className="input-helper">
+          Upload medical certificate, doctor's note, or hospital report (PDF, Word, or Image files, max 15MB)
+        </small>
             </div>
 
             {form.sickLeaveStartDate && form.sickLeaveEndDate && (

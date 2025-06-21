@@ -29,21 +29,37 @@ const MedicalDocumentViewer = ({ form, userRole = 'admin' }) => {
     
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
       // Handle both forward slashes and backslashes in paths
       const filename = form.medicalDocument.split(/[/\\]/).pop();
       
       console.log('Downloading document:', {
         originalPath: form.medicalDocument,
         extractedFilename: filename,
-        formId: form._id
+        formId: form._id,
+        userRole: userRole
       });
       
       const response = await axios.get(`http://localhost:5000/api/forms/document/${filename}`, {
         headers: {
           'x-auth-token': token
         },
-        responseType: 'blob'
+        responseType: 'blob',
+        timeout: 30000 // 30 second timeout
       });
+
+      // Check if response is valid
+      if (response.status !== 200) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Check if we got a valid blob
+      if (!response.data || response.data.size === 0) {
+        throw new Error('Empty file received from server');
+      }
 
       // Create blob link to download
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -52,29 +68,53 @@ const MedicalDocumentViewer = ({ form, userRole = 'admin' }) => {
       
       // Set filename for download
       const ext = filename.split('.').pop();
-      link.setAttribute('download', `${form.user.name}-medical-document.${ext}`);
+      const downloadName = `${form.user.name}-medical-document.${ext}`;
+      link.setAttribute('download', downloadName);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
       
+      console.log('Document downloaded successfully:', downloadName);
+      
     } catch (err) {
       console.error('Download error:', err);
       console.error('Error details:', {
         status: err.response?.status,
+        statusText: err.response?.statusText,
         data: err.response?.data,
-        message: err.message
+        message: err.message,
+        code: err.code
       });
       
-      if (err.response?.status === 403) {
-        setError('Not authorized to view this document');
-      } else if (err.response?.status === 404) {
-        setError('Document not found - File may have been moved or deleted');
-      } else if (err.response?.data?.msg) {
-        setError(err.response.data.msg);
+      let errorMessage = 'Error downloading document';
+      
+      if (err.code === 'ECONNABORTED') {
+        errorMessage = 'Download timed out - File may be too large or server is slow';
+      } else if (err.response) {
+        // Server responded with error status
+        const status = err.response.status;
+        if (status === 403) {
+          errorMessage = 'Not authorized to view this document';
+        } else if (status === 404) {
+          errorMessage = 'Document not found - File may have been moved or deleted';
+        } else if (status === 500) {
+          errorMessage = 'Server error while retrieving document';
+        } else if (err.response.data?.msg) {
+          errorMessage = err.response.data.msg;
+        } else {
+          errorMessage = `Server error: ${status}`;
+        }
+      } else if (err.request) {
+        // Request was made but no response received
+        errorMessage = 'No response from server - Please check your connection';
+      } else if (err.message.includes('No authentication token')) {
+        errorMessage = 'Please log in again to download documents';
       } else {
-        setError('Error downloading document');
+        errorMessage = `Network error: ${err.message}`;
       }
+      
+      setError(errorMessage);
     }
     
     setDownloading(false);

@@ -41,7 +41,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
     storage: storage,
     limits: { 
-        fileSize: 5 * 1024 * 1024, // 5MB limit
+        fileSize: 15 * 1024 * 1024, // 15MB limit for medical documents
         files: 1 // Only one file at a time
     },
     fileFilter: fileFilter
@@ -49,7 +49,7 @@ const upload = multer({
 
 // Cache for frequently accessed data
 const cache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 30 * 1000; // 30 seconds for real-time updates
 
 const getCachedData = (key) => {
     const cached = cache.get(key);
@@ -66,8 +66,38 @@ const setCachedData = (key, data) => {
     });
 };
 
+// Custom multer error handler
+const handleMulterError = (err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ 
+                msg: 'File too large. Medical documents must be under 15MB. Please compress your file or use a smaller image/PDF.' 
+            });
+        }
+        if (err.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({ 
+                msg: 'Too many files. Please upload only one medical document.' 
+            });
+        }
+        if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+            return res.status(400).json({ 
+                msg: 'Unexpected file field. Please use the correct file upload field.' 
+            });
+        }
+        return res.status(400).json({ 
+            msg: `File upload error: ${err.message}` 
+        });
+    }
+    if (err.message && err.message.includes('Only PDF, DOC, DOCX, JPG, and PNG files are allowed')) {
+        return res.status(400).json({ 
+            msg: 'Invalid file type. Only PDF, Word documents (DOC/DOCX), and images (JPG/PNG) are allowed.' 
+        });
+    }
+    next(err);
+};
+
 // Optimized form creation with better validation
-router.post('/', auth, upload.single('medicalDocument'), async (req, res) => {
+router.post('/', auth, upload.single('medicalDocument'), handleMulterError, async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('name email department role');
         if (!user) {
@@ -154,7 +184,7 @@ router.post('/', auth, upload.single('medicalDocument'), async (req, res) => {
         // Populate user data for response
         await form.populate('user', 'name email department');
 
-        // Clear relevant caches
+        // Clear relevant caches after form submission
         cache.delete(`forms-${req.user.id}`);
         cache.delete('forms-admin');
         
@@ -240,12 +270,7 @@ router.get('/manager/pending', auth, async (req, res) => {
             return res.json([]); // No managed departments = no forms to show
         }
 
-        // Check cache first
-        const cacheKey = `manager-pending-${req.user.id}`;
-        const cachedForms = getCachedData(cacheKey);
-        if (cachedForms) {
-            return res.json(cachedForms);
-        }
+        // No caching for pending forms to ensure real-time accuracy
 
         // Optimized aggregation pipeline
         const pipeline = [
@@ -288,9 +313,6 @@ router.get('/manager/pending', auth, async (req, res) => {
         ];
 
         const forms = await Form.aggregate(pipeline);
-        
-        // Cache the results
-        setCachedData(cacheKey, forms);
 
         res.json(forms);
     } catch (err) {
@@ -391,7 +413,18 @@ router.get('/manager/team-forms', auth, async (req, res) => {
 // Manager approve/reject form (Enhanced security)
 router.put('/manager/:id', auth, async (req, res) => {
     try {
+        console.log('Manager action request:', {
+            managerId: req.user.id,
+            formId: req.params.id,
+            action: req.body.action,
+            hasComment: !!req.body.managerComment
+        });
+
         const manager = await User.findById(req.user.id);
+        if (!manager) {
+            return res.status(404).json({ msg: 'Manager not found' });
+        }
+
         if (manager.role !== 'manager') {
             return res.status(403).json({ msg: 'Not authorized - Manager role required' });
         }
@@ -401,11 +434,26 @@ router.put('/manager/:id', auth, async (req, res) => {
         }
 
         const { action, managerComment } = req.body;
+        
+        // Validate action parameter
+        if (!action || !['approve', 'reject'].includes(action)) {
+            return res.status(400).json({ msg: 'Invalid action. Must be "approve" or "reject"' });
+        }
+
         const form = await Form.findById(req.params.id).populate('user');
 
         if (!form) {
             return res.status(404).json({ msg: 'Form not found' });
         }
+
+        console.log('Processing form:', {
+            formId: form._id,
+            formType: form.type,
+            formStatus: form.status,
+            employeeName: form.user.name,
+            employeeDepartment: form.user.department,
+            hasMedicalDocument: !!form.medicalDocument
+        });
 
         // Double-check: Ensure the form's user is an active employee in manager's departments
         const isTeamMember = await User.findOne({
@@ -421,7 +469,23 @@ router.put('/manager/:id', auth, async (req, res) => {
 
         // Only allow action on pending forms
         if (form.status !== 'pending') {
-            return res.status(400).json({ msg: 'Form is not in pending status' });
+            let statusMessage = form.status;
+            if (form.status === 'manager_approved') {
+                statusMessage = 'already approved by a manager';
+            } else if (form.status === 'manager_rejected') {
+                statusMessage = 'already rejected by a manager';
+            } else if (form.status === 'approved') {
+                statusMessage = 'already approved by admin';
+            } else if (form.status === 'rejected') {
+                statusMessage = 'already rejected by admin';
+            }
+            
+            return res.status(400).json({ 
+                msg: `This form has been ${statusMessage}. Please refresh the page to see the current status.`,
+                currentStatus: form.status,
+                formId: form._id,
+                isAlreadyProcessed: true
+            });
         }
 
         if (action === 'approve') {
@@ -450,7 +514,7 @@ router.put('/manager/:id', auth, async (req, res) => {
                 form.managerApprovedBy = req.user.id;
                 form.managerApprovedAt = Date.now();
             } else {
-                // For other form types, manager approval still requires admin final approval
+                // For other form types (including sick_leave), manager approval still requires admin final approval
                 form.status = 'manager_approved';
                 form.managerComment = managerComment || '';
                 form.managerApprovedBy = req.user.id;
@@ -461,17 +525,38 @@ router.put('/manager/:id', auth, async (req, res) => {
             form.managerComment = managerComment || 'Rejected by manager';
             form.managerApprovedBy = req.user.id;
             form.managerApprovedAt = Date.now();
-        } else {
-            return res.status(400).json({ msg: 'Invalid action. Must be "approve" or "reject"' });
         }
 
         form.updatedAt = Date.now();
         await form.save();
 
-        res.json(form);
+        // Clear relevant caches after form action
+        cache.delete(`forms-${form.user._id}`);
+        cache.delete('forms-admin');
+
+        console.log('Form action completed successfully:', {
+            formId: form._id,
+            newStatus: form.status,
+            action: action,
+            managerComment: form.managerComment
+        });
+
+        res.json({
+            success: true,
+            message: `Form ${action}d successfully`,
+            form: form
+        });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Manager action error:', {
+            error: err.message,
+            stack: err.stack,
+            formId: req.params.id,
+            managerId: req.user.id
+        });
+        res.status(500).json({ 
+            msg: 'Server error while processing form action',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 });
 
@@ -547,15 +632,33 @@ router.get('/manager/personal-forms', auth, async (req, res) => {
 // Update form status (admin only - now handles manager-approved forms) + Super admin form editing
 router.put('/:id', auth, async (req, res) => {
     try {
+        console.log('Admin form action request:', {
+            adminId: req.user.id,
+            formId: req.params.id,
+            requestBody: req.body
+        });
+
         const user = await User.findById(req.user.id);
-        if (user.role !== 'admin' && user.role !== 'super_admin') {
-            return res.status(403).json({ msg: 'Not authorized' });
+        if (!user) {
+            return res.status(404).json({ msg: 'Admin user not found' });
         }
 
-        const form = await Form.findById(req.params.id);
+        if (user.role !== 'admin' && user.role !== 'super_admin') {
+            return res.status(403).json({ msg: 'Not authorized - Admin role required' });
+        }
+
+        const form = await Form.findById(req.params.id).populate('user');
         if (!form) {
             return res.status(404).json({ msg: 'Form not found' });
         }
+
+        console.log('Processing admin form action:', {
+            formId: form._id,
+            formType: form.type,
+            currentStatus: form.status,
+            employeeName: form.user?.name,
+            employeeDepartment: form.user?.department
+        });
 
         // Check if this is a super admin form edit request
         const { type, startDate, endDate, days, reason, status, adminComment } = req.body;
@@ -579,6 +682,17 @@ router.put('/:id', auth, async (req, res) => {
 
         // Original admin approval/rejection logic for regular admin users
         if (user.role === 'admin') {
+            // Prevent actions on forms that are not in appropriate status
+            if (status === 'approved' || status === 'rejected') {
+                const validStatuses = ['pending', 'manager_approved', 'manager_submitted'];
+                if (!validStatuses.includes(form.status)) {
+                    return res.status(400).json({ 
+                        msg: `Cannot ${status} form: Form is in ${form.status} status. Only forms with status: ${validStatuses.join(', ')} can be processed.`,
+                        currentStatus: form.status,
+                        formId: form._id
+                    });
+                }
+            }
             // Check remaining vacation days before approving annual vacation
             if (
                 form.type === 'vacation' &&
@@ -678,31 +792,82 @@ router.put('/:id', auth, async (req, res) => {
             form.updatedAt = Date.now();
 
             await form.save();
-            return res.json(form);
+            
+            // Clear relevant caches after admin form action
+            cache.delete(`forms-${form.user._id}`);
+            cache.delete('forms-admin');
+            
+            console.log('Admin form action completed successfully:', {
+                formId: form._id,
+                newStatus: form.status,
+                adminComment: form.adminComment,
+                actionPerformedBy: user.name
+            });
+
+            return res.json({
+                success: true,
+                message: `Form ${status} successfully`,
+                form: form
+            });
         }
 
         return res.status(403).json({ msg: 'Not authorized for this operation' });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Admin form action error:', {
+            error: err.message,
+            stack: err.stack,
+            formId: req.params.id,
+            adminId: req.user.id
+        });
+        res.status(500).json({ 
+            msg: 'Server error while processing admin action',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 });
 
 // Delete form (admin and super admin only)
 router.delete('/:id', auth, async (req, res) => {
     try {
+        console.log('🗑️ Delete form request received:', {
+            formId: req.params.id,
+            userId: req.user.id,
+            userAgent: req.get('User-Agent'),
+            url: req.originalUrl,
+            method: req.method
+        });
+
         const user = await User.findById(req.user.id);
+        if (!user) {
+            console.log('❌ User not found for delete request');
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
         if (user.role !== 'admin' && user.role !== 'super_admin') {
+            console.log('❌ User not authorized for delete:', user.role);
             return res.status(403).json({ msg: 'Not authorized' });
         }
 
+        console.log('✅ User authorized for delete:', {
+            userName: user.name,
+            userRole: user.role
+        });
+
         const form = await Form.findByIdAndDelete(req.params.id);
         if (!form) {
+            console.log('❌ Form not found for deletion:', req.params.id);
             return res.status(404).json({ msg: 'Form not found' });
         }
+
+        console.log('✅ Form deleted successfully:', {
+            formId: form._id,
+            formType: form.type,
+            deletedBy: user.name
+        });
+
         res.json({ msg: 'Form deleted successfully' });
     } catch (err) {
-        console.error(err.message);
+        console.error('❌ Error in delete route:', err.message);
         res.status(500).send('Server error');
     }
 });

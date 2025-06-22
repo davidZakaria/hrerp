@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { NotificationProvider } from './components/NotificationSystem';
 import './index.css';
+import './i18n'; // Initialize i18n configuration
 import reportWebVitals from './reportWebVitals';
 
 // Performance optimizations

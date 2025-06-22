@@ -1,5 +1,177 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
 @import './styles/GlobalStyles.css';
+
+/* RTL Support for Arabic */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+  font-family: 'Noto Sans Arabic', 'Inter', sans-serif;
+}
+
+[dir="rtl"] .App,
+[dir="rtl"] .dashboard-container,
+[dir="rtl"] .auth-container {
+  text-align: right;
+}
+
+[dir="rtl"] .app-header {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .section-header {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .action-buttons {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .action-buttons-inline {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .tab-navigation {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .form-elegant {
+  text-align: right;
+}
+
+[dir="rtl"] .form-group-elegant {
+  align-items: flex-end;
+}
+
+[dir="rtl"] .form-label-elegant {
+  text-align: right;
+}
+
+[dir="rtl"] .form-input-elegant {
+  text-align: right;
+  padding: 12px 16px 12px 40px;
+}
+
+[dir="rtl"] .table-elegant {
+  direction: rtl;
+}
+
+[dir="rtl"] .table-elegant th,
+[dir="rtl"] .table-elegant td {
+  text-align: right;
+}
+
+[dir="rtl"] .notification {
+  left: 20px;
+  right: auto;
+}
+
+[dir="rtl"] .language-switcher {
+  left: 20px;
+  right: auto;
+}
+
+[dir="rtl"] .modal-elegant {
+  direction: rtl;
+}
+
+[dir="rtl"] .elegant-card {
+  text-align: right;
+}
+
+[dir="rtl"] .stats-card {
+  text-align: center; /* Keep stats centered */
+}
+
+[dir="rtl"] .employee-info,
+[dir="rtl"] .manager-approval-info {
+  text-align: right;
+}
+
+/* Arabic font weights adjustment */
+[dir="rtl"] .app-title,
+[dir="rtl"] .section-title {
+  font-weight: 600;
+}
+
+[dir="rtl"] .form-label-elegant {
+  font-weight: 500;
+}
+
+[dir="rtl"] .btn-elegant {
+  font-weight: 500;
+}
+
+/* Grid layout adjustments for RTL */
+[dir="rtl"] .grid-2,
+[dir="rtl"] .grid-3,
+[dir="rtl"] .grid-4 {
+  direction: rtl;
+}
+
+/* Responsive RTL fixes */
+@media (max-width: 768px) {
+  [dir="rtl"] .app-header {
+    flex-direction: column;
+  }
+  
+  [dir="rtl"] .action-buttons {
+    flex-direction: column;
+  }
+}
+
+/* Animation adjustments for RTL */
+[dir="rtl"] .slide-in-right {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+[dir="rtl"] .slide-in-left {
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Status badge RTL adjustments */
+[dir="rtl"] .status-badge {
+  direction: ltr; /* Keep status badges LTR for consistency */
+}
+
+/* Form section specific RTL styles */
+[dir="rtl"] .form-section-title {
+  text-align: right;
+}
+
+[dir="rtl"] .input-helper {
+  text-align: right;
+}
+
+[dir="rtl"] .summary-card {
+  text-align: right;
+}
+
+/* Table container RTL scrolling */
+[dir="rtl"] .table-container {
+  direction: rtl;
+}
+
+/* Language switcher positioning for RTL */
+.language-switcher {
+  transition: all 0.3s ease;
+}
+
+[dir="rtl"] .language-switcher {
+  left: 20px !important;
+  right: auto !important;
+}
 
 /* Main App Styles - Dark Theme */
 .App {

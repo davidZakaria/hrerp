@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
 import LogoutButton from './LogoutButton';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 
 const EmployeeDashboard = () => {
+  const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [forms, setForms] = useState([]);
@@ -59,10 +61,10 @@ const EmployeeDashboard = () => {
       if (res.ok) {
         setForms(data);
       } else {
-        setError(data.msg || 'Failed to fetch forms.');
+        setError(data.msg || t('messages.errorOccurred'));
       }
     } catch (err) {
-      setError('Error connecting to server.');
+      setError(t('login.serverError'));
     }
     setLoading(false);
   };
@@ -97,10 +99,10 @@ const EmployeeDashboard = () => {
                      status === 'approved' ? 'badge-success' :
                      status.includes('rejected') ? 'badge-danger' : 'badge-secondary';
     
-    const statusText = status === 'manager_approved' ? 'Manager Approved' :
-                      status === 'manager_submitted' ? 'Awaiting HR Approval' :
-                      status === 'manager_rejected' ? 'Manager Rejected' :
-                      status.charAt(0).toUpperCase() + status.slice(1);
+    const statusText = status === 'manager_approved' ? t('dashboard.managerApproved') :
+                      status === 'manager_submitted' ? t('dashboard.awaitingHRApproval') :
+                      status === 'manager_rejected' ? t('dashboard.managerRejected') :
+                      t(`status.${status}`) || status.charAt(0).toUpperCase() + status.slice(1);
     
     return <span className={`badge-elegant ${badgeClass}`}>{statusText}</span>;
   };
@@ -109,7 +111,7 @@ const EmployeeDashboard = () => {
     <div className="dashboard-container fade-in">
       {/* Header */}
       <div className="app-header">
-        <h1 className="app-title">Employee Dashboard</h1>
+        <h1 className="app-title">{t('dashboard.employee')}</h1>
         <LogoutButton />
       </div>
 
@@ -118,23 +120,23 @@ const EmployeeDashboard = () => {
         {/* Vacation Days Card */}
         <div className="elegant-card hover-lift" style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
-            Annual Vacation Days
+            {t('dashboard.vacationDays')}
           </h2>
           <div className="stats-number" style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
             {vacationDaysLeft !== null ? vacationDaysLeft : '...'}
           </div>
-          <div className="stats-label">Days Remaining</div>
+          <div className="stats-label">{t('dashboard.daysRemaining')}</div>
         </div>
 
         {/* Excuse Hours Card */}
         <div className="elegant-card hover-lift" style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
-            Monthly Excuse Hours
+            {t('dashboard.excuseHours')}
           </h2>
           <div className="stats-number" style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
             {excuseHoursLeft !== null ? excuseHoursLeft : '...'}
           </div>
-          <div className="stats-label">Hours Remaining</div>
+          <div className="stats-label">{t('dashboard.hoursRemaining')}</div>
         </div>
 
         {/* Action Buttons */}
@@ -143,13 +145,13 @@ const EmployeeDashboard = () => {
             className="btn-elegant btn-success"
             onClick={handlePreview}
           >
-            Preview Submitted Forms
+            {t('dashboard.previewForms')}
           </button>
           <button 
             className="btn-elegant"
             onClick={handleShowForm}
           >
-            Submit New Form
+            {t('dashboard.submitNewForm')}
           </button>
         </div>
 
@@ -164,7 +166,7 @@ const EmployeeDashboard = () => {
         {showPreview && (
           <div className="elegant-card slide-in-right">
             <h2 className="section-title" style={{ fontSize: '1.8rem', marginBottom: '1.5rem' }}>
-              Your Submitted Forms
+              {t('dashboard.yourSubmittedForms')}
             </h2>
             
             {loading && <div className="spinner-elegant"></div>}
@@ -177,7 +179,7 @@ const EmployeeDashboard = () => {
             
             {!loading && forms.length === 0 && (
               <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-                <p>No forms submitted yet.</p>
+                <p>{t('dashboard.noFormsSubmitted')}</p>
               </div>
             )}
             
@@ -187,30 +189,30 @@ const EmployeeDashboard = () => {
                   <div key={form._id} className="glass-card hover-lift">
                     <div style={{ marginBottom: '1rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <span className="form-label-elegant">Type:</span>
-                        <span className="text-elegant">{form.type}</span>
+                        <span className="form-label-elegant">{t('common.type')}:</span>
+                        <span className="text-elegant">{t(`formTypes.${form.type}`) || form.type}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <span className="form-label-elegant">Status:</span>
+                        <span className="form-label-elegant">{t('common.status')}:</span>
                         {getStatusBadge(form.status)}
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <span className="form-label-elegant">Submitted:</span>
+                        <span className="form-label-elegant">{t('forms.submitted')}:</span>
                         <span className="text-elegant">{new Date(form.createdAt).toLocaleDateString()}</span>
                       </div>
                       
                       {form.type === 'vacation' && (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">Start Date:</span>
+                            <span className="form-label-elegant">{t('forms.startDate')}:</span>
                             <span className="text-elegant">{new Date(form.startDate).toLocaleDateString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">End Date:</span>
+                            <span className="form-label-elegant">{t('forms.endDate')}:</span>
                             <span className="text-elegant">{new Date(form.endDate).toLocaleDateString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">Days:</span>
+                            <span className="form-label-elegant">{t('forms.days')}:</span>
                             <span className="text-elegant">{form.days}</span>
                           </div>
                         </>
@@ -219,16 +221,16 @@ const EmployeeDashboard = () => {
                       {form.type === 'excuse' && (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">Excuse Date:</span>
+                            <span className="form-label-elegant">{t('forms.excuseDate')}:</span>
                             <span className="text-elegant">{new Date(form.excuseDate).toLocaleDateString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">Time Period:</span>
+                            <span className="form-label-elegant">{t('forms.timePeriod')}:</span>
                             <span className="text-elegant">{form.fromHour} - {form.toHour}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">Duration:</span>
-                            <span className="text-elegant">{((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours</span>
+                            <span className="form-label-elegant">{t('forms.duration')}:</span>
+                            <span className="text-elegant">{((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('forms.hours')}</span>
                           </div>
                         </>
                       )}
@@ -236,11 +238,11 @@ const EmployeeDashboard = () => {
                       {form.type === 'wfh' && (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">Work Hours:</span>
-                            <span className="text-elegant">{form.wfhHours} hours</span>
+                            <span className="form-label-elegant">{t('forms.workHours')}:</span>
+                            <span className="text-elegant">{form.wfhHours} {t('forms.hours')}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">Description:</span>
+                            <span className="form-label-elegant">{t('forms.description')}:</span>
                             <span className="text-elegant">{form.wfhDescription?.substring(0, 50)}...</span>
                           </div>
                         </>
@@ -249,16 +251,16 @@ const EmployeeDashboard = () => {
                       {form.type === 'sick_leave' && (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">Start Date:</span>
+                            <span className="form-label-elegant">{t('forms.startDate')}:</span>
                             <span className="text-elegant">{new Date(form.sickLeaveStartDate).toLocaleDateString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">End Date:</span>
+                            <span className="form-label-elegant">{t('forms.endDate')}:</span>
                             <span className="text-elegant">{new Date(form.sickLeaveEndDate).toLocaleDateString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">Duration:</span>
-                            <span className="text-elegant">{Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</span>
+                            <span className="form-label-elegant">{t('forms.duration')}:</span>
+                            <span className="text-elegant">{Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} {t('forms.days')}</span>
                           </div>
                           <div style={{ marginTop: '1rem' }}>
                             <MedicalDocumentViewer form={form} userRole="employee" />
@@ -268,7 +270,7 @@ const EmployeeDashboard = () => {
                       
                       {form.reason && (
                         <div style={{ marginTop: '1rem' }}>
-                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>Reason:</div>
+                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>{t('forms.reason')}:</div>
                           <div className="text-elegant" style={{ 
                             background: 'rgba(255, 255, 255, 0.5)', 
                             padding: '0.75rem', 
@@ -283,7 +285,7 @@ const EmployeeDashboard = () => {
                       {form.managerApprovedBy && (
                         <div style={{ marginTop: '1rem' }}>
                           <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>
-                            Manager Action:
+                            {t('forms.managerAction')}:
                           </div>
                           <div style={{ 
                             background: form.status === 'manager_rejected' ? 'rgba(244, 67, 54, 0.1)' : 'rgba(76, 175, 80, 0.1)', 
@@ -294,7 +296,7 @@ const EmployeeDashboard = () => {
                           }}>
                             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
                               <span style={{ fontWeight: 'bold' }}>
-                                {form.status === 'manager_rejected' ? '❌ Rejected by' : '✅ Approved by'} 👔 {form.managerApprovedBy.name}
+                                {form.status === 'manager_rejected' ? '❌ ' + t('forms.rejectedBy') : '✅ ' + t('forms.approvedBy')} 👔 {form.managerApprovedBy.name}
                               </span>
                             </div>
                             {form.managerApprovedAt && (
@@ -309,7 +311,7 @@ const EmployeeDashboard = () => {
                       {form.managerComment && (
                         <div style={{ marginTop: '1rem' }}>
                           <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>
-                            Manager Comment{form.managerApprovedBy ? ` (${form.managerApprovedBy.name})` : ''}:
+                            {t('forms.managerComment')}{form.managerApprovedBy ? ` (${form.managerApprovedBy.name})` : ''}:
                           </div>
                           <div style={{ 
                             background: 'rgba(156, 39, 176, 0.1)', 
@@ -326,7 +328,7 @@ const EmployeeDashboard = () => {
 
                       {form.adminComment && (
                         <div style={{ marginTop: '1rem' }}>
-                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>Admin Comment:</div>
+                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>{t('forms.adminComment')}:</div>
                           <div style={{ 
                             background: 'rgba(52, 152, 219, 0.1)', 
                             padding: '0.75rem', 

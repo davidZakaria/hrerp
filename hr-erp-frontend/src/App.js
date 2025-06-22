@@ -1,9 +1,12 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingScreen from './components/LoadingScreen';
+import LanguageSwitcher from './components/LanguageSwitcher';
 import { preloadData } from './hooks/useApi';
 import './App.css';
+import './i18n';
 
 // Lazy load components for better performance
 const Login = lazy(() => import('./components/Auth/Login'));
@@ -180,15 +183,47 @@ const AuthenticatedApp = () => {
   );
 };
 
-function App() {
+const AppContent = () => {
+  const { i18n } = useTranslation();
+
+  useEffect(() => {
+    // Set initial document direction based on language
+    const currentLang = i18n.language || 'en';
+    if (currentLang === 'ar') {
+      document.documentElement.setAttribute('dir', 'rtl');
+      document.documentElement.setAttribute('lang', 'ar');
+    } else {
+      document.documentElement.setAttribute('dir', 'ltr');
+      document.documentElement.setAttribute('lang', 'en');
+    }
+  }, [i18n.language]);
+
   return (
     <div className="App">
+      {/* Language Switcher - Fixed Position */}
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 9999
+      }}>
+        <LanguageSwitcher />
+      </div>
+      
       <ErrorBoundary>
         <BrowserRouter>
           <AuthenticatedApp />
         </BrowserRouter>
       </ErrorBoundary>
     </div>
+  );
+};
+
+function App() {
+  return (
+    <Suspense fallback={<LoadingScreen message="Loading..." />}>
+      <AppContent />
+    </Suspense>
   );
 }
 

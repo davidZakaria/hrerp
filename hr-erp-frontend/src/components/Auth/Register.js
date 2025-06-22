@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const Register = ({ onBack, onRegisterSuccess }) => {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -35,7 +37,7 @@ const Register = ({ onBack, onRegisterSuccess }) => {
     setForm({ ...form, managedDepartments: [] });
   };
 
-  const departments = ['Human Resources', 'Finance', 'Marketing', 'Sales', 'IT', 'Operations', 'Engineer', 'Customer Service', 'Legal', 'Reception', 'Jamila Engineer', 'Jura Engineer', 'Green Icon Engineer', 'Green Avenue Engineer', 'Architectural Engineer', 'Technical Office Engineer', 'Personal Assistant', 'Service', 'Driver', 'Other'];
+  const departments = ['Human Resources', 'Finance', 'Marketing', 'Sales', 'IT', 'Operations', 'Engineer', 'Customer Service', 'Legal', 'Reception', 'Jamila Engineer', 'Jura Engineer', 'Green Icon Engineer', 'Green Avenue Engineer', 'Architectural Engineer', 'Technical Office Engineer', 'Personal Assistant', 'Service', 'Site Service', 'Driver', 'Other'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,17 +45,17 @@ const Register = ({ onBack, onRegisterSuccess }) => {
     
     // Validation
     if (form.password.length < 6) {
-      setMessage('Password must be at least 6 characters long.');
+      setMessage(t('register.passwordTooShort'));
       return;
     }
     
     if (form.password !== form.confirmPassword) {
-      setMessage('Passwords do not match.');
+      setMessage(t('register.passwordsNotMatch'));
       return;
     }
 
     if (form.role === 'manager' && form.managedDepartments.length === 0) {
-      setMessage('Managers must select at least one department to manage.');
+      setMessage(t('register.managersSelectDepartment'));
       return;
     }
 
@@ -75,7 +77,7 @@ const Register = ({ onBack, onRegisterSuccess }) => {
       
       if (res.ok) {
         setSuccess(true);
-        setMessage('Registration successful! Your account is pending approval by an administrator.');
+        setMessage(t('register.registrationSuccessful'));
         setForm({
           name: '',
           email: '',
@@ -92,10 +94,10 @@ const Register = ({ onBack, onRegisterSuccess }) => {
         }, 3000);
         
       } else {
-        setMessage(data.msg || 'Registration failed.');
+        setMessage(data.msg || t('register.registrationFailed'));
       }
     } catch (err) {
-      setMessage('Error connecting to server.');
+      setMessage(t('login.serverError'));
     }
     setLoading(false);
   };
@@ -104,19 +106,19 @@ const Register = ({ onBack, onRegisterSuccess }) => {
     <div className="auth-container">
       <div className="elegant-card fade-in" style={{ maxWidth: '450px', textAlign: 'center' }}>
         <h1 className="text-gradient" style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>
-          Join Our Team
+          {t('register.title')}
         </h1>
         <p className="text-elegant" style={{ marginBottom: '2rem', fontSize: '1rem', opacity: 0.8 }}>
-          Register for HR ERP System
+          {t('register.subtitle')}
         </p>
 
         <form className="form-elegant" onSubmit={handleSubmit}>
           <div className="form-group-elegant">
-            <label className="form-label-elegant">Full Name</label>
+            <label className="form-label-elegant">{t('register.fullName')}</label>
             <input
               name="name"
               type="text"
-              placeholder="Enter your full name"
+              placeholder={t('register.fullNamePlaceholder')}
               value={form.name}
               onChange={handleChange}
               className="form-input-elegant focus-elegant"
@@ -125,11 +127,11 @@ const Register = ({ onBack, onRegisterSuccess }) => {
           </div>
 
           <div className="form-group-elegant">
-            <label className="form-label-elegant">Email Address</label>
+            <label className="form-label-elegant">{t('register.emailAddress')}</label>
             <input
               name="email"
               type="email"
-              placeholder="Enter your email"
+              placeholder={t('register.emailPlaceholder')}
               value={form.email}
               onChange={handleChange}
               className="form-input-elegant focus-elegant"
@@ -138,7 +140,7 @@ const Register = ({ onBack, onRegisterSuccess }) => {
           </div>
 
           <div className="form-group-elegant">
-            <label className="form-label-elegant">Role</label>
+            <label className="form-label-elegant">{t('register.role')}</label>
             <select
               name="role"
               value={form.role}
@@ -146,13 +148,13 @@ const Register = ({ onBack, onRegisterSuccess }) => {
               className="form-input-elegant focus-elegant"
               required
             >
-              <option value="employee">Employee</option>
-              <option value="manager">Manager</option>
+              <option value="employee">{t('register.employee')}</option>
+              <option value="manager">{t('register.manager')}</option>
             </select>
           </div>
 
           <div className="form-group-elegant">
-            <label className="form-label-elegant">Your Department</label>
+            <label className="form-label-elegant">{t('register.yourDepartment')}</label>
             <select
               name="department"
               value={form.department}
@@ -160,18 +162,18 @@ const Register = ({ onBack, onRegisterSuccess }) => {
               className="form-input-elegant focus-elegant"
               required
             >
-              <option value="">Select Your Department</option>
+              <option value="">{t('register.selectDepartment')}</option>
               {departments.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
+                <option key={dept} value={dept}>{t(`departments.${dept}`) || dept}</option>
               ))}
             </select>
           </div>
 
           {form.role === 'manager' && (
             <div className="form-group-elegant">
-              <label className="form-label-elegant">Departments You Will Manage</label>
+              <label className="form-label-elegant">{t('register.managedDepartments')}</label>
               <p style={{ color: '#666', fontSize: '0.85rem', marginBottom: '1rem', textAlign: 'left' }}>
-                Select all departments you will be responsible for managing. You can select multiple departments by clicking on each one:
+                {t('register.managedDepartmentsDescription')}
               </p>
               <div className="departments-selection">
                 {departments.map(dept => (
@@ -186,14 +188,14 @@ const Register = ({ onBack, onRegisterSuccess }) => {
                       className="checkbox-input"
                     />
                     <span className="checkmark"></span>
-                    <span className="department-name">{dept}</span>
+                    <span className="department-name">{t(`departments.${dept}`) || dept}</span>
                   </label>
                 ))}
               </div>
               {form.managedDepartments.length > 0 && (
                 <div className="selected-departments">
                   <small style={{ color: '#4CAF50', fontWeight: 'bold' }}>
-                    ✓ Selected ({form.managedDepartments.length}): {form.managedDepartments.join(', ')}
+                    ✓ {t('register.selectedDepartments')} ({form.managedDepartments.length}): {form.managedDepartments.map(dept => t(`departments.${dept}`) || dept).join(', ')}
                   </small>
                 </div>
               )}
@@ -206,7 +208,7 @@ const Register = ({ onBack, onRegisterSuccess }) => {
                   textAlign: 'left'
                 }}>
                   <small style={{ color: '#FFA000', fontStyle: 'italic' }}>
-                    ⚠️ Please select at least one department to manage
+                    ⚠️ {t('register.selectAtLeastOneDepartment')}
                   </small>
                 </div>
               )}
@@ -215,11 +217,11 @@ const Register = ({ onBack, onRegisterSuccess }) => {
 
           <div className="grid-2">
             <div className="form-group-elegant">
-              <label className="form-label-elegant">Password</label>
+              <label className="form-label-elegant">{t('register.password')}</label>
               <input
                 name="password"
                 type="password"
-                placeholder="Create password"
+                placeholder={t('register.passwordPlaceholder')}
                 value={form.password}
                 onChange={handleChange}
                 className="form-input-elegant focus-elegant"
@@ -229,11 +231,11 @@ const Register = ({ onBack, onRegisterSuccess }) => {
             </div>
 
             <div className="form-group-elegant">
-              <label className="form-label-elegant">Confirm Password</label>
+              <label className="form-label-elegant">{t('register.confirmPassword')}</label>
               <input
                 name="confirmPassword"
                 type="password"
-                placeholder="Confirm password"
+                placeholder={t('register.confirmPasswordPlaceholder')}
                 value={form.confirmPassword}
                 onChange={handleChange}
                 className="form-input-elegant focus-elegant"
@@ -252,10 +254,10 @@ const Register = ({ onBack, onRegisterSuccess }) => {
               {loading ? (
                 <>
                   <div className="spinner-elegant" style={{ width: '20px', height: '20px', display: 'inline-block', marginRight: '8px' }}></div>
-                  Registering...
+                  {t('register.registering')}
                 </>
               ) : (
-                `Register as ${form.role.charAt(0).toUpperCase() + form.role.slice(1)}`
+                t('register.registerAs', { role: t(`register.${form.role}`) })
               )}
             </button>
             
@@ -268,7 +270,7 @@ const Register = ({ onBack, onRegisterSuccess }) => {
                 color: 'white'
               }}
             >
-              Back to Login
+              {t('register.backToLogin')}
             </button>
           </div>
         </form>
@@ -283,10 +285,10 @@ const Register = ({ onBack, onRegisterSuccess }) => {
         {success && (
           <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(76, 175, 80, 0.1)', borderRadius: '8px' }}>
             <p style={{ color: '#2E7D32', fontSize: '0.9rem', margin: 0 }}>
-              <strong>Next Steps:</strong><br />
-              • Your account will be reviewed by an administrator<br />
-              • You'll receive an email notification once approved<br />
-              • You can then log in with your credentials
+              <strong>{t('register.nextSteps')}</strong><br />
+              • {t('register.nextStep1')}<br />
+              • {t('register.nextStep2')}<br />
+              • {t('register.nextStep3')}
             </p>
           </div>
         )}

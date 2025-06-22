@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import ForgotPassword from './ForgotPassword';
 import Register from './Register';
 
 const Login = ({ onLogin }) => {
+  const { t } = useTranslation();
   const [form, setForm] = useState({ email: '', password: '' });
   const [message, setMessage] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -27,7 +29,7 @@ const Login = ({ onLogin }) => {
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage('Login successful!');
+        setMessage(t('login.loginSuccessful'));
         
         // Store authentication data
         localStorage.setItem('token', data.token);
@@ -53,17 +55,17 @@ const Login = ({ onLogin }) => {
         }, 1000); // Small delay to show success message
         
       } else {
-        setMessage(data.msg || 'Login failed.');
+        setMessage(data.msg || t('login.loginFailed'));
       }
     } catch (err) {
-      setMessage('Error connecting to server.');
+      setMessage(t('login.serverError'));
     }
     setLoading(false);
   };
 
   const handleRegisterSuccess = () => {
     setShowRegister(false);
-    setMessage('Registration successful! Please wait for admin approval.');
+    setMessage(t('login.registrationSuccessful'));
   };
 
   if (showForgotPassword) {
@@ -78,19 +80,19 @@ const Login = ({ onLogin }) => {
     <div className="auth-container">
       <div className="elegant-card fade-in" style={{ maxWidth: '400px', textAlign: 'center' }}>
         <h1 className="text-gradient" style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>
-          NEW JERSEY DEVELOPMENTS
+          {t('login.title')}
         </h1>
         <p className="text-elegant" style={{ marginBottom: '2rem', fontSize: '1rem', opacity: 0.8 }}>
-          It's all about The Experience
+          {t('login.subtitle')}
         </p>
 
         <form className="form-elegant" onSubmit={handleSubmit}>
           <div className="form-group-elegant">
-            <label className="form-label-elegant">Email Address</label>
+            <label className="form-label-elegant">{t('common.email')}</label>
             <input
               name="email"
               type="email"
-              placeholder="Enter your email"
+              placeholder={t('login.emailPlaceholder')}
               value={form.email}
               onChange={handleChange}
               className="form-input-elegant focus-elegant"
@@ -99,11 +101,11 @@ const Login = ({ onLogin }) => {
           </div>
 
           <div className="form-group-elegant">
-            <label className="form-label-elegant">Password</label>
+            <label className="form-label-elegant">{t('common.password')}</label>
             <input
               name="password"
               type="password"
-              placeholder="Enter your password"
+              placeholder={t('login.passwordPlaceholder')}
               value={form.password}
               onChange={handleChange}
               className="form-input-elegant focus-elegant"
@@ -119,10 +121,10 @@ const Login = ({ onLogin }) => {
             {loading ? (
               <>
                 <div className="spinner-elegant" style={{ width: '20px', height: '20px', display: 'inline-block', marginRight: '8px' }}></div>
-                Logging in...
+                {t('login.loggingIn')}
               </>
             ) : (
-              'Login'
+              t('login.loginButton')
             )}
           </button>
         </form>
@@ -146,7 +148,7 @@ const Login = ({ onLogin }) => {
               onMouseOver={(e) => e.target.style.color = '#2980b9'}
               onMouseOut={(e) => e.target.style.color = '#3498db'}
             >
-              Forgot Password?
+              {t('login.forgotPassword')}
             </button>
 
             <button 
@@ -161,7 +163,7 @@ const Login = ({ onLogin }) => {
                 border: '1px solid rgba(52, 152, 219, 0.3)'
               }}
             >
-              Register as Employee
+              {t('login.registerEmployee')}
             </button>
           </div>
 
@@ -173,8 +175,8 @@ const Login = ({ onLogin }) => {
             color: '#666',
             lineHeight: '1.4'
           }}>
-            <strong>New Employee?</strong><br />
-            Click "Register as Employee" to create your account. Your registration will be reviewed by an administrator.
+            <strong>{t('login.newEmployee')}</strong><br />
+            {t('login.registerDescription')}
           </div>
         </div>
 

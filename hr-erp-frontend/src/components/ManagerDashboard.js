@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 
 const ManagerDashboard = ({ onLogout }) => {
+  const { t } = useTranslation();
   const [pendingForms, setPendingForms] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -215,9 +217,9 @@ const ManagerDashboard = ({ onLogout }) => {
                      status === 'approved' ? 'badge-success' :
                      status.includes('rejected') ? 'badge-danger' : 'badge-secondary';
     
-    const statusText = status === 'manager_approved' ? 'Manager Approved' :
-                      status === 'manager_submitted' ? 'Awaiting HR Approval' :
-                      status === 'manager_rejected' ? 'Manager Rejected' :
+    const statusText = status === 'manager_approved' ? t('managerDashboard.managerApproved') :
+                      status === 'manager_submitted' ? t('managerDashboard.awaitingHRApproval') :
+                      status === 'manager_rejected' ? t('managerDashboard.managerRejected') :
                       status.charAt(0).toUpperCase() + status.slice(1);
     
     return <span className={`badge-elegant ${badgeClass}`}>{statusText}</span>;
@@ -291,7 +293,7 @@ const ManagerDashboard = ({ onLogout }) => {
     
     // For rejection, require a comment
     if (actionType === 'reject' && !comment.trim()) {
-      setMessage('Please provide a reason for rejection');
+      setMessage(t('managerDashboard.reasonForRejectionIsRequired'));
       return;
     }
 
@@ -405,7 +407,7 @@ const ManagerDashboard = ({ onLogout }) => {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
-        <p>Loading Manager Dashboard...</p>
+        <p>{t('managerDashboard.loadingManagerDashboard')}</p>
         <style jsx>{`
           .loading-container {
             display: flex;
@@ -439,14 +441,14 @@ const ManagerDashboard = ({ onLogout }) => {
       {/* Header */}
       <div className="dashboard-header">
         <div className="user-info">
-          <h1>Manager Dashboard</h1>
-          <p>Welcome, {user?.name || 'Manager'}</p>
-          <p className="departments">Managing: {user?.managedDepartments?.join(', ') || 'No departments'}</p>
+          <h1>{t('managerDashboard.managerDashboard')}</h1>
+          <p>{t('managerDashboard.welcome')}, {user?.name || t('dashboard.manager')}</p>
+          <p className="departments">{t('managerDashboard.managing', { departments: user?.managedDepartments?.join(', ') || 'No departments' })}</p>
           <small style={{ color: 'rgba(255, 255, 255, 0.6)', fontStyle: 'italic' }}>
-            You can only see and manage requests from your assigned departments
+            {t('managerDashboard.seeAndManageRequests')}
           </small>
         </div>
-        <button onClick={onLogout} className="logout-btn">Logout</button>
+        <button onClick={onLogout} className="logout-btn">{t('common.logout')}</button>
       </div>
 
       {/* Message */}
@@ -460,26 +462,26 @@ const ManagerDashboard = ({ onLogout }) => {
       <div className="stats-section">
         <div className="stat-card">
           <h3>{teamMembers.length}</h3>
-          <p>My Team Members</p>
-          <small>Active employees in managed departments</small>
+          <p>{t('managerDashboard.myTeamMembers')}</p>
+          <small>{t('managerDashboard.activeEmployeesInManagedDepartments')}</small>
         </div>
         <div className="stat-card">
           <h3>{pendingForms.length}</h3>
-          <p>Pending Team Requests</p>
-          <small>Awaiting your approval</small>
+          <p>{t('managerDashboard.pendingTeamRequests')}</p>
+          <small>{t('managerDashboard.awaitingYourApproval')}</small>
         </div>
         <div className="stat-card">
           <h3>{user?.managedDepartments?.length || 0}</h3>
-          <p>Managed Departments</p>
-          <small>Under your supervision</small>
+          <p>{t('common.managedDepartments')}</p>
+          <small>{t('managerDashboard.underYourSupervision')}</small>
         </div>
       </div>
 
       {/* Manager's Personal Section */}
       <div className="section manager-personal-section">
         <div className="section-header">
-          <h2>📋 My Personal Forms & Requests</h2>
-          <small className="section-subtitle">Submit and view your own forms (separate from team management)</small>
+          <h2>📋 {t('managerDashboard.myPersonalFormsAndRequests')}</h2>
+          <small className="section-subtitle">{t('managerDashboard.submitAndViewYourOwnFormsSeparateFromTeamManagement')}</small>
         </div>
         
         {/* Vacation and Excuse Days Cards */}
@@ -487,14 +489,14 @@ const ManagerDashboard = ({ onLogout }) => {
           <div className="stat-card manager-stat-card">
             <div className="stat-icon">🏖️</div>
             <h3>{vacationDaysLeft !== null ? vacationDaysLeft : '...'}</h3>
-            <p>Vacation Days Left</p>
-            <small>Your annual allowance remaining</small>
+            <p>{t('managerDashboard.vacationDaysLeft')}</p>
+            <small>{t('managerDashboard.yourAnnualAllowanceRemaining')}</small>
           </div>
           <div className="stat-card manager-stat-card">
             <div className="stat-icon">⏰</div>
             <h3>{excuseHoursLeft !== null ? excuseHoursLeft : '...'}</h3>
-            <p>Excuse Hours Left</p>
-            <small>Your monthly allowance remaining</small>
+            <p>{t('managerDashboard.excuseHoursLeft')}</p>
+            <small>{t('managerDashboard.yourMonthlyAllowanceRemaining')}</small>
           </div>
         </div>
 
@@ -505,21 +507,21 @@ const ManagerDashboard = ({ onLogout }) => {
             onClick={handleShowForm}
           >
             <span className="btn-icon">📝</span>
-            Submit My Form
+            {t('managerDashboard.submitMyForm')}
           </button>
           <button 
             className="btn-manager view-btn"
             onClick={handleShowMyForms}
           >
             <span className="btn-icon">📋</span>
-            View My Forms
+            {t('managerDashboard.viewMyForms')}
           </button>
           <button 
             className="btn-manager team-forms-btn"
             onClick={handleShowTeamForms}
           >
             <span className="btn-icon">👥</span>
-            My Team Members Forms
+            {t('managerDashboard.myTeamMembersForms')}
           </button>
         </div>
       </div>
@@ -528,8 +530,8 @@ const ManagerDashboard = ({ onLogout }) => {
       {showForm && (
         <div className="section manager-form-section">
           <div className="section-header">
-            <h2>📝 Submit New Personal Form</h2>
-            <small className="section-subtitle">This is for your own personal requests (vacation, sick leave, etc.)</small>
+            <h2>📝 {t('managerDashboard.submitNewPersonalForm')}</h2>
+            <small className="section-subtitle">{t('managerDashboard.thisIsForYourOwnPersonalRequestsVacationSickLeaveEtc')}</small>
           </div>
           <div className="form-container">
             <FormSubmission onFormSubmitted={handleFormSubmitted} />
@@ -541,8 +543,8 @@ const ManagerDashboard = ({ onLogout }) => {
       {showMyForms && (
         <div className="section manager-forms-view-section">
           <div className="section-header">
-            <h2>📋 My Submitted Forms</h2>
-            <small className="section-subtitle">Your personal form submissions and their status</small>
+            <h2>📋 {t('managerDashboard.mySubmittedForms')}</h2>
+            <small className="section-subtitle">{t('managerDashboard.yourPersonalFormSubmissionsAndTheirStatus')}</small>
           </div>
           {myForms.length > 0 ? (
             <div className="my-forms-grid">
@@ -554,51 +556,51 @@ const ManagerDashboard = ({ onLogout }) => {
                   </div>
                   
                   <div className="form-details">
-                    <p><strong>Submitted:</strong> {formatDate(form.createdAt)}</p>
+                    <p><strong>{t('submitted')}:</strong> {formatDate(form.createdAt)}</p>
                     
                     {form.type === 'vacation' && (
                       <>
-                        <p><strong>Dates:</strong> {formatDate(form.startDate)} - {formatDate(form.endDate)}</p>
-                        <p><strong>Duration:</strong> {calculateDays(form.startDate, form.endDate)} days</p>
-                        {form.vacationType && <p><strong>Type:</strong> {form.vacationType}</p>}
+                        <p><strong>{t('dates')}:</strong> {formatDate(form.startDate)} - {formatDate(form.endDate)}</p>
+                        <p><strong>{t('duration')}:</strong> {calculateDays(form.startDate, form.endDate)} {t('days')}</p>
+                        {form.vacationType && <p><strong>{t('type')}:</strong> {form.vacationType}</p>}
                       </>
                     )}
                     
                     {form.type === 'excuse' && (
                       <>
-                        <p><strong>Excuse Date:</strong> {formatDate(form.excuseDate)}</p>
-                        <p><strong>Time:</strong> {form.fromHour} - {form.toHour}</p>
-                        <p><strong>Duration:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours</p>
+                        <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
+                        <p><strong>{t('time')}:</strong> {form.fromHour} - {form.toHour}</p>
+                        <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
                       </>
                     )}
                     
                     {form.type === 'wfh' && (
                       <>
-                        <p><strong>Hours:</strong> {form.wfhHours} hours</p>
-                        <p><strong>Description:</strong> {form.wfhDescription?.substring(0, 50)}...</p>
+                        <p><strong>{t('hours')}:</strong> {form.wfhHours} {t('hours')}</p>
+                        <p><strong>{t('description')}:</strong> {form.wfhDescription?.substring(0, 50)}...</p>
                       </>
                     )}
                     
                     {form.type === 'sick_leave' && (
                       <>
-                        <p><strong>Dates:</strong> {formatDate(form.sickLeaveStartDate)} - {formatDate(form.sickLeaveEndDate)}</p>
-                        <p><strong>Duration:</strong> {Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</p>
+                        <p><strong>{t('dates')}:</strong> {formatDate(form.sickLeaveStartDate)} - {formatDate(form.sickLeaveEndDate)}</p>
+                        <p><strong>{t('duration')}:</strong> {Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} {t('days')}</p>
                         <MedicalDocumentViewer form={form} userRole="manager" />
                       </>
                     )}
                     
-                    <p><strong>Reason:</strong> {form.reason?.substring(0, 80)}...</p>
+                    <p><strong>{t('reason')}:</strong> {form.reason?.substring(0, 80)}...</p>
                     
                     {form.managerApprovedBy && (
                       <div className="comment-section manager-action-section">
                         <strong>
-                          {form.status === 'manager_rejected' ? 'Rejected by Manager:' : 'Approved by Manager:'}
+                          {form.status === 'manager_rejected' ? t('rejectedByManager') : t('approvedByManager')}:
                         </strong>
                         <p style={{ color: form.status === 'manager_rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
                           👔 {form.managerApprovedBy.name}
                           {form.managerApprovedAt && (
                             <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
-                              {' '}on {new Date(form.managerApprovedAt).toLocaleDateString()}
+                              {' '}{t('on')} {new Date(form.managerApprovedAt).toLocaleDateString()}
                             </span>
                           )}
                         </p>
@@ -607,14 +609,14 @@ const ManagerDashboard = ({ onLogout }) => {
 
                     {form.managerComment && (
                       <div className="comment-section">
-                        <strong>Manager Comment{form.managerApprovedBy ? ` (${form.managerApprovedBy.name})` : ''}:</strong>
+                        <strong>{t('managerComment')}{form.managerApprovedBy ? ` (${form.managerApprovedBy.name})` : ''}:</strong>
                         <p>{form.managerComment}</p>
                       </div>
                     )}
                     
                     {form.adminComment && (
                       <div className="comment-section">
-                        <strong>Admin Comment:</strong>
+                        <strong>{t('adminComment')}:</strong>
                         <p>{form.adminComment}</p>
                       </div>
                     )}
@@ -625,8 +627,8 @@ const ManagerDashboard = ({ onLogout }) => {
           ) : (
             <div className="no-content">
               <span className="no-content-icon">📋</span>
-              <p>No personal forms submitted yet</p>
-              <small>These are YOUR own forms (vacation, sick leave, etc.). Submit your first personal form using the "Submit My Form" button above.</small>
+              <p>{t('managerDashboard.noPersonalFormsSubmittedYet')}</p>
+              <small>{t('managerDashboard.theseAreYourOwnFormsVacationSickLeaveEtc')}</small>
             </div>
           )}
         </div>
@@ -636,8 +638,8 @@ const ManagerDashboard = ({ onLogout }) => {
       {showTeamForms && (
         <div className="section team-management-section">
           <div className="section-header">
-            <h2>👥 My Team Members Forms</h2>
-            <small className="section-subtitle">All forms submitted by your team members from managed departments</small>
+            <h2>👥 {t('managerDashboard.myTeamMembersForms')}</h2>
+            <small className="section-subtitle">{t('managerDashboard.allFormsSubmittedByYourTeamMembersFromManagedDepartments')}</small>
           </div>
           {teamForms.length > 0 ? (
             <div className="my-forms-grid">
@@ -649,53 +651,53 @@ const ManagerDashboard = ({ onLogout }) => {
                   </div>
                   
                   <div className="form-details">
-                    <p><strong>Employee:</strong> {form.user.name}</p>
-                    <p><strong>Department:</strong> {form.user.department}</p>
-                    <p><strong>Submitted:</strong> {formatDate(form.createdAt)}</p>
+                    <p><strong>{t('employee')}:</strong> {form.user.name}</p>
+                    <p><strong>{t('department')}:</strong> {form.user.department}</p>
+                    <p><strong>{t('submitted')}:</strong> {formatDate(form.createdAt)}</p>
                     
                     {form.type === 'vacation' && (
                       <>
-                        <p><strong>Dates:</strong> {formatDate(form.startDate)} - {formatDate(form.endDate)}</p>
-                        <p><strong>Duration:</strong> {calculateDays(form.startDate, form.endDate)} days</p>
-                        {form.vacationType && <p><strong>Type:</strong> {form.vacationType}</p>}
+                        <p><strong>{t('dates')}:</strong> {formatDate(form.startDate)} - {formatDate(form.endDate)}</p>
+                        <p><strong>{t('duration')}:</strong> {calculateDays(form.startDate, form.endDate)} {t('days')}</p>
+                        {form.vacationType && <p><strong>{t('type')}:</strong> {form.vacationType}</p>}
                       </>
                     )}
                     
                     {form.type === 'excuse' && (
                       <>
-                        <p><strong>Excuse Date:</strong> {formatDate(form.excuseDate)}</p>
-                        <p><strong>Time:</strong> {form.fromHour} - {form.toHour}</p>
-                        <p><strong>Duration:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours</p>
+                        <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
+                        <p><strong>{t('time')}:</strong> {form.fromHour} - {form.toHour}</p>
+                        <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
                       </>
                     )}
                     
                     {form.type === 'wfh' && (
                       <>
-                        <p><strong>Hours:</strong> {form.wfhHours} hours</p>
-                        <p><strong>Description:</strong> {form.wfhDescription?.substring(0, 50)}...</p>
+                        <p><strong>{t('hours')}:</strong> {form.wfhHours} {t('hours')}</p>
+                        <p><strong>{t('description')}:</strong> {form.wfhDescription?.substring(0, 50)}...</p>
                       </>
                     )}
                     
                     {form.type === 'sick_leave' && (
                       <>
-                        <p><strong>Dates:</strong> {formatDate(form.sickLeaveStartDate)} - {formatDate(form.sickLeaveEndDate)}</p>
-                        <p><strong>Duration:</strong> {Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</p>
+                        <p><strong>{t('dates')}:</strong> {formatDate(form.sickLeaveStartDate)} - {formatDate(form.sickLeaveEndDate)}</p>
+                        <p><strong>{t('duration')}:</strong> {Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} {t('days')}</p>
                         <MedicalDocumentViewer form={form} userRole="manager" />
                       </>
                     )}
                     
-                    <p><strong>Reason:</strong> {form.reason?.substring(0, 80)}...</p>
+                    <p><strong>{t('reason')}:</strong> {form.reason?.substring(0, 80)}...</p>
                     
                     {form.managerApprovedBy && (
                       <div className="comment-section manager-action-section">
                         <strong>
-                          {form.status === 'manager_rejected' ? 'Rejected by Manager:' : 'Approved by Manager:'}
+                          {form.status === 'manager_rejected' ? t('rejectedByManager') : t('approvedByManager')}:
                         </strong>
                         <p style={{ color: form.status === 'manager_rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
                           👔 {form.managerApprovedBy.name}
                           {form.managerApprovedAt && (
                             <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
-                              {' '}on {new Date(form.managerApprovedAt).toLocaleDateString()}
+                              {' '}{t('on')} {new Date(form.managerApprovedAt).toLocaleDateString()}
                             </span>
                           )}
                         </p>
@@ -704,14 +706,14 @@ const ManagerDashboard = ({ onLogout }) => {
 
                     {form.managerComment && (
                       <div className="comment-section">
-                        <strong>Manager Comment{form.managerApprovedBy ? ` (${form.managerApprovedBy.name})` : ''}:</strong>
+                        <strong>{t('managerComment')}{form.managerApprovedBy ? ` (${form.managerApprovedBy.name})` : ''}:</strong>
                         <p>{form.managerComment}</p>
                       </div>
                     )}
                     
                     {form.adminComment && (
                       <div className="comment-section">
-                        <strong>Admin Comment:</strong>
+                        <strong>{t('adminComment')}:</strong>
                         <p>{form.adminComment}</p>
                       </div>
                     )}
@@ -722,8 +724,8 @@ const ManagerDashboard = ({ onLogout }) => {
           ) : (
             <div className="no-content">
               <span className="no-content-icon">👥</span>
-              <p>No forms found from your team members</p>
-              <small>Your team members haven't submitted any forms yet, or you don't have any managed departments assigned.</small>
+              <p>{t('noFormsFoundFromYourTeamMembers')}</p>
+              <small>{t('yourTeamMembersHaventSubmittedAnyFormsYetOrYouDontHaveAnyManagedDepartmentsAssigned')}</small>
             </div>
           )}
         </div>
@@ -732,9 +734,9 @@ const ManagerDashboard = ({ onLogout }) => {
       {/* Team Members */}
       <div className="section team-management-section">
         <div className="section-header">
-          <h2>👥 My Team Members</h2>
+          <h2>👥 {t('myTeamMembers')}</h2>
           <small className="section-subtitle">
-            Employees from your managed departments: {user.managedDepartments?.join(', ') || 'None'}
+            {t('employeesFromYourManagedDepartments', { departments: user.managedDepartments?.join(', ') || 'None' })}
           </small>
         </div>
         {teamMembers.length > 0 ? (
@@ -744,14 +746,14 @@ const ManagerDashboard = ({ onLogout }) => {
                 <div className="member-avatar">👤</div>
                 <h4>{member.name}</h4>
                 <p className="member-department">{member.department}</p>
-                <span className="vacation-days team-stat">{member.vacationDaysLeft} days left</span>
+                <span className="vacation-days team-stat">{member.vacationDaysLeft} {t('daysLeft')}</span>
               </div>
             ))}
           </div>
         ) : (
           <div className="no-content">
             <span className="no-content-icon">👥</span>
-            <p>No team members found in your managed departments</p>
+            <p>{t('noTeamMembersFoundInYourManagedDepartments')}</p>
           </div>
         )}
       </div>
@@ -759,9 +761,9 @@ const ManagerDashboard = ({ onLogout }) => {
       {/* Pending Requests */}
       <div className="section team-requests-section">
         <div className="section-header">
-          <h2>⏳ Pending Team Requests {refreshingPending ? '(Refreshing...)' : ''}</h2>
+          <h2>⏳ {t('managerDashboard.pendingTeamRequests')} {refreshingPending ? `(${t('managerDashboard.refreshing')})` : ''}</h2>
           <small className="section-subtitle">
-            Employee requests awaiting your approval from managed departments
+            {t('managerDashboard.employeeRequestsAwaitingYourApprovalFromManagedDepartments')}
           </small>
           <button 
             className="btn-manager refresh-btn"
@@ -769,7 +771,7 @@ const ManagerDashboard = ({ onLogout }) => {
               console.log('Manual refresh pending forms');
               fetchPendingForms();
             }}
-            title="Refresh pending requests"
+            title={t('managerDashboard.refreshPendingRequests')}
             disabled={refreshingPending}
             style={{ 
               marginTop: '10px',
@@ -782,7 +784,7 @@ const ManagerDashboard = ({ onLogout }) => {
               cursor: refreshingPending ? 'not-allowed' : 'pointer'
             }}
           >
-            {refreshingPending ? '⏳ Refreshing...' : '🔄 Refresh'}
+            {refreshingPending ? t('managerDashboard.refreshing') : t('managerDashboard.refresh')}
           </button>
         </div>
         {pendingForms.length > 0 ? (
@@ -791,59 +793,59 @@ const ManagerDashboard = ({ onLogout }) => {
               <div key={form._id} className="request-card team-request-card">
                 <div className="request-info">
                   <h4>{form.user.name} - {form.type.toUpperCase()}</h4>
-                  <p><strong>Department:</strong> {form.user.department}</p>
+                  <p><strong>{t('department')}:</strong> {form.user.department}</p>
                   
                   {/* Display different information based on form type */}
                   {form.type === 'vacation' && (
                     <>
-                      <p><strong>Dates:</strong> {formatDate(form.startDate)} - {formatDate(form.endDate)}</p>
-                      <p><strong>Duration:</strong> {calculateDays(form.startDate, form.endDate)} days</p>
-                      {form.vacationType && <p><strong>Type:</strong> {form.vacationType}</p>}
+                      <p><strong>{t('dates')}:</strong> {formatDate(form.startDate)} - {formatDate(form.endDate)}</p>
+                      <p><strong>{t('duration')}:</strong> {calculateDays(form.startDate, form.endDate)} {t('days')}</p>
+                      {form.vacationType && <p><strong>{t('type')}:</strong> {form.vacationType}</p>}
                     </>
                   )}
                   
                   {form.type === 'excuse' && (
                     <>
-                      <p><strong>Excuse Date:</strong> {formatDate(form.excuseDate)}</p>
-                      <p><strong>Time Period:</strong> {form.fromHour} - {form.toHour}</p>
-                      <p><strong>Duration:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours</p>
+                      <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
+                      <p><strong>{t('timePeriod')}:</strong> {form.fromHour} - {form.toHour}</p>
+                      <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
                     </>
                   )}
                   
                   {form.type === 'wfh' && (
                     <>
-                      <p><strong>Work From Home Hours:</strong> {form.wfhHours} hours</p>
-                      <p><strong>Work Description:</strong> {form.wfhDescription}</p>
+                      <p><strong>{t('workFromHomeHours')}:</strong> {form.wfhHours} {t('hours')}</p>
+                      <p><strong>{t('workDescription')}:</strong> {form.wfhDescription}</p>
                     </>
                   )}
                   
                   {form.type === 'sick_leave' && (
                     <>
-                      <p><strong>Sick Leave Dates:</strong> {formatDate(form.sickLeaveStartDate)} - {formatDate(form.sickLeaveEndDate)}</p>
-                      <p><strong>Duration:</strong> {Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</p>
+                      <p><strong>{t('sickLeaveDates')}:</strong> {formatDate(form.sickLeaveStartDate)} - {formatDate(form.sickLeaveEndDate)}</p>
+                      <p><strong>{t('duration')}:</strong> {Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} {t('days')}</p>
                       <MedicalDocumentViewer form={form} userRole="manager" />
                     </>
                   )}
                   
-                  <p><strong>Reason:</strong> {form.reason}</p>
-                  <p><strong>Submitted:</strong> {formatDate(form.createdAt)}</p>
+                  <p><strong>{t('reason')}:</strong> {form.reason}</p>
+                  <p><strong>{t('submitted')}:</strong> {formatDate(form.createdAt)}</p>
                 </div>
                 <div className="request-actions">
                   <button 
                     onClick={() => openCommentModal(form, 'approve')}
                     className="approve-btn"
-                    title={`Approve ${form.type} request from ${form.user.name}`}
+                    title={`${t('managerDashboard.approve')} ${form.type} ${t('forms.from')} ${form.user.name}`}
                     disabled={processingForms.has(form._id)}
                   >
-                    {processingForms.has(form._id) ? '⏳ Processing...' : 'Approve'}
+                    {processingForms.has(form._id) ? t('managerDashboard.processing') : t('managerDashboard.approve')}
                   </button>
                   <button 
                     onClick={() => openCommentModal(form, 'reject')}
                     className="reject-btn"
-                    title={`Reject ${form.type} request from ${form.user.name}`}
+                    title={`${t('managerDashboard.reject')} ${form.type} ${t('forms.from')} ${form.user.name}`}
                     disabled={processingForms.has(form._id)}
                   >
-                    {processingForms.has(form._id) ? '⏳ Processing...' : 'Reject'}
+                    {processingForms.has(form._id) ? t('managerDashboard.processing') : t('managerDashboard.reject')}
                   </button>
                 </div>
               </div>
@@ -852,8 +854,8 @@ const ManagerDashboard = ({ onLogout }) => {
         ) : (
           <div className="no-content">
             <span className="no-content-icon">⏳</span>
-            <p>No pending requests from your team</p>
-            <small>All caught up! Your team hasn't submitted any requests needing approval.</small>
+            <p>{t('managerDashboard.noPendingRequestsFromYourTeam')}</p>
+            <small>{t('managerDashboard.allCaughtUpYourTeamHaventSubmittedAnyRequestsNeedingApproval')}</small>
           </div>
         )}
       </div>
@@ -864,7 +866,7 @@ const ManagerDashboard = ({ onLogout }) => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>
-                {actionType === 'approve' ? 'Approve Request' : 'Reject Request'}
+                {actionType === 'approve' ? t('managerDashboard.approveRequest') : t('managerDashboard.rejectRequest')}
               </h3>
               <button className="close-btn" onClick={closeCommentModal}>×</button>
             </div>
@@ -873,46 +875,46 @@ const ManagerDashboard = ({ onLogout }) => {
               <div className="modal-body">
                 <div className="request-summary">
                   <h4>{selectedForm.user.name} - {selectedForm.type.toUpperCase()}</h4>
-                  <p><strong>Department:</strong> {selectedForm.user.department}</p>
+                  <p><strong>{t('department')}:</strong> {selectedForm.user.department}</p>
                   
                   {/* Display different information based on form type */}
                   {selectedForm.type === 'vacation' && (
                     <>
-                      <p><strong>Dates:</strong> {formatDate(selectedForm.startDate)} - {formatDate(selectedForm.endDate)}</p>
-                      <p><strong>Duration:</strong> {calculateDays(selectedForm.startDate, selectedForm.endDate)} days</p>
-                      {selectedForm.vacationType && <p><strong>Type:</strong> {selectedForm.vacationType}</p>}
+                      <p><strong>{t('dates')}:</strong> {formatDate(selectedForm.startDate)} - {formatDate(selectedForm.endDate)}</p>
+                      <p><strong>{t('duration')}:</strong> {calculateDays(selectedForm.startDate, selectedForm.endDate)} {t('days')}</p>
+                      {selectedForm.vacationType && <p><strong>{t('type')}:</strong> {selectedForm.vacationType}</p>}
                     </>
                   )}
                   
                   {selectedForm.type === 'excuse' && (
                     <>
-                      <p><strong>Excuse Date:</strong> {formatDate(selectedForm.excuseDate)}</p>
-                      <p><strong>Time Period:</strong> {selectedForm.fromHour} - {selectedForm.toHour}</p>
-                      <p><strong>Duration:</strong> {((new Date(`2000-01-01T${selectedForm.toHour}`) - new Date(`2000-01-01T${selectedForm.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours</p>
+                      <p><strong>{t('excuseDate')}:</strong> {formatDate(selectedForm.excuseDate)}</p>
+                      <p><strong>{t('timePeriod')}:</strong> {selectedForm.fromHour} - {selectedForm.toHour}</p>
+                      <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${selectedForm.toHour}`) - new Date(`2000-01-01T${selectedForm.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
                     </>
                   )}
                   
                   {selectedForm.type === 'wfh' && (
                     <>
-                      <p><strong>Work From Home Hours:</strong> {selectedForm.wfhHours} hours</p>
-                      <p><strong>Work Description:</strong> {selectedForm.wfhDescription}</p>
+                      <p><strong>{t('workFromHomeHours')}:</strong> {selectedForm.wfhHours} {t('hours')}</p>
+                      <p><strong>{t('workDescription')}:</strong> {selectedForm.wfhDescription}</p>
                     </>
                   )}
                   
                   {selectedForm.type === 'sick_leave' && (
                     <>
-                      <p><strong>Sick Leave Dates:</strong> {formatDate(selectedForm.sickLeaveStartDate)} - {formatDate(selectedForm.sickLeaveEndDate)}</p>
-                      <p><strong>Duration:</strong> {Math.ceil((new Date(selectedForm.sickLeaveEndDate) - new Date(selectedForm.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days</p>
+                      <p><strong>{t('sickLeaveDates')}:</strong> {formatDate(selectedForm.sickLeaveStartDate)} - {formatDate(selectedForm.sickLeaveEndDate)}</p>
+                      <p><strong>{t('duration')}:</strong> {Math.ceil((new Date(selectedForm.sickLeaveEndDate) - new Date(selectedForm.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} {t('days')}</p>
                       <MedicalDocumentViewer form={selectedForm} userRole="manager" />
                     </>
                   )}
                   
-                  <p><strong>Reason:</strong> {selectedForm.reason}</p>
+                  <p><strong>{t('reason')}:</strong> {selectedForm.reason}</p>
                 </div>
                 
                 <div className="comment-section">
                   <label htmlFor="managerComment">
-                    {actionType === 'approve' ? 'Comment (Optional):' : 'Reason for Rejection (Required):'}
+                    {actionType === 'approve' ? t('commentOptional') : t('reasonForRejectionRequired')}:
                   </label>
                   <textarea
                     id="managerComment"
@@ -920,14 +922,14 @@ const ManagerDashboard = ({ onLogout }) => {
                     onChange={(e) => setComment(e.target.value)}
                     placeholder={
                       actionType === 'approve' 
-                        ? "Add any comments about this approval..." 
-                        : "Please provide a clear reason for rejection..."
+                        ? t('addAnyCommentsAboutThisApproval') 
+                        : t('pleaseProvideAClearReasonForRejection')
                     }
                     rows={4}
                     className={actionType === 'reject' && !comment.trim() ? 'required-field' : ''}
                   />
                   {actionType === 'reject' && !comment.trim() && (
-                    <small className="error-text">A reason for rejection is required</small>
+                    <small className="error-text">{t('aReasonForRejectionIsRequired')}</small>
                   )}
                 </div>
               </div>
@@ -939,15 +941,15 @@ const ManagerDashboard = ({ onLogout }) => {
                 onClick={closeCommentModal}
                 disabled={submitting}
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button 
                 className={actionType === 'approve' ? 'approve-btn' : 'reject-btn'}
                 onClick={handleFormAction}
                 disabled={submitting || (actionType === 'reject' && !comment.trim())}
               >
-                {submitting ? 'Processing...' : 
-                 actionType === 'approve' ? 'Approve Request' : 'Reject Request'}
+                {submitting ? t('processing') : 
+                 actionType === 'approve' ? t('approveRequest') : t('rejectRequest')}
               </button>
             </div>
           </div>

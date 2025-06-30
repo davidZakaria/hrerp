@@ -143,5 +143,179 @@ router.get('/user/:userId', auth, async (req, res) => {
   }
 });
 
+// Download audit logs as CSV (Super Admin only)
+router.get('/download', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (user.role !== 'super_admin') {
+      return res.status(403).json({ msg: 'Access denied. Super Admin required.' });
+    }
+
+    // Build filter based on query parameters
+    let filter = {};
+    if (req.query.action) filter.action = req.query.action;
+    if (req.query.severity) filter.severity = req.query.severity;
+    
+    // Date range filter
+    if (req.query.startDate || req.query.endDate) {
+      filter.timestamp = {};
+      if (req.query.startDate) filter.timestamp.$gte = new Date(req.query.startDate);
+      if (req.query.endDate) filter.timestamp.$lte = new Date(req.query.endDate);
+    }
+
+    const audits = await Audit.find(filter)
+      .populate('performedBy', 'name email role')
+      .populate('targetUser', 'name email')
+      .sort({ timestamp: -1 })
+      .limit(10000); // Limit to prevent server overload
+
+    // Create CSV content
+    const csvHeaders = [
+      'Timestamp',
+      'Action',
+      'Performed By',
+      'Performer Role',
+      'Target User',
+      'Target Email',
+      'Description',
+      'Severity',
+      'IP Address'
+    ];
+
+    const csvRows = audits.map(audit => [
+      new Date(audit.timestamp).toLocaleString(),
+      audit.action || '',
+      audit.performedBy?.name || audit.performedBy || 'System',
+      audit.performedBy?.role || 'N/A',
+      audit.targetUser?.name || 'N/A',
+      audit.targetUser?.email || 'N/A',
+      (audit.description || '').replace(/"/g, '""'),
+      audit.severity || 'LOW',
+      audit.ipAddress || 'N/A'
+    ]);
+
+    const csvContent = [
+      csvHeaders.join(','),
+      ...csvRows.map(row => row.map(field => `"${field}"`).join(','))
+    ].join('\n');
+
+    // Set headers for file download
+    const filename = `audit_logs_${new Date().toISOString().split('T')[0]}.csv`;
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    // Log the download action
+    await createAuditLog({
+      action: 'SUPER_ADMIN_ACTION',
+      performedBy: user._id,
+      targetResource: 'audit',
+      description: `Audit logs downloaded by super admin ${user.name}`,
+      details: {
+        downloadedCount: audits.length,
+        filters: filter,
+        downloadDate: new Date()
+      },
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      severity: 'MEDIUM'
+    });
+
+    res.send(csvContent);
+  } catch (err) {
+    console.error('Error downloading audit logs:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
+// Clear old audit logs (Super Admin only)
+router.post('/clear', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (user.role !== 'super_admin') {
+      return res.status(403).json({ msg: 'Access denied. Super Admin required.' });
+    }
+
+    const { olderThanDays, confirmClear, deleteAll } = req.body;
+
+    if (!confirmClear) {
+      return res.status(400).json({ msg: 'Confirmation required to clear audit logs' });
+    }
+
+    let deleteResult;
+    let totalBefore = await Audit.countDocuments();
+
+    if (deleteAll) {
+      // Delete ALL audit logs
+      deleteResult = await Audit.deleteMany({});
+      
+      // Log the clear action (this will be the only log left)
+      await createAuditLog({
+        action: 'SUPER_ADMIN_ACTION',
+        performedBy: user._id,
+        targetResource: 'audit',
+        description: `ALL audit logs cleared by super admin ${user.name}. Deleted ${deleteResult.deletedCount} total logs.`,
+        details: {
+          deletedCount: deleteResult.deletedCount,
+          deleteAll: true,
+          totalBefore: totalBefore,
+          clearDate: new Date()
+        },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        severity: 'CRITICAL'
+      });
+    } else {
+      // Delete logs older than specified days
+      const daysToKeep = olderThanDays || 90; // Default to keep 90 days
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+
+      // Get count before deletion
+      const toDeleteCount = await Audit.countDocuments({
+        timestamp: { $lt: cutoffDate }
+      });
+
+      // Delete old audit logs
+      deleteResult = await Audit.deleteMany({
+        timestamp: { $lt: cutoffDate }
+      });
+
+      // Log the clear action
+      await createAuditLog({
+        action: 'SUPER_ADMIN_ACTION',
+        performedBy: user._id,
+        targetResource: 'audit',
+        description: `Audit logs cleared by super admin ${user.name}. Deleted ${deleteResult.deletedCount} logs older than ${daysToKeep} days.`,
+        details: {
+          deletedCount: deleteResult.deletedCount,
+          daysToKeep: daysToKeep,
+          cutoffDate: cutoffDate,
+          totalBefore: totalBefore,
+          totalAfter: await Audit.countDocuments(),
+          clearDate: new Date()
+        },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        severity: 'HIGH'
+      });
+    }
+
+    const totalAfter = await Audit.countDocuments();
+
+    res.json({
+      success: true,
+      message: deleteAll 
+        ? `Successfully cleared ALL ${deleteResult.deletedCount} audit logs`
+        : `Successfully cleared ${deleteResult.deletedCount} audit logs older than ${olderThanDays || 90} days`,
+      deletedCount: deleteResult.deletedCount,
+      remainingCount: totalAfter,
+      deleteAll: deleteAll || false
+    });
+  } catch (err) {
+    console.error('Error clearing audit logs:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
 // Export the createAuditLog helper function
 module.exports = { router, createAuditLog }; 

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import LogoutButton from './LogoutButton';
+import { useTranslation } from 'react-i18next';
 
 const SuperAdminDashboard = () => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -77,6 +79,12 @@ const SuperAdminDashboard = () => {
     'Technical Office Engineer',
     'Other'
   ];
+
+  // Clear audit logs state
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [clearDays, setClearDays] = useState(90);
+  const [clearLoading, setClearLoading] = useState(false);
+  const [deleteAllLogs, setDeleteAllLogs] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -416,6 +424,82 @@ const SuperAdminDashboard = () => {
       setSuccess('Forms exported successfully');
     } catch (err) {
       setError('Error exporting forms');
+    }
+  };
+
+  // Download audit logs
+  const handleDownloadAuditLogs = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const queryParams = new URLSearchParams({
+        ...auditFilters
+      });
+      
+      const response = await fetch(`http://localhost:5000/api/audit/download?${queryParams}`, {
+        headers: { 'x-auth-token': token }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `audit_logs_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        setSuccess('Audit logs downloaded successfully');
+      } else {
+        const data = await response.json();
+        setError(data.msg || 'Failed to download audit logs');
+      }
+    } catch (err) {
+      setError('Error downloading audit logs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Clear audit logs
+  const handleClearAuditLogs = async () => {
+    try {
+      setClearLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch('http://localhost:5000/api/audit/clear', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({
+          olderThanDays: deleteAllLogs ? 0 : clearDays, // Send 0 days to delete everything
+          confirmClear: true,
+          deleteAll: deleteAllLogs
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSuccess(deleteAllLogs 
+          ? `Successfully cleared ALL ${data.deletedCount} audit logs`
+          : `Successfully cleared ${data.deletedCount} audit logs older than ${clearDays} days`
+        );
+        setShowClearModal(false);
+        setDeleteAllLogs(false); // Reset the checkbox
+        fetchAuditLogs(); // Refresh the logs
+        fetchAuditStats(); // Refresh the stats
+      } else {
+        setError(data.msg || 'Failed to clear audit logs');
+      }
+    } catch (err) {
+      setError('Error clearing audit logs');
+    } finally {
+      setClearLoading(false);
     }
   };
 
@@ -1076,6 +1160,21 @@ const SuperAdminDashboard = () => {
                   >
                     Clear Filters
                   </button>
+                  <button 
+                    className="btn-elegant"
+                    onClick={handleDownloadAuditLogs}
+                    disabled={loading}
+                    style={{ backgroundColor: '#4CAF50', marginLeft: '10px' }}
+                  >
+                    📥 Download CSV
+                  </button>
+                  <button 
+                    className="btn-elegant"
+                    onClick={() => setShowClearModal(true)}
+                    style={{ backgroundColor: '#f44336', marginLeft: '10px' }}
+                  >
+                    🗑️ Clear Old Logs
+                  </button>
                 </div>
               </div>
 
@@ -1690,6 +1789,110 @@ const SuperAdminDashboard = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Audit Logs Modal */}
+      {showClearModal && (
+        <div className="modal-elegant" onClick={() => setShowClearModal(false)}>
+          <div className="modal-content-elegant" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="text-gradient">⚠️ Clear Old Audit Logs</h2>
+              <button 
+                className="close-btn" 
+                onClick={() => setShowClearModal(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '50%',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  color: '#fff',
+                  transition: 'all 0.3s ease',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: '1'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div style={{ padding: '1rem 0' }}>
+              <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '1.1rem', marginBottom: '1.5rem' }}>
+                This will permanently delete audit logs older than the specified number of days. This action cannot be undone.
+              </p>
+              
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Keep logs from the last:</label>
+                <select 
+                  value={clearDays} 
+                  onChange={(e) => setClearDays(parseInt(e.target.value))}
+                  className="form-input-elegant"
+                  disabled={deleteAllLogs}
+                >
+                  <option value={30}>30 days</option>
+                  <option value={60}>60 days</option>
+                  <option value={90}>90 days (recommended)</option>
+                  <option value={180}>6 months</option>
+                  <option value={365}>1 year</option>
+                </select>
+              </div>
+              
+              <div className="form-group-elegant" style={{ borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '1rem' }}>
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  cursor: 'pointer',
+                  color: '#ff5252',
+                  fontSize: '1.1rem',
+                  fontWeight: 'bold'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={deleteAllLogs}
+                    onChange={(e) => setDeleteAllLogs(e.target.checked)}
+                    style={{ 
+                      marginRight: '0.5rem',
+                      transform: 'scale(1.2)',
+                      accentColor: '#ff5252'
+                    }}
+                  />
+                  🗑️ Delete ALL audit logs (⚠️ DANGER ZONE)
+                </label>
+                <p style={{ 
+                  color: 'rgba(255, 255, 255, 0.7)', 
+                  fontSize: '0.9rem', 
+                  marginTop: '0.5rem',
+                  marginLeft: '1.8rem'
+                }}>
+                  This will delete ALL audit logs regardless of age. Use with extreme caution!
+                </p>
+              </div>
+              
+              <div className="action-buttons">
+                <button 
+                  className="btn-elegant"
+                  onClick={handleClearAuditLogs}
+                  disabled={clearLoading}
+                  style={{ backgroundColor: '#f44336' }}
+                >
+                  {clearLoading ? 'Clearing...' : 'Confirm Clear'}
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-elegant"
+                  onClick={() => setShowClearModal(false)}
+                  disabled={clearLoading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -400,7 +400,9 @@ const SuperAdminDashboard = () => {
           `"${form.user?.name || 'Unknown'}"`,
           `"${form.user?.email || 'Unknown'}"`,
           `"${form.user?.department || 'N/A'}"`,
-          `"${form.type?.replace('_', ' ') || 'N/A'}"`,
+          `"${form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
+           form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+           form.type.replace('_', ' ')}"`,
           `"${form.status || 'N/A'}"`,
           `"${form.startDate ? new Date(form.startDate).toLocaleDateString() : 'N/A'}"`,
           `"${form.endDate ? new Date(form.endDate).toLocaleDateString() : 'N/A'}"`,
@@ -967,7 +969,11 @@ const SuperAdminDashboard = () => {
                             <span className="icon-symbol">{getFormIcon(form.type)}</span>
                           </div>
                           <div className="form-basic-info">
-                            <div className="form-type">{form.type.replace('_', ' ')}</div>
+                            <div className="form-type">
+                              {form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
+                               form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                               form.type.replace('_', ' ')}
+                            </div>
                             <div className="form-employee">{form.user?.name || 'Unknown User'}</div>
                           </div>
                           <div className="form-status-badges">
@@ -975,7 +981,9 @@ const SuperAdminDashboard = () => {
                               className="form-type-badge"
                               style={{ backgroundColor: getFormTypeColor(form.type) }}
                             >
-                              {form.type.replace('_', ' ')}
+                              {form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
+                               form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                               form.type.replace('_', ' ')}
                             </span>
                             <span 
                               className="form-status-badge"
@@ -1359,7 +1367,11 @@ const SuperAdminDashboard = () => {
           <div className="modal-content-elegant" style={{ maxWidth: '700px' }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="text-gradient">
-                {Object.keys(formEditData).length > 0 ? 'Edit Form' : 'View Form'}: {selectedForm.type?.replace('_', ' ')}
+                {Object.keys(formEditData).length > 0 ? 'Edit Form' : 'View Form'}: {
+                  selectedForm.type === 'vacation' && selectedForm.vacationType === 'annual' ? 'Annual Vacation' :
+                  selectedForm.type === 'vacation' && selectedForm.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                  selectedForm.type?.replace('_', ' ')
+                }
               </h2>
               <button 
                 className="close-btn" 
@@ -1485,7 +1497,11 @@ const SuperAdminDashboard = () => {
                     </div>
                     <div className="info-item">
                       <span className="info-label">Form Type:</span>
-                      <span className="info-value">{selectedForm.type?.replace('_', ' ') || 'N/A'}</span>
+                      <span className="info-value">
+                        {selectedForm.type === 'vacation' && selectedForm.vacationType === 'annual' ? 'Annual Vacation' :
+                         selectedForm.type === 'vacation' && selectedForm.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                         selectedForm.type?.replace('_', ' ') || 'N/A'}
+                      </span>
                     </div>
                     <div className="info-item">
                       <span className="info-label">Status:</span>

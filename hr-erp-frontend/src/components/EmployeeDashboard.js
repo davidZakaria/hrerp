@@ -190,7 +190,11 @@ const EmployeeDashboard = () => {
                     <div style={{ marginBottom: '1rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                         <span className="form-label-elegant">{t('common.type')}:</span>
-                        <span className="text-elegant">{t(`formTypes.${form.type}`) || form.type}</span>
+                        <span className="text-elegant">
+                          {form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
+                           form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                           t(`formTypes.${form.type}`) || form.type}
+                        </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                         <span className="form-label-elegant">{t('common.status')}:</span>
@@ -326,9 +330,37 @@ const EmployeeDashboard = () => {
                         </div>
                       )}
 
+                      {form.adminApprovedBy && (
+                        <div style={{ marginTop: '1rem' }}>
+                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>
+                            {t('forms.hrAction')}:
+                          </div>
+                          <div style={{ 
+                            background: form.status === 'rejected' ? 'rgba(244, 67, 54, 0.1)' : 'rgba(76, 175, 80, 0.1)', 
+                            padding: '0.75rem', 
+                            borderRadius: '8px',
+                            fontSize: '0.9rem',
+                            color: form.status === 'rejected' ? '#d32f2f' : '#388e3c'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+                              <span style={{ fontWeight: 'bold' }}>
+                                {form.status === 'rejected' ? '❌ ' + t('forms.rejectedBy') : '✅ ' + t('forms.approvedBy')} 🏢 {form.adminApprovedBy.name}
+                              </span>
+                            </div>
+                            {form.adminApprovedAt && (
+                              <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+                                {new Date(form.adminApprovedAt).toLocaleDateString()} at {new Date(form.adminApprovedAt).toLocaleTimeString()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {form.adminComment && (
                         <div style={{ marginTop: '1rem' }}>
-                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>{t('forms.adminComment')}:</div>
+                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>
+                            {form.adminApprovedBy ? `${t('forms.hrComment')} (${form.adminApprovedBy.name})` : t('forms.hrComment')}:
+                          </div>
                           <div style={{ 
                             background: 'rgba(52, 152, 219, 0.1)', 
                             padding: '0.75rem', 

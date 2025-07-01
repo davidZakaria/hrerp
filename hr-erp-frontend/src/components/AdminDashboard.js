@@ -618,8 +618,242 @@ const AdminDashboard = () => {
     fetchVacationDaysReport();
   };
 
+  // Simple and reliable print function
+  const handlePrintSimple = () => {
+    console.log('🖨️ Simple print function called');
+    
+    if (!reportData || reportData.length === 0) {
+      alert('No report data available to print.');
+      return;
+    }
+
+    const reportHTML = `<!DOCTYPE html><html><head><title>Vacation Days Report</title><style>body{font-family:Arial,sans-serif;margin:20px;color:#333}.header{text-align:center;margin-bottom:30px;border-bottom:2px solid #3498db;padding-bottom:20px}.title{font-size:24px;font-weight:bold;margin:0}.summary{display:flex;justify-content:space-around;margin:20px 0;background:#f8f9fa;padding:15px}.summary-item{text-align:center}.summary-number{font-size:24px;font-weight:bold;color:#3498db}.employee{border:1px solid #ddd;margin:10px 0;padding:15px;page-break-inside:avoid}.employee-name{font-weight:bold;font-size:16px}.badge{padding:4px 8px;border-radius:4px;color:white;font-size:12px}.badge-good{background:#27ae60}.badge-warning{background:#f39c12}.badge-critical{background:#e74c3c}@media print{.badge{-webkit-print-color-adjust:exact;color-adjust:exact}}</style></head><body><div class="header"><h1 class="title">🏖️ Vacation Days Report</h1><p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p></div><div class="summary"><div class="summary-item"><div class="summary-number">${reportData.length}</div><div>Total Employees</div></div><div class="summary-item"><div class="summary-number">${reportData.filter(emp => emp.vacationDaysLeft === 0).length}</div><div>No Days Left</div></div><div class="summary-item"><div class="summary-number">${Math.round(reportData.reduce((acc, emp) => acc + emp.vacationDaysLeft, 0) / reportData.length) || 0}</div><div>Average Days</div></div></div>${reportData.map(emp => `<div class="employee"><div class="employee-name">${emp.name}</div><div><strong>Email:</strong> ${emp.email}</div><div><strong>Department:</strong> ${emp.department}</div><div><strong>Vacation Days:</strong> <span class="badge ${emp.vacationDaysLeft === 0 ? 'badge-critical' : emp.vacationDaysLeft <= 5 ? 'badge-warning' : 'badge-good'}">${emp.vacationDaysLeft} days</span></div></div>`).join('')}<script>window.onload=function(){setTimeout(function(){window.print();setTimeout(function(){window.close()},1000)},500)}</script></body></html>`;
+
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (printWindow) {
+      printWindow.document.write(reportHTML);
+      printWindow.document.close();
+      console.log('✅ Print window opened');
+    } else {
+      alert('Please allow pop-ups to enable printing.');
+    }
+  };
+
   const handlePrint = () => {
-    window.print();
+    console.log('🖨️ Print function called - Simple version');
+    
+    if (!reportData || reportData.length === 0) {
+      alert('No report data available to print.');
+      return;
+    }
+
+    // Create simple HTML content for the report
+    const reportHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vacation Days Report</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 20px;
+        }
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0;
+        }
+        .subtitle {
+            font-size: 16px;
+            color: #7f8c8d;
+            margin: 10px 0;
+        }
+        .date {
+            font-size: 14px;
+            color: #95a5a6;
+        }
+        .summary {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .summary-item {
+            text-align: center;
+        }
+        .summary-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .summary-label {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        .employees-section {
+            margin-top: 30px;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        .employee {
+            border: 1px solid #ddd;
+            margin: 15px 0;
+            padding: 20px;
+            border-radius: 8px;
+            background: white;
+            page-break-inside: avoid;
+        }
+        .employee-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .employee-info {
+            flex: 1;
+        }
+        .employee-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0;
+        }
+        .employee-email {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+        .employee-department {
+            color: #34495e;
+            font-size: 14px;
+        }
+        .vacation-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+        }
+        .badge-good { background: #27ae60; }
+        .badge-warning { background: #f39c12; }
+        .badge-critical { background: #e74c3c; }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 12px;
+            border-top: 1px solid #ecf0f1;
+            padding-top: 20px;
+        }
+        @media print {
+            body { margin: 0; }
+            .summary { 
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .vacation-badge {
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">🏖️ Vacation Days Report</h1>
+        <p class="subtitle">Comprehensive overview of employee vacation balances</p>
+        <p class="date">Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+    </div>
+
+    <div class="summary">
+        <div class="summary-item">
+            <div class="summary-number">${reportData.length}</div>
+            <div class="summary-label">Total Employees</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-number">${reportData.filter(emp => emp.vacationDaysLeft === 0).length}</div>
+            <div class="summary-label">No Days Left</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-number">${Math.round(reportData.reduce((acc, emp) => acc + emp.vacationDaysLeft, 0) / reportData.length) || 0}</div>
+            <div class="summary-label">Average Days</div>
+        </div>
+    </div>
+
+    <div class="employees-section">
+        <h2 class="section-title">Employee Details</h2>
+        ${reportData.map(employee => `
+            <div class="employee">
+                <div class="employee-header">
+                    <div class="employee-info">
+                        <h3 class="employee-name">${employee.name}</h3>
+                        <p class="employee-email">${employee.email}</p>
+                        <p class="employee-department">Department: ${employee.department}</p>
+                    </div>
+                    <div class="vacation-badge ${
+                        employee.vacationDaysLeft === 0 ? 'badge-critical' : 
+                        employee.vacationDaysLeft <= 5 ? 'badge-warning' : 'badge-good'
+                    }">
+                        ${employee.vacationDaysLeft} days
+                        ${employee.vacationDaysLeft === 0 ? '❌' : 
+                          employee.vacationDaysLeft <= 5 ? '⚠️' : '✅'}
+                    </div>
+                </div>
+            </div>
+        `).join('')}
+    </div>
+
+    <div class="footer">
+        <p>This report was generated automatically by the HR ERP System</p>
+        <p>For questions or concerns, please contact your HR department</p>
+    </div>
+
+    <script>
+        // Auto-print when page loads
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+                setTimeout(function() {
+                    window.close();
+                }, 1000);
+            }, 500);
+        }
+    </script>
+</body>
+</html>`;
+
+    // Open new window with the report
+    const printWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
+    
+    if (!printWindow) {
+        alert('Please allow pop-ups for this site to enable printing.');
+        return;
+    }
+
+    printWindow.document.write(reportHTML);
+    printWindow.document.close();
+    
+    console.log('✅ Print window created successfully');
   };
 
   // Filter functions
@@ -1167,7 +1401,11 @@ const AdminDashboard = () => {
                     <div className="card-content">
                       <div className="info-row">
                         <span className="info-label">Type:</span>
-                        <span className="info-value">{form.type}</span>
+                        <span className="info-value">
+                          {form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
+                           form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                           form.type}
+                        </span>
                       </div>
                       <div className="info-row">
                         <span className="info-label">Duration:</span>
@@ -1251,7 +1489,11 @@ const AdminDashboard = () => {
                     <div className="card-content">
                       <div className="info-row">
                         <span className="info-label">Type:</span>
-                        <span className="info-value">{form.type}</span>
+                        <span className="info-value">
+                          {form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
+                           form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                           form.type}
+                        </span>
                       </div>
                       <div className="info-row">
                         <span className="info-label">Duration:</span>
@@ -1383,7 +1625,11 @@ const AdminDashboard = () => {
                     <div className="card-content">
                       <div className="info-row">
                         <span className="info-label">Type:</span>
-                        <span className="info-value">{form.type}</span>
+                        <span className="info-value">
+                          {form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
+                           form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                           form.type}
+                        </span>
                       </div>
                       <div className="info-row">
                         <span className="info-label">Duration:</span>
@@ -1435,7 +1681,7 @@ const AdminDashboard = () => {
                           )}
                           {form.adminComment && (
                             <div className="comment-block admin-comment">
-                              <strong>HR:</strong> {form.adminComment}
+                              <strong>HR ({form.adminApprovedBy?.name || 'Unknown'}):</strong> {form.adminComment}
                             </div>
                           )}
                         </div>
@@ -1837,7 +2083,7 @@ const AdminDashboard = () => {
               <div className="report-actions">
                 <button 
                   className="btn-print-report"
-                  onClick={handlePrint}
+                  onClick={handlePrintSimple}
                 >
                   🖨️ Print Report
                 </button>

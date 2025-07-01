@@ -551,7 +551,11 @@ const ManagerDashboard = ({ onLogout }) => {
               {myForms.map(form => (
                 <div key={form._id} className="my-form-card manager-own-form">
                   <div className="form-header">
-                    <h4>{form.type.toUpperCase()}</h4>
+                    <h4>
+                      {form.type === 'vacation' && form.vacationType === 'annual' ? 'ANNUAL VACATION' :
+                       form.type === 'vacation' && form.vacationType === 'unpaid' ? 'UNPAID VACATION' :
+                       form.type.toUpperCase()}
+                    </h4>
                     {getStatusBadge(form.status)}
                   </div>
                   
@@ -613,10 +617,28 @@ const ManagerDashboard = ({ onLogout }) => {
                         <p>{form.managerComment}</p>
                       </div>
                     )}
+
+                    {form.adminApprovedBy && (
+                      <div className="comment-section admin-action-section">
+                        <strong>
+                          {form.status === 'rejected' ? 'رفض من الموارد البشرية' : 'موافقة من الموارد البشرية'}:
+                        </strong>
+                        <p style={{ color: form.status === 'rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
+                          🏢 {form.adminApprovedBy.name}
+                          {form.adminApprovedAt && (
+                            <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
+                              {' '}في {new Date(form.adminApprovedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    )}
                     
                     {form.adminComment && (
                       <div className="comment-section">
-                        <strong>{t('adminComment')}:</strong>
+                        <strong>
+                          {form.adminApprovedBy ? `الموارد البشرية (${form.adminApprovedBy.name})` : 'الموارد البشرية'}:
+                        </strong>
                         <p>{form.adminComment}</p>
                       </div>
                     )}
@@ -646,7 +668,11 @@ const ManagerDashboard = ({ onLogout }) => {
               {teamForms.map(form => (
                 <div key={form._id} className="my-form-card team-request-card">
                   <div className="form-header">
-                    <h4>{form.user.name} - {form.type.toUpperCase()}</h4>
+                    <h4>
+                      {form.user.name} - {form.type === 'vacation' && form.vacationType === 'annual' ? 'ANNUAL VACATION' :
+                                          form.type === 'vacation' && form.vacationType === 'unpaid' ? 'UNPAID VACATION' :
+                                          form.type.toUpperCase()}
+                    </h4>
                     {getStatusBadge(form.status)}
                   </div>
                   
@@ -710,10 +736,28 @@ const ManagerDashboard = ({ onLogout }) => {
                         <p>{form.managerComment}</p>
                       </div>
                     )}
+
+                    {form.adminApprovedBy && (
+                      <div className="comment-section admin-action-section">
+                        <strong>
+                          {form.status === 'rejected' ? 'رفض من الموارد البشرية' : 'موافقة من الموارد البشرية'}:
+                        </strong>
+                        <p style={{ color: form.status === 'rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
+                          🏢 {form.adminApprovedBy.name}
+                          {form.adminApprovedAt && (
+                            <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
+                              {' '}في {new Date(form.adminApprovedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    )}
                     
                     {form.adminComment && (
                       <div className="comment-section">
-                        <strong>{t('adminComment')}:</strong>
+                        <strong>
+                          {form.adminApprovedBy ? `الموارد البشرية (${form.adminApprovedBy.name})` : 'الموارد البشرية'}:
+                        </strong>
                         <p>{form.adminComment}</p>
                       </div>
                     )}
@@ -792,7 +836,9 @@ const ManagerDashboard = ({ onLogout }) => {
             {pendingForms.map(form => (
               <div key={form._id} className="request-card team-request-card">
                 <div className="request-info">
-                  <h4>{form.user.name} - {form.type.toUpperCase()}</h4>
+                  <h4>{form.user.name} - {form.type === 'vacation' && form.vacationType === 'annual' ? 'ANNUAL VACATION' :
+                                        form.type === 'vacation' && form.vacationType === 'unpaid' ? 'UNPAID VACATION' :
+                                        form.type.toUpperCase()}</h4>
                   <p><strong>{t('department')}:</strong> {form.user.department}</p>
                   
                   {/* Display different information based on form type */}
@@ -874,7 +920,9 @@ const ManagerDashboard = ({ onLogout }) => {
             {selectedForm && (
               <div className="modal-body">
                 <div className="request-summary">
-                  <h4>{selectedForm.user.name} - {selectedForm.type.toUpperCase()}</h4>
+                  <h4>{selectedForm.user.name} - {selectedForm.type === 'vacation' && selectedForm.vacationType === 'annual' ? 'ANNUAL VACATION' :
+                                                selectedForm.type === 'vacation' && selectedForm.vacationType === 'unpaid' ? 'UNPAID VACATION' :
+                                                selectedForm.type.toUpperCase()}</h4>
                   <p><strong>{t('department')}:</strong> {selectedForm.user.department}</p>
                   
                   {/* Display different information based on form type */}

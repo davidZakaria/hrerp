@@ -244,6 +244,7 @@ router.get('/admin', auth, async (req, res) => {
         const forms = await Form.find(filter)
             .populate('user', 'name email department role')
             .populate('managerApprovedBy', 'name')
+            .populate('adminApprovedBy', 'name')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -401,6 +402,7 @@ router.get('/manager/team-forms', auth, async (req, res) => {
         })
         .populate('user', 'name email department')
         .populate('managerApprovedBy', 'name')
+        .populate('adminApprovedBy', 'name')
         .sort({ createdAt: -1 });
 
         res.json(forms);
@@ -573,6 +575,7 @@ router.get('/my-forms', auth, async (req, res) => {
 
         const forms = await Form.find({ user: req.user.id })
             .populate('managerApprovedBy', 'name')
+            .populate('adminApprovedBy', 'name')
             .populate('user', 'name email department')
             .sort({ createdAt: -1 });
         
@@ -609,6 +612,7 @@ router.get('/manager/personal-forms', auth, async (req, res) => {
             user: manager._id  // Only forms submitted by the manager themselves
         })
         .populate('managerApprovedBy', 'name')
+        .populate('adminApprovedBy', 'name')
         .populate('user', 'name email department')
         .sort({ createdAt: -1 });
 
@@ -789,6 +793,8 @@ router.put('/:id', auth, async (req, res) => {
 
             form.status = status;
             form.adminComment = adminComment;
+            form.adminApprovedBy = user._id;
+            form.adminApprovedAt = new Date();
             form.updatedAt = Date.now();
 
             await form.save();
@@ -857,6 +863,17 @@ router.delete('/:id', auth, async (req, res) => {
         if (!form) {
             console.log('❌ Form not found for deletion:', req.params.id);
             return res.status(404).json({ msg: 'Form not found' });
+        }
+
+        // Clear relevant caches after form deletion
+        cache.delete('forms-admin');
+        cache.delete(`forms-${form.user}`);
+        
+        // Clear all cache entries that might contain form data
+        for (let key of cache.keys()) {
+            if (key.includes('forms-admin') || key.includes('forms')) {
+                cache.delete(key);
+            }
         }
 
         console.log('✅ Form deleted successfully:', {

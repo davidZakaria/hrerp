@@ -75,6 +75,13 @@ const formSchema = new mongoose.Schema({
     managerApprovedAt: {
         type: Date
     },
+    adminApprovedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    adminApprovedAt: {
+        type: Date
+    },
     fromHour: String,
     toHour: String,
     // Working from home fields

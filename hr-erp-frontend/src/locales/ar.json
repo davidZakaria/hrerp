@@ -121,6 +121,8 @@
     "rejectedBy": "رفض من",
     "managerComment": "تعليق المدير",
     "adminComment": "تعليق المدير العام",
+    "hrAction": "إجراء الموارد البشرية",
+    "hrComment": "تعليق الموارد البشرية",
     "medicalDocument": "المستند الطبي",
     "uploadDocument": "رفع مستند",
     "viewDocument": "عرض المستند",
@@ -291,6 +293,24 @@
     "Driver": "السائق",
     "Other": "أخرى"
   },
+  "employee": "الموظف",
+  "department": "القسم",
+  "submitted": "مقدم في",
+  "dates": "التواريخ",
+  "duration": "المدة",
+  "type": "النوع",
+  "excuseDate": "تاريخ الاستئذان",
+  "reason": "السبب",
+  "myTeamMembers": "أعضاء فريقي",
+  "noFormsFoundFromYourTeamMembers": "لم يتم العثور على طلبات من أعضاء فريقك",
+  "yourTeamMembersHaventSubmittedAnyFormsYetOrYouDontHaveAnyManagedDepartmentsAssigned": "لم يقدم أعضاء فريقك أي طلبات بعد، أو ليس لديك أي أقسام مخصصة لإدارتها",
+  "employeesFromYourManagedDepartments": "الموظفون من الأقسام المدارة: {{departments}}",
+  "noTeamMembersFoundInYourManagedDepartments": "لم يتم العثور على أعضاء فريق في الأقسام المدارة",
+  "managerComment": "تعليق المدير",
+  "adminComment": "تعليق المدير العام",
+  "rejectedByManager": "مرفوض من المدير",
+  "approvedByManager": "موافق عليه من المدير",
+  "on": "في",
   "managerDashboard": {
     "managerDashboard": "لوحة تحكم المدير",
     "welcome": "مرحباً",
@@ -355,5 +375,10 @@
     "addAnyCommentsAboutThisApproval": "أضف أي تعليقات حول هذه الموافقة...",
     "pleaseProvideAClearReasonForRejection": "يرجى تقديم سبب واضح للرفض...",
     "aReasonForRejectionIsRequired": "سبب الرفض مطلوب"
-  }
+  },
+  "timePeriod": "الفترة الزمنية",
+  "workFromHomeHours": "ساعات العمل من المنزل",
+  "workDescription": "وصف العمل",
+  "sickLeaveDates": "تواريخ الإجازة المرضية",
+  "daysLeft": "أيام متبقية"
 } 

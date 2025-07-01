@@ -230,12 +230,15 @@ router.get('/download', auth, async (req, res) => {
 // Clear old audit logs (Super Admin only)
 router.post('/clear', auth, async (req, res) => {
   try {
+    console.log('Clear audit logs request received:', req.body);
+    
     const user = await User.findById(req.user.id);
     if (user.role !== 'super_admin') {
       return res.status(403).json({ msg: 'Access denied. Super Admin required.' });
     }
 
     const { olderThanDays, confirmClear, deleteAll } = req.body;
+    console.log('Request parameters:', { olderThanDays, confirmClear, deleteAll });
 
     if (!confirmClear) {
       return res.status(400).json({ msg: 'Confirmation required to clear audit logs' });
@@ -243,10 +246,13 @@ router.post('/clear', auth, async (req, res) => {
 
     let deleteResult;
     let totalBefore = await Audit.countDocuments();
+    console.log('Total audit logs before deletion:', totalBefore);
 
     if (deleteAll) {
+      console.log('Deleting ALL audit logs...');
       // Delete ALL audit logs
       deleteResult = await Audit.deleteMany({});
+      console.log('Delete ALL result:', deleteResult);
       
       // Log the clear action (this will be the only log left)
       await createAuditLog({
@@ -269,16 +275,20 @@ router.post('/clear', auth, async (req, res) => {
       const daysToKeep = olderThanDays || 90; // Default to keep 90 days
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+      
+      console.log(`Deleting logs older than ${daysToKeep} days (before ${cutoffDate.toISOString()})...`);
 
       // Get count before deletion
       const toDeleteCount = await Audit.countDocuments({
         timestamp: { $lt: cutoffDate }
       });
+      console.log('Logs to be deleted:', toDeleteCount);
 
       // Delete old audit logs
       deleteResult = await Audit.deleteMany({
         timestamp: { $lt: cutoffDate }
       });
+      console.log('Delete by date result:', deleteResult);
 
       // Log the clear action
       await createAuditLog({
@@ -301,6 +311,8 @@ router.post('/clear', auth, async (req, res) => {
     }
 
     const totalAfter = await Audit.countDocuments();
+    console.log('Total audit logs after deletion:', totalAfter);
+    console.log('Final delete result:', deleteResult);
 
     res.json({
       success: true,
@@ -313,7 +325,8 @@ router.post('/clear', auth, async (req, res) => {
     });
   } catch (err) {
     console.error('Error clearing audit logs:', err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Full error stack:', err.stack);
+    res.status(500).json({ msg: 'Server error', error: err.message });
   }
 });
 

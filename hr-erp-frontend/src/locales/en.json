@@ -120,6 +120,8 @@
     "rejectedBy": "Rejected by",
     "managerComment": "Manager Comment",
     "adminComment": "Admin Comment",
+    "hrAction": "HR Action",
+    "hrComment": "HR Comment",
     "medicalDocument": "Medical Document",
     "uploadDocument": "Upload Document",
     "viewDocument": "View Document",

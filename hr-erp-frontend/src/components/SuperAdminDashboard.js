@@ -91,7 +91,7 @@ const SuperAdminDashboard = () => {
     setError('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5000/api/users/all', {
+      const res = await fetch('http://localhost:5001/api/users/all', {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -111,7 +111,7 @@ const SuperAdminDashboard = () => {
     setError('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5000/api/forms/all', {
+      const res = await fetch('http://localhost:5001/api/forms/all', {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -137,7 +137,7 @@ const SuperAdminDashboard = () => {
         ...auditFilters
       });
       
-      const res = await fetch(`http://localhost:5000/api/audit?${queryParams}`, {
+      const res = await fetch(`http://localhost:5001/api/audit?${queryParams}`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -156,7 +156,7 @@ const SuperAdminDashboard = () => {
   const fetchAuditStats = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5000/api/audit/stats', {
+      const res = await fetch('http://localhost:5001/api/audit/stats', {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -209,7 +209,7 @@ const SuperAdminDashboard = () => {
     setSuccess('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:5000/api/users/super/${selectedUser._id}`, {
+      const res = await fetch(`http://localhost:5001/api/users/super/${selectedUser._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -244,7 +244,7 @@ const SuperAdminDashboard = () => {
     setSuccess('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5000/api/users', {
+      const res = await fetch('http://localhost:5001/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -343,7 +343,7 @@ const SuperAdminDashboard = () => {
     setSuccess('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:5000/api/forms/${formId}`, {
+      const res = await fetch(`http://localhost:5001/api/forms/${formId}`, {
         method: 'DELETE',
         headers: { 'x-auth-token': token }
       });
@@ -367,7 +367,7 @@ const SuperAdminDashboard = () => {
     setSuccess('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:5000/api/forms/${selectedForm._id}`, {
+      const res = await fetch(`http://localhost:5001/api/forms/${selectedForm._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -400,8 +400,7 @@ const SuperAdminDashboard = () => {
           `"${form.user?.name || 'Unknown'}"`,
           `"${form.user?.email || 'Unknown'}"`,
           `"${form.user?.department || 'N/A'}"`,
-          `"${form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
-           form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+          `"${form.type === 'vacation' ? 'Annual Vacation' :
            form.type.replace('_', ' ')}"`,
           `"${form.status || 'N/A'}"`,
           `"${form.startDate ? new Date(form.startDate).toLocaleDateString() : 'N/A'}"`,
@@ -439,7 +438,7 @@ const SuperAdminDashboard = () => {
         ...auditFilters
       });
       
-      const response = await fetch(`http://localhost:5000/api/audit/download?${queryParams}`, {
+      const response = await fetch(`http://localhost:5001/api/audit/download?${queryParams}`, {
         headers: { 'x-auth-token': token }
       });
       
@@ -471,7 +470,7 @@ const SuperAdminDashboard = () => {
       setClearLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:5000/api/audit/clear', {
+      const response = await fetch('http://localhost:5001/api/audit/clear', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -695,7 +694,7 @@ const SuperAdminDashboard = () => {
                             </div>
                             <div className="info-item">
                               <span className="info-label">Vacation Days:</span>
-                              <span className="info-value vacation-days">{user.vacationDaysLeft || 0} days</span>
+                              <span className="info-value vacation-days">{Number(user.vacationDaysLeft || 0).toFixed(1)} days</span>
                             </div>
                             <div className="info-item">
                               <span className="info-label">Joined:</span>
@@ -970,8 +969,7 @@ const SuperAdminDashboard = () => {
                           </div>
                           <div className="form-basic-info">
                             <div className="form-type">
-                              {form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
-                               form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                              {form.type === 'vacation' ? 'Annual Vacation' :
                                form.type.replace('_', ' ')}
                             </div>
                             <div className="form-employee">{form.user?.name || 'Unknown User'}</div>
@@ -981,8 +979,7 @@ const SuperAdminDashboard = () => {
                               className="form-type-badge"
                               style={{ backgroundColor: getFormTypeColor(form.type) }}
                             >
-                              {form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
-                               form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                              {form.type === 'vacation' ? 'Annual Vacation' :
                                form.type.replace('_', ' ')}
                             </span>
                             <span 
@@ -1004,19 +1001,64 @@ const SuperAdminDashboard = () => {
                               <span className="info-label">Department:</span>
                               <span className="info-value">{form.user?.department || 'N/A'}</span>
                             </div>
-                            <div className="info-item">
-                              <span className="info-label">Duration:</span>
-                              <span className="info-value">
-                                {form.startDate && form.endDate ? 
-                                  `${new Date(form.startDate).toLocaleDateString()} - ${new Date(form.endDate).toLocaleDateString()}` : 
-                                  'N/A'
-                                }
-                              </span>
-                            </div>
-                            <div className="info-item">
-                              <span className="info-label">Days Requested:</span>
-                              <span className="info-value">{form.days || 'N/A'} days</span>
-                            </div>
+                            {form.type === 'excuse' && (
+                              <>
+                                <div className="info-item">
+                                  <span className="info-label">Excuse Type:</span>
+                                  <span className="info-value" style={{ color: form.excuseType === 'paid' ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>
+                                    {form.excuseType === 'paid' ? '💰 Paid' : '📝 Unpaid'}
+                                  </span>
+                                </div>
+                                <div className="info-item">
+                                  <span className="info-label">Excuse Date:</span>
+                                  <span className="info-value">{form.excuseDate ? new Date(form.excuseDate).toLocaleDateString() : 'N/A'}</span>
+                                </div>
+                                <div className="info-item">
+                                  <span className="info-label">Time:</span>
+                                  <span className="info-value">
+                                    {form.fromHour && form.toHour ? `${form.fromHour} - ${form.toHour}` : 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="info-item">
+                                  <span className="info-label">Duration:</span>
+                                  <span className="info-value">
+                                    {form.fromHour && form.toHour ? 
+                                      `${((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours` : 
+                                      'N/A'}
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            {form.type === 'vacation' && (
+                              <>
+                                <div className="info-item">
+                                  <span className="info-label">Duration:</span>
+                                  <span className="info-value">
+                                    {form.startDate && form.endDate ? 
+                                      `${new Date(form.startDate).toLocaleDateString()} - ${new Date(form.endDate).toLocaleDateString()}` : 
+                                      'N/A'
+                                    }
+                                  </span>
+                                </div>
+                                <div className="info-item">
+                                  <span className="info-label">Days Requested:</span>
+                                  <span className="info-value">{form.days || 'N/A'} days</span>
+                                </div>
+                              </>
+                            )}
+                            {form.type !== 'vacation' && form.type !== 'excuse' && (
+                              <>
+                                <div className="info-item">
+                                  <span className="info-label">Duration:</span>
+                                  <span className="info-value">
+                                    {form.startDate && form.endDate ? 
+                                      `${new Date(form.startDate).toLocaleDateString()} - ${new Date(form.endDate).toLocaleDateString()}` : 
+                                      'N/A'
+                                    }
+                                  </span>
+                                </div>
+                              </>
+                            )}
                           </div>
                           
                           {form.reason && (
@@ -1368,8 +1410,7 @@ const SuperAdminDashboard = () => {
             <div className="modal-header">
               <h2 className="text-gradient">
                 {Object.keys(formEditData).length > 0 ? 'Edit Form' : 'View Form'}: {
-                  selectedForm.type === 'vacation' && selectedForm.vacationType === 'annual' ? 'Annual Vacation' :
-                  selectedForm.type === 'vacation' && selectedForm.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                  selectedForm.type === 'vacation' ? 'Annual Vacation' :
                   selectedForm.type?.replace('_', ' ')
                 }
               </h2>
@@ -1498,8 +1539,9 @@ const SuperAdminDashboard = () => {
                     <div className="info-item">
                       <span className="info-label">Form Type:</span>
                       <span className="info-value">
-                        {selectedForm.type === 'vacation' && selectedForm.vacationType === 'annual' ? 'Annual Vacation' :
-                         selectedForm.type === 'vacation' && selectedForm.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                        {selectedForm.type === 'vacation' ? 'Annual Vacation' :
+                         selectedForm.type === 'excuse' && selectedForm.excuseType === 'paid' ? '💰 Paid Excuse' :
+                         selectedForm.type === 'excuse' && selectedForm.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
                          selectedForm.type?.replace('_', ' ') || 'N/A'}
                       </span>
                     </div>
@@ -1511,18 +1553,43 @@ const SuperAdminDashboard = () => {
                       <span className="info-label">Submitted:</span>
                       <span className="info-value">{new Date(selectedForm.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <div className="info-item">
-                      <span className="info-label">Start Date:</span>
-                      <span className="info-value">{selectedForm.startDate ? new Date(selectedForm.startDate).toLocaleDateString() : 'N/A'}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">End Date:</span>
-                      <span className="info-value">{selectedForm.endDate ? new Date(selectedForm.endDate).toLocaleDateString() : 'N/A'}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Days Requested:</span>
-                      <span className="info-value">{selectedForm.days || 'N/A'}</span>
-                    </div>
+                    {selectedForm.type === 'excuse' ? (
+                      <>
+                        <div className="info-item">
+                          <span className="info-label">Excuse Date:</span>
+                          <span className="info-value">{selectedForm.excuseDate ? new Date(selectedForm.excuseDate).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Time Period:</span>
+                          <span className="info-value">
+                            {selectedForm.fromHour && selectedForm.toHour ? `${selectedForm.fromHour} - ${selectedForm.toHour}` : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Duration:</span>
+                          <span className="info-value">
+                            {selectedForm.fromHour && selectedForm.toHour ? 
+                              `${((new Date(`2000-01-01T${selectedForm.toHour}`) - new Date(`2000-01-01T${selectedForm.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours` : 
+                              'N/A'}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="info-item">
+                          <span className="info-label">Start Date:</span>
+                          <span className="info-value">{selectedForm.startDate ? new Date(selectedForm.startDate).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">End Date:</span>
+                          <span className="info-value">{selectedForm.endDate ? new Date(selectedForm.endDate).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Days Requested:</span>
+                          <span className="info-value">{selectedForm.days || 'N/A'}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
                 

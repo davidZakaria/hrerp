@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import ALS from './ALS/ALS';
+import ATSDashboard from './ATS/ATSDashboard';
 import LogoutButton from './LogoutButton';
 import ExportPrintButtons from './ExportPrintButtons';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
@@ -97,37 +98,45 @@ const AdminDashboard = () => {
 
   // Fetch vacation days for a user
   const fetchVacationDays = useCallback(async (userId) => {
-    if (!userId || vacationDaysMap[userId] !== undefined) return;
+    if (!userId) return;
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:5000/api/forms/vacation-days/${userId}`, {
+      const res = await fetch(`http://localhost:5001/api/forms/vacation-days/${userId}`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
       if (res.ok) {
-        setVacationDaysMap(prev => ({ ...prev, [userId]: data.vacationDaysLeft }));
+        setVacationDaysMap(prev => {
+          // Only update if userId is not already in the map to prevent unnecessary rerenders
+          if (prev[userId] !== undefined) return prev;
+          return { ...prev, [userId]: data.vacationDaysLeft };
+        });
       }
     } catch (err) {
       // ignore
     }
-  }, [vacationDaysMap]);
+  }, []); // No dependencies - stable function
 
   // Fetch excuse hours for a user
   const fetchExcuseHours = useCallback(async (userId) => {
-    if (!userId || excuseHoursMap[userId] !== undefined) return;
+    if (!userId) return;
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:5000/api/forms/excuse-hours/${userId}`, {
+      const res = await fetch(`http://localhost:5001/api/forms/excuse-hours/${userId}`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
       if (res.ok) {
-        setExcuseHoursMap(prev => ({ ...prev, [userId]: data.excuseHoursLeft }));
+        setExcuseHoursMap(prev => {
+          // Only update if userId is not already in the map to prevent unnecessary rerenders
+          if (prev[userId] !== undefined) return prev;
+          return { ...prev, [userId]: data.excuseHoursLeft };
+        });
       }
     } catch (err) {
       // ignore
     }
-  }, [excuseHoursMap]);
+  }, []); // No dependencies - stable function
 
   // Fetch all forms
   const fetchForms = useCallback(async () => {
@@ -137,7 +146,7 @@ const AdminDashboard = () => {
     const token = localStorage.getItem('token');
     try {
       console.log('🔄 Fetching admin forms...');
-      const res = await axios.get('http://localhost:5000/api/forms/admin', {
+      const res = await axios.get('http://localhost:5001/api/forms/admin', {
         headers: { 'x-auth-token': token }
       });
       const data = res.data;
@@ -172,7 +181,7 @@ const AdminDashboard = () => {
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/auth', {
+      const res = await axios.get('http://localhost:5001/api/auth/me', {
         headers: { 'x-auth-token': token }
       });
       setCurrentUser(res.data);
@@ -187,7 +196,7 @@ const AdminDashboard = () => {
     setUsersError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/users', {
+      const res = await axios.get('http://localhost:5001/api/users', {
         headers: { 'x-auth-token': token }
       });
       const allUsers = res.data;
@@ -204,7 +213,7 @@ const AdminDashboard = () => {
   const handleApproveUser = async (userId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/users/${userId}/status`, 
+      await axios.put(`http://localhost:5001/api/users/${userId}/status`, 
         { status: 'active' },
         { headers: { 'x-auth-token': token } }
       );
@@ -220,7 +229,7 @@ const AdminDashboard = () => {
     if (window.confirm('Are you sure you want to reject this user registration?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5000/api/users/${userId}`, {
+        await axios.delete(`http://localhost:5001/api/users/${userId}`, {
           headers: { 'x-auth-token': token }
         });
         setMessage('User registration rejected');
@@ -236,7 +245,7 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/users', 
+      await axios.post('http://localhost:5001/api/users', 
         { ...newUser, status: 'active' }, // Admin-created users are active by default
         { headers: { 'x-auth-token': token } }
       );
@@ -277,7 +286,7 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/users/${editingUser._id}`, 
+      await axios.put(`http://localhost:5001/api/users/${editingUser._id}`, 
         editUserData,
         { headers: { 'x-auth-token': token } }
       );
@@ -337,7 +346,7 @@ const AdminDashboard = () => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5000/api/users/${userId}`, {
+        await axios.delete(`http://localhost:5001/api/users/${userId}`, {
           headers: { 'x-auth-token': token }
         });
         setMessage('User deleted successfully');
@@ -382,7 +391,7 @@ const AdminDashboard = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      const res = await fetch(`http://localhost:5000/api/forms/${id}`, {
+      const res = await fetch(`http://localhost:5001/api/forms/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -500,7 +509,7 @@ const AdminDashboard = () => {
       const token = localStorage.getItem('token');
       setFormsError('');
       
-      const deleteUrl = `http://localhost:5000/api/forms/${id}`;
+      const deleteUrl = `http://localhost:5001/api/forms/${id}`;
       console.log('🗑️ Deleting form with URL:', deleteUrl);
       console.log('🗑️ Form ID:', id);
       
@@ -535,7 +544,7 @@ const AdminDashboard = () => {
     setReportError('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5000/api/forms/vacation-days-report', {
+      const res = await fetch('http://localhost:5001/api/forms/vacation-days-report', {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -556,7 +565,7 @@ const AdminDashboard = () => {
     setVacationManagerSuccess('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5000/api/forms/vacation-days-report', {
+      const res = await fetch('http://localhost:5001/api/forms/vacation-days-report', {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -586,7 +595,7 @@ const AdminDashboard = () => {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:5000/api/users/${userId}/vacation-days`, {
+      const res = await fetch(`http://localhost:5001/api/users/${userId}/vacation-days`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -886,14 +895,16 @@ const AdminDashboard = () => {
     } else if (activeTab === 'users' || activeTab === 'overview') {
       fetchUsers();
     }
-  }, [activeTab, fetchForms]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]); // Only depend on activeTab, not fetchForms
 
-  // Initial load
+  // Initial load - run once on mount
   useEffect(() => {
     fetchCurrentUser();
     fetchUsers();
     fetchForms();
-  }, [fetchForms]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - run only once on mount
 
   // Auto-refresh forms every 30 seconds to keep data synchronized
   useEffect(() => {
@@ -905,7 +916,8 @@ const AdminDashboard = () => {
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, [activeTab, fetchForms]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]); // Only depend on activeTab, not fetchForms
 
   // Refresh when page becomes visible (user switches back to tab)
   useEffect(() => {
@@ -918,7 +930,8 @@ const AdminDashboard = () => {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [activeTab, fetchForms]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]); // Only depend on activeTab, not fetchForms
 
   if (usersLoading && activeTab === 'overview') {
     return (
@@ -1402,8 +1415,7 @@ const AdminDashboard = () => {
                       <div className="info-row">
                         <span className="info-label">Type:</span>
                         <span className="info-value">
-                          {form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
-                           form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                          {form.type === 'vacation' ? 'Annual Vacation' :
                            form.type}
                         </span>
                       </div>
@@ -1490,16 +1502,32 @@ const AdminDashboard = () => {
                       <div className="info-row">
                         <span className="info-label">Type:</span>
                         <span className="info-value">
-                          {form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
-                           form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                          {form.type === 'vacation' ? 'Annual Vacation' :
+                           form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
+                           form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
                            form.type}
                         </span>
                       </div>
+                      {form.type === 'excuse' && (
+                        <div className="info-row">
+                          <span className="info-label">Excuse Date:</span>
+                          <span className="info-value">{form.excuseDate?.slice(0,10) || 'N/A'}</span>
+                        </div>
+                      )}
                       <div className="info-row">
                         <span className="info-label">Duration:</span>
                         <span className="info-value">
                           {form.type === 'vacation' ? (
                             `${form.startDate?.slice(0,10)} to ${form.endDate?.slice(0,10)}`
+                          ) : form.type === 'excuse' ? (
+                            <>
+                              {form.fromHour || 'N/A'} to {form.toHour || 'N/A'}
+                              {form.fromHour && form.toHour && (
+                                <span style={{ marginLeft: '0.5rem', color: '#4caf50' }}>
+                                  ({((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours)
+                                </span>
+                              )}
+                            </>
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -1511,7 +1539,7 @@ const AdminDashboard = () => {
                           {form.user?._id ? (
                             vacationDaysMap[form.user._id] !== undefined ? (
                               <>
-                                {vacationDaysMap[form.user._id]}
+                                {Number(vacationDaysMap[form.user._id]).toFixed(1)}
                                 {vacationDaysMap[form.user._id] === 0 && (
                                   <span className="no-days-warning"> (No days left!)</span>
                                 )}
@@ -1626,16 +1654,32 @@ const AdminDashboard = () => {
                       <div className="info-row">
                         <span className="info-label">Type:</span>
                         <span className="info-value">
-                          {form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
-                           form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                          {form.type === 'vacation' ? 'Annual Vacation' :
+                           form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
+                           form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
                            form.type}
                         </span>
                       </div>
+                      {form.type === 'excuse' && (
+                        <div className="info-row">
+                          <span className="info-label">Excuse Date:</span>
+                          <span className="info-value">{form.excuseDate?.slice(0,10) || 'N/A'}</span>
+                        </div>
+                      )}
                       <div className="info-row">
                         <span className="info-label">Duration:</span>
                         <span className="info-value">
                           {form.type === 'vacation' ? (
                             `${form.startDate?.slice(0,10)} to ${form.endDate?.slice(0,10)}`
+                          ) : form.type === 'excuse' ? (
+                            <>
+                              {form.fromHour || 'N/A'} to {form.toHour || 'N/A'}
+                              {form.fromHour && form.toHour && (
+                                <span style={{ marginLeft: '0.5rem', color: '#4caf50' }}>
+                                  ({((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours)
+                                </span>
+                              )}
+                            </>
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -1718,17 +1762,7 @@ const AdminDashboard = () => {
         {/* ATS System Tab */}
         {activeTab === 'ats' && (
           <div className="ats-section">
-            <div className="section-header">
-              <h2 className="section-title">🎯 Applicant Tracking System</h2>
-              <div className="section-actions">
-                <div className="ats-info-badge">
-                  Professional Recruitment Management
-                </div>
-              </div>
-            </div>
-            <div className="ats-wrapper">
-              <ALS />
-            </div>
+            <ATSDashboard />
           </div>
         )}
       </div>
@@ -2149,7 +2183,7 @@ const AdminDashboard = () => {
                           <p className="employee-card-email">{employee.email}</p>
                         </div>
                         <div className={`vacation-badge ${employee.vacationDaysLeft === 0 ? 'critical' : employee.vacationDaysLeft <= 5 ? 'warning' : 'good'}`}>
-                          {employee.vacationDaysLeft} days
+                          {Number(employee.vacationDaysLeft).toFixed(1)} days
                         </div>
                       </div>
                       

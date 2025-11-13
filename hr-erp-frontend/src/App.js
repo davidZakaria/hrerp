@@ -15,6 +15,7 @@ const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const SuperAdminDashboard = lazy(() => import('./components/SuperAdminDashboard'));
 const ManagerDashboard = lazy(() => import('./components/ManagerDashboard'));
 const ResetPassword = lazy(() => import('./components/Auth/ResetPassword'));
+const JobApplicationForm = lazy(() => import('./components/ATS/JobApplicationForm'));
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -172,10 +173,11 @@ const AuthenticatedApp = () => {
 
   return (
     <ErrorBoundary>
-      <Suspense fallback={<LoadingScreen message="Loading login..." />}>
+      <Suspense fallback={<LoadingScreen message="Loading..." />}>
         <Routes>
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/apply" element={<JobApplicationForm />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Suspense>

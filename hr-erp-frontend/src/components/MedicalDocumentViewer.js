@@ -43,7 +43,7 @@ const MedicalDocumentViewer = ({ form, userRole = 'admin' }) => {
         userRole: userRole
       });
       
-      const response = await axios.get(`http://localhost:5000/api/forms/document/${filename}`, {
+      const response = await axios.get(`http://localhost:5001/api/forms/document/${filename}`, {
         headers: {
           'x-auth-token': token
         },
@@ -124,7 +124,7 @@ const MedicalDocumentViewer = ({ form, userRole = 'admin' }) => {
   const getDocumentInfo = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/forms/document-info/${form._id}`, {
+      const response = await axios.get(`http://localhost:5001/api/forms/document-info/${form._id}`, {
         headers: {
           'x-auth-token': token
         }

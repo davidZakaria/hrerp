@@ -6,6 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { createAuditLog } = require('./audit');
+const { shouldResetExcuseRequests, getNextResetDate } = require('../utils/excuseResetHelper');
 
 // Middleware to verify JWT token
 const auth = require('../middleware/auth');
@@ -110,6 +111,7 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             startDate,
             endDate,
             excuseDate,
+            excuseType,
             sickLeaveStartDate,
             sickLeaveEndDate,
             reason,
@@ -130,14 +132,55 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             if (!startDate || !endDate || !vacationType) {
                 return res.status(400).json({ msg: 'Start date, end date, and vacation type are required for vacation requests' });
             }
+            if (vacationType !== 'annual') {
+                return res.status(400).json({ msg: 'Only annual vacation leave is allowed. Unpaid vacation is no longer available.' });
+            }
             if (new Date(startDate) > new Date(endDate)) {
                 return res.status(400).json({ msg: 'Start date cannot be after end date' });
             }
         }
 
         if (type === 'excuse') {
-            if (!excuseDate || !fromHour || !toHour) {
-                return res.status(400).json({ msg: 'Date, from hour, and to hour are required for excuse requests' });
+            if (!excuseDate || !fromHour || !toHour || !excuseType) {
+                return res.status(400).json({ msg: 'Date, from hour, to hour, and excuse type are required for excuse requests' });
+            }
+            
+            // Get full user data including excuse requests
+            const fullUser = await User.findById(req.user.id);
+            
+            // Calculate hours requested
+            const fromTime = new Date(`2000-01-01T${fromHour}`);
+            const toTime = new Date(`2000-01-01T${toHour}`);
+            const hoursRequested = (toTime - fromTime) / (1000 * 60 * 60);
+            
+            if (excuseType === 'paid') {
+                // For paid excuses: must be exactly 2 hours
+                if (hoursRequested !== 2) {
+                    return res.status(400).json({ 
+                        msg: 'Paid excuse requests must be exactly 2 hours. You requested ' + hoursRequested.toFixed(1) + ' hours.' 
+                    });
+                }
+                
+                // Check if requests need to be reset (25th of each month)
+                if (shouldResetExcuseRequests(fullUser.excuseRequestsResetDate)) {
+                    fullUser.excuseRequestsLeft = 2;
+                    fullUser.excuseRequestsResetDate = new Date();
+                    await fullUser.save();
+                    console.log(`🔄 Excuse requests reset for ${fullUser.name} (monthly reset on 25th)`);
+                }
+                
+                if (fullUser.excuseRequestsLeft <= 0) {
+                    return res.status(400).json({ 
+                        msg: 'You have exhausted your 2 paid excuse requests for this month.' 
+                    });
+                }
+            } else if (excuseType === 'unpaid') {
+                // For unpaid excuses: check if user has at least 0.5 vacation days
+                if (fullUser.vacationDaysLeft < 0.5) {
+                    return res.status(400).json({ 
+                        msg: `Insufficient vacation days for unpaid excuse. You need at least 0.5 days. Available: ${fullUser.vacationDaysLeft.toFixed(1)} days.`
+                    });
+                }
             }
         }
 
@@ -162,6 +205,7 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             }),
             ...(type === 'excuse' && {
                 excuseDate: new Date(excuseDate),
+                excuseType,
                 fromHour,
                 toHour
             }),
@@ -349,18 +393,30 @@ router.get('/vacation-days', auth, async (req, res) => {
 // Optimized excuse hours endpoint with caching
 router.get('/excuse-hours', auth, async (req, res) => {
     try {
-        const cacheKey = `excuse-hours-${req.user.id}`;
+        const cacheKey = `excuse-requests-${req.user.id}`;
         const cachedData = getCachedData(cacheKey);
         if (cachedData) {
             return res.json(cachedData);
         }
 
-        const user = await User.findById(req.user.id).select('excuseHoursLeft');
+        const user = await User.findById(req.user.id).select('excuseRequestsLeft excuseRequestsResetDate');
         if (!user) {
             return res.status(404).json({ msg: 'User not found' });
         }
 
-        const result = { excuseHoursLeft: user.excuseHoursLeft };
+        // Check if requests need to be reset (25th of each month)
+        if (shouldResetExcuseRequests(user.excuseRequestsResetDate)) {
+            user.excuseRequestsLeft = 2;
+            user.excuseRequestsResetDate = new Date();
+            await user.save();
+            console.log(`🔄 Excuse requests reset for user ${user._id} (monthly reset on 25th)`);
+        }
+
+        const result = { 
+            excuseRequestsLeft: user.excuseRequestsLeft || 0,
+            excuseRequestsResetDate: user.excuseRequestsResetDate,
+            nextResetDate: getNextResetDate()
+        };
         setCachedData(cacheKey, result);
         
         res.json(result);
@@ -493,25 +549,59 @@ router.put('/manager/:id', auth, async (req, res) => {
         if (action === 'approve') {
             // For excuse forms, manager approval is final
             if (form.type === 'excuse') {
-                // Handle excuse form approval - deduct from excuse hours allowance immediately
-                const fromTime = new Date(`2000-01-01T${form.fromHour}`);
-                const toTime = new Date(`2000-01-01T${form.toHour}`);
-                const hoursRequested = (toTime - fromTime) / (1000 * 60 * 60);
                 const employee = await User.findById(form.user._id);
                 
-                // Check if employee has enough excuse hours
-                if (employee && (employee.excuseHoursLeft || 0) < hoursRequested) {
-                    return res.status(400).json({ 
-                        msg: `Cannot approve: Employee has insufficient excuse hours (${employee.excuseHoursLeft} hours remaining, ${hoursRequested.toFixed(1)} hours requested)`
-                    });
-                }
-
-                if (employee) {
-                    employee.excuseHoursLeft = Math.max(0, (employee.excuseHoursLeft || 2) - hoursRequested);
+                // Log form details for debugging
+                console.log(`📋 Processing excuse form approval:`);
+                console.log(`   Form ID: ${form._id}`);
+                console.log(`   Employee: ${employee.name}`);
+                console.log(`   Excuse Type: ${form.excuseType}`);
+                console.log(`   Employee vacation balance: ${employee.vacationDaysLeft}`);
+                
+                // For paid excuse requests, deduct from monthly allowance
+                if (form.excuseType === 'paid') {
+                    // Check if requests need to be reset (25th of each month)
+                    if (shouldResetExcuseRequests(employee.excuseRequestsResetDate)) {
+                        employee.excuseRequestsLeft = 2;
+                        employee.excuseRequestsResetDate = new Date();
+                        console.log(`🔄 Excuse requests reset for ${employee.name} during approval (monthly reset on 25th)`);
+                    }
+                    
+                    // Check if employee has requests left
+                    if (employee.excuseRequestsLeft <= 0) {
+                        return res.status(400).json({ 
+                            msg: `Cannot approve: Employee has exhausted their 2 paid excuse requests for this month`
+                        });
+                    }
+                    
+                    // Deduct one request
+                    employee.excuseRequestsLeft = Math.max(0, employee.excuseRequestsLeft - 1);
                     await employee.save();
+                } else if (form.excuseType === 'unpaid') {
+                    // For unpaid excuses, deduct 0.5 vacation days
+                    console.log(`🔍 Processing unpaid excuse for user ${employee.name}, current balance: ${employee.vacationDaysLeft}`);
+                    
+                    if (employee.vacationDaysLeft < 0.5) {
+                        return res.status(400).json({ 
+                            msg: `Cannot approve: Employee has insufficient vacation days. Available: ${employee.vacationDaysLeft}, Required: 0.5`
+                        });
+                    }
+                    
+                    // Store old balance for logging
+                    const oldBalance = employee.vacationDaysLeft;
+                    
+                    // Deduct 0.5 days from vacation
+                    employee.vacationDaysLeft = Math.max(0, employee.vacationDaysLeft - 0.5);
+                    await employee.save();
+                    
+                    console.log(`✅ Unpaid excuse approved - Deducted 0.5 days from ${employee.name}`);
+                    console.log(`   Old balance: ${oldBalance}, New balance: ${employee.vacationDaysLeft}`);
+                } else {
+                    // If excuseType is neither paid nor unpaid, log a warning
+                    console.warn(`⚠️ WARNING: Excuse form has unknown excuseType: ${form.excuseType}`);
                 }
 
-                form.status = 'approved'; // Final approval for excuse forms
+                form.status = 'approved'; // Final approval for excuse forms (no admin approval needed)
                 form.managerComment = managerComment || '';
                 form.managerApprovedBy = req.user.id;
                 form.managerApprovedAt = Date.now();
@@ -759,35 +849,21 @@ router.put('/:id', auth, async (req, res) => {
                 }
             } else if (
                 form.type === 'vacation' &&
-                form.vacationType === 'unpaid' &&
-                status === 'approved' &&
-                (form.status === 'pending' || form.status === 'manager_approved' || form.status === 'manager_submitted')
+                form.vacationType === 'unpaid'
             ) {
-                // For unpaid vacation, we don't need to check or deduct vacation days
-                // Just approve it without affecting the balance
-                console.log('Approving unpaid vacation without deducting days');
+                // Unpaid vacation is no longer allowed
+                return res.status(400).json({ 
+                    msg: 'Unpaid vacation requests are no longer allowed. Only annual vacation leave is available.'
+                });
             } else if (
                 form.type === 'excuse' &&
-                status === 'approved' &&
+                (status === 'approved' || status === 'rejected') &&
                 (form.status === 'pending' || form.status === 'manager_approved' || form.status === 'manager_submitted')
             ) {
-                // Handle excuse form approval - deduct from excuse hours allowance
-                const fromTime = new Date(`2000-01-01T${form.fromHour}`);
-                const toTime = new Date(`2000-01-01T${form.toHour}`);
-                const hoursRequested = (toTime - fromTime) / (1000 * 60 * 60);
-                const employee = await User.findById(form.user);
-                
-                // Check if employee has enough excuse hours
-                if (employee && (employee.excuseHoursLeft || 0) < hoursRequested) {
-                    return res.status(400).json({ 
-                        msg: `Cannot approve: Employee has insufficient excuse hours (${employee.excuseHoursLeft} hours remaining, ${hoursRequested.toFixed(1)} hours requested)`
-                    });
-                }
-
-                if (employee) {
-                    employee.excuseHoursLeft = Math.max(0, (employee.excuseHoursLeft || 2) - hoursRequested);
-                    await employee.save();
-                }
+                // Excuse forms should only be approved by managers, not admins
+                return res.status(400).json({ 
+                    msg: 'Excuse forms can only be approved or rejected by the employee\'s manager, not by admin. Please have the manager review this form.'
+                });
             }
             // Note: Sick leave and WFH forms don't affect any day allowances
 

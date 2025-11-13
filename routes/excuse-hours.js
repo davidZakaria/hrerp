@@ -4,7 +4,7 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { createAuditLog } = require('./audit');
 
-// Manual excuse hours reset (Admin and Super Admin only)
+// Manual excuse requests reset (Admin and Super Admin only)
 router.post('/reset', auth, async (req, res) => {
   try {
     const admin = await User.findById(req.user.id);
@@ -12,21 +12,21 @@ router.post('/reset', auth, async (req, res) => {
       return res.status(403).json({ msg: 'Not authorized - Admin or Super Admin role required' });
     }
 
-    console.log(`Manual excuse hours reset initiated by ${admin.name} (${admin.email})`);
+    console.log(`Manual excuse requests reset initiated by ${admin.name} (${admin.email})`);
     
     const result = await User.updateMany(
       { role: { $in: ['employee', 'manager', 'admin', 'super_admin'] } },
-      { $set: { excuseHoursLeft: 2 } }
+      { $set: { excuseRequestsLeft: 2, excuseRequestsResetDate: new Date() } }
     );
 
-    console.log(`Manual excuse hours reset completed. Updated ${result.modifiedCount} users.`);
+    console.log(`Manual excuse requests reset completed. Updated ${result.modifiedCount} users.`);
 
     // Create audit log in database
     await createAuditLog({
-      action: 'MANUAL_EXCUSE_HOURS_RESET',
+      action: 'MANUAL_EXCUSE_REQUESTS_RESET',
       performedBy: admin._id,
       targetResource: 'user',
-      description: `Manual reset of excuse hours for all users performed by ${admin.name}`,
+      description: `Manual reset of excuse requests for all users performed by ${admin.name}`,
       details: {
         usersUpdated: result.modifiedCount,
         resetValue: 2,
@@ -39,26 +39,26 @@ router.post('/reset', auth, async (req, res) => {
       severity: 'MEDIUM'
     });
 
-    console.log(`Audit log created for manual excuse hours reset affecting ${result.modifiedCount} users.`);
+    console.log(`Audit log created for manual excuse requests reset affecting ${result.modifiedCount} users.`);
 
     res.json({ 
       success: true,
-      message: `Excuse hours successfully reset for ${result.modifiedCount} users`,
+      message: `Excuse requests successfully reset for ${result.modifiedCount} users`,
       usersUpdated: result.modifiedCount,
       resetValue: 2
     });
 
   } catch (error) {
-    console.error('Error during manual excuse hours reset:', error);
+    console.error('Error during manual excuse requests reset:', error);
     
     // Log the error in audit as well
     try {
       const admin = await User.findById(req.user.id);
       await createAuditLog({
-        action: 'MANUAL_EXCUSE_HOURS_RESET',
+        action: 'MANUAL_EXCUSE_REQUESTS_RESET',
         performedBy: admin._id,
         targetResource: 'user',
-        description: `Failed manual excuse hours reset attempted by ${admin.name}`,
+        description: `Failed manual excuse requests reset attempted by ${admin.name}`,
         details: {
           error: error.message,
           failureDate: new Date(),
@@ -75,13 +75,13 @@ router.post('/reset', auth, async (req, res) => {
     
     res.status(500).json({ 
       success: false,
-      message: 'Error during excuse hours reset',
+      message: 'Error during excuse requests reset',
       error: error.message 
     });
   }
 });
 
-// Get excuse hours status for all users (Admin and Super Admin only)
+// Get excuse requests status for all users (Admin and Super Admin only)
 router.get('/status', auth, async (req, res) => {
   try {
     const admin = await User.findById(req.user.id);
@@ -91,15 +91,15 @@ router.get('/status', auth, async (req, res) => {
 
     const users = await User.find(
       { role: { $in: ['employee', 'manager', 'admin', 'super_admin'] } },
-      'name email department role excuseHoursLeft'
+      'name email department role excuseRequestsLeft excuseRequestsResetDate'
     );
 
     const stats = {
       totalUsers: users.length,
-      usersWithFullHours: users.filter(u => u.excuseHoursLeft === 2).length,
-      usersWithPartialHours: users.filter(u => u.excuseHoursLeft > 0 && u.excuseHoursLeft < 2).length,
-      usersWithNoHours: users.filter(u => u.excuseHoursLeft === 0).length,
-      averageHoursLeft: users.reduce((sum, u) => sum + u.excuseHoursLeft, 0) / users.length
+      usersWithFullRequests: users.filter(u => (u.excuseRequestsLeft || 0) === 2).length,
+      usersWithPartialRequests: users.filter(u => (u.excuseRequestsLeft || 0) > 0 && (u.excuseRequestsLeft || 0) < 2).length,
+      usersWithNoRequests: users.filter(u => (u.excuseRequestsLeft || 0) === 0).length,
+      averageRequestsLeft: users.reduce((sum, u) => sum + (u.excuseRequestsLeft || 0), 0) / users.length
     };
 
     res.json({
@@ -109,10 +109,10 @@ router.get('/status', auth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error getting excuse hours status:', error);
+    console.error('Error getting excuse requests status:', error);
     res.status(500).json({ 
       success: false,
-      message: 'Error retrieving excuse hours status',
+      message: 'Error retrieving excuse requests status',
       error: error.message 
     });
   }

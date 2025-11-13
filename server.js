@@ -23,7 +23,7 @@ const startServer = async () => {
     await connectDB();
     
     // Start the server only after database connection is established
-    const PORT = process.env.PORT || 5000;
+    const PORT = process.env.PORT || 5001;
     const server = app.listen(PORT, () => {
       console.log(`
 🚀 HR-ERP Server running on port ${PORT}
@@ -302,11 +302,15 @@ app.get('/api/metrics', async (req, res) => {
     }
 });
 
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/forms', require('./routes/forms'));
 app.use('/api/recruitment', require('./routes/recruitment'));
+app.use('/api/job-applications', require('./routes/jobApplications'));
 app.use('/api/audit', require('./routes/audit').router);
 app.use('/api/excuse-hours', require('./routes/excuse-hours'));
 

@@ -12,12 +12,13 @@ const EmployeeDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [vacationDaysLeft, setVacationDaysLeft] = useState(null);
-  const [excuseHoursLeft, setExcuseHoursLeft] = useState(null);
+  const [excuseRequestsLeft, setExcuseRequestsLeft] = useState(null);
+  const [nextResetDate, setNextResetDate] = useState(null);
 
   const fetchVacationDays = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5000/api/forms/vacation-days', {
+      const res = await fetch('http://localhost:5001/api/forms/vacation-days', {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -29,15 +30,18 @@ const EmployeeDashboard = () => {
     }
   };
 
-  const fetchExcuseHours = async () => {
+  const fetchExcuseRequests = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5000/api/forms/excuse-hours', {
+      const res = await fetch('http://localhost:5001/api/forms/excuse-hours', {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
       if (res.ok) {
-        setExcuseHoursLeft(data.excuseHoursLeft);
+        setExcuseRequestsLeft(data.excuseRequestsLeft);
+        if (data.nextResetDate) {
+          setNextResetDate(new Date(data.nextResetDate));
+        }
       }
     } catch (err) {
       // ignore
@@ -46,7 +50,7 @@ const EmployeeDashboard = () => {
 
   useEffect(() => {
     fetchVacationDays();
-    fetchExcuseHours();
+    fetchExcuseRequests();
   }, []);
 
   const fetchForms = async () => {
@@ -54,7 +58,7 @@ const EmployeeDashboard = () => {
     setError('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5000/api/forms/my-forms', {
+      const res = await fetch('http://localhost:5001/api/forms/my-forms', {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -74,19 +78,19 @@ const EmployeeDashboard = () => {
     setShowForm(false);
     fetchForms();
     fetchVacationDays();
-    fetchExcuseHours();
+    fetchExcuseRequests();
   };
 
   const handleShowForm = () => {
     setShowForm(true);
     setShowPreview(false);
     fetchVacationDays();
-    fetchExcuseHours();
+    fetchExcuseRequests();
   };
 
   const handleFormSubmitted = () => {
     fetchVacationDays();
-    fetchExcuseHours();
+    fetchExcuseRequests();
     setShowForm(false);
     setShowPreview(true);
     fetchForms();
@@ -123,20 +127,33 @@ const EmployeeDashboard = () => {
             {t('dashboard.vacationDays')}
           </h2>
           <div className="stats-number" style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
-            {vacationDaysLeft !== null ? vacationDaysLeft : '...'}
+            {vacationDaysLeft !== null ? Number(vacationDaysLeft).toFixed(1) : '...'}
           </div>
           <div className="stats-label">{t('dashboard.daysRemaining')}</div>
+          <small style={{ fontSize: '0.85rem', opacity: 0.7, display: 'block', marginTop: '0.5rem' }}>
+            💡 Unpaid excuse requests deduct 0.5 days
+          </small>
         </div>
 
-        {/* Excuse Hours Card */}
+        {/* Excuse Requests Card */}
         <div className="elegant-card hover-lift" style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
-            {t('dashboard.excuseHours')}
+            ⏰ Paid Excuse Requests
           </h2>
-          <div className="stats-number" style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
-            {excuseHoursLeft !== null ? excuseHoursLeft : '...'}
+          <div className="stats-number" style={{ fontSize: '3rem', marginBottom: '0.5rem', color: excuseRequestsLeft > 0 ? '#4caf50' : '#ff9800' }}>
+            {excuseRequestsLeft !== null ? `${excuseRequestsLeft} / 2` : '...'}
           </div>
-          <div className="stats-label">{t('dashboard.hoursRemaining')}</div>
+          <div className="stats-label">Current Period (Each = 2 hours)</div>
+          <small style={{ fontSize: '0.85rem', opacity: 0.7, display: 'block', marginTop: '0.5rem' }}>
+            {excuseRequestsLeft > 0 ? 'You can submit paid excuse requests' : 'Submit unpaid excuse requests instead'}
+          </small>
+          {nextResetDate && (
+            <small style={{ fontSize: '0.8rem', opacity: 0.6, display: 'block', marginTop: '0.5rem', color: '#64b5f6' }}>
+              🔄 Resets on the 25th of each month
+              <br />
+              Next reset: {nextResetDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </small>
+          )}
         </div>
 
         {/* Action Buttons */}
@@ -191,8 +208,7 @@ const EmployeeDashboard = () => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                         <span className="form-label-elegant">{t('common.type')}:</span>
                         <span className="text-elegant">
-                          {form.type === 'vacation' && form.vacationType === 'annual' ? 'Annual Vacation' :
-                           form.type === 'vacation' && form.vacationType === 'unpaid' ? 'Unpaid Vacation' :
+                          {form.type === 'vacation' ? 'Annual Vacation' :
                            t(`formTypes.${form.type}`) || form.type}
                         </span>
                       </div>
@@ -224,6 +240,12 @@ const EmployeeDashboard = () => {
                       
                       {form.type === 'excuse' && (
                         <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">Excuse Type:</span>
+                            <span className="text-elegant" style={{ fontWeight: 'bold', color: form.excuseType === 'paid' ? '#4caf50' : '#ff9800' }}>
+                              {form.excuseType === 'paid' ? '💰 Paid' : '📝 Unpaid'}
+                            </span>
+                          </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                             <span className="form-label-elegant">{t('forms.excuseDate')}:</span>
                             <span className="text-elegant">{new Date(form.excuseDate).toLocaleDateString()}</span>

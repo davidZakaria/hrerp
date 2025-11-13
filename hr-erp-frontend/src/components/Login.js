@@ -29,7 +29,7 @@ const Login = () => {
         
         try {
             console.log('Attempting login...');
-            const response = await axios.post('http://localhost:5000/api/auth/login', formData);
+            const response = await axios.post('http://localhost:5001/api/auth/login', formData);
             const data = response.data;
             
             console.log('Login response:', data);

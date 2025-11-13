@@ -30,9 +30,13 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 21
     },
-    excuseHoursLeft: {
+    excuseRequestsLeft: {
         type: Number,
-        default: 2 // 2 hours per period for excuse requests
+        default: 2 // 2 paid excuse requests per month (each is 2 hours)
+    },
+    excuseRequestsResetDate: {
+        type: Date,
+        default: Date.now // Track when excuse requests were last reset
     },
     sickDaysLeft: {
         type: Number,

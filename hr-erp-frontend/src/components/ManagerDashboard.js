@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
+import ATSDashboard from './ATS/ATSDashboard';
 
 const ManagerDashboard = ({ onLogout }) => {
   const { t } = useTranslation();
@@ -16,6 +17,7 @@ const ManagerDashboard = ({ onLogout }) => {
   const [showForm, setShowForm] = useState(false);
   const [showMyForms, setShowMyForms] = useState(false);
   const [showTeamForms, setShowTeamForms] = useState(false);
+  const [showATS, setShowATS] = useState(false);
   const [myForms, setMyForms] = useState([]);
   const [teamForms, setTeamForms] = useState([]);
   const [vacationDaysLeft, setVacationDaysLeft] = useState(null);
@@ -75,7 +77,7 @@ const ManagerDashboard = ({ onLogout }) => {
       } else {
         // If not in localStorage, fetch from API
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/auth/me', {
+        const response = await axios.get('http://localhost:5001/api/auth/me', {
           headers: { 'x-auth-token': token }
         });
         
@@ -99,7 +101,7 @@ const ManagerDashboard = ({ onLogout }) => {
   const fetchVacationDays = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5000/api/forms/vacation-days', {
+      const res = await fetch('http://localhost:5001/api/forms/vacation-days', {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -114,7 +116,7 @@ const ManagerDashboard = ({ onLogout }) => {
   const fetchExcuseHours = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5000/api/forms/excuse-hours', {
+      const res = await fetch('http://localhost:5001/api/forms/excuse-hours', {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -132,7 +134,7 @@ const ManagerDashboard = ({ onLogout }) => {
       console.log('Fetching manager personal forms...');
       
       // Use dedicated endpoint for manager's personal forms only
-      const response = await axios.get('http://localhost:5000/api/forms/manager/personal-forms', {
+      const response = await axios.get('http://localhost:5001/api/forms/manager/personal-forms', {
         headers: { 'x-auth-token': token }
       });
       
@@ -156,6 +158,7 @@ const ManagerDashboard = ({ onLogout }) => {
     setShowForm(true);
     setShowMyForms(false);
     setShowTeamForms(false);
+    setShowATS(false);
     fetchVacationDays();
     fetchExcuseHours();
   };
@@ -164,6 +167,7 @@ const ManagerDashboard = ({ onLogout }) => {
     setShowMyForms(true);
     setShowForm(false);
     setShowTeamForms(false);
+    setShowATS(false);
     fetchMyForms();
     fetchVacationDays();
     fetchExcuseHours();
@@ -173,7 +177,15 @@ const ManagerDashboard = ({ onLogout }) => {
     setShowTeamForms(true);
     setShowForm(false);
     setShowMyForms(false);
+    setShowATS(false);
     fetchTeamForms();
+  };
+
+  const handleShowATS = () => {
+    setShowATS(true);
+    setShowForm(false);
+    setShowMyForms(false);
+    setShowTeamForms(false);
   };
 
   const fetchTeamForms = async () => {
@@ -182,7 +194,7 @@ const ManagerDashboard = ({ onLogout }) => {
       console.log('Fetching team members forms...');
       
       // Fetch all forms from team members in managed departments
-      const response = await axios.get('http://localhost:5000/api/forms/manager/team-forms', {
+      const response = await axios.get('http://localhost:5001/api/forms/manager/team-forms', {
         headers: { 'x-auth-token': token }
       });
       
@@ -231,7 +243,7 @@ const ManagerDashboard = ({ onLogout }) => {
       const token = localStorage.getItem('token');
       console.log('🔄 Fetching pending team requests...');
       
-      const response = await axios.get('http://localhost:5000/api/forms/manager/pending', {
+      const response = await axios.get('http://localhost:5001/api/forms/manager/pending', {
         headers: { 'x-auth-token': token }
       });
       
@@ -262,7 +274,7 @@ const ManagerDashboard = ({ onLogout }) => {
   const fetchTeamMembers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/users/team-members', {
+      const response = await axios.get('http://localhost:5001/api/users/team-members', {
         headers: { 'x-auth-token': token }
       });
       setTeamMembers(response.data);
@@ -315,7 +327,7 @@ const ManagerDashboard = ({ onLogout }) => {
         hasComment: !!comment.trim()
       });
 
-      const response = await axios.put(`http://localhost:5000/api/forms/manager/${selectedForm._id}`, {
+      const response = await axios.put(`http://localhost:5001/api/forms/manager/${selectedForm._id}`, {
         action: actionType,
         managerComment: comment.trim()
       }, {
@@ -523,8 +535,22 @@ const ManagerDashboard = ({ onLogout }) => {
             <span className="btn-icon">👥</span>
             {t('managerDashboard.myTeamMembersForms')}
           </button>
+          <button 
+            className="btn-manager ats-btn"
+            onClick={handleShowATS}
+          >
+            <span className="btn-icon">🎯</span>
+            {t('managerDashboard.atsSystem') || 'ATS System'}
+          </button>
         </div>
       </div>
+
+      {/* ATS System */}
+      {showATS && (
+        <div className="section manager-ats-section">
+          <ATSDashboard />
+        </div>
+      )}
 
       {/* Form Submission */}
       {showForm && (
@@ -552,8 +578,7 @@ const ManagerDashboard = ({ onLogout }) => {
                 <div key={form._id} className="my-form-card manager-own-form">
                   <div className="form-header">
                     <h4>
-                      {form.type === 'vacation' && form.vacationType === 'annual' ? 'ANNUAL VACATION' :
-                       form.type === 'vacation' && form.vacationType === 'unpaid' ? 'UNPAID VACATION' :
+                      {form.type === 'vacation' ? 'ANNUAL VACATION' :
                        form.type.toUpperCase()}
                     </h4>
                     {getStatusBadge(form.status)}
@@ -572,6 +597,7 @@ const ManagerDashboard = ({ onLogout }) => {
                     
                     {form.type === 'excuse' && (
                       <>
+                        <p><strong>Excuse Type:</strong> <span style={{ color: form.excuseType === 'paid' ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{form.excuseType === 'paid' ? '💰 Paid' : '📝 Unpaid'}</span></p>
                         <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
                         <p><strong>{t('time')}:</strong> {form.fromHour} - {form.toHour}</p>
                         <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
@@ -669,8 +695,7 @@ const ManagerDashboard = ({ onLogout }) => {
                 <div key={form._id} className="my-form-card team-request-card">
                   <div className="form-header">
                     <h4>
-                      {form.user.name} - {form.type === 'vacation' && form.vacationType === 'annual' ? 'ANNUAL VACATION' :
-                                          form.type === 'vacation' && form.vacationType === 'unpaid' ? 'UNPAID VACATION' :
+                      {form.user.name} - {form.type === 'vacation' ? 'ANNUAL VACATION' :
                                           form.type.toUpperCase()}
                     </h4>
                     {getStatusBadge(form.status)}
@@ -691,6 +716,7 @@ const ManagerDashboard = ({ onLogout }) => {
                     
                     {form.type === 'excuse' && (
                       <>
+                        <p><strong>Excuse Type:</strong> <span style={{ color: form.excuseType === 'paid' ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{form.excuseType === 'paid' ? '💰 Paid' : '📝 Unpaid'}</span></p>
                         <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
                         <p><strong>{t('time')}:</strong> {form.fromHour} - {form.toHour}</p>
                         <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
@@ -790,7 +816,7 @@ const ManagerDashboard = ({ onLogout }) => {
                 <div className="member-avatar">👤</div>
                 <h4>{member.name}</h4>
                 <p className="member-department">{member.department}</p>
-                <span className="vacation-days team-stat">{member.vacationDaysLeft} {t('daysLeft')}</span>
+                <span className="vacation-days team-stat">{Number(member.vacationDaysLeft).toFixed(1)} {t('daysLeft')}</span>
               </div>
             ))}
           </div>
@@ -836,8 +862,7 @@ const ManagerDashboard = ({ onLogout }) => {
             {pendingForms.map(form => (
               <div key={form._id} className="request-card team-request-card">
                 <div className="request-info">
-                  <h4>{form.user.name} - {form.type === 'vacation' && form.vacationType === 'annual' ? 'ANNUAL VACATION' :
-                                        form.type === 'vacation' && form.vacationType === 'unpaid' ? 'UNPAID VACATION' :
+                  <h4>{form.user.name} - {form.type === 'vacation' ? 'ANNUAL VACATION' :
                                         form.type.toUpperCase()}</h4>
                   <p><strong>{t('department')}:</strong> {form.user.department}</p>
                   
@@ -852,6 +877,7 @@ const ManagerDashboard = ({ onLogout }) => {
                   
                   {form.type === 'excuse' && (
                     <>
+                      <p><strong>Excuse Type:</strong> <span style={{ color: form.excuseType === 'paid' ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{form.excuseType === 'paid' ? '💰 Paid' : '📝 Unpaid'}</span></p>
                       <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
                       <p><strong>{t('timePeriod')}:</strong> {form.fromHour} - {form.toHour}</p>
                       <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
@@ -920,8 +946,7 @@ const ManagerDashboard = ({ onLogout }) => {
             {selectedForm && (
               <div className="modal-body">
                 <div className="request-summary">
-                  <h4>{selectedForm.user.name} - {selectedForm.type === 'vacation' && selectedForm.vacationType === 'annual' ? 'ANNUAL VACATION' :
-                                                selectedForm.type === 'vacation' && selectedForm.vacationType === 'unpaid' ? 'UNPAID VACATION' :
+                  <h4>{selectedForm.user.name} - {selectedForm.type === 'vacation' ? 'ANNUAL VACATION' :
                                                 selectedForm.type.toUpperCase()}</h4>
                   <p><strong>{t('department')}:</strong> {selectedForm.user.department}</p>
                   

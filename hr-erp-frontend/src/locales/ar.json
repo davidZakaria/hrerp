@@ -136,6 +136,7 @@
     "adminPersonalNote": "هذا للإجازة الشخصية الخاصة بك (وليس للمستخدمين الآخرين)",
     "employeePersonalNote": "هذا النموذج لطلبات الإجازة الشخصية التي تتطلب موافقة",
     "excuseHoursRemaining": "ساعات الاستئذان المتبقية",
+    "requestsRemaining": "الطلبات المتبقية",
     "requestType": "نوع الطلب",
     "vacationRequestOption": "طلب إجازة (إجازة سنوية/بدون راتب)",
     "excuseRequestOption": "طلب ساعات استئذان (إجازة جزئية)",

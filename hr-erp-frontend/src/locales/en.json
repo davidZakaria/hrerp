@@ -135,6 +135,7 @@
     "adminPersonalNote": "This is for YOUR personal leave (not for other users)",
     "employeePersonalNote": "This form is for YOUR personal leave requests that will require approval",
     "excuseHoursRemaining": "Excuse Hours Remaining",
+    "requestsRemaining": "Requests Remaining",
     "requestType": "Request Type",
     "vacationRequestOption": "Vacation Request (Annual/Unpaid Leave)",
     "excuseRequestOption": "Excuse Hours Request (Partial Day Off)",

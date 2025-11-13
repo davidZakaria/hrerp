@@ -57,7 +57,7 @@ export const useApi = (url, options = {}) => {
         ...(customBody || body ? { body: JSON.stringify(customBody || body) } : {})
       };
 
-      const response = await fetch(`http://localhost:5000${url}`, config);
+      const response = await fetch(`http://localhost:5001${url}`, config);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ msg: 'Unknown error' }));
@@ -136,7 +136,7 @@ export const useFormSubmit = (url, options = {}) => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:5000${url}`, {
+      const response = await fetch(`http://localhost:5001${url}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -200,7 +200,7 @@ export const preloadData = async (url, options = {}) => {
 
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:5000${url}`, {
+    const response = await fetch(`http://localhost:5001${url}`, {
       headers: {
         'Content-Type': 'application/json',
         ...(token && { 'x-auth-token': token })

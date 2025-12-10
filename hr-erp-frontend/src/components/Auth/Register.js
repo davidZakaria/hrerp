@@ -10,7 +10,9 @@ const Register = ({ onBack, onRegisterSuccess }) => {
     confirmPassword: '',
     department: '',
     role: 'employee',
-    managedDepartments: []
+    managedDepartments: [],
+    employeeCode: '',
+    workSchedule: ''
   });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -70,7 +72,9 @@ const Register = ({ onBack, onRegisterSuccess }) => {
           password: form.password,
           department: form.department,
           role: form.role,
-          managedDepartments: form.role === 'manager' ? form.managedDepartments : []
+          managedDepartments: form.role === 'manager' ? form.managedDepartments : [],
+          employeeCode: form.employeeCode || null,
+          workSchedule: form.workSchedule ? JSON.parse(form.workSchedule) : null
         })
       });
       const data = await res.json();
@@ -85,7 +89,9 @@ const Register = ({ onBack, onRegisterSuccess }) => {
           confirmPassword: '',
           department: '',
           role: 'employee',
-          managedDepartments: []
+          managedDepartments: [],
+          employeeCode: '',
+          workSchedule: ''
         });
         
         // Redirect back to login after 3 seconds
@@ -166,6 +172,39 @@ const Register = ({ onBack, onRegisterSuccess }) => {
               {departments.map(dept => (
                 <option key={dept} value={dept}>{t(`departments.${dept}`) || dept}</option>
               ))}
+            </select>
+          </div>
+
+          <div className="form-group-elegant">
+            <label className="form-label-elegant">Employee Code</label>
+            <input
+              name="employeeCode"
+              type="text"
+              placeholder="Enter your biometric device code"
+              value={form.employeeCode}
+              onChange={handleChange}
+              className="form-input-elegant focus-elegant"
+              required
+            />
+            <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block', textAlign: 'left' }}>
+              This code must match your biometric attendance device code
+            </small>
+          </div>
+
+          <div className="form-group-elegant">
+            <label className="form-label-elegant">Work Schedule</label>
+            <select
+              name="workSchedule"
+              value={form.workSchedule}
+              onChange={handleChange}
+              className="form-input-elegant focus-elegant"
+              required
+            >
+              <option value="">Select your work schedule</option>
+              <option value='{"startTime":"11:00","endTime":"19:00"}'>11:00 AM - 7:00 PM</option>
+              <option value='{"startTime":"10:30","endTime":"18:30"}'>10:30 AM - 6:30 PM</option>
+              <option value='{"startTime":"09:30","endTime":"18:30"}'>9:30 AM - 6:30 PM</option>
+              <option value='{"startTime":"08:30","endTime":"16:30"}'>8:30 AM - 4:30 PM</option>
             </select>
           </div>
 

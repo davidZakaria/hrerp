@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LogoutButton from './LogoutButton';
 import { useTranslation } from 'react-i18next';
+import AttendanceManagement from './AttendanceManagement';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -550,6 +551,12 @@ const SuperAdminDashboard = () => {
               onClick={() => setActiveTab('logs')}
             >
               Audit Logs
+            </button>
+            <button 
+              className={`btn-elegant ${activeTab === 'attendance' ? 'btn-success' : ''}`}
+              onClick={() => setActiveTab('attendance')}
+            >
+              Attendance
             </button>
           </div>
 
@@ -1634,6 +1641,11 @@ const SuperAdminDashboard = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Attendance Tab */}
+      {activeTab === 'attendance' && (
+        <AttendanceManagement />
       )}
 
       {/* Delete Confirmation Modal */}

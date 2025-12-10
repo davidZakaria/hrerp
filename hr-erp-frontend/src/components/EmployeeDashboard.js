@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
 import LogoutButton from './LogoutButton';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
+import EmployeeAttendance from './EmployeeAttendance';
 
 const EmployeeDashboard = () => {
   const { t } = useTranslation();
@@ -402,6 +403,9 @@ const EmployeeDashboard = () => {
             )}
           </div>
         )}
+
+        {/* Employee Attendance Section */}
+        <EmployeeAttendance />
       </div>
     </div>
   );

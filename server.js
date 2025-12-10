@@ -313,6 +313,7 @@ app.use('/api/recruitment', require('./routes/recruitment'));
 app.use('/api/job-applications', require('./routes/jobApplications'));
 app.use('/api/audit', require('./routes/audit').router);
 app.use('/api/excuse-hours', require('./routes/excuse-hours'));
+app.use('/api/attendance', require('./routes/attendance'));
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

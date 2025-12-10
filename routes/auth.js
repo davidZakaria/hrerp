@@ -12,11 +12,19 @@ const { createAuditLog } = require('./audit');
 // Register User (Employee Registration)
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password, department, role, managedDepartments } = req.body;
+        const { name, email, password, department, role, managedDepartments, employeeCode, workSchedule } = req.body;
 
         // Validate required fields
         if (!name || !email || !password || !department) {
             return res.status(400).json({ msg: 'Please provide all required fields' });
+        }
+
+        // Validate employeeCode if provided
+        if (employeeCode) {
+            const existingUser = await User.findOne({ employeeCode });
+            if (existingUser) {
+                return res.status(400).json({ msg: 'Employee code already exists' });
+            }
         }
 
         // Check if user exists
@@ -34,7 +42,9 @@ router.post('/register', async (req, res) => {
             role: role || 'employee', // Default to employee
             managedDepartments: role === 'manager' ? (managedDepartments || []) : [],
             status: 'pending', // New registrations are pending approval
-            vacationDaysLeft: 21 // Default vacation days
+            vacationDaysLeft: 21, // Default vacation days
+            employeeCode: employeeCode || null,
+            workSchedule: workSchedule || null
         });
 
         // Hash password

@@ -1,4 +1,33 @@
-<!-- 6f79268b-cd12-4091-9a5d-9a7d97b2a32e 3dd260b4-d339-496f-96c4-a8b93331f330 -->
+---
+name: Biometric Attendance System Implementation
+overview: ""
+todos:
+  - id: d5bb56e1-5efd-48dd-9b49-a02547a861f5
+    content: Update User model with employeeCode and workSchedule fields, create Attendance model
+    status: completed
+  - id: 1b9a8d91-9878-4c98-a308-e4884a5ead45
+    content: Install xlsx package and create XLS parsing utility functions
+    status: completed
+  - id: e2ad4433-595b-45d6-b206-0a21ee8d8fb9
+    content: Create attendance routes with upload, calculation, and cross-reference logic
+    status: completed
+  - id: ad08990a-4912-431a-ace8-8f3faf511c8c
+    content: Update registration form to include employeeCode and work schedule selection
+    status: completed
+  - id: 3e598246-ee3d-4d4e-8288-17be045b5f7d
+    content: Create attendance upload interface in admin dashboard
+    status: completed
+  - id: 61bed067-8b0b-466c-822d-b36318b88fd6
+    content: Create attendance viewing interface in admin dashboard with employee reports
+    status: completed
+  - id: 070c53a1-c985-4e6c-86f3-0367b8f24553
+    content: Create employee attendance viewing section in employee dashboard
+    status: completed
+  - id: eb143a22-54f9-4d38-96c3-e00b135c4c19
+    content: "Test complete flow: upload XLS files, verify calculations, check cross-referencing with forms, validate UI displays"
+    status: completed
+---
+
 # Biometric Attendance System Implementation
 
 ## Backend Changes
@@ -84,10 +113,12 @@ New route file with endpoints:
 ### 6. Update Registration (`hr-erp-frontend/src/components/Auth/Register.js`)
 
 - Add `employeeCode` input field (required)
-- Add work schedule selection:
-  - Dropdown or radio buttons: "10:30 AM - 6:30 PM" or "9:00 AM - 5:00 PM"
-  - Or custom time pickers for start/end times
-- Submit employeeCode and workSchedule to backend
+- Add work schedule selection dropdown with exactly 4 options:
+  - "11:00 AM - 7:00 PM"
+  - "10:30 AM - 6:30 PM"
+  - "9:30 AM - 6:30 PM"
+  - "8:30 AM - 4:30 PM"
+- Submit employeeCode and selected workSchedule to backend
 
 ### 7. Update Admin Dashboard (`hr-erp-frontend/src/components/SuperAdminDashboard.js`)
 
@@ -220,14 +251,3 @@ Reusable component for displaying attendance data:
 - `hr-erp-frontend/src/components/SuperAdminDashboard.js` (add attendance section)
 - `hr-erp-frontend/src/components/Dashboard.js` (add attendance widget)
 - `package.json` (add xlsx dependency)
-
-### To-dos
-
-- [ ] Update User model with employeeCode and workSchedule fields, create Attendance model
-- [ ] Install xlsx package and create XLS parsing utility functions
-- [ ] Create attendance routes with upload, calculation, and cross-reference logic
-- [ ] Update registration form to include employeeCode and work schedule selection
-- [ ] Create attendance upload interface in admin dashboard
-- [ ] Create attendance viewing interface in admin dashboard with employee reports
-- [ ] Create employee attendance viewing section in employee dashboard
-- [ ] Test complete flow: upload XLS files, verify calculations, check cross-referencing with forms, validate UI displays

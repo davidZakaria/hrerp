@@ -26,6 +26,22 @@ const userSchema = new mongoose.Schema({
     managedDepartments: [{
         type: String
     }],
+    employeeCode: {
+        type: String,
+        required: false, // Not required for existing users, but will be for new registrations
+        unique: true,
+        sparse: true // Allows multiple null values but enforces uniqueness for non-null values
+    },
+    workSchedule: {
+        startTime: {
+            type: String, // e.g., "11:00"
+            required: false
+        },
+        endTime: {
+            type: String, // e.g., "19:00"
+            required: false
+        }
+    },
     vacationDaysLeft: {
         type: Number,
         default: 21
@@ -77,6 +93,7 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ employeeCode: 1 }, { unique: true, sparse: true }); // For biometric matching
 userSchema.index({ role: 1 });
 userSchema.index({ department: 1 });
 userSchema.index({ status: 1 });

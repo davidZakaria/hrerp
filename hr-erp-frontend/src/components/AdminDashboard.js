@@ -5,6 +5,7 @@ import ATSDashboard from './ATS/ATSDashboard';
 import LogoutButton from './LogoutButton';
 import ExportPrintButtons from './ExportPrintButtons';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
+import AttendanceManagement from './AttendanceManagement';
 
 const AdminDashboard = () => {
   // Navigation state
@@ -976,6 +977,12 @@ const AdminDashboard = () => {
           >
             🎯 ATS System
           </button>
+          <button 
+            className={`tab-button ${activeTab === 'attendance' ? 'active' : ''}`}
+            onClick={() => setActiveTab('attendance')}
+          >
+            📊 Attendance
+          </button>
         </div>
       </div>
 
@@ -1763,6 +1770,13 @@ const AdminDashboard = () => {
         {activeTab === 'ats' && (
           <div className="ats-section">
             <ATSDashboard />
+          </div>
+        )}
+
+        {/* Attendance Tab */}
+        {activeTab === 'attendance' && (
+          <div className="attendance-section">
+            <AttendanceManagement />
           </div>
         )}
       </div>

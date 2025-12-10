@@ -168,6 +168,27 @@ const AttendanceManagement = () => {
 
   return (
     <div>
+      <style>{`
+        .attendance-modal-custom * {
+          color: #000000 !important;
+        }
+        .attendance-modal-custom h3 {
+          color: #000000 !important;
+          text-shadow: none !important;
+        }
+        .attendance-modal-custom h4 {
+          color: #000000 !important;
+        }
+        .attendance-modal-custom strong {
+          color: #000000 !important;
+        }
+        .attendance-modal-custom span {
+          color: #000000 !important;
+        }
+        .attendance-modal-custom div {
+          color: #000000 !important;
+        }
+      `}</style>
       <h2 className="text-gradient" style={{ marginBottom: '2rem' }}>Attendance Management</h2>
 
       {/* Upload Section */}
@@ -285,8 +306,9 @@ const AttendanceManagement = () => {
                     <th>Present</th>
                     <th>Late</th>
                     <th>Absent</th>
-                    <th>Excused</th>
-                    <th>On Leave</th>
+                    <th>Missed Clock-In</th>
+                    <th>Missed Clock-Out</th>
+                    <th>Overtime (min)</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -300,8 +322,15 @@ const AttendanceManagement = () => {
                       <td style={{ color: '#2E7D32' }}>{emp.stats.present}</td>
                       <td style={{ color: '#EF6C00' }}>{emp.stats.late}</td>
                       <td style={{ color: '#C62828' }}>{emp.stats.unexcusedAbsences}</td>
-                      <td style={{ color: '#1565C0' }}>{emp.stats.excused}</td>
-                      <td style={{ color: '#6A1B9A' }}>{emp.stats.onLeave}</td>
+                      <td style={{ color: emp.stats.missedClockIns > 0 ? '#F44336' : '#666', fontWeight: emp.stats.missedClockIns > 0 ? 'bold' : 'normal' }}>
+                        {emp.stats.missedClockIns || 0}
+                      </td>
+                      <td style={{ color: emp.stats.missedClockOuts > 0 ? '#FF9800' : '#666', fontWeight: emp.stats.missedClockOuts > 0 ? 'bold' : 'normal' }}>
+                        {emp.stats.missedClockOuts || 0}
+                      </td>
+                      <td style={{ color: emp.stats.totalMinutesOvertime > 0 ? '#4CAF50' : '#666', fontWeight: emp.stats.totalMinutesOvertime > 0 ? 'bold' : 'normal' }}>
+                        {emp.stats.totalMinutesOvertime > 0 ? `+${emp.stats.totalMinutesOvertime}` : '0'}
+                      </td>
                       <td>
                         <button
                           onClick={() => viewEmployeeDetails(emp)}
@@ -322,86 +351,148 @@ const AttendanceManagement = () => {
 
       {/* Employee Detail Modal */}
       {showEmployeeDetail && selectedEmployee && (
-        <div className="modal-overlay" onClick={() => setShowEmployeeDetail(false)}>
-          <div className="modal-content-large" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-gradient" style={{ marginBottom: '1rem' }}>
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999
+          }}
+          onClick={() => setShowEmployeeDetail(false)}
+        >
+          <div 
+            className="attendance-modal-custom"
+            onClick={(e) => e.stopPropagation()} 
+            style={{ 
+              backgroundColor: '#f5f5f5',
+              borderRadius: '12px',
+              padding: '2rem',
+              maxWidth: '900px',
+              width: '90%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+            }}
+          >
+            <h3 style={{ 
+              marginBottom: '1.5rem', 
+              color: '#000000', 
+              fontWeight: 'bold',
+              fontSize: '1.5rem',
+              textAlign: 'center'
+            }}>
               Attendance Details - {selectedEmployee.user.name}
             </h3>
 
-            <div style={{ marginBottom: '1.5rem', background: '#F5F5F5', padding: '1rem', borderRadius: '8px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                <div>
-                  <strong>Employee Code:</strong> {selectedEmployee.user.employeeCode || 'N/A'}
+            <div style={{ marginBottom: '1.5rem', background: '#ffffff', padding: '1.5rem', borderRadius: '8px', border: '1px solid #ddd' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                <div style={{ fontSize: '0.95rem' }}>
+                  <strong style={{ color: '#000000', display: 'block', marginBottom: '0.25rem' }}>Employee Code:</strong> 
+                  <span style={{ color: '#000000', fontSize: '1rem' }}>{selectedEmployee.user.employeeCode || 'N/A'}</span>
                 </div>
-                <div>
-                  <strong>Department:</strong> {selectedEmployee.user.department}
+                <div style={{ fontSize: '0.95rem' }}>
+                  <strong style={{ color: '#000000', display: 'block', marginBottom: '0.25rem' }}>Department:</strong> 
+                  <span style={{ color: '#000000', fontSize: '1rem' }}>{selectedEmployee.user.department}</span>
                 </div>
-                <div>
-                  <strong>Work Schedule:</strong> {
+                <div style={{ fontSize: '0.95rem' }}>
+                  <strong style={{ color: '#000000', display: 'block', marginBottom: '0.25rem' }}>Work Schedule:</strong> 
+                  <span style={{ color: '#000000', fontSize: '1rem' }}>{
                     selectedEmployee.user.workSchedule 
                       ? `${selectedEmployee.user.workSchedule.startTime} - ${selectedEmployee.user.workSchedule.endTime}`
                       : 'Not set'
-                  }
+                  }</span>
                 </div>
               </div>
             </div>
 
             <div style={{ marginBottom: '1.5rem' }}>
-              <h4 style={{ marginBottom: '0.5rem' }}>Summary Statistics</h4>
+              <h4 style={{ marginBottom: '1rem', color: '#000000', fontSize: '1.1rem', fontWeight: 'bold' }}>Summary Statistics</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
-                <div style={{ padding: '0.75rem', background: '#E8F5E9', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2E7D32' }}>
+                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #4CAF50', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
                     {selectedEmployee.stats.present}
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: '#666' }}>Present</div>
+                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Present</div>
                 </div>
-                <div style={{ padding: '0.75rem', background: '#FFF3E0', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#EF6C00' }}>
+                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #FF9800', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
                     {selectedEmployee.stats.late}
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: '#666' }}>Late</div>
+                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Late</div>
                 </div>
-                <div style={{ padding: '0.75rem', background: '#FFEBEE', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#C62828' }}>
+                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #F44336', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
                     {selectedEmployee.stats.unexcusedAbsences}
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: '#666' }}>Unexcused Absences</div>
+                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Unexcused Absences</div>
                 </div>
-                <div style={{ padding: '0.75rem', background: '#E3F2FD', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1565C0' }}>
+                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #2196F3', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
                     {selectedEmployee.stats.excused}
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: '#666' }}>Excused</div>
+                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Excused</div>
                 </div>
-                <div style={{ padding: '0.75rem', background: '#F3E5F5', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#6A1B9A' }}>
+                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #9C27B0', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
                     {selectedEmployee.stats.onLeave}
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: '#666' }}>On Leave</div>
+                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>On Leave</div>
                 </div>
               </div>
             </div>
 
-            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-              <h4 style={{ marginBottom: '0.5rem' }}>Daily Attendance</h4>
-              <table className="table-elegant">
+            <div style={{ maxHeight: '400px', overflowY: 'auto', background: '#ffffff', padding: '1rem', borderRadius: '8px' }}>
+              <h4 style={{ marginBottom: '1rem', color: '#000000', fontSize: '1.1rem', fontWeight: 'bold' }}>Daily Attendance</h4>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Clock In</th>
-                    <th>Clock Out</th>
-                    <th>Status</th>
-                    <th>Minutes Late</th>
+                  <tr style={{ backgroundColor: '#f0f0f0', borderBottom: '2px solid #ddd' }}>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold', fontSize: '0.95rem' }}>Date</th>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold', fontSize: '0.95rem' }}>Clock In</th>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold', fontSize: '0.95rem' }}>Clock Out</th>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold', fontSize: '0.95rem' }}>Status</th>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold', fontSize: '0.95rem' }}>Late</th>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold', fontSize: '0.95rem' }}>Overtime</th>
                   </tr>
                 </thead>
                 <tbody>
                   {selectedEmployee.records.map((record, idx) => (
-                    <tr key={idx}>
-                      <td>{formatDate(record.date)}</td>
-                      <td>{record.clockIn || '-'}</td>
-                      <td>{record.clockOut || '-'}</td>
-                      <td>{getStatusBadge(record.status)}</td>
-                      <td>{record.minutesLate > 0 ? `${record.minutesLate} min` : '-'}</td>
+                    <tr key={idx} style={{ borderBottom: '1px solid #eee', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9f9f9' }}>
+                      <td style={{ padding: '10px', color: '#000000', fontSize: '0.9rem' }}>{formatDate(record.date)}</td>
+                      <td style={{ padding: '10px', fontSize: '0.9rem', fontWeight: '500' }}>
+                        {record.missedClockIn ? (
+                          <span style={{ color: '#F44336', fontWeight: 'bold' }}>❌ MISSED</span>
+                        ) : (
+                          <span style={{ color: '#000000' }}>{record.clockIn}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '10px', fontSize: '0.9rem', fontWeight: '500' }}>
+                        {record.missedClockOut ? (
+                          <span style={{ color: '#FF9800', fontWeight: 'bold' }}>⚠️ MISSED</span>
+                        ) : (
+                          <span style={{ color: '#000000' }}>{record.clockOut || '-'}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '10px' }}>{getStatusBadge(record.status)}</td>
+                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>
+                        {record.minutesLate > 0 ? (
+                          <span style={{ color: '#F44336', fontWeight: 'bold' }}>{record.minutesLate} min</span>
+                        ) : (
+                          <span style={{ color: '#000000' }}>-</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>
+                        {record.minutesOvertime > 0 ? (
+                          <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>+{record.minutesOvertime} min</span>
+                        ) : (
+                          <span style={{ color: '#000000' }}>-</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -411,7 +502,17 @@ const AttendanceManagement = () => {
             <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
               <button 
                 onClick={() => setShowEmployeeDetail(false)}
-                className="btn-elegant"
+                style={{
+                  padding: '0.75rem 2rem',
+                  backgroundColor: '#4a90e2',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
               >
                 Close
               </button>

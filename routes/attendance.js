@@ -184,6 +184,15 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                     errors: parseResult.errors
                 };
                 
+                // Log first few errors for debugging
+                if (parseResult.errors && parseResult.errors.length > 0) {
+                    console.log('First 5 parsing errors:');
+                    parseResult.errors.slice(0, 5).forEach(err => {
+                        console.log(`  Row ${err.row}: ${err.error}`);
+                        console.log(`  Data:`, err.data);
+                    });
+                }
+                
                 // Process each record
                 for (const record of parseResult.data) {
                     try {
@@ -207,6 +216,9 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                         // Calculate attendance status
                         let status = 'present';
                         let minutesLate = 0;
+                        let minutesOvertime = 0;
+                        let missedClockIn = false;
+                        let missedClockOut = false;
                         let isExcused = false;
                         let relatedForm = null;
                         
@@ -215,10 +227,13 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                                 record.clockIn,
                                 record.clockOut,
                                 user.workSchedule,
-                                10 // 10-minute grace period
+                                15 // 15-minute grace period
                             );
                             status = attendanceStatus.status;
                             minutesLate = attendanceStatus.minutesLate;
+                            minutesOvertime = attendanceStatus.minutesOvertime;
+                            missedClockIn = attendanceStatus.missedClockIn;
+                            missedClockOut = attendanceStatus.missedClockOut;
                         }
                         
                         // Cross-reference with approved forms
@@ -241,6 +256,9 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                             existingRecord.clockOut = record.clockOut;
                             existingRecord.status = status;
                             existingRecord.minutesLate = minutesLate;
+                            existingRecord.minutesOvertime = minutesOvertime;
+                            existingRecord.missedClockIn = missedClockIn;
+                            existingRecord.missedClockOut = missedClockOut;
                             existingRecord.isExcused = isExcused;
                             existingRecord.relatedForm = relatedForm;
                             existingRecord.uploadedBy = admin._id;
@@ -257,6 +275,9 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                                 status: status,
                                 location: file.originalname, // Use filename as location identifier
                                 minutesLate: minutesLate,
+                                minutesOvertime: minutesOvertime,
+                                missedClockIn: missedClockIn,
+                                missedClockOut: missedClockOut,
                                 isExcused: isExcused,
                                 relatedForm: relatedForm,
                                 month: month,

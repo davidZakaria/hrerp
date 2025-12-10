@@ -39,6 +39,18 @@ const attendanceSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    minutesOvertime: {
+        type: Number,
+        default: 0
+    },
+    missedClockIn: {
+        type: Boolean,
+        default: false
+    },
+    missedClockOut: {
+        type: Boolean,
+        default: false
+    },
     isExcused: {
         type: Boolean,
         default: false
@@ -101,7 +113,10 @@ attendanceSchema.statics.getUserStats = async function(userId, month) {
         absent: records.filter(r => r.status === 'absent').length,
         excused: records.filter(r => r.isExcused || r.status === 'excused').length,
         onLeave: records.filter(r => r.status === 'on_leave').length,
-        totalMinutesLate: records.reduce((sum, r) => sum + (r.minutesLate || 0), 0)
+        totalMinutesLate: records.reduce((sum, r) => sum + (r.minutesLate || 0), 0),
+        totalMinutesOvertime: records.reduce((sum, r) => sum + (r.minutesOvertime || 0), 0),
+        missedClockIns: records.filter(r => r.missedClockIn).length,
+        missedClockOuts: records.filter(r => r.missedClockOut).length
     };
     
     stats.unexcusedAbsences = stats.absent - stats.excused;

@@ -67,11 +67,11 @@ function parseXLSFile(filePath) {
  */
 function parseAttendanceRow(row, rowNumber) {
     // Try different possible column name variations
-    const employeeCode = row['Employee Code'] || row['EmployeeCode'] || row['Code'] || row['ID'];
+    const employeeCode = row['Employee Code'] || row['EmployeeCode'] || row['Code'] || row['ID'] || row['AC-No.'] || row['AC-No'] || row['Ac-No'] || row['AC No'] || row['Employee ID'];
     const name = row['Name'] || row['Employee Name'] || row['EmployeeName'];
     const date = row['Date'] || row['date'];
-    const clockIn = row['Clock In'] || row['ClockIn'] || row['In'] || row['Time In'];
-    const clockOut = row['Clock Out'] || row['ClockOut'] || row['Out'] || row['Time Out'];
+    const clockIn = row['Clock In'] || row['ClockIn'] || row['In'] || row['Time In'] || row['Time'] || row['CheckIn'];
+    const clockOut = row['Clock Out'] || row['ClockOut'] || row['Out'] || row['Time Out'] || row['CheckOut'];
     
     // Validate required fields
     if (!employeeCode) {
@@ -244,23 +244,62 @@ function calculateMinutesLate(clockIn, scheduledStart, gracePeriodMinutes = 10) 
 }
 
 /**
+ * Calculate overtime minutes (stayed after scheduled end time)
+ * @param {String} clockOut - Actual clock-out time (HH:MM)
+ * @param {String} scheduledEnd - Scheduled end time (HH:MM)
+ * @returns {Number} Minutes of overtime (0 if not overtime)
+ */
+function calculateMinutesOvertime(clockOut, scheduledEnd) {
+    if (!clockOut || !scheduledEnd) return 0;
+    
+    const clockOutParts = clockOut.split(':');
+    const scheduledParts = scheduledEnd.split(':');
+    
+    if (clockOutParts.length !== 2 || scheduledParts.length !== 2) return 0;
+    
+    const clockOutMinutes = parseInt(clockOutParts[0]) * 60 + parseInt(clockOutParts[1]);
+    const scheduledMinutes = parseInt(scheduledParts[0]) * 60 + parseInt(scheduledParts[1]);
+    
+    // Calculate difference
+    const diff = clockOutMinutes - scheduledMinutes;
+    
+    return diff > 0 ? diff : 0;
+}
+
+/**
  * Determine attendance status based on clock times and schedule
  * @param {String} clockIn - Clock-in time
  * @param {String} clockOut - Clock-out time
  * @param {Object} workSchedule - Employee's work schedule {startTime, endTime}
  * @param {Number} gracePeriodMinutes - Grace period for being late
- * @returns {Object} {status, minutesLate}
+ * @returns {Object} {status, minutesLate, minutesOvertime, missedClockIn, missedClockOut}
  */
-function calculateAttendanceStatus(clockIn, clockOut, workSchedule, gracePeriodMinutes = 10) {
+function calculateAttendanceStatus(clockIn, clockOut, workSchedule, gracePeriodMinutes = 15) {
+    const missedClockIn = !clockIn;
+    const missedClockOut = !clockOut;
+    
     if (!clockIn) {
-        return { status: 'absent', minutesLate: 0 };
+        return { 
+            status: 'absent', 
+            minutesLate: 0, 
+            minutesOvertime: 0,
+            missedClockIn: true,
+            missedClockOut: missedClockOut
+        };
     }
     
     const minutesLate = calculateMinutesLate(clockIn, workSchedule.startTime, gracePeriodMinutes);
+    const minutesOvertime = calculateMinutesOvertime(clockOut, workSchedule.endTime);
     
     const status = minutesLate > 0 ? 'late' : 'present';
     
-    return { status, minutesLate };
+    return { 
+        status, 
+        minutesLate,
+        minutesOvertime,
+        missedClockIn: false,
+        missedClockOut: missedClockOut
+    };
 }
 
 /**
@@ -300,11 +339,11 @@ function validateXLSStructure(filePath) {
         
         // Check for required columns (flexible matching)
         const hasEmployeeCode = headers.some(h => 
-            /employee\s*code|code|id|employee\s*id/i.test(h)
+            /employee\s*code|code|id|employee\s*id|ac[-\s]*no\.?|emp[-\s]*no/i.test(h)
         );
         const hasDate = headers.some(h => /date/i.test(h));
         const hasClockIn = headers.some(h => 
-            /clock\s*in|time\s*in|in|check\s*in/i.test(h)
+            /clock\s*in|time\s*in|in|check\s*in|time|check[-\s]*in/i.test(h)
         );
         
         if (!hasEmployeeCode || !hasDate || !hasClockIn) {
@@ -336,6 +375,7 @@ module.exports = {
     parseDate,
     parseTime,
     calculateMinutesLate,
+    calculateMinutesOvertime,
     calculateAttendanceStatus,
     getMonthString,
     validateXLSStructure

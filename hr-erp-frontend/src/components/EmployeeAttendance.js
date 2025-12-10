@@ -85,19 +85,49 @@ const EmployeeAttendance = () => {
   }
 
   return (
-    <div className="elegant-card" style={{ marginTop: '2rem' }}>
-      <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>My Attendance</h3>
+    <div className="elegant-card employee-attendance-section" style={{ marginTop: '2rem', background: '#f8f8f8', padding: '2rem', borderRadius: '12px' }}>
+      <style>{`
+        .employee-attendance-section,
+        .employee-attendance-section *,
+        .employee-attendance-section h3,
+        .employee-attendance-section h4,
+        .employee-attendance-section strong,
+        .employee-attendance-section span:not(.status-badge),
+        .employee-attendance-section div,
+        .employee-attendance-section td,
+        .employee-attendance-section th,
+        .employee-attendance-section label {
+          color: #000000 !important;
+          text-shadow: none !important;
+        }
+        .employee-attendance-section table {
+          background: #ffffff !important;
+        }
+        .employee-attendance-section select {
+          background: #ffffff !important;
+          color: #000000 !important;
+          border: 2px solid #4a90e2 !important;
+          padding: 0.5rem !important;
+          font-weight: bold !important;
+        }
+        .employee-attendance-section select option {
+          background: #ffffff !important;
+          color: #000000 !important;
+          padding: 0.5rem !important;
+          font-weight: bold !important;
+        }
+      `}</style>
+      <h3 style={{ marginBottom: '1.5rem', color: '#000000', fontWeight: 'bold', fontSize: '1.5rem' }}>My Attendance</h3>
 
       <div style={{ marginBottom: '1.5rem' }}>
-        <label className="form-label-elegant">Select Month:</label>
+        <label style={{ color: '#000000', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>Select Month:</label>
         <select
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
-          className="form-input-elegant"
-          style={{ maxWidth: '250px' }}
+          style={{ maxWidth: '250px', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd', color: '#000000', background: '#ffffff' }}
         >
           {getMonthOptions().map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option key={opt.value} value={opt.value} style={{ color: '#000000' }}>{opt.label}</option>
           ))}
         </select>
       </div>
@@ -106,11 +136,13 @@ const EmployeeAttendance = () => {
         <div style={{ 
           padding: '1rem', 
           background: '#FFEBEE', 
-          color: '#C62828', 
+          color: '#000000', 
           borderRadius: '8px', 
-          marginBottom: '1rem' 
+          marginBottom: '1rem',
+          border: '2px solid #F44336',
+          fontWeight: 'bold'
         }}>
-          {error}
+          ⚠️ {error}
         </div>
       )}
 
@@ -130,93 +162,127 @@ const EmployeeAttendance = () => {
             marginBottom: '2rem'
           }}>
             <div style={{ 
-              padding: '1rem', 
-              background: '#E8F5E9', 
+              padding: '1.5rem', 
+              background: '#ffffff', 
               borderRadius: '8px', 
-              textAlign: 'center' 
+              textAlign: 'center',
+              border: '3px solid #4CAF50',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }}>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#2E7D32' }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
                 {attendanceData.stats.present}
               </div>
-              <div style={{ color: '#666', fontSize: '0.9rem' }}>Present</div>
+              <div style={{ color: '#000000', fontSize: '1rem', fontWeight: 'bold', marginTop: '0.5rem' }}>Present</div>
             </div>
 
             <div style={{ 
-              padding: '1rem', 
-              background: '#FFF3E0', 
+              padding: '1.5rem', 
+              background: '#ffffff', 
               borderRadius: '8px', 
-              textAlign: 'center' 
+              textAlign: 'center',
+              border: '3px solid #FF9800',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }}>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#EF6C00' }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
                 {attendanceData.stats.late}
               </div>
-              <div style={{ color: '#666', fontSize: '0.9rem' }}>Late</div>
+              <div style={{ color: '#000000', fontSize: '1rem', fontWeight: 'bold', marginTop: '0.5rem' }}>Late</div>
             </div>
 
             <div style={{ 
-              padding: '1rem', 
-              background: '#FFEBEE', 
+              padding: '1.5rem', 
+              background: '#ffffff', 
               borderRadius: '8px', 
-              textAlign: 'center' 
+              textAlign: 'center',
+              border: '3px solid #F44336',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }}>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#C62828' }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
                 {attendanceData.stats.unexcusedAbsences}
               </div>
-              <div style={{ color: '#666', fontSize: '0.9rem' }}>Unexcused Absences</div>
+              <div style={{ color: '#000000', fontSize: '1rem', fontWeight: 'bold', marginTop: '0.5rem' }}>Unexcused Absences</div>
             </div>
 
             <div style={{ 
-              padding: '1rem', 
-              background: '#E3F2FD', 
+              padding: '1.5rem', 
+              background: '#ffffff', 
               borderRadius: '8px', 
-              textAlign: 'center' 
+              textAlign: 'center',
+              border: '3px solid #2196F3',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }}>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1565C0' }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
                 {attendanceData.stats.excused}
               </div>
-              <div style={{ color: '#666', fontSize: '0.9rem' }}>Excused</div>
+              <div style={{ color: '#000000', fontSize: '1rem', fontWeight: 'bold', marginTop: '0.5rem' }}>Excused</div>
             </div>
 
             <div style={{ 
-              padding: '1rem', 
-              background: '#F3E5F5', 
+              padding: '1.5rem', 
+              background: '#ffffff', 
               borderRadius: '8px', 
-              textAlign: 'center' 
+              textAlign: 'center',
+              border: '3px solid #9C27B0',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }}>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#6A1B9A' }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
                 {attendanceData.stats.onLeave}
               </div>
-              <div style={{ color: '#666', fontSize: '0.9rem' }}>On Leave</div>
+              <div style={{ color: '#000000', fontSize: '1rem', fontWeight: 'bold', marginTop: '0.5rem' }}>On Leave</div>
             </div>
           </div>
 
           {/* Daily Breakdown */}
           {attendanceData.records && attendanceData.records.length > 0 ? (
-            <div style={{ overflowX: 'auto' }}>
-              <h4 style={{ marginBottom: '1rem', color: '#333' }}>Daily Breakdown</h4>
-              <table className="table-elegant">
+            <div style={{ overflowX: 'auto', background: '#ffffff', padding: '1rem', borderRadius: '8px' }}>
+              <h4 style={{ marginBottom: '1rem', color: '#000000', fontWeight: 'bold' }}>Daily Breakdown</h4>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Clock In</th>
-                    <th>Clock Out</th>
-                    <th>Status</th>
-                    <th>Minutes Late</th>
+                  <tr style={{ backgroundColor: '#f0f0f0', borderBottom: '2px solid #ddd' }}>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold' }}>Date</th>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold' }}>Clock In</th>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold' }}>Clock Out</th>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold' }}>Status</th>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold' }}>Late</th>
+                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold' }}>Overtime</th>
                   </tr>
                 </thead>
                 <tbody>
                   {attendanceData.records.map((record, idx) => (
-                    <tr key={idx}>
-                      <td>{formatDate(record.date)}</td>
-                      <td>{record.clockIn || '-'}</td>
-                      <td>{record.clockOut || '-'}</td>
-                      <td>{getStatusBadge(record.status)}</td>
-                      <td>
+                    <tr key={idx} style={{ borderBottom: '1px solid #eee', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9f9f9' }}>
+                      <td style={{ padding: '10px', color: '#000000', fontSize: '0.9rem' }}>{formatDate(record.date)}</td>
+                      <td style={{ padding: '10px', fontSize: '0.9rem', fontWeight: '500' }}>
+                        {record.missedClockIn ? (
+                          <span style={{ color: '#F44336', fontWeight: 'bold' }}>❌ MISSED</span>
+                        ) : (
+                          <span style={{ color: '#000000' }}>{record.clockIn}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '10px', fontSize: '0.9rem', fontWeight: '500' }}>
+                        {record.missedClockOut ? (
+                          <span style={{ color: '#FF9800', fontWeight: 'bold' }}>⚠️ MISSED</span>
+                        ) : (
+                          <span style={{ color: '#000000' }}>{record.clockOut || '-'}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '10px' }}>{getStatusBadge(record.status)}</td>
+                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>
                         {record.minutesLate > 0 ? (
-                          <span style={{ color: '#EF6C00', fontWeight: 'bold' }}>
+                          <span style={{ color: '#F44336', fontWeight: 'bold' }}>
                             {record.minutesLate} min
                           </span>
-                        ) : '-'}
+                        ) : (
+                          <span style={{ color: '#000000' }}>-</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>
+                        {record.minutesOvertime > 0 ? (
+                          <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>
+                            +{record.minutesOvertime} min
+                          </span>
+                        ) : (
+                          <span style={{ color: '#000000' }}>-</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -226,12 +292,13 @@ const EmployeeAttendance = () => {
               <div style={{ 
                 marginTop: '1rem', 
                 padding: '1rem', 
-                background: '#F5F5F5', 
+                background: '#ffffff', 
                 borderRadius: '8px',
-                fontSize: '0.9rem',
-                color: '#666'
+                fontSize: '0.95rem',
+                color: '#000000',
+                border: '1px solid #ddd'
               }}>
-                <strong>Note:</strong> Absences covered by approved vacation/excuse/sick leave forms are marked as "Excused" or "On Leave".
+                <strong style={{ color: '#000000' }}>Note:</strong> <span style={{ color: '#000000' }}>Absences covered by approved vacation/excuse/sick leave forms are marked as "Excused" or "On Leave".</span>
               </div>
             </div>
           ) : (

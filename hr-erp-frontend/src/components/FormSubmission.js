@@ -299,7 +299,9 @@ const FormSubmission = ({ onFormSubmitted }) => {
           >
             <option value="vacation">🏖️ {t('forms.vacationRequestOption')}</option>
             <option value="excuse">⏰ {t('forms.excuseRequestOption')}</option>
-            <option value="wfh">🏠 {t('forms.wfhRequestOption')}</option>
+            {userInfo?.department === 'Marketing' && (
+              <option value="wfh">🏠 {t('forms.wfhRequestOption')}</option>
+            )}
             <option value="sick_leave">🏥 {t('forms.sickLeaveRequestOption')}</option>
           </select>
           <small className="input-helper" style={{ marginTop: '0.5rem', display: 'block' }}>

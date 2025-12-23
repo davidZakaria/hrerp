@@ -159,7 +159,7 @@ const OptimizedFormInput = memo(({
 
   return (
     <div className="optimized-form-group">
-      <style jsx>{`
+      <style>{`
         .optimized-form-group {
           margin-bottom: 1.5rem;
           position: relative;

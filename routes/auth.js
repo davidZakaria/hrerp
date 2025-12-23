@@ -100,12 +100,11 @@ router.post('/login', async (req, res) => {
             }
         }
 
-        // Update last login
-        user.lastLogin = Date.now();
-        await user.save();
+        // Update last login (non-blocking - don't wait for it)
+        User.updateOne({ _id: user._id }, { lastLogin: Date.now() }).exec();
 
-        // Create audit log for login
-        await createAuditLog({
+        // Create audit log for login (non-blocking - fire and forget)
+        createAuditLog({
             action: 'USER_LOGIN',
             performedBy: user._id,
             description: `User ${user.name} (${user.email}) logged in`,
@@ -117,7 +116,7 @@ router.post('/login', async (req, res) => {
             ipAddress: req.ip || req.connection.remoteAddress,
             userAgent: req.get('User-Agent'),
             severity: 'LOW'
-        });
+        }).catch(err => console.error('Audit log error:', err));
 
         console.log('User logged in:', {
             id: user.id,

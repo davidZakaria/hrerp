@@ -12,6 +12,9 @@ const AttendanceManagement = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showEmployeeDetail, setShowEmployeeDetail] = useState(false);
   const [availableMonths, setAvailableMonths] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [approvedForms, setApprovedForms] = useState([]);
+  const [activeView, setActiveView] = useState('summary'); // 'summary' or 'detailed'
 
   function getCurrentMonth() {
     const now = new Date();
@@ -27,8 +30,25 @@ const AttendanceManagement = () => {
   useEffect(() => {
     if (selectedMonth) {
       fetchMonthlyReport();
+      fetchApprovedForms();
     }
   }, [selectedMonth]);
+
+  const fetchApprovedForms = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      // Fetch approved vacation, excuse, and sick leave forms for the month
+      const res = await fetch(`http://localhost:5001/api/forms/approved-by-month/${selectedMonth}`, {
+        headers: { 'x-auth-token': token }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setApprovedForms(data);
+      }
+    } catch (err) {
+      console.error('Error fetching approved forms:', err);
+    }
+  };
 
   const fetchAvailableMonths = async () => {
     const token = localStorage.getItem('token');
@@ -270,19 +290,56 @@ const AttendanceManagement = () => {
       <div className="elegant-card">
         <h3 style={{ marginBottom: '1rem', color: '#333' }}>Monthly Attendance Report</h3>
         
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label className="form-label-elegant">Select Month:</label>
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="form-input-elegant"
-            style={{ maxWidth: '200px' }}
-          >
-            <option value={getCurrentMonth()}>Current Month</option>
-            {availableMonths.map(month => (
-              <option key={month} value={month}>{month}</option>
-            ))}
-          </select>
+        {/* Controls Row */}
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'flex-end' }}>
+          <div>
+            <label className="form-label-elegant">Select Month:</label>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="form-input-elegant"
+              style={{ maxWidth: '200px' }}
+            >
+              <option value={getCurrentMonth()}>Current Month</option>
+              {availableMonths.map(month => (
+                <option key={month} value={month}>{month}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Search Filter */}
+          <div style={{ flex: 1, minWidth: '250px' }}>
+            <label className="form-label-elegant">🔍 Search Employee:</label>
+            <input
+              type="text"
+              placeholder="Search by name, code, or department..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="form-input-elegant"
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          {/* View Toggle */}
+          <div>
+            <label className="form-label-elegant">View Mode:</label>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={() => setActiveView('summary')}
+                className={`btn-elegant ${activeView === 'summary' ? 'btn-success' : ''}`}
+                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+              >
+                📊 Summary
+              </button>
+              <button
+                onClick={() => setActiveView('detailed')}
+                className={`btn-elegant ${activeView === 'detailed' ? 'btn-success' : ''}`}
+                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+              >
+                📋 Detailed
+              </button>
+            </div>
+          </div>
         </div>
 
         {error && <div className="alert alert-danger">{error}</div>}
@@ -291,60 +348,256 @@ const AttendanceManagement = () => {
 
         {attendanceReport && !loading && (
           <div>
-            <div style={{ marginBottom: '1.5rem', color: '#666' }}>
-              <strong>Total Employees:</strong> {attendanceReport.totalEmployees}
+            <div style={{ marginBottom: '1.5rem', color: '#666', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <strong>Total Employees:</strong> {attendanceReport.totalEmployees}
+                {searchQuery && (
+                  <span style={{ marginLeft: '1rem', color: '#4a90e2' }}>
+                    (Showing {attendanceReport.report.filter(emp => 
+                      emp.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      (emp.user.employeeCode || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      emp.user.department.toLowerCase().includes(searchQuery.toLowerCase())
+                    ).length} results)
+                  </span>
+                )}
+              </div>
+              {approvedForms.length > 0 && (
+                <span style={{ background: '#E3F2FD', color: '#1565C0', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem' }}>
+                  📝 {approvedForms.length} Approved Leave/Excuse Forms This Month
+                </span>
+              )}
             </div>
 
-            <div style={{ overflowX: 'auto' }}>
-              <table className="table-elegant">
-                <thead>
-                  <tr>
-                    <th>Employee</th>
-                    <th>Code</th>
-                    <th>Department</th>
-                    <th>Total Days</th>
-                    <th>Present</th>
-                    <th>Late</th>
-                    <th>Absent</th>
-                    <th>Missed Clock-In</th>
-                    <th>Missed Clock-Out</th>
-                    <th>Overtime (min)</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attendanceReport.report.map((emp, idx) => (
-                    <tr key={idx}>
-                      <td>{emp.user.name}</td>
-                      <td><code>{emp.user.employeeCode || 'N/A'}</code></td>
-                      <td>{emp.user.department}</td>
-                      <td>{emp.stats.totalDays}</td>
-                      <td style={{ color: '#2E7D32' }}>{emp.stats.present}</td>
-                      <td style={{ color: '#EF6C00' }}>{emp.stats.late}</td>
-                      <td style={{ color: '#C62828' }}>{emp.stats.unexcusedAbsences}</td>
-                      <td style={{ color: emp.stats.missedClockIns > 0 ? '#F44336' : '#666', fontWeight: emp.stats.missedClockIns > 0 ? 'bold' : 'normal' }}>
-                        {emp.stats.missedClockIns || 0}
-                      </td>
-                      <td style={{ color: emp.stats.missedClockOuts > 0 ? '#FF9800' : '#666', fontWeight: emp.stats.missedClockOuts > 0 ? 'bold' : 'normal' }}>
-                        {emp.stats.missedClockOuts || 0}
-                      </td>
-                      <td style={{ color: emp.stats.totalMinutesOvertime > 0 ? '#4CAF50' : '#666', fontWeight: emp.stats.totalMinutesOvertime > 0 ? 'bold' : 'normal' }}>
-                        {emp.stats.totalMinutesOvertime > 0 ? `+${emp.stats.totalMinutesOvertime}` : '0'}
-                      </td>
-                      <td>
-                        <button
-                          onClick={() => viewEmployeeDetails(emp)}
-                          className="btn-elegant btn-info"
-                          style={{ padding: '0.3rem 0.8rem', fontSize: '0.85rem' }}
-                        >
-                          View Details
-                        </button>
-                      </td>
+            {/* Summary View */}
+            {activeView === 'summary' && (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="table-elegant">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Code</th>
+                      <th>Department</th>
+                      <th>Total Days</th>
+                      <th>Present</th>
+                      <th>Late</th>
+                      <th>Absent</th>
+                      <th>On Leave</th>
+                      <th>Excused</th>
+                      <th>Missed Clock-In</th>
+                      <th>Missed Clock-Out</th>
+                      <th>Overtime (min)</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {attendanceReport.report
+                      .filter(emp => 
+                        emp.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (emp.user.employeeCode || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        emp.user.department.toLowerCase().includes(searchQuery.toLowerCase())
+                      )
+                      .map((emp, idx) => (
+                      <tr key={idx}>
+                        <td>{emp.user.name}</td>
+                        <td><code>{emp.user.employeeCode || 'N/A'}</code></td>
+                        <td>{emp.user.department}</td>
+                        <td>{emp.stats.totalDays}</td>
+                        <td style={{ color: '#2E7D32' }}>{emp.stats.present}</td>
+                        <td style={{ color: '#EF6C00' }}>{emp.stats.late}</td>
+                        <td style={{ color: '#C62828' }}>{emp.stats.unexcusedAbsences}</td>
+                        <td style={{ color: '#9C27B0' }}>{emp.stats.onLeave || 0}</td>
+                        <td style={{ color: '#1565C0' }}>{emp.stats.excused || 0}</td>
+                        <td style={{ color: emp.stats.missedClockIns > 0 ? '#F44336' : '#666', fontWeight: emp.stats.missedClockIns > 0 ? 'bold' : 'normal' }}>
+                          {emp.stats.missedClockIns || 0}
+                        </td>
+                        <td style={{ color: emp.stats.missedClockOuts > 0 ? '#FF9800' : '#666', fontWeight: emp.stats.missedClockOuts > 0 ? 'bold' : 'normal' }}>
+                          {emp.stats.missedClockOuts || 0}
+                        </td>
+                        <td style={{ color: emp.stats.totalMinutesOvertime > 0 ? '#4CAF50' : '#666', fontWeight: emp.stats.totalMinutesOvertime > 0 ? 'bold' : 'normal' }}>
+                          {emp.stats.totalMinutesOvertime > 0 ? `+${emp.stats.totalMinutesOvertime}` : '0'}
+                        </td>
+                        <td>
+                          <button
+                            onClick={() => viewEmployeeDetails(emp)}
+                            className="btn-elegant btn-info"
+                            style={{ padding: '0.3rem 0.8rem', fontSize: '0.85rem' }}
+                          >
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Detailed View - Shows each employee's daily clock in/out */}
+            {activeView === 'detailed' && (
+              <div>
+                {attendanceReport.report
+                  .filter(emp => 
+                    emp.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (emp.user.employeeCode || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    emp.user.department.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((emp, idx) => {
+                    // Get approved forms for this employee
+                    const employeeForms = approvedForms.filter(f => f.user?._id === emp.user.id || f.user === emp.user.id);
+                    
+                    return (
+                      <div key={idx} style={{ 
+                        marginBottom: '2rem', 
+                        background: '#fff', 
+                        borderRadius: '12px', 
+                        padding: '1.5rem',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {/* Employee Header */}
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          marginBottom: '1rem',
+                          paddingBottom: '1rem',
+                          borderBottom: '2px solid #f0f0f0'
+                        }}>
+                          <div>
+                            <h4 style={{ margin: 0, color: '#333', fontSize: '1.2rem' }}>
+                              {emp.user.name}
+                            </h4>
+                            <div style={{ color: '#666', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+                              <code style={{ background: '#f5f5f5', padding: '2px 6px', borderRadius: '4px' }}>
+                                {emp.user.employeeCode || 'N/A'}
+                              </code>
+                              <span style={{ margin: '0 0.5rem' }}>•</span>
+                              {emp.user.department}
+                              <span style={{ margin: '0 0.5rem' }}>•</span>
+                              Schedule: {emp.user.workSchedule ? `${emp.user.workSchedule.startTime} - ${emp.user.workSchedule.endTime}` : 'Not set'}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <span style={{ background: '#E8F5E9', color: '#2E7D32', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>
+                              ✓ {emp.stats.present} Present
+                            </span>
+                            <span style={{ background: '#FFF3E0', color: '#EF6C00', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>
+                              ⏰ {emp.stats.late} Late
+                            </span>
+                            <span style={{ background: '#FFEBEE', color: '#C62828', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>
+                              ✗ {emp.stats.unexcusedAbsences} Absent
+                            </span>
+                            {emp.stats.onLeave > 0 && (
+                              <span style={{ background: '#F3E5F5', color: '#6A1B9A', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>
+                                🏖️ {emp.stats.onLeave} On Leave
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Approved Forms for this Employee */}
+                        {employeeForms.length > 0 && (
+                          <div style={{ 
+                            background: '#E3F2FD', 
+                            padding: '1rem', 
+                            borderRadius: '8px', 
+                            marginBottom: '1rem' 
+                          }}>
+                            <strong style={{ color: '#1565C0', fontSize: '0.9rem' }}>📝 Approved Requests:</strong>
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                              {employeeForms.map((form, fIdx) => (
+                                <span key={fIdx} style={{ 
+                                  background: form.type === 'vacation' ? '#9C27B0' : form.type === 'excuse' ? '#1976D2' : '#FF9800',
+                                  color: 'white',
+                                  padding: '4px 10px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.8rem'
+                                }}>
+                                  {form.type === 'vacation' && `🏖️ Vacation: ${new Date(form.startDate).toLocaleDateString()} - ${new Date(form.endDate).toLocaleDateString()}`}
+                                  {form.type === 'excuse' && `⏰ Excuse: ${new Date(form.excuseDate).toLocaleDateString()} (${form.fromHour}-${form.toHour})`}
+                                  {form.type === 'sick_leave' && `🏥 Sick: ${new Date(form.sickLeaveStartDate).toLocaleDateString()} - ${new Date(form.sickLeaveEndDate).toLocaleDateString()}`}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Daily Records Table */}
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                            <thead>
+                              <tr style={{ background: '#f5f5f5' }}>
+                                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Date</th>
+                                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Day</th>
+                                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Clock In</th>
+                                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Clock Out</th>
+                                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Status</th>
+                                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Late</th>
+                                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Overtime</th>
+                                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Notes</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {emp.records.map((record, rIdx) => {
+                                const recordDate = new Date(record.date);
+                                const dayName = recordDate.toLocaleDateString('en-US', { weekday: 'short' });
+                                const isWeekend = recordDate.getDay() === 0 || recordDate.getDay() === 6;
+                                
+                                return (
+                                  <tr key={rIdx} style={{ 
+                                    background: isWeekend ? '#f9f9f9' : (rIdx % 2 === 0 ? '#fff' : '#fafafa'),
+                                    borderBottom: '1px solid #eee'
+                                  }}>
+                                    <td style={{ padding: '8px' }}>{formatDate(record.date)}</td>
+                                    <td style={{ padding: '8px', color: isWeekend ? '#9e9e9e' : '#333' }}>{dayName}</td>
+                                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                                      {record.missedClockIn ? (
+                                        <span style={{ color: '#F44336', fontWeight: 'bold' }}>❌ MISSED</span>
+                                      ) : (
+                                        <span style={{ fontFamily: 'monospace' }}>{record.clockIn}</span>
+                                      )}
+                                    </td>
+                                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                                      {record.missedClockOut ? (
+                                        <span style={{ color: '#FF9800', fontWeight: 'bold' }}>⚠️ MISSED</span>
+                                      ) : (
+                                        <span style={{ fontFamily: 'monospace' }}>{record.clockOut || '-'}</span>
+                                      )}
+                                    </td>
+                                    <td style={{ padding: '8px', textAlign: 'center' }}>{getStatusBadge(record.status)}</td>
+                                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                                      {record.minutesLate > 0 ? (
+                                        <span style={{ color: '#F44336', fontWeight: 'bold' }}>{record.minutesLate}m</span>
+                                      ) : '-'}
+                                    </td>
+                                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                                      {record.minutesOvertime > 0 ? (
+                                        <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>+{record.minutesOvertime}m</span>
+                                      ) : '-'}
+                                    </td>
+                                    <td style={{ padding: '8px', fontSize: '0.85rem', color: '#666' }}>
+                                      {record.relatedForm && (
+                                        <span style={{ 
+                                          background: record.status === 'on_leave' ? '#F3E5F5' : '#E3F2FD',
+                                          color: record.status === 'on_leave' ? '#6A1B9A' : '#1565C0',
+                                          padding: '2px 6px',
+                                          borderRadius: '4px'
+                                        }}>
+                                          {record.status === 'on_leave' ? '🏖️ Approved Leave' : '✓ Excused'}
+                                        </span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
           </div>
         )}
       </div>

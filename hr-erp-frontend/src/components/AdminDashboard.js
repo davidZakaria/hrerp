@@ -97,47 +97,29 @@ const AdminDashboard = () => {
     'Other'
   ];
 
-  // Fetch vacation days for a user
-  const fetchVacationDays = useCallback(async (userId) => {
-    if (!userId) return;
+  // Batch fetch all users' vacation days and excuse hours in ONE request
+  const fetchAllUserBalances = useCallback(async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:5001/api/forms/vacation-days/${userId}`, {
+      const res = await fetch('http://localhost:5001/api/forms/vacation-days-report', {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
-      if (res.ok) {
-        setVacationDaysMap(prev => {
-          // Only update if userId is not already in the map to prevent unnecessary rerenders
-          if (prev[userId] !== undefined) return prev;
-          return { ...prev, [userId]: data.vacationDaysLeft };
+      if (res.ok && Array.isArray(data)) {
+        // Build maps from the batch response
+        const vacationMap = {};
+        const excuseMap = {};
+        data.forEach(user => {
+          vacationMap[user._id] = user.vacationDaysLeft;
+          excuseMap[user._id] = user.excuseRequestsLeft;
         });
+        setVacationDaysMap(vacationMap);
+        setExcuseHoursMap(excuseMap);
       }
     } catch (err) {
-      // ignore
+      console.error('Error fetching user balances:', err);
     }
-  }, []); // No dependencies - stable function
-
-  // Fetch excuse hours for a user
-  const fetchExcuseHours = useCallback(async (userId) => {
-    if (!userId) return;
-    const token = localStorage.getItem('token');
-    try {
-      const res = await fetch(`http://localhost:5001/api/forms/excuse-hours/${userId}`, {
-        headers: { 'x-auth-token': token }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setExcuseHoursMap(prev => {
-          // Only update if userId is not already in the map to prevent unnecessary rerenders
-          if (prev[userId] !== undefined) return prev;
-          return { ...prev, [userId]: data.excuseHoursLeft };
-        });
-      }
-    } catch (err) {
-      // ignore
-    }
-  }, []); // No dependencies - stable function
+  }, []);
 
   // Fetch all forms
   const fetchForms = useCallback(async () => {
@@ -154,12 +136,8 @@ const AdminDashboard = () => {
       setForms(data);
       console.log(`✅ Admin forms received: ${data.length} forms`);
       
-      // Fetch vacation days and excuse hours for each unique user
-      const userIds = Array.from(new Set(data.map(f => f.user?._id).filter(Boolean)));
-      userIds.forEach(userId => {
-        fetchVacationDays(userId);
-        fetchExcuseHours(userId);
-      });
+      // Batch fetch all user balances in a single request (much faster!)
+      fetchAllUserBalances();
     } catch (err) {
       console.error('❌ Forms fetch error:', err);
       if (err.response) {
@@ -176,7 +154,7 @@ const AdminDashboard = () => {
       setFormsLoading(false);
       setRefreshingForms(false);
     }
-  }, [fetchVacationDays, fetchExcuseHours]);
+  }, [fetchAllUserBalances]);
 
   // Fetch current user info
   const fetchCurrentUser = async () => {
@@ -412,21 +390,25 @@ const AdminDashboard = () => {
       
       if (res.ok) {
         console.log('Form action successful:', data);
-        setFormsError(''); // Clear any previous errors
         
-        // Show success message and refresh immediately
-        const successMessage = `✅ Form ${status} successfully! Refreshing...`;
+        // OPTIMISTIC UPDATE: Immediately update the form status in UI
+        setForms(prevForms => 
+          prevForms.map(form => 
+            form._id === id 
+              ? { 
+                  ...form, 
+                  status: status,
+                  adminApprovedBy: currentUser,
+                  adminApprovedAt: new Date().toISOString(),
+                  adminComment: comments[id] || ''
+                } 
+              : form
+          )
+        );
+        
+        // Show success message
+        const successMessage = `✅ Form ${status} successfully!`;
         setFormsError(successMessage);
-        
-        // Immediate refresh to get updated data from server
-        // Don't do optimistic updates - let the server be the source of truth
-        await fetchForms();
-        
-        const form = forms.find(f => f._id === id);
-        if (form && form.user?._id) {
-          fetchVacationDays(form.user._id);
-          fetchExcuseHours(form.user._id);
-        }
         
         // Clear the comment for this form
         setComments(prev => {
@@ -435,12 +417,16 @@ const AdminDashboard = () => {
           return updated;
         });
         
-        // Double-check with another refresh after a delay to ensure consistency
-        setTimeout(async () => {
-          console.log('🔄 Second refresh to ensure consistency...');
-          await fetchForms();
+        // Clear success message after 3 seconds
+        setTimeout(() => {
           setFormsError('');
-        }, 2000);
+        }, 3000);
+        
+        // Refresh from server in background to ensure consistency
+        setTimeout(async () => {
+          console.log('🔄 Background refresh for consistency...');
+          await fetchForms();
+        }, 1000);
         
       } else {
         console.error('Form action failed:', {
@@ -1031,7 +1017,37 @@ const AdminDashboard = () => {
                       <div className="user-info">
                         <h3>{user.name}</h3>
                         <p>{user.email}</p>
+                        <p>
+                          <strong>Role:</strong>{' '}
+                          <span style={{ 
+                            background: user.role === 'manager' ? '#9C27B0' : '#2196F3',
+                            color: 'white',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.85rem'
+                          }}>
+                            {user.role === 'manager' ? '👔 Manager' : '👤 Employee'}
+                          </span>
+                        </p>
                         <p><strong>Department:</strong> {user.department}</p>
+                        {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
+                          <p style={{ marginTop: '0.5rem' }}>
+                            <strong>🎯 Wants to Manage:</strong>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                              {user.managedDepartments.map((dept, idx) => (
+                                <span key={idx} style={{
+                                  background: '#FF9800',
+                                  color: 'white',
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.8rem'
+                                }}>
+                                  {dept}
+                                </span>
+                              ))}
+                            </div>
+                          </p>
+                        )}
                         <p><strong>Registered:</strong> {new Date(user.createdAt).toLocaleDateString()}</p>
                       </div>
                       <div className="user-actions">
@@ -1134,13 +1150,32 @@ const AdminDashboard = () => {
                         <div className="info-row">
                           <span className="info-label">Role:</span>
                           <span className={`role-badge role-${user.role}`}>
-                            {user.role === 'manager' ? 'Manager' : 'Employee'}
+                            {user.role === 'manager' ? '👔 Manager' : '👤 Employee'}
                           </span>
                         </div>
                         <div className="info-row">
                           <span className="info-label">Department:</span>
                           <span className="info-value">{user.department}</span>
                         </div>
+                        {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
+                          <div className="info-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                            <span className="info-label" style={{ marginBottom: '0.5rem' }}>🎯 Wants to Manage:</span>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                              {user.managedDepartments.map((dept, idx) => (
+                                <span key={idx} style={{
+                                  background: '#FF9800',
+                                  color: 'white',
+                                  padding: '3px 10px',
+                                  borderRadius: '12px',
+                                  fontSize: '0.8rem',
+                                  fontWeight: '500'
+                                }}>
+                                  {dept}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <div className="info-row">
                           <span className="info-label">Registration Date:</span>
                           <span className="info-value">

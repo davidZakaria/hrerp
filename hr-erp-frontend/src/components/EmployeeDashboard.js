@@ -15,6 +15,22 @@ const EmployeeDashboard = () => {
   const [vacationDaysLeft, setVacationDaysLeft] = useState(null);
   const [excuseRequestsLeft, setExcuseRequestsLeft] = useState(null);
   const [nextResetDate, setNextResetDate] = useState(null);
+  const [user, setUser] = useState(null);
+
+  const fetchUserData = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch('http://localhost:5001/api/auth/me', {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUser(data);
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
 
   const fetchVacationDays = async () => {
     const token = localStorage.getItem('token');
@@ -50,6 +66,7 @@ const EmployeeDashboard = () => {
   };
 
   useEffect(() => {
+    fetchUserData();
     fetchVacationDays();
     fetchExcuseRequests();
   }, []);
@@ -119,6 +136,58 @@ const EmployeeDashboard = () => {
         <h1 className="app-title">{t('dashboard.employee')}</h1>
         <LogoutButton />
       </div>
+
+      {/* Welcome Message */}
+      {user && (
+        <div className="elegant-card hover-lift" style={{ 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          textAlign: 'center',
+          padding: '2rem',
+          marginBottom: '2rem',
+          borderRadius: '16px',
+          boxShadow: '0 10px 40px rgba(102, 126, 234, 0.3)'
+        }}>
+          <h2 style={{ 
+            fontSize: '2rem', 
+            marginBottom: '1rem',
+            fontWeight: '600',
+            textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}>
+            👋 Welcome, {user.name}!
+          </h2>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            gap: '2rem',
+            flexWrap: 'wrap',
+            marginTop: '1rem'
+          }}>
+            <div style={{ 
+              background: 'rgba(255,255,255,0.2)', 
+              padding: '0.75rem 1.5rem', 
+              borderRadius: '12px',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <span style={{ opacity: 0.9, fontSize: '0.9rem' }}>🏢 Department</span>
+              <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginTop: '0.25rem' }}>
+                {user.department}
+              </div>
+            </div>
+            <div style={{ 
+              background: 'rgba(255,255,255,0.2)', 
+              padding: '0.75rem 1.5rem', 
+              borderRadius: '12px',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <span style={{ opacity: 0.9, fontSize: '0.9rem' }}>🆔 Employee Code</span>
+              <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginTop: '0.25rem' }}>
+                {user.employeeCode || 'Not Assigned'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="main-content">

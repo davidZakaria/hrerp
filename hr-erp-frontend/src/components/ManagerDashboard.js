@@ -337,20 +337,40 @@ const ManagerDashboard = ({ onLogout }) => {
       
       // Check if response is successful
       if (response.status === 200) {
-        setMessage(`✅ Request ${actionType}d successfully! Refreshing...`);
+        const newStatus = actionType === 'approve' ? 'manager_approved' : 'manager_rejected';
+        
+        // OPTIMISTIC UPDATE: Immediately remove from pending list
+        setPendingForms(prev => prev.filter(form => form._id !== selectedForm._id));
+        
+        // Update team forms if viewing them
+        setTeamForms(prev => 
+          prev.map(form => 
+            form._id === selectedForm._id 
+              ? { 
+                  ...form, 
+                  status: newStatus,
+                  managerApprovedBy: user,
+                  managerApprovedAt: new Date().toISOString(),
+                  managerComment: comment.trim()
+                } 
+              : form
+          )
+        );
+        
+        setMessage(`✅ Request ${actionType}d successfully!`);
         closeCommentModal();
         
-        // Immediate refresh to get updated data from server
-        // Don't do optimistic updates - let the server be the source of truth
-        await fetchPendingForms();
-        await fetchTeamForms();
-        
-        // Double-check with another refresh after a delay to ensure consistency
-        setTimeout(async () => {
-          console.log('🔄 Second refresh to ensure consistency...');
-          await fetchPendingForms();
+        // Clear message after 3 seconds
+        setTimeout(() => {
           setMessage('');
-        }, 2000);
+        }, 3000);
+        
+        // Background refresh for consistency
+        setTimeout(async () => {
+          console.log('🔄 Background refresh for consistency...');
+          await fetchPendingForms();
+          await fetchTeamForms();
+        }, 1000);
       } else {
         throw new Error(`Unexpected response status: ${response.status}`);
       }
@@ -420,7 +440,7 @@ const ManagerDashboard = ({ onLogout }) => {
       <div className="loading-container">
         <div className="spinner"></div>
         <p>{t('managerDashboard.loadingManagerDashboard')}</p>
-        <style jsx>{`
+        <style>{`
           .loading-container {
             display: flex;
             flex-direction: column;
@@ -1029,7 +1049,7 @@ const ManagerDashboard = ({ onLogout }) => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .manager-dashboard {
           min-height: 100vh;
           background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);

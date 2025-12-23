@@ -127,6 +127,11 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             return res.status(400).json({ msg: 'Invalid form type' });
         }
 
+        // WFH is only available for Marketing department
+        if (type === 'wfh' && user.department !== 'Marketing') {
+            return res.status(403).json({ msg: 'Work from Home requests are only available for the Marketing department' });
+        }
+
         // Type-specific validation
         if (type === 'vacation') {
             if (!startDate || !endDate || !vacationType) {
@@ -993,14 +998,14 @@ router.get('/excuse-hours', auth, async (req, res) => {
     }
 });
 
-// Get any user's vacation days left (admin only)
+// Get any user's vacation days left (admin only) - optimized with lean()
 router.get('/vacation-days/:userId', auth, async (req, res) => {
     try {
-        const admin = await User.findById(req.user.id);
-        if (admin.role !== 'admin') {
+        const admin = await User.findById(req.user.id).select('role').lean();
+        if (!admin || !['admin', 'super_admin'].includes(admin.role)) {
             return res.status(403).json({ msg: 'Not authorized' });
         }
-        const user = await User.findById(req.params.userId);
+        const user = await User.findById(req.params.userId).select('vacationDaysLeft').lean();
         if (!user) {
             return res.status(404).json({ msg: 'User not found' });
         }
@@ -1011,35 +1016,95 @@ router.get('/vacation-days/:userId', auth, async (req, res) => {
     }
 });
 
-// Get any user's excuse hours left (admin only)
+// Get any user's excuse hours left (admin only) - optimized with lean()
 router.get('/excuse-hours/:userId', auth, async (req, res) => {
     try {
-        const admin = await User.findById(req.user.id);
-        if (admin.role !== 'admin') {
+        const admin = await User.findById(req.user.id).select('role').lean();
+        if (!admin || !['admin', 'super_admin'].includes(admin.role)) {
             return res.status(403).json({ msg: 'Not authorized' });
         }
-        const user = await User.findById(req.params.userId);
+        const user = await User.findById(req.params.userId).select('excuseRequestsLeft').lean();
         if (!user) {
             return res.status(404).json({ msg: 'User not found' });
         }
-        res.json({ excuseHoursLeft: user.excuseHoursLeft });
+        res.json({ excuseHoursLeft: user.excuseRequestsLeft });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server error');
     }
 });
 
-// Admin: Get report of all users and their vacation days left
+// Admin: Get report of all users and their vacation days left (optimized batch query)
 router.get('/vacation-days-report', auth, async (req, res) => {
     try {
-        const admin = await User.findById(req.user.id);
-        if (admin.role !== 'admin') {
+        const admin = await User.findById(req.user.id).select('role').lean();
+        if (!admin || !['admin', 'super_admin'].includes(admin.role)) {
             return res.status(403).json({ msg: 'Not authorized' });
         }
-        const users = await User.find({}, 'name email department vacationDaysLeft excuseHoursLeft');
+        // Use lean() for faster queries - returns plain JS objects instead of Mongoose documents
+        const users = await User.find(
+            { status: 'active' }, 
+            '_id name email department vacationDaysLeft excuseRequestsLeft'
+        ).lean();
         res.json(users);
     } catch (err) {
         console.error(err.message);
+        res.status(500).send('Server error');
+    }
+});
+
+// Admin: Get approved vacation/excuse/sick leave forms for a specific month
+router.get('/approved-by-month/:month', auth, async (req, res) => {
+    try {
+        const admin = await User.findById(req.user.id).select('role').lean();
+        if (!admin || !['admin', 'super_admin'].includes(admin.role)) {
+            return res.status(403).json({ msg: 'Not authorized' });
+        }
+        
+        const { month } = req.params; // Format: YYYY-MM
+        
+        // Validate month format
+        if (!/^\d{4}-\d{2}$/.test(month)) {
+            return res.status(400).json({ msg: 'Invalid month format. Use YYYY-MM' });
+        }
+        
+        // Calculate start and end of month
+        const [year, monthNum] = month.split('-').map(Number);
+        const startOfMonth = new Date(year, monthNum - 1, 1);
+        const endOfMonth = new Date(year, monthNum, 0, 23, 59, 59, 999);
+        
+        const approvedStatuses = ['approved', 'manager_approved', 'manager_submitted'];
+        
+        // Find all approved forms that overlap with the selected month
+        const forms = await Form.find({
+            status: { $in: approvedStatuses },
+            $or: [
+                // Vacation forms overlapping with month
+                {
+                    type: 'vacation',
+                    startDate: { $lte: endOfMonth },
+                    endDate: { $gte: startOfMonth }
+                },
+                // Sick leave forms overlapping with month
+                {
+                    type: 'sick_leave',
+                    sickLeaveStartDate: { $lte: endOfMonth },
+                    sickLeaveEndDate: { $gte: startOfMonth }
+                },
+                // Excuse forms within the month
+                {
+                    type: 'excuse',
+                    excuseDate: { $gte: startOfMonth, $lte: endOfMonth }
+                }
+            ]
+        })
+        .populate('user', '_id name email department employeeCode')
+        .select('type status user startDate endDate excuseDate fromHour toHour sickLeaveStartDate sickLeaveEndDate reason')
+        .lean();
+        
+        res.json(forms);
+    } catch (err) {
+        console.error('Error fetching approved forms by month:', err.message);
         res.status(500).send('Server error');
     }
 });

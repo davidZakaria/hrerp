@@ -62,7 +62,7 @@ const NotificationItem = ({ notification, onRemove }) => {
       onClick={notification.clickable ? handleRemove : undefined}
       style={{ cursor: notification.clickable ? 'pointer' : 'default' }}
     >
-      <style jsx>{`
+      <style>{`
         .notification-item {
           display: flex;
           align-items: flex-start;
@@ -257,7 +257,7 @@ const NotificationItem = ({ notification, onRemove }) => {
 const NotificationContainer = ({ notifications, removeNotification }) => {
   return (
     <div className="notification-container">
-      <style jsx>{`
+      <style>{`
         .notification-container {
           position: fixed;
           top: 20px;

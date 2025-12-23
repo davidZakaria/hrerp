@@ -333,7 +333,7 @@ const Register = ({ onBack, onRegisterSuccess }) => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         /* Department selection styles */
         .departments-selection {
           display: grid;

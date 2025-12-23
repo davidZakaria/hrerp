@@ -122,7 +122,7 @@ const OptimizedTable = ({
 
   return (
     <div className={`optimized-table-container ${className}`}>
-      <style jsx>{`
+      <style>{`
         .optimized-table-container {
           background: rgba(0, 0, 0, 0.8);
           border-radius: 12px;

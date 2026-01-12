@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Login.css'; // Reusing the login styles
+import API_URL from '../config/api';
 
 const ResetPassword = () => {
     const [password, setPassword] = useState('');
@@ -32,7 +33,7 @@ const ResetPassword = () => {
         }
 
         try {
-            const response = await axios.post(`http://localhost:5001/api/auth/reset-password/${token}`, {
+            const response = await axios.post(`${API_URL}/api/auth/reset-password/${token}`, {
                 password
             });
 

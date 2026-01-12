@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import './JobApplicationForm.css';
+import API_URL from '../../config/api';
+import logger from '../../utils/logger';
 
 const JobApplicationForm = () => {
     const { t } = useTranslation();
@@ -154,7 +156,7 @@ const JobApplicationForm = () => {
             const formDataUpload = new FormData();
             formDataUpload.append('resume', file);
 
-            const response = await axios.post('http://localhost:5001/api/job-applications/parse-resume', formDataUpload, {
+            const response = await axios.post(`${API_URL}/api/job-applications/parse-resume`, formDataUpload, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
@@ -163,7 +165,7 @@ const JobApplicationForm = () => {
             const { parsedData, fileName, filePath } = response.data;
 
             // Auto-fill form with parsed data
-            console.log('🔍 Parsed Data from Backend:', parsedData);
+            logger.log('🔍 Parsed Data from Backend:', parsedData);
             
             setFormData(prev => ({
                 ...prev,
@@ -224,7 +226,7 @@ const JobApplicationForm = () => {
                 return;
             }
 
-            const response = await axios.post('http://localhost:5001/api/job-applications', formData);
+            const response = await axios.post(`${API_URL}/api/job-applications`, formData);
 
             setMessage(response.data.msg);
             setMessageType('success');

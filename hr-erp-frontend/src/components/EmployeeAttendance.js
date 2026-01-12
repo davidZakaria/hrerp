@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_URL from '../config/api';
 
 const EmployeeAttendance = () => {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
@@ -23,7 +24,7 @@ const EmployeeAttendance = () => {
     const token = localStorage.getItem('token');
     
     try {
-      const res = await fetch(`http://localhost:5001/api/attendance/my-attendance/${selectedMonth}`, {
+      const res = await fetch(`${API_URL}/api/attendance/my-attendance/${selectedMonth}`, {
         headers: { 'x-auth-token': token }
       });
       

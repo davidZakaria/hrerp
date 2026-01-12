@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import ATSDashboard from './ATS/ATSDashboard';
+import API_URL from '../config/api';
+import logger from '../utils/logger';
 
 const ManagerDashboard = ({ onLogout }) => {
   const { t } = useTranslation();
@@ -43,7 +45,7 @@ const ManagerDashboard = ({ onLogout }) => {
   // Auto-refresh pending forms every 20 seconds to keep data synchronized
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log('Auto-refreshing pending forms...');
+      logger.log('Auto-refreshing pending forms...');
       fetchPendingForms();
     }, 20000); // 20 seconds
 
@@ -54,7 +56,7 @@ const ManagerDashboard = ({ onLogout }) => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('Page became visible, refreshing pending forms...');
+        logger.log('Page became visible, refreshing pending forms...');
         fetchPendingForms();
       }
     };
@@ -77,7 +79,7 @@ const ManagerDashboard = ({ onLogout }) => {
       } else {
         // If not in localStorage, fetch from API
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5001/api/auth/me', {
+        const response = await axios.get(`${API_URL}/api/auth/me`, {
           headers: { 'x-auth-token': token }
         });
         
@@ -101,7 +103,7 @@ const ManagerDashboard = ({ onLogout }) => {
   const fetchVacationDays = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/forms/vacation-days', {
+      const res = await fetch(`${API_URL}/api/forms/vacation-days`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -116,7 +118,7 @@ const ManagerDashboard = ({ onLogout }) => {
   const fetchExcuseHours = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/forms/excuse-hours', {
+      const res = await fetch(`${API_URL}/api/forms/excuse-hours`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -131,18 +133,18 @@ const ManagerDashboard = ({ onLogout }) => {
   const fetchMyForms = async () => {
     try {
       const token = localStorage.getItem('token');
-      console.log('Fetching manager personal forms...');
+      logger.log('Fetching manager personal forms...');
       
       // Use dedicated endpoint for manager's personal forms only
-      const response = await axios.get('http://localhost:5001/api/forms/manager/personal-forms', {
+      const response = await axios.get(`${API_URL}/api/forms/manager/personal-forms`, {
         headers: { 'x-auth-token': token }
       });
       
-      console.log('Manager personal forms received:', response.data);
+      logger.log('Manager personal forms received:', response.data);
       setMyForms(response.data);
       
       if (response.data.length === 0) {
-        console.log('No personal forms found for this manager');
+        logger.log('No personal forms found for this manager');
       }
     } catch (error) {
       console.error('Error fetching manager personal forms:', error);
@@ -191,18 +193,18 @@ const ManagerDashboard = ({ onLogout }) => {
   const fetchTeamForms = async () => {
     try {
       const token = localStorage.getItem('token');
-      console.log('Fetching team members forms...');
+      logger.log('Fetching team members forms...');
       
       // Fetch all forms from team members in managed departments
-      const response = await axios.get('http://localhost:5001/api/forms/manager/team-forms', {
+      const response = await axios.get(`${API_URL}/api/forms/manager/team-forms`, {
         headers: { 'x-auth-token': token }
       });
       
-      console.log('Team members forms received:', response.data);
+      logger.log('Team members forms received:', response.data);
       setTeamForms(response.data);
       
       if (response.data.length === 0) {
-        console.log('No team forms found');
+        logger.log('No team forms found');
       }
     } catch (error) {
       console.error('Error fetching team members forms:', error);
@@ -241,13 +243,13 @@ const ManagerDashboard = ({ onLogout }) => {
     try {
       setRefreshingPending(true);
       const token = localStorage.getItem('token');
-      console.log('🔄 Fetching pending team requests...');
+      logger.log('🔄 Fetching pending team requests...');
       
-      const response = await axios.get('http://localhost:5001/api/forms/manager/pending', {
+      const response = await axios.get(`${API_URL}/api/forms/manager/pending`, {
         headers: { 'x-auth-token': token }
       });
       
-      console.log('✅ Pending team requests received:', {
+      logger.log('✅ Pending team requests received:', {
         count: response.data.length,
         requests: response.data.map(form => ({
           id: form._id,
@@ -261,7 +263,7 @@ const ManagerDashboard = ({ onLogout }) => {
       setPendingForms(response.data);
       
       // Log after state update to confirm
-      console.log(`📊 Updated pending forms state: ${response.data.length} forms`);
+      logger.log(`📊 Updated pending forms state: ${response.data.length} forms`);
       
     } catch (error) {
       console.error('❌ Error fetching pending team requests:', error);
@@ -274,7 +276,7 @@ const ManagerDashboard = ({ onLogout }) => {
   const fetchTeamMembers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5001/api/users/team-members', {
+      const response = await axios.get(`${API_URL}/api/users/team-members`, {
         headers: { 'x-auth-token': token }
       });
       setTeamMembers(response.data);
@@ -311,7 +313,7 @@ const ManagerDashboard = ({ onLogout }) => {
 
     // Prevent duplicate submissions
     if (processingForms.has(selectedForm._id)) {
-      console.log('Form already being processed, ignoring duplicate request');
+      logger.log('Form already being processed, ignoring duplicate request');
       return;
     }
 
@@ -320,14 +322,14 @@ const ManagerDashboard = ({ onLogout }) => {
 
     try {
       const token = localStorage.getItem('token');
-      console.log('Submitting form action:', {
+      logger.log('Submitting form action:', {
         formId: selectedForm._id,
         action: actionType,
         formType: selectedForm.type,
         hasComment: !!comment.trim()
       });
 
-      const response = await axios.put(`http://localhost:5001/api/forms/manager/${selectedForm._id}`, {
+      const response = await axios.put(`${API_URL}/api/forms/manager/${selectedForm._id}`, {
         action: actionType,
         managerComment: comment.trim()
       }, {
@@ -367,7 +369,7 @@ const ManagerDashboard = ({ onLogout }) => {
         
         // Background refresh for consistency
         setTimeout(async () => {
-          console.log('🔄 Background refresh for consistency...');
+          logger.log('🔄 Background refresh for consistency...');
           await fetchPendingForms();
           await fetchTeamForms();
         }, 1000);
@@ -858,7 +860,7 @@ const ManagerDashboard = ({ onLogout }) => {
           <button 
             className="btn-manager refresh-btn"
             onClick={() => {
-              console.log('Manual refresh pending forms');
+              logger.log('Manual refresh pending forms');
               fetchPendingForms();
             }}
             title={t('managerDashboard.refreshPendingRequests')}

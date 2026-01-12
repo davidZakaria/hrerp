@@ -5,6 +5,7 @@ import { NotificationProvider } from './components/NotificationSystem';
 import './index.css';
 import './i18n'; // Initialize i18n configuration
 import reportWebVitals from './reportWebVitals';
+import logger from './utils/logger';
 
 // Performance optimizations
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -21,7 +22,7 @@ root.render(
 // Web Vitals reporting for performance monitoring
 reportWebVitals((metric) => {
   // Log performance metrics
-  console.log('Web Vital:', metric);
+  logger.log('Web Vital:', metric);
   
   // You could send these metrics to an analytics service
   // Example: sendToAnalytics(metric);
@@ -33,7 +34,7 @@ if ('PerformanceObserver' in window) {
     const observer = new PerformanceObserver((list) => {
       list.getEntries().forEach((entry) => {
         if (entry.entryType === 'navigation') {
-          console.log('Navigation timing:', {
+          logger.log('Navigation timing:', {
             domContentLoaded: entry.domContentLoadedEventEnd - entry.domContentLoadedEventStart,
             load: entry.loadEventEnd - entry.loadEventStart,
             totalTime: entry.loadEventEnd - entry.fetchStart
@@ -44,7 +45,7 @@ if ('PerformanceObserver' in window) {
     
     observer.observe({ entryTypes: ['navigation'] });
   } catch (error) {
-    console.warn('Performance observer not supported:', error);
+    logger.warn('Performance observer not supported:', error);
   }
 }
 
@@ -53,10 +54,10 @@ if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
-        console.log('SW registered: ', registration);
+        logger.log('SW registered: ', registration);
       })
       .catch((registrationError) => {
-        console.log('SW registration failed: ', registrationError);
+        logger.log('SW registration failed: ', registrationError);
       });
   });
 }
@@ -65,7 +66,7 @@ if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
 if (process.env.NODE_ENV === 'development') {
   const logMemoryUsage = () => {
     if (performance.memory) {
-      console.log('Memory usage:', {
+      logger.log('Memory usage:', {
         used: Math.round(performance.memory.usedJSHeapSize / 1048576) + ' MB',
         total: Math.round(performance.memory.totalJSHeapSize / 1048576) + ' MB',
         limit: Math.round(performance.memory.jsHeapSizeLimit / 1048576) + ' MB'

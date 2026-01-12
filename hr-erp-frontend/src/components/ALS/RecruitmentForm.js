@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import API_URL from '../../config/api';
 
 const RecruitmentForm = ({ onFormSubmitted }) => {
   const [form, setForm] = useState({
@@ -31,7 +32,7 @@ const RecruitmentForm = ({ onFormSubmitted }) => {
     }
 
     try {
-      const res = await fetch('http://localhost:5001/api/recruitment', {
+      const res = await fetch(`${API_URL}/api/recruitment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

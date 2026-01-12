@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import API_URL from '../config/api';
+import logger from '../utils/logger';
 
 // Simple cache implementation
 const cache = new Map();
@@ -57,7 +59,7 @@ export const useApi = (url, options = {}) => {
         ...(customBody || body ? { body: JSON.stringify(customBody || body) } : {})
       };
 
-      const response = await fetch(`http://localhost:5001${url}`, config);
+      const response = await fetch(`${API_URL}${url}`, config);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ msg: 'Unknown error' }));
@@ -80,7 +82,7 @@ export const useApi = (url, options = {}) => {
       if (err.name === 'AbortError') {
         return;
       }
-      console.error('API Error:', err);
+      logger.error('API Error:', err);
       setError(err.message || 'An error occurred');
       throw err;
     } finally {
@@ -136,7 +138,7 @@ export const useFormSubmit = (url, options = {}) => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:5001${url}`, {
+      const response = await fetch(`${API_URL}${url}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +161,7 @@ export const useFormSubmit = (url, options = {}) => {
       
       return result;
     } catch (err) {
-      console.error('Form submission error:', err);
+      logger.error('Form submission error:', err);
       setError(err.message || 'Submission failed');
       throw err;
     } finally {
@@ -200,7 +202,7 @@ export const preloadData = async (url, options = {}) => {
 
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:5001${url}`, {
+    const response = await fetch(`${API_URL}${url}`, {
       headers: {
         'Content-Type': 'application/json',
         ...(token && { 'x-auth-token': token })
@@ -215,6 +217,6 @@ export const preloadData = async (url, options = {}) => {
       });
     }
   } catch (error) {
-    console.warn('Preload failed for:', url, error);
+    logger.warn('Preload failed for:', url, error);
   }
 }; 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './ATSDashboard.css';
 import EvaluationForm from './EvaluationForm';
+import API_URL from '../../config/api';
 
 const ATSDashboard = () => {
     const [applications, setApplications] = useState([]);
@@ -29,7 +30,7 @@ const ATSDashboard = () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5001/api/job-applications', {
+            const response = await axios.get(`${API_URL}/api/job-applications`, {
                 headers: { 'x-auth-token': token }
             });
             setApplications(response.data);
@@ -45,7 +46,7 @@ const ATSDashboard = () => {
     const fetchManagers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5001/api/users', {
+            const response = await axios.get(`${API_URL}/api/users`, {
                 headers: { 'x-auth-token': token }
             });
             const managersList = response.data.filter(user => user.role === 'manager');
@@ -58,7 +59,7 @@ const ATSDashboard = () => {
     const fetchStatistics = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5001/api/job-applications/stats/overview', {
+            const response = await axios.get(`${API_URL}/api/job-applications/stats/overview`, {
                 headers: { 'x-auth-token': token }
             });
             setStatistics(response.data);
@@ -70,7 +71,7 @@ const ATSDashboard = () => {
     const fetchEvaluations = async (applicationId) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:5001/api/job-applications/${applicationId}/evaluations`, {
+            const response = await axios.get(`${API_URL}/api/job-applications/${applicationId}/evaluations`, {
                 headers: { 'x-auth-token': token }
             });
             setEvaluations(prev => ({
@@ -86,7 +87,7 @@ const ATSDashboard = () => {
         try {
             const token = localStorage.getItem('token');
             await axios.put(
-                `http://localhost:5001/api/job-applications/${applicationId}/assign-interviewer`,
+                `${API_URL}/api/job-applications/${applicationId}/assign-interviewer`,
                 { interviewerId },
                 { headers: { 'x-auth-token': token } }
             );
@@ -263,7 +264,7 @@ const ATSDashboard = () => {
                     <div className="details-section">
                         <h3>📄 Resume</h3>
                         <a
-                            href={`http://localhost:5001/${selectedApplication.resumeFilePath}`}
+                            href={`${API_URL}/${selectedApplication.resumeFilePath}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="resume-link"

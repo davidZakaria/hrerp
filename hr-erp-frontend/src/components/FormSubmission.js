@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import logo from '../assets/njd-logo.png';
+import API_URL from '../config/api';
+import logger from '../utils/logger';
 
 const FormSubmission = ({ onFormSubmitted }) => {
   const { t } = useTranslation();
@@ -31,7 +33,7 @@ const FormSubmission = ({ onFormSubmitted }) => {
     if (!token) return;
     
     try {
-      const res = await fetch('http://localhost:5001/api/auth/me', {
+      const res = await fetch(`${API_URL}/api/auth/me`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -39,7 +41,7 @@ const FormSubmission = ({ onFormSubmitted }) => {
         setUserInfo(data);
       }
     } catch (err) {
-      console.error('Failed to fetch user info:', err);
+      logger.error('Failed to fetch user info:', err);
     }
   };
 
@@ -49,7 +51,7 @@ const FormSubmission = ({ onFormSubmitted }) => {
     if (!token) return;
     
     try {
-      const res = await fetch('http://localhost:5001/api/forms/excuse-hours', {
+      const res = await fetch(`${API_URL}/api/forms/excuse-hours`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -57,7 +59,7 @@ const FormSubmission = ({ onFormSubmitted }) => {
         setExcuseRequestsLeft(data.excuseRequestsLeft);
       }
     } catch (err) {
-      console.error('Failed to fetch excuse requests:', err);
+      logger.error('Failed to fetch excuse requests:', err);
     }
   };
 
@@ -162,7 +164,7 @@ const FormSubmission = ({ onFormSubmitted }) => {
         payload = JSON.stringify(payload);
       }
 
-      const res = await fetch('http://localhost:5001/api/forms', {
+      const res = await fetch(`${API_URL}/api/forms`, {
         method: 'POST',
         headers: headers,
         body: payload
@@ -199,7 +201,7 @@ const FormSubmission = ({ onFormSubmitted }) => {
         setMessage(errorMessage);
       }
     } catch (err) {
-      console.error('Form submission error:', err);
+      logger.error('Form submission error:', err);
       setMessage(t('forms.errorConnectingServer'));
     }
     setLoading(false);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import './EvaluationForm.css';
+import API_URL from '../../config/api';
 
 const EvaluationForm = ({ application, onSubmit, onCancel }) => {
     const [loading, setLoading] = useState(false);
@@ -47,7 +48,7 @@ const EvaluationForm = ({ application, onSubmit, onCancel }) => {
 
             const token = localStorage.getItem('token');
             await axios.post(
-                `http://localhost:5001/api/job-applications/${application._id}/evaluate`,
+                `${API_URL}/api/job-applications/${application._id}/evaluate`,
                 formData,
                 { headers: { 'x-auth-token': token } }
             );

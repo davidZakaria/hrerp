@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import API_URL from '../../config/api';
 
 const Register = ({ onBack, onRegisterSuccess }) => {
   const { t } = useTranslation();
@@ -63,7 +64,7 @@ const Register = ({ onBack, onRegisterSuccess }) => {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/auth/register', {
+      const res = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

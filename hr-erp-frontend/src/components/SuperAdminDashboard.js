@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import LogoutButton from './LogoutButton';
 import { useTranslation } from 'react-i18next';
 import AttendanceManagement from './AttendanceManagement';
+import API_URL from '../config/api';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -92,7 +93,7 @@ const SuperAdminDashboard = () => {
     setError('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/users/all', {
+      const res = await fetch(`${API_URL}/api/users/all`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -112,7 +113,7 @@ const SuperAdminDashboard = () => {
     setError('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/forms/all', {
+      const res = await fetch(`${API_URL}/api/forms/all`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -138,7 +139,7 @@ const SuperAdminDashboard = () => {
         ...auditFilters
       });
       
-      const res = await fetch(`http://localhost:5001/api/audit?${queryParams}`, {
+      const res = await fetch(`${API_URL}/api/audit?${queryParams}`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -157,7 +158,7 @@ const SuperAdminDashboard = () => {
   const fetchAuditStats = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/audit/stats', {
+      const res = await fetch(`${API_URL}/api/audit/stats`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -210,7 +211,7 @@ const SuperAdminDashboard = () => {
     setSuccess('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:5001/api/users/super/${selectedUser._id}`, {
+      const res = await fetch(`${API_URL}/api/users/super/${selectedUser._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -245,7 +246,7 @@ const SuperAdminDashboard = () => {
     setSuccess('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/users', {
+      const res = await fetch(`${API_URL}/api/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -344,7 +345,7 @@ const SuperAdminDashboard = () => {
     setSuccess('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:5001/api/forms/${formId}`, {
+      const res = await fetch(`${API_URL}/api/forms/${formId}`, {
         method: 'DELETE',
         headers: { 'x-auth-token': token }
       });
@@ -368,7 +369,7 @@ const SuperAdminDashboard = () => {
     setSuccess('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:5001/api/forms/${selectedForm._id}`, {
+      const res = await fetch(`${API_URL}/api/forms/${selectedForm._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -439,7 +440,7 @@ const SuperAdminDashboard = () => {
         ...auditFilters
       });
       
-      const response = await fetch(`http://localhost:5001/api/audit/download?${queryParams}`, {
+      const response = await fetch(`${API_URL}/api/audit/download?${queryParams}`, {
         headers: { 'x-auth-token': token }
       });
       
@@ -471,7 +472,7 @@ const SuperAdminDashboard = () => {
       setClearLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:5001/api/audit/clear', {
+      const response = await fetch(`${API_URL}/api/audit/clear`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

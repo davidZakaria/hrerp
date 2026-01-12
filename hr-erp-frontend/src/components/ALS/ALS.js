@@ -2,29 +2,30 @@ import React, { useState, useEffect } from 'react';
 import RecruitmentForm from './RecruitmentForm';
 import RecruitmentDashboard from './RecruitmentDashboard';
 import LogoutButton from '../LogoutButton';
+import logger from '../../utils/logger';
 
 const ALS = () => {
   const [showForm, setShowForm] = useState(false);
   const [showDashboard, setShowDashboard] = useState(true);
 
   useEffect(() => {
-    console.log('ALS Component State:', { showForm, showDashboard });
+    logger.log('ALS Component State:', { showForm, showDashboard });
   }, [showForm, showDashboard]);
 
   const handleFormSubmitted = () => {
-    console.log('Form submitted, switching to dashboard');
+    logger.log('Form submitted, switching to dashboard');
     setShowForm(false);
     setShowDashboard(true);
   };
 
   const handleShowForm = () => {
-    console.log('Switching to form view');
+    logger.log('Switching to form view');
     setShowForm(true);
     setShowDashboard(false);
   };
 
   const handleShowDashboard = () => {
-    console.log('Switching to dashboard view');
+    logger.log('Switching to dashboard view');
     setShowForm(false);
     setShowDashboard(true);
   };

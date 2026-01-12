@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
+import logger from '../utils/logger';
 
 const MedicalDocumentViewer = ({ form, userRole = 'admin' }) => {
   const [downloading, setDownloading] = useState(false);
@@ -36,14 +38,14 @@ const MedicalDocumentViewer = ({ form, userRole = 'admin' }) => {
       // Handle both forward slashes and backslashes in paths
       const filename = form.medicalDocument.split(/[/\\]/).pop();
       
-      console.log('Downloading document:', {
+      logger.log('Downloading document:', {
         originalPath: form.medicalDocument,
         extractedFilename: filename,
         formId: form._id,
         userRole: userRole
       });
       
-      const response = await axios.get(`http://localhost:5001/api/forms/document/${filename}`, {
+      const response = await axios.get(`${API_URL}/api/forms/document/${filename}`, {
         headers: {
           'x-auth-token': token
         },
@@ -75,11 +77,11 @@ const MedicalDocumentViewer = ({ form, userRole = 'admin' }) => {
       link.remove();
       window.URL.revokeObjectURL(url);
       
-      console.log('Document downloaded successfully:', downloadName);
+      logger.log('Document downloaded successfully:', downloadName);
       
     } catch (err) {
-      console.error('Download error:', err);
-      console.error('Error details:', {
+      logger.error('Download error:', err);
+      logger.error('Error details:', {
         status: err.response?.status,
         statusText: err.response?.statusText,
         data: err.response?.data,
@@ -124,14 +126,14 @@ const MedicalDocumentViewer = ({ form, userRole = 'admin' }) => {
   const getDocumentInfo = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5001/api/forms/document-info/${form._id}`, {
+      const response = await axios.get(`${API_URL}/api/forms/document-info/${form._id}`, {
         headers: {
           'x-auth-token': token
         }
       });
       return response.data;
     } catch (err) {
-      console.error('Error getting document info:', err);
+      logger.error('Error getting document info:', err);
       return null;
     }
   };

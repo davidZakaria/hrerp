@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import logo from '../../assets/njd-logo.png';
+import API_URL from '../../config/api';
+import logger from '../../utils/logger';
 
 const ForgotPassword = ({ onBack }) => {
   const [email, setEmail] = useState('');
@@ -13,7 +15,7 @@ const ForgotPassword = ({ onBack }) => {
     setLoading(true);
     
     try {
-      const res = await fetch('http://localhost:5001/api/auth/reset-password-request', {
+      const res = await fetch(`${API_URL}/api/auth/reset-password-request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -36,7 +38,7 @@ const ForgotPassword = ({ onBack }) => {
         }
       }
     } catch (err) {
-      console.error('Password reset request failed:', err);
+      logger.error('Password reset request failed:', err);
       setSuccess(false);
       
       // Check if it's a network error

@@ -6,6 +6,8 @@ import LogoutButton from './LogoutButton';
 import ExportPrintButtons from './ExportPrintButtons';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import AttendanceManagement from './AttendanceManagement';
+import API_URL from '../config/api';
+import logger from '../utils/logger';
 
 const AdminDashboard = () => {
   // Navigation state
@@ -101,7 +103,7 @@ const AdminDashboard = () => {
   const fetchAllUserBalances = useCallback(async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/forms/vacation-days-report', {
+      const res = await fetch(`${API_URL}/api/forms/vacation-days-report`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -117,7 +119,7 @@ const AdminDashboard = () => {
         setExcuseHoursMap(excuseMap);
       }
     } catch (err) {
-      console.error('Error fetching user balances:', err);
+      logger.error('Error fetching user balances:', err);
     }
   }, []);
 
@@ -128,18 +130,18 @@ const AdminDashboard = () => {
     setFormsError('');
     const token = localStorage.getItem('token');
     try {
-      console.log('🔄 Fetching admin forms...');
-      const res = await axios.get('http://localhost:5001/api/forms/admin', {
+      logger.log('🔄 Fetching admin forms...');
+      const res = await axios.get(`${API_URL}/api/forms/admin`, {
         headers: { 'x-auth-token': token }
       });
       const data = res.data;
       setForms(data);
-      console.log(`✅ Admin forms received: ${data.length} forms`);
+      logger.log(`✅ Admin forms received: ${data.length} forms`);
       
       // Batch fetch all user balances in a single request (much faster!)
       fetchAllUserBalances();
     } catch (err) {
-      console.error('❌ Forms fetch error:', err);
+      logger.error('❌ Forms fetch error:', err);
       if (err.response) {
         // Server responded with error status
         setFormsError(err.response.data?.msg || `Server error: ${err.response.status}`);
@@ -160,12 +162,12 @@ const AdminDashboard = () => {
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5001/api/auth/me', {
+      const res = await axios.get(`${API_URL}/api/auth/me`, {
         headers: { 'x-auth-token': token }
       });
       setCurrentUser(res.data);
     } catch (err) {
-      console.error('Error fetching current user:', err);
+      logger.error('Error fetching current user:', err);
     }
   };
 
@@ -175,14 +177,14 @@ const AdminDashboard = () => {
     setUsersError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5001/api/users', {
+      const res = await axios.get(`${API_URL}/api/users`, {
         headers: { 'x-auth-token': token }
       });
       const allUsers = res.data;
       setUsers(allUsers.filter(user => user.status === 'active'));
       setPendingUsers(allUsers.filter(user => user.status === 'pending'));
     } catch (err) {
-      console.error('Error fetching users:', err);
+      logger.error('Error fetching users:', err);
       setUsersError('Error fetching users');
     }
     setUsersLoading(false);
@@ -192,7 +194,7 @@ const AdminDashboard = () => {
   const handleApproveUser = async (userId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5001/api/users/${userId}/status`, 
+      await axios.put(`${API_URL}/api/users/${userId}/status`, 
         { status: 'active' },
         { headers: { 'x-auth-token': token } }
       );
@@ -208,7 +210,7 @@ const AdminDashboard = () => {
     if (window.confirm('Are you sure you want to reject this user registration?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5001/api/users/${userId}`, {
+        await axios.delete(`${API_URL}/api/users/${userId}`, {
           headers: { 'x-auth-token': token }
         });
         setMessage('User registration rejected');
@@ -224,7 +226,7 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5001/api/users', 
+      await axios.post(`${API_URL}/api/users`, 
         { ...newUser, status: 'active' }, // Admin-created users are active by default
         { headers: { 'x-auth-token': token } }
       );
@@ -265,7 +267,7 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5001/api/users/${editingUser._id}`, 
+      await axios.put(`${API_URL}/api/users/${editingUser._id}`, 
         editUserData,
         { headers: { 'x-auth-token': token } }
       );
@@ -325,7 +327,7 @@ const AdminDashboard = () => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5001/api/users/${userId}`, {
+        await axios.delete(`${API_URL}/api/users/${userId}`, {
           headers: { 'x-auth-token': token }
         });
         setMessage('User deleted successfully');
@@ -352,7 +354,7 @@ const AdminDashboard = () => {
 
     // Prevent duplicate submissions by checking if this form is already being processed
     if (processingForms.has(id)) {
-      console.log('Form already being processed, ignoring duplicate request');
+      logger.log('Form already being processed, ignoring duplicate request');
       return;
     }
 
@@ -360,7 +362,7 @@ const AdminDashboard = () => {
     setProcessingForms(prev => new Set([...prev, id]));
 
     try {
-      console.log('Admin form action:', {
+      logger.log('Admin form action:', {
         formId: id,
         status: status,
         adminComment: comments[id] || 'No comment'
@@ -370,7 +372,7 @@ const AdminDashboard = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      const res = await fetch(`http://localhost:5001/api/forms/${id}`, {
+      const res = await fetch(`${API_URL}/api/forms/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -389,7 +391,7 @@ const AdminDashboard = () => {
       const data = await res.json();
       
       if (res.ok) {
-        console.log('Form action successful:', data);
+        logger.log('Form action successful:', data);
         
         // OPTIMISTIC UPDATE: Immediately update the form status in UI
         setForms(prevForms => 
@@ -424,12 +426,12 @@ const AdminDashboard = () => {
         
         // Refresh from server in background to ensure consistency
         setTimeout(async () => {
-          console.log('🔄 Background refresh for consistency...');
+          logger.log('🔄 Background refresh for consistency...');
           await fetchForms();
         }, 1000);
         
       } else {
-        console.error('Form action failed:', {
+        logger.error('Form action failed:', {
           status: res.status,
           statusText: res.statusText,
           data: data
@@ -465,7 +467,7 @@ const AdminDashboard = () => {
         setTimeout(() => fetchForms(), 2000);
       }
     } catch (err) {
-      console.error('Admin form action error:', err);
+      logger.error('Admin form action error:', err);
       
       let errorMessage = 'Error connecting to server.';
       
@@ -496,9 +498,9 @@ const AdminDashboard = () => {
       const token = localStorage.getItem('token');
       setFormsError('');
       
-      const deleteUrl = `http://localhost:5001/api/forms/${id}`;
-      console.log('🗑️ Deleting form with URL:', deleteUrl);
-      console.log('🗑️ Form ID:', id);
+      const deleteUrl = `${API_URL}/api/forms/${id}`;
+      logger.log('🗑️ Deleting form with URL:', deleteUrl);
+      logger.log('🗑️ Form ID:', id);
       
       try {
         const res = await fetch(deleteUrl, {
@@ -506,20 +508,20 @@ const AdminDashboard = () => {
           headers: { 'x-auth-token': token }
         });
         
-        console.log('🗑️ Delete response status:', res.status);
+        logger.log('🗑️ Delete response status:', res.status);
         
         if (res.ok) {
-          console.log('✅ Form deleted successfully');
+          logger.log('✅ Form deleted successfully');
           setFormsError('✅ Form deleted successfully! Refreshing...');
           await fetchForms();
           setTimeout(() => setFormsError(''), 3000);
         } else {
           const data = await res.json();
-          console.error('❌ Delete failed:', data);
+          logger.error('❌ Delete failed:', data);
           setFormsError(data.msg || 'Failed to delete form.');
         }
       } catch (err) {
-        console.error('❌ Delete error:', err);
+        logger.error('❌ Delete error:', err);
         setFormsError('Error connecting to server.');
       }
     }
@@ -531,7 +533,7 @@ const AdminDashboard = () => {
     setReportError('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/forms/vacation-days-report', {
+      const res = await fetch(`${API_URL}/api/forms/vacation-days-report`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -552,7 +554,7 @@ const AdminDashboard = () => {
     setVacationManagerSuccess('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/forms/vacation-days-report', {
+      const res = await fetch(`${API_URL}/api/forms/vacation-days-report`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -582,7 +584,7 @@ const AdminDashboard = () => {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:5001/api/users/${userId}/vacation-days`, {
+      const res = await fetch(`${API_URL}/api/users/${userId}/vacation-days`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -616,7 +618,7 @@ const AdminDashboard = () => {
 
   // Simple and reliable print function
   const handlePrintSimple = () => {
-    console.log('🖨️ Simple print function called');
+    logger.log('🖨️ Simple print function called');
     
     if (!reportData || reportData.length === 0) {
       alert('No report data available to print.');
@@ -629,14 +631,14 @@ const AdminDashboard = () => {
     if (printWindow) {
       printWindow.document.write(reportHTML);
       printWindow.document.close();
-      console.log('✅ Print window opened');
+      logger.log('✅ Print window opened');
     } else {
       alert('Please allow pop-ups to enable printing.');
     }
   };
 
   const handlePrint = () => {
-    console.log('🖨️ Print function called - Simple version');
+    logger.log('🖨️ Print function called - Simple version');
     
     if (!reportData || reportData.length === 0) {
       alert('No report data available to print.');
@@ -849,7 +851,7 @@ const AdminDashboard = () => {
     printWindow.document.write(reportHTML);
     printWindow.document.close();
     
-    console.log('✅ Print window created successfully');
+    logger.log('✅ Print window created successfully');
   };
 
   // Filter functions
@@ -897,7 +899,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       if (activeTab === 'forms') {
-        console.log('Auto-refreshing forms data...');
+        logger.log('Auto-refreshing forms data...');
         fetchForms();
       }
     }, 30000); // 30 seconds
@@ -910,7 +912,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && activeTab === 'forms') {
-        console.log('Page became visible, refreshing forms...');
+        logger.log('Page became visible, refreshing forms...');
         fetchForms();
       }
     };
@@ -1303,7 +1305,7 @@ const AdminDashboard = () => {
                 <button 
                   className="btn-elegant"
                   onClick={() => {
-                    console.log('Manual refresh triggered');
+                    logger.log('Manual refresh triggered');
                     fetchForms();
                   }}
                   disabled={formsLoading || refreshingForms}

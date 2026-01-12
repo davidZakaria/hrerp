@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_URL from '../config/api';
 
 const AttendanceManagement = () => {
   const [uploadFiles, setUploadFiles] = useState([]);
@@ -38,7 +39,7 @@ const AttendanceManagement = () => {
     const token = localStorage.getItem('token');
     try {
       // Fetch approved vacation, excuse, and sick leave forms for the month
-      const res = await fetch(`http://localhost:5001/api/forms/approved-by-month/${selectedMonth}`, {
+      const res = await fetch(`${API_URL}/api/forms/approved-by-month/${selectedMonth}`, {
         headers: { 'x-auth-token': token }
       });
       if (res.ok) {
@@ -53,7 +54,7 @@ const AttendanceManagement = () => {
   const fetchAvailableMonths = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/attendance/months', {
+      const res = await fetch(`${API_URL}/api/attendance/months`, {
         headers: { 'x-auth-token': token }
       });
       if (res.ok) {
@@ -71,7 +72,7 @@ const AttendanceManagement = () => {
     const token = localStorage.getItem('token');
     
     try {
-      const res = await fetch(`http://localhost:5001/api/attendance/monthly-report/${selectedMonth}`, {
+      const res = await fetch(`${API_URL}/api/attendance/monthly-report/${selectedMonth}`, {
         headers: { 'x-auth-token': token }
       });
       
@@ -114,7 +115,7 @@ const AttendanceManagement = () => {
     });
 
     try {
-      const res = await fetch('http://localhost:5001/api/attendance/upload', {
+      const res = await fetch(`${API_URL}/api/attendance/upload`, {
         method: 'POST',
         headers: { 'x-auth-token': token },
         body: formData
@@ -146,7 +147,7 @@ const AttendanceManagement = () => {
     
     try {
       const res = await fetch(
-        `http://localhost:5001/api/attendance/employee/${employee.user.id}/${selectedMonth}`,
+        `${API_URL}/api/attendance/employee/${employee.user.id}/${selectedMonth}`,
         { headers: { 'x-auth-token': token } }
       );
       

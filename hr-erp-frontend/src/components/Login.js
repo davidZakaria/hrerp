@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import './Login.css';
+import API_URL from '../config/api';
+import logger from '../utils/logger';
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -28,11 +30,11 @@ const Login = () => {
         setLoading(true);
         
         try {
-            console.log('Attempting login...');
-            const response = await axios.post('http://localhost:5001/api/auth/login', formData);
+            logger.log('Attempting login...');
+            const response = await axios.post(`${API_URL}/api/auth/login`, formData);
             const data = response.data;
             
-            console.log('Login response:', data);
+            logger.log('Login response:', data);
             setMessage('Login successful!');
 
             // Store user data
@@ -41,7 +43,7 @@ const Login = () => {
             localStorage.setItem('userId', data.userId);
             localStorage.setItem('userName', data.name);
 
-            console.log('User role:', data.role);
+            logger.log('User role:', data.role);
 
             // Determine redirect path based on role
             let redirectPath;
@@ -55,7 +57,7 @@ const Login = () => {
 
             // Use the stored location if available, otherwise use determined path
             const from = location.state?.from?.pathname || redirectPath;
-            console.log('Redirecting to:', from);
+            logger.log('Redirecting to:', from);
 
             // Delay navigation slightly to show success message
             setTimeout(() => {
@@ -63,7 +65,7 @@ const Login = () => {
             }, 1000);
 
         } catch (err) {
-            console.error('Login error:', err);
+            logger.error('Login error:', err);
             setMessage(err.response?.data?.msg || 'Error connecting to server');
             setLoading(false);
         }

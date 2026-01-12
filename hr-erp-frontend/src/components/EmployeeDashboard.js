@@ -4,6 +4,7 @@ import FormSubmission from './FormSubmission';
 import LogoutButton from './LogoutButton';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import EmployeeAttendance from './EmployeeAttendance';
+import API_URL from '../config/api';
 
 const EmployeeDashboard = () => {
   const { t } = useTranslation();
@@ -20,7 +21,7 @@ const EmployeeDashboard = () => {
   const fetchUserData = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/auth/me', {
+      const res = await fetch(`${API_URL}/api/auth/me`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -35,7 +36,7 @@ const EmployeeDashboard = () => {
   const fetchVacationDays = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/forms/vacation-days', {
+      const res = await fetch(`${API_URL}/api/forms/vacation-days`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -50,7 +51,7 @@ const EmployeeDashboard = () => {
   const fetchExcuseRequests = async () => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/forms/excuse-hours', {
+      const res = await fetch(`${API_URL}/api/forms/excuse-hours`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -76,7 +77,7 @@ const EmployeeDashboard = () => {
     setError('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/forms/my-forms', {
+      const res = await fetch(`${API_URL}/api/forms/my-forms`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();

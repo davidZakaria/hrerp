@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_URL from '../../config/api';
 
 const Modal = ({ show, onClose, children }) => {
   if (!show) return null;
@@ -119,7 +120,7 @@ const RecruitmentDashboard = () => {
     setError('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5001/api/recruitment', {
+      const res = await fetch(`${API_URL}/api/recruitment`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -143,7 +144,7 @@ const RecruitmentDashboard = () => {
     setDeletingId(id);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:5001/api/recruitment/${id}`, {
+      const res = await fetch(`${API_URL}/api/recruitment/${id}`, {
         method: 'DELETE',
         headers: { 'x-auth-token': token }
       });
@@ -174,7 +175,7 @@ const RecruitmentDashboard = () => {
     setError('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:5001/api/recruitment/${editRecruit._id}`, {
+      const res = await fetch(`${API_URL}/api/recruitment/${editRecruit._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
         body: JSON.stringify(editForm)

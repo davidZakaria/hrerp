@@ -6,11 +6,10 @@ import API_URL from '../../config/api';
 import logger from '../../utils/logger';
 
 const JobApplicationForm = () => {
-    const { t } = useTranslation();
+    useTranslation(); // Initialize i18n
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState(''); // 'success' or 'error'
-    const [resumeFile, setResumeFile] = useState(null);
     const [resumeFileName, setResumeFileName] = useState('');
     const [parsingResume, setParsingResume] = useState(false);
     

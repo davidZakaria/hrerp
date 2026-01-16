@@ -58,6 +58,19 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: null // Unlimited sick days - no restrictions
     },
+    // Fingerprint miss tracking (forgot to clock in/out)
+    fingerprintMissCount: {
+        type: Number,
+        default: 0 // Number of missed fingerprint scans this month
+    },
+    fingerprintMissResetMonth: {
+        type: String, // "YYYY-MM" format - tracks which month the count applies to
+        default: null
+    },
+    totalFingerprintDeduction: {
+        type: Number,
+        default: 0 // Accumulated deduction in days for the current month
+    },
     createdAt: {
         type: Date,
         default: Date.now

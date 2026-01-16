@@ -27,7 +27,7 @@ const NotificationItem = ({ notification, onRemove }) => {
       }, notification.duration || 5000);
       return () => clearTimeout(timer);
     }
-  }, [notification]);
+  }, [notification, handleRemove]);
 
   const handleRemove = useCallback(() => {
     setIsRemoving(true);

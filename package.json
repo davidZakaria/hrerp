@@ -13,6 +13,8 @@
     "production": "NODE_ENV=production node server.js"
   },
   "dependencies": {
+    "adm-zip": "^0.5.16",
+    "archiver": "^7.0.1",
     "axios": "^1.10.0",
     "bcryptjs": "^2.4.3",
     "compression": "^1.8.0",

@@ -315,6 +315,29 @@ function getMonthString(date) {
 }
 
 /**
+ * Check if a date is a weekend (Friday or Saturday)
+ * In Egypt/Middle East, Friday and Saturday are the official weekend days
+ * @param {Date|String} date - Date to check
+ * @returns {Boolean} True if weekend (Friday=5 or Saturday=6)
+ */
+function isWeekend(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    return day === 5 || day === 6; // Friday = 5, Saturday = 6
+}
+
+/**
+ * Get day name from date
+ * @param {Date|String} date - Date to check
+ * @returns {String} Day name (e.g., "Friday", "Saturday")
+ */
+function getDayName(date) {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const d = new Date(date);
+    return days[d.getDay()];
+}
+
+/**
  * Validate XLS file structure
  * @param {String} filePath 
  * @returns {Object} {isValid, message, columns}
@@ -378,6 +401,8 @@ module.exports = {
     calculateMinutesOvertime,
     calculateAttendanceStatus,
     getMonthString,
-    validateXLSStructure
+    validateXLSStructure,
+    isWeekend,
+    getDayName
 };
 

@@ -88,6 +88,7 @@ export const useApi = (url, options = {}) => {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, method, body, enableCache, ...dependencies]);
 
   useEffect(() => {
@@ -100,6 +101,7 @@ export const useApi = (url, options = {}) => {
         abortControllerRef.current.abort();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchData, immediate]);
 
   const refetch = useCallback(() => {

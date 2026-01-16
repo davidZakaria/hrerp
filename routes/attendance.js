@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
+const { validateObjectId } = require('../middleware/validateObjectId');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -11,7 +12,9 @@ const {
     parseXLSFile,
     calculateAttendanceStatus,
     getMonthString,
-    validateXLSStructure
+    validateXLSStructure,
+    isWeekend,
+    getDayName
 } = require('../utils/attendanceParser');
 
 // Configure multer for file uploads
@@ -44,6 +47,75 @@ const upload = multer({
     fileFilter: fileFilter,
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
+
+/**
+ * Calculate fingerprint deduction based on the number of misses
+ * Progressive deduction system:
+ * - 1st miss: 0.25 day
+ * - 2nd miss: 0.5 day
+ * - 3rd miss: 0.75 day
+ * - 4th+ miss: 1 full day each
+ * @param {Number} missCount - Total number of misses (1-based)
+ * @returns {Number} Deduction amount in days
+ */
+function calculateFingerprintDeduction(missCount) {
+    if (missCount <= 0) return 0;
+    if (missCount === 1) return 0.25;
+    if (missCount === 2) return 0.5;
+    if (missCount === 3) return 0.75;
+    return 1; // 4th and beyond: 1 full day each
+}
+
+/**
+ * Check and reset user's fingerprint miss count if it's a new month
+ * @param {Object} user - User document
+ * @param {String} currentMonth - Current month in YYYY-MM format
+ * @returns {Object} Updated user document
+ */
+async function checkAndResetFingerprintCount(user, currentMonth) {
+    if (user.fingerprintMissResetMonth !== currentMonth) {
+        // New month - reset the counter
+        user.fingerprintMissCount = 0;
+        user.totalFingerprintDeduction = 0;
+        user.fingerprintMissResetMonth = currentMonth;
+        await user.save();
+        console.log(`  Reset fingerprint count for ${user.name} for month ${currentMonth}`);
+    }
+    return user;
+}
+
+/**
+ * Process fingerprint miss and calculate deduction
+ * @param {Object} user - User document
+ * @param {String} missType - Type of miss ('clock_in', 'clock_out', or 'both')
+ * @param {String} currentMonth - Current month in YYYY-MM format
+ * @returns {Object} {deduction, missCount}
+ */
+async function processFingerprintMiss(user, missType, currentMonth) {
+    // Ensure count is reset for new month
+    await checkAndResetFingerprintCount(user, currentMonth);
+    
+    // Each miss (clock_in or clock_out) counts as one occurrence
+    const missesToAdd = missType === 'both' ? 2 : 1;
+    let totalDeduction = 0;
+    
+    for (let i = 0; i < missesToAdd; i++) {
+        user.fingerprintMissCount += 1;
+        const deduction = calculateFingerprintDeduction(user.fingerprintMissCount);
+        totalDeduction += deduction;
+        user.totalFingerprintDeduction += deduction;
+    }
+    
+    await user.save();
+    
+    console.log(`  Fingerprint miss for ${user.name}: type=${missType}, count=${user.fingerprintMissCount}, deduction=${totalDeduction} days`);
+    
+    return {
+        deduction: totalDeduction,
+        missCount: user.fingerprintMissCount,
+        totalMonthlyDeduction: user.totalFingerprintDeduction
+    };
+}
 
 /**
  * Cross-reference attendance date with approved forms
@@ -103,6 +175,21 @@ async function crossReferenceWithForms(date, userId) {
             return { form: excuseForm, status: 'excused' };
         }
         
+        // Check WFH (Work From Home) forms for Marketing department
+        const wfhForm = await Form.findOne({
+            user: userId,
+            type: 'wfh',
+            status: { $in: approvedStatuses },
+            wfhDate: {
+                $gte: startOfDay,
+                $lte: endOfDay
+            }
+        });
+        
+        if (wfhForm) {
+            return { form: wfhForm, status: 'wfh' };
+        }
+        
         return null;
     } catch (error) {
         console.error('Error cross-referencing with forms:', error);
@@ -141,6 +228,7 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
             totalRecords: 0,
             successfulRecords: 0,
             failedRecords: 0,
+            weekendSkipped: 0,
             unmatchedCodes: [],
             errors: [],
             summary: []
@@ -181,6 +269,7 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                     validRows: parseResult.validRows,
                     saved: 0,
                     skipped: 0,
+                    weekendSkipped: 0,
                     errors: parseResult.errors
                 };
                 
@@ -196,6 +285,14 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                 // Process each record
                 for (const record of parseResult.data) {
                     try {
+                        // Skip weekend days (Friday and Saturday)
+                        if (isWeekend(record.date)) {
+                            console.log(`  Skipping weekend: ${record.date} (${getDayName(record.date)}) for ${record.employeeCode}`);
+                            fileResults.weekendSkipped++;
+                            results.weekendSkipped++;
+                            continue;
+                        }
+                        
                         // Find user by employee code
                         const user = await User.findOne({ employeeCode: record.employeeCode });
                         
@@ -236,12 +333,34 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                             missedClockOut = attendanceStatus.missedClockOut;
                         }
                         
-                        // Cross-reference with approved forms
+                        // Cross-reference with approved forms FIRST (before fingerprint deduction)
+                        // This ensures WFH days don't get fingerprint deductions
                         const formReference = await crossReferenceWithForms(record.date, user._id);
                         if (formReference) {
                             status = formReference.status;
                             isExcused = true;
                             relatedForm = formReference.form._id;
+                        }
+                        
+                        // Process fingerprint misses and calculate deduction
+                        let fingerprintDeduction = 0;
+                        let fingerprintMissType = 'none';
+                        
+                        if (missedClockIn && missedClockOut) {
+                            fingerprintMissType = 'both';
+                        } else if (missedClockIn) {
+                            fingerprintMissType = 'clock_in';
+                        } else if (missedClockOut) {
+                            fingerprintMissType = 'clock_out';
+                        }
+                        
+                        // Apply deduction if there was a fingerprint miss
+                        // SKIP deduction for WFH days - employee working from home doesn't need to clock in/out
+                        if (fingerprintMissType !== 'none' && status !== 'wfh') {
+                            const missResult = await processFingerprintMiss(user, fingerprintMissType, month);
+                            fingerprintDeduction = missResult.deduction;
+                        } else if (status === 'wfh') {
+                            console.log(`  Skipping fingerprint deduction for ${user.name} - WFH day`);
                         }
                         
                         // Check if attendance record already exists
@@ -259,6 +378,8 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                             existingRecord.minutesOvertime = minutesOvertime;
                             existingRecord.missedClockIn = missedClockIn;
                             existingRecord.missedClockOut = missedClockOut;
+                            existingRecord.fingerprintDeduction = fingerprintDeduction;
+                            existingRecord.fingerprintMissType = fingerprintMissType;
                             existingRecord.isExcused = isExcused;
                             existingRecord.relatedForm = relatedForm;
                             existingRecord.uploadedBy = admin._id;
@@ -278,6 +399,8 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                                 minutesOvertime: minutesOvertime,
                                 missedClockIn: missedClockIn,
                                 missedClockOut: missedClockOut,
+                                fingerprintDeduction: fingerprintDeduction,
+                                fingerprintMissType: fingerprintMissType,
                                 isExcused: isExcused,
                                 relatedForm: relatedForm,
                                 month: month,
@@ -383,8 +506,12 @@ router.get('/monthly-report/:month', auth, async (req, res) => {
                         absent: 0,
                         excused: 0,
                         onLeave: 0,
+                        wfh: 0,
                         unexcusedAbsences: 0,
-                        totalMinutesLate: 0
+                        totalMinutesLate: 0,
+                        totalMinutesOvertime: 0,
+                        totalFingerprintDeduction: 0,
+                        fingerprintMisses: 0
                     }
                 };
             }
@@ -395,12 +522,19 @@ router.get('/monthly-report/:month', auth, async (req, res) => {
             // Update statistics
             const stats = userAttendanceMap[userId].stats;
             stats.totalMinutesLate += record.minutesLate || 0;
+            stats.totalMinutesOvertime += record.minutesOvertime || 0;
+            stats.totalFingerprintDeduction += record.fingerprintDeduction || 0;
+            
+            if (record.fingerprintMissType && record.fingerprintMissType !== 'none') {
+                stats.fingerprintMisses++;
+            }
             
             if (record.status === 'present') stats.present++;
             else if (record.status === 'late') stats.late++;
             else if (record.status === 'absent') stats.absent++;
             else if (record.status === 'excused') stats.excused++;
             else if (record.status === 'on_leave') stats.onLeave++;
+            else if (record.status === 'wfh') stats.wfh++;
             
             if (record.isExcused) {
                 stats.excused++;
@@ -412,9 +546,35 @@ router.get('/monthly-report/:month', auth, async (req, res) => {
         // Convert map to array
         const report = Object.values(userAttendanceMap);
         
+        // Calculate overtime summary for admin
+        const overtimeSummary = {
+            totalOvertimeMinutes: 0,
+            totalOvertimeHours: 0,
+            employeesWithOvertime: []
+        };
+        
+        for (const emp of report) {
+            if (emp.stats.totalMinutesOvertime > 0) {
+                overtimeSummary.totalOvertimeMinutes += emp.stats.totalMinutesOvertime;
+                overtimeSummary.employeesWithOvertime.push({
+                    name: emp.user.name,
+                    department: emp.user.department,
+                    employeeCode: emp.user.employeeCode,
+                    overtimeMinutes: emp.stats.totalMinutesOvertime,
+                    overtimeHours: Math.round((emp.stats.totalMinutesOvertime / 60) * 100) / 100
+                });
+            }
+        }
+        
+        overtimeSummary.totalOvertimeHours = Math.round((overtimeSummary.totalOvertimeMinutes / 60) * 100) / 100;
+        
+        // Sort employees by overtime (highest first)
+        overtimeSummary.employeesWithOvertime.sort((a, b) => b.overtimeMinutes - a.overtimeMinutes);
+        
         res.json({
             month: month,
             totalEmployees: report.length,
+            overtimeSummary: overtimeSummary,
             report: report
         });
         
@@ -429,7 +589,7 @@ router.get('/monthly-report/:month', auth, async (req, res) => {
  * Get specific employee's attendance for a month
  * Admin only
  */
-router.get('/employee/:userId/:month', auth, async (req, res) => {
+router.get('/employee/:userId/:month', auth, validateObjectId('userId'), async (req, res) => {
     try {
         const admin = await User.findById(req.user.id);
         if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {

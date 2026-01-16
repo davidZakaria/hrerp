@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const config = require('config');
 const { createAuditLog } = require('./audit');
 const Audit = require('../models/Audit');
+const { validateObjectId } = require('../middleware/validateObjectId');
 
 // Get all users (for admin)
 router.get('/', auth, async (req, res) => {
@@ -87,7 +88,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Update user status (approve/reject pending users) - MOVED BEFORE GENERAL UPDATE
-router.put('/:userId/status', auth, async (req, res) => {
+router.put('/:userId/status', auth, validateObjectId('userId'), async (req, res) => {
   try {
     const admin = await User.findById(req.user.id);
     if (admin.role !== 'admin' && admin.role !== 'super_admin') {
@@ -115,7 +116,7 @@ router.put('/:userId/status', auth, async (req, res) => {
 });
 
 // Admin: Update an employee's vacation days left - MOVED BEFORE GENERAL UPDATE  
-router.put('/:userId/vacation-days', auth, async (req, res) => {
+router.put('/:userId/vacation-days', auth, validateObjectId('userId'), async (req, res) => {
   try {
     const admin = await User.findById(req.user.id);
     if (admin.role !== 'admin' && admin.role !== 'super_admin') {
@@ -172,7 +173,7 @@ router.put('/:userId/vacation-days', auth, async (req, res) => {
 });
 
 // Update user (admin only) - MAIN UPDATE ROUTE
-router.put('/:userId', auth, async (req, res) => {
+router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
   try {
     const admin = await User.findById(req.user.id);
     if (admin.role !== 'admin' && admin.role !== 'super_admin') {
@@ -231,7 +232,7 @@ router.put('/:userId', auth, async (req, res) => {
 });
 
 // Delete user (admin only)
-router.delete('/:userId', auth, async (req, res) => {
+router.delete('/:userId', auth, validateObjectId('userId'), async (req, res) => {
   try {
     const admin = await User.findById(req.user.id);
     if (admin.role !== 'admin' && admin.role !== 'super_admin') {
@@ -254,7 +255,12 @@ router.delete('/:userId', auth, async (req, res) => {
 // Super Admin: Get all users with full details
 router.get('/all', auth, async (req, res) => {
   try {
+    console.log('GET /all - req.user:', req.user);
     const user = await User.findById(req.user.id);
+    console.log('GET /all - found user:', user ? user.email : 'null');
+    if (!user) {
+      return res.status(401).json({ msg: 'User not found. Please login again.', requestedId: req.user.id });
+    }
     if (user.role !== 'super_admin') {
       return res.status(403).json({ msg: 'Not authorized as super admin' });
     }

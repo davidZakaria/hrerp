@@ -27,7 +27,7 @@ const attendanceSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['present', 'late', 'absent', 'excused', 'on_leave'],
+        enum: ['present', 'late', 'absent', 'excused', 'on_leave', 'wfh'],
         required: true,
         default: 'present'
     },
@@ -50,6 +50,16 @@ const attendanceSchema = new mongoose.Schema({
     missedClockOut: {
         type: Boolean,
         default: false
+    },
+    // Fingerprint deduction tracking
+    fingerprintDeduction: {
+        type: Number,
+        default: 0 // Deduction in days for this specific record (0.25, 0.5, 0.75, or 1)
+    },
+    fingerprintMissType: {
+        type: String,
+        enum: ['none', 'clock_in', 'clock_out', 'both'],
+        default: 'none'
     },
     isExcused: {
         type: Boolean,
@@ -113,10 +123,14 @@ attendanceSchema.statics.getUserStats = async function(userId, month) {
         absent: records.filter(r => r.status === 'absent').length,
         excused: records.filter(r => r.isExcused || r.status === 'excused').length,
         onLeave: records.filter(r => r.status === 'on_leave').length,
+        wfh: records.filter(r => r.status === 'wfh').length,
         totalMinutesLate: records.reduce((sum, r) => sum + (r.minutesLate || 0), 0),
         totalMinutesOvertime: records.reduce((sum, r) => sum + (r.minutesOvertime || 0), 0),
         missedClockIns: records.filter(r => r.missedClockIn).length,
-        missedClockOuts: records.filter(r => r.missedClockOut).length
+        missedClockOuts: records.filter(r => r.missedClockOut).length,
+        // Fingerprint deduction stats
+        totalFingerprintDeduction: records.reduce((sum, r) => sum + (r.fingerprintDeduction || 0), 0),
+        fingerprintMisses: records.filter(r => r.fingerprintMissType && r.fingerprintMissType !== 'none').length
     };
     
     stats.unexcusedAbsences = stats.absent - stats.excused;

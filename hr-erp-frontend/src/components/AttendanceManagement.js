@@ -33,6 +33,7 @@ const AttendanceManagement = () => {
       fetchMonthlyReport();
       fetchApprovedForms();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMonth]);
 
   const fetchApprovedForms = async () => {
@@ -177,12 +178,17 @@ const AttendanceManagement = () => {
       late: { background: '#FFF3E0', color: '#EF6C00', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' },
       absent: { background: '#FFEBEE', color: '#C62828', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' },
       excused: { background: '#E3F2FD', color: '#1565C0', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' },
-      on_leave: { background: '#F3E5F5', color: '#6A1B9A', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' }
+      on_leave: { background: '#F3E5F5', color: '#6A1B9A', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' },
+      wfh: { background: '#E1F5FE', color: '#0277BD', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold' }
+    };
+
+    const labels = {
+      wfh: '🏠 WFH'
     };
 
     return (
       <span style={styles[status] || styles.present}>
-        {status.replace('_', ' ').toUpperCase()}
+        {labels[status] || status.replace('_', ' ').toUpperCase()}
       </span>
     );
   };
@@ -262,6 +268,11 @@ const AttendanceManagement = () => {
               <li>Total records: {uploadResult.totalRecords}</li>
               <li style={{ color: '#2E7D32' }}>✓ Successful: {uploadResult.successfulRecords}</li>
               <li style={{ color: '#C62828' }}>✗ Failed: {uploadResult.failedRecords}</li>
+              {uploadResult.weekendSkipped > 0 && (
+                <li style={{ color: '#9C27B0' }}>
+                  📅 Weekend records skipped: {uploadResult.weekendSkipped} (Fri/Sat)
+                </li>
+              )}
               {uploadResult.unmatchedCodes && uploadResult.unmatchedCodes.length > 0 && (
                 <li style={{ color: '#EF6C00' }}>
                   ⚠ Unmatched employee codes: {uploadResult.unmatchedCodes.length}
@@ -349,6 +360,65 @@ const AttendanceManagement = () => {
 
         {attendanceReport && !loading && (
           <div>
+            {/* Overtime Summary Panel */}
+            {attendanceReport.overtimeSummary && attendanceReport.overtimeSummary.totalOvertimeMinutes > 0 && (
+              <div style={{ 
+                marginBottom: '1.5rem', 
+                padding: '1.5rem', 
+                background: 'linear-gradient(135deg, #FFF8E1, #FFECB3)', 
+                borderRadius: '12px',
+                border: '2px solid #FFB300',
+                boxShadow: '0 2px 8px rgba(255,179,0,0.2)'
+              }}>
+                <h4 style={{ margin: '0 0 1rem 0', color: '#E65100', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  ⏱️ Overtime Summary This Month
+                </h4>
+                <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <div style={{ 
+                    background: '#fff', 
+                    padding: '1rem 1.5rem', 
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#E65100' }}>
+                      {attendanceReport.overtimeSummary.totalOvertimeHours}h
+                    </div>
+                    <div style={{ color: '#666', fontSize: '0.85rem' }}>Total Overtime Hours</div>
+                  </div>
+                  <div style={{ 
+                    background: '#fff', 
+                    padding: '1rem 1.5rem', 
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#E65100' }}>
+                      {attendanceReport.overtimeSummary.employeesWithOvertime.length}
+                    </div>
+                    <div style={{ color: '#666', fontSize: '0.85rem' }}>Employees with Overtime</div>
+                  </div>
+                  {attendanceReport.overtimeSummary.employeesWithOvertime.length > 0 && (
+                    <div style={{ flex: 1 }}>
+                      <div style={{ color: '#666', fontSize: '0.85rem', marginBottom: '0.5rem' }}>Top Overtime:</div>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {attendanceReport.overtimeSummary.employeesWithOvertime.slice(0, 5).map((emp, idx) => (
+                          <span key={idx} style={{ 
+                            background: '#fff', 
+                            padding: '4px 10px', 
+                            borderRadius: '20px',
+                            fontSize: '0.85rem',
+                            color: '#333',
+                            border: '1px solid #FFB300'
+                          }}>
+                            {emp.name}: <strong style={{ color: '#E65100' }}>+{emp.overtimeHours}h</strong>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div style={{ marginBottom: '1.5rem', color: '#666', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <strong>Total Employees:</strong> {attendanceReport.totalEmployees}
@@ -383,9 +453,10 @@ const AttendanceManagement = () => {
                       <th>Late</th>
                       <th>Absent</th>
                       <th>On Leave</th>
+                      <th>WFH</th>
                       <th>Excused</th>
-                      <th>Missed Clock-In</th>
-                      <th>Missed Clock-Out</th>
+                      <th>Fingerprint Miss</th>
+                      <th>Deduction (days)</th>
                       <th>Overtime (min)</th>
                       <th>Actions</th>
                     </tr>
@@ -407,15 +478,58 @@ const AttendanceManagement = () => {
                         <td style={{ color: '#EF6C00' }}>{emp.stats.late}</td>
                         <td style={{ color: '#C62828' }}>{emp.stats.unexcusedAbsences}</td>
                         <td style={{ color: '#9C27B0' }}>{emp.stats.onLeave || 0}</td>
+                        <td>
+                          {(emp.stats.wfh || 0) > 0 ? (
+                            <span style={{ 
+                              background: '#E1F5FE', 
+                              color: '#0277BD', 
+                              padding: '4px 8px', 
+                              borderRadius: '4px',
+                              fontWeight: 'bold',
+                              fontSize: '0.85rem'
+                            }}>
+                              🏠 {emp.stats.wfh}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#666' }}>0</span>
+                          )}
+                        </td>
                         <td style={{ color: '#1565C0' }}>{emp.stats.excused || 0}</td>
-                        <td style={{ color: emp.stats.missedClockIns > 0 ? '#F44336' : '#666', fontWeight: emp.stats.missedClockIns > 0 ? 'bold' : 'normal' }}>
-                          {emp.stats.missedClockIns || 0}
+                        <td style={{ 
+                          color: (emp.stats.fingerprintMisses || 0) > 0 ? '#F44336' : '#666', 
+                          fontWeight: (emp.stats.fingerprintMisses || 0) > 0 ? 'bold' : 'normal' 
+                        }}>
+                          {emp.stats.fingerprintMisses || 0}
                         </td>
-                        <td style={{ color: emp.stats.missedClockOuts > 0 ? '#FF9800' : '#666', fontWeight: emp.stats.missedClockOuts > 0 ? 'bold' : 'normal' }}>
-                          {emp.stats.missedClockOuts || 0}
+                        <td>
+                          {(emp.stats.totalFingerprintDeduction || 0) > 0 ? (
+                            <span style={{ 
+                              background: '#FFEBEE', 
+                              color: '#C62828', 
+                              padding: '4px 8px', 
+                              borderRadius: '4px',
+                              fontWeight: 'bold',
+                              fontSize: '0.85rem'
+                            }}>
+                              -{emp.stats.totalFingerprintDeduction}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#666' }}>0</span>
+                          )}
                         </td>
-                        <td style={{ color: emp.stats.totalMinutesOvertime > 0 ? '#4CAF50' : '#666', fontWeight: emp.stats.totalMinutesOvertime > 0 ? 'bold' : 'normal' }}>
-                          {emp.stats.totalMinutesOvertime > 0 ? `+${emp.stats.totalMinutesOvertime}` : '0'}
+                        <td style={{ color: (emp.stats.totalMinutesOvertime || 0) > 0 ? '#4CAF50' : '#666', fontWeight: (emp.stats.totalMinutesOvertime || 0) > 0 ? 'bold' : 'normal' }}>
+                          {(emp.stats.totalMinutesOvertime || 0) > 0 ? (
+                            <span style={{ 
+                              background: '#E8F5E9', 
+                              color: '#2E7D32', 
+                              padding: '4px 8px', 
+                              borderRadius: '4px',
+                              fontWeight: 'bold',
+                              fontSize: '0.85rem'
+                            }}>
+                              +{emp.stats.totalMinutesOvertime}
+                            </span>
+                          ) : '0'}
                         </td>
                         <td>
                           <button
@@ -478,7 +592,7 @@ const AttendanceManagement = () => {
                               Schedule: {emp.user.workSchedule ? `${emp.user.workSchedule.startTime} - ${emp.user.workSchedule.endTime}` : 'Not set'}
                             </div>
                           </div>
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                             <span style={{ background: '#E8F5E9', color: '#2E7D32', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>
                               ✓ {emp.stats.present} Present
                             </span>
@@ -491,6 +605,21 @@ const AttendanceManagement = () => {
                             {emp.stats.onLeave > 0 && (
                               <span style={{ background: '#F3E5F5', color: '#6A1B9A', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>
                                 🏖️ {emp.stats.onLeave} On Leave
+                              </span>
+                            )}
+                            {(emp.stats.wfh || 0) > 0 && (
+                              <span style={{ background: '#E1F5FE', color: '#0277BD', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                                🏠 {emp.stats.wfh} WFH
+                              </span>
+                            )}
+                            {(emp.stats.totalFingerprintDeduction || 0) > 0 && (
+                              <span style={{ background: '#FFCDD2', color: '#B71C1C', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                                ⚠️ -{emp.stats.totalFingerprintDeduction} days deduction
+                              </span>
+                            )}
+                            {(emp.stats.totalMinutesOvertime || 0) > 0 && (
+                              <span style={{ background: '#C8E6C9', color: '#1B5E20', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                                ⏱️ +{Math.round(emp.stats.totalMinutesOvertime / 60 * 10) / 10}h overtime
                               </span>
                             )}
                           </div>
@@ -535,6 +664,7 @@ const AttendanceManagement = () => {
                                 <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Status</th>
                                 <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Late</th>
                                 <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Overtime</th>
+                                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Deduction</th>
                                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Notes</th>
                               </tr>
                             </thead>
@@ -576,15 +706,41 @@ const AttendanceManagement = () => {
                                         <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>+{record.minutesOvertime}m</span>
                                       ) : '-'}
                                     </td>
+                                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                                      {(record.fingerprintDeduction || 0) > 0 ? (
+                                        <span style={{ 
+                                          background: '#FFEBEE', 
+                                          color: '#C62828', 
+                                          padding: '2px 8px', 
+                                          borderRadius: '4px',
+                                          fontWeight: 'bold',
+                                          fontSize: '0.8rem'
+                                        }}>
+                                          -{record.fingerprintDeduction}d
+                                        </span>
+                                      ) : '-'}
+                                    </td>
                                     <td style={{ padding: '8px', fontSize: '0.85rem', color: '#666' }}>
                                       {record.relatedForm && (
                                         <span style={{ 
                                           background: record.status === 'on_leave' ? '#F3E5F5' : '#E3F2FD',
                                           color: record.status === 'on_leave' ? '#6A1B9A' : '#1565C0',
                                           padding: '2px 6px',
-                                          borderRadius: '4px'
+                                          borderRadius: '4px',
+                                          marginRight: '4px'
                                         }}>
                                           {record.status === 'on_leave' ? '🏖️ Approved Leave' : '✓ Excused'}
+                                        </span>
+                                      )}
+                                      {record.fingerprintMissType && record.fingerprintMissType !== 'none' && (
+                                        <span style={{ 
+                                          background: '#FFF3E0', 
+                                          color: '#E65100', 
+                                          padding: '2px 6px',
+                                          borderRadius: '4px',
+                                          fontSize: '0.8rem'
+                                        }}>
+                                          ⚠️ Forgot {record.fingerprintMissType === 'both' ? 'In & Out' : record.fingerprintMissType === 'clock_in' ? 'Clock In' : 'Clock Out'}
                                         </span>
                                       )}
                                     </td>
@@ -697,6 +853,24 @@ const AttendanceManagement = () => {
                     {selectedEmployee.stats.onLeave}
                   </div>
                   <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>On Leave</div>
+                </div>
+                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #0277BD', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
+                    🏠 {selectedEmployee.stats.wfh || 0}
+                  </div>
+                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Work From Home</div>
+                </div>
+                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #FF5722', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
+                    {selectedEmployee.stats.totalFingerprintDeduction || 0}
+                  </div>
+                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Days Deducted</div>
+                </div>
+                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #8BC34A', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
+                    {Math.round((selectedEmployee.stats.totalMinutesOvertime || 0) / 60 * 10) / 10}h
+                  </div>
+                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Overtime</div>
                 </div>
               </div>
             </div>

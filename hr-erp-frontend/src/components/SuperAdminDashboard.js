@@ -5,8 +5,9 @@ import AttendanceManagement from './AttendanceManagement';
 import API_URL from '../config/api';
 
 const SuperAdminDashboard = () => {
-  const { t } = useTranslation();
+  useTranslation(); // Initialize i18n
   const [users, setUsers] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]);
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -88,6 +89,26 @@ const SuperAdminDashboard = () => {
   const [clearLoading, setClearLoading] = useState(false);
   const [deleteAllLogs, setDeleteAllLogs] = useState(false);
 
+  // Backup Management state
+  const [backups, setBackups] = useState([]);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [backupConfig, setBackupConfig] = useState(null);
+  const [creatingBackup, setCreatingBackup] = useState(false);
+  const [verifyingBackup, setVerifyingBackup] = useState(null);
+  const [backupVerificationResult, setBackupVerificationResult] = useState(null);
+  const [openRestoreDropdown, setOpenRestoreDropdown] = useState(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openRestoreDropdown && !event.target.closest('.restore-dropdown-container')) {
+        setOpenRestoreDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openRestoreDropdown]);
+
   const fetchUsers = async () => {
     setLoading(true);
     setError('');
@@ -98,7 +119,9 @@ const SuperAdminDashboard = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        setUsers(data);
+        // Separate active and pending users
+        setUsers(data.filter(user => user.status === 'active'));
+        setPendingUsers(data.filter(user => user.status === 'pending'));
       } else {
         setError(data.msg || 'Failed to fetch users');
       }
@@ -106,6 +129,54 @@ const SuperAdminDashboard = () => {
       setError('Error connecting to server');
     }
     setLoading(false);
+  };
+
+  // Approve pending user
+  const handleApproveUser = async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/users/${userId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({ status: 'active' })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess('User approved successfully');
+        fetchUsers(); // Refresh the lists
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(data.msg || 'Error approving user');
+      }
+    } catch (err) {
+      setError('Error connecting to server');
+    }
+  };
+
+  // Reject pending user
+  const handleRejectUser = async (userId) => {
+    if (window.confirm('Are you sure you want to reject this user registration? This will delete their account.')) {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_URL}/api/users/${userId}`, {
+          method: 'DELETE',
+          headers: { 'x-auth-token': token }
+        });
+        if (res.ok) {
+          setSuccess('User registration rejected');
+          fetchUsers(); // Refresh the lists
+          setTimeout(() => setSuccess(''), 3000);
+        } else {
+          const data = await res.json();
+          setError(data.msg || 'Error rejecting user');
+        }
+      } catch (err) {
+        setError('Error connecting to server');
+      }
+    }
   };
 
   const fetchForms = async () => {
@@ -170,6 +241,289 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  // Backup Management Functions
+  const fetchBackups = async () => {
+    setBackupLoading(true);
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/backup/list`, {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setBackups(data.backups || []);
+      } else {
+        setError(data.msg || 'Failed to fetch backups');
+      }
+    } catch (err) {
+      setError('Error connecting to backup service');
+    }
+    setBackupLoading(false);
+  };
+
+  const fetchBackupConfig = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/backup/config/settings`, {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setBackupConfig(data.config);
+      }
+    } catch (err) {
+      console.error('Error fetching backup config:', err);
+    }
+  };
+
+  const handleCreateBackup = async (encrypt = false) => {
+    if (!window.confirm(`Create a new backup${encrypt ? ' (encrypted)' : ''}? This may take a few minutes.`)) {
+      return;
+    }
+    
+    setCreatingBackup(true);
+    setError('');
+    const token = localStorage.getItem('token');
+    
+    try {
+      const res = await fetch(`${API_URL}/api/backup/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({ encrypt })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setSuccess(`Backup created successfully! ID: ${data.backup.id} (${data.backup.size})`);
+        fetchBackups();
+        setTimeout(() => setSuccess(''), 5000);
+      } else {
+        setError(data.msg || 'Failed to create backup');
+      }
+    } catch (err) {
+      setError('Error creating backup: ' + err.message);
+    }
+    setCreatingBackup(false);
+  };
+
+  const handleVerifyBackup = async (backupId) => {
+    setVerifyingBackup(backupId);
+    setBackupVerificationResult(null);
+    const token = localStorage.getItem('token');
+    
+    try {
+      const res = await fetch(`${API_URL}/api/backup/${backupId}/verify`, {
+        method: 'POST',
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setBackupVerificationResult({
+          backupId,
+          ...data.verification
+        });
+        if (data.verification.valid) {
+          setSuccess(`Backup ${backupId} verified successfully!`);
+        } else {
+          setError(`Backup verification failed: ${data.verification.errors?.length || 0} errors found`);
+        }
+      } else {
+        setError(data.msg || 'Failed to verify backup');
+      }
+    } catch (err) {
+      setError('Error verifying backup: ' + err.message);
+    }
+    setVerifyingBackup(null);
+  };
+
+  const handleDeleteBackup = async (backupId) => {
+    if (!window.confirm(`Are you sure you want to delete backup ${backupId}? This cannot be undone.`)) {
+      return;
+    }
+    
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/backup/${backupId}`, {
+        method: 'DELETE',
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setSuccess(`Backup ${backupId} deleted successfully`);
+        fetchBackups();
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(data.msg || 'Failed to delete backup');
+      }
+    } catch (err) {
+      setError('Error deleting backup: ' + err.message);
+    }
+  };
+
+  const handleCleanupBackups = async () => {
+    if (!window.confirm('Clean up old backups based on retention policy?')) {
+      return;
+    }
+    
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/backup/cleanup`, {
+        method: 'POST',
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setSuccess(`Cleanup completed: ${data.result.cleaned} old backups removed`);
+        fetchBackups();
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(data.msg || 'Failed to cleanup backups');
+      }
+    } catch (err) {
+      setError('Error during cleanup: ' + err.message);
+    }
+  };
+
+  // Export/Download backup as ZIP
+  const handleExportBackup = async (backupId) => {
+    setSuccess(`Downloading backup ${backupId}...`);
+    const token = localStorage.getItem('token');
+    
+    try {
+      const res = await fetch(`${API_URL}/api/backup/export/${backupId}`, {
+        headers: { 'x-auth-token': token }
+      });
+      
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${backupId}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setSuccess(`Backup ${backupId} downloaded successfully!`);
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        const data = await res.json();
+        setError(data.msg || 'Failed to download backup');
+      }
+    } catch (err) {
+      setError('Error downloading backup: ' + err.message);
+    }
+  };
+
+  // Import/Upload backup ZIP file
+  const handleImportBackup = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!file.name.endsWith('.zip')) {
+      setError('Please select a .zip backup file');
+      return;
+    }
+    
+    if (!window.confirm(`Import backup from "${file.name}"? This will add the backup to your system.`)) {
+      event.target.value = '';
+      return;
+    }
+    
+    setCreatingBackup(true);
+    setSuccess(`Uploading and importing ${file.name}...`);
+    
+    const formData = new FormData();
+    formData.append('backupFile', file);
+    
+    const token = localStorage.getItem('token');
+    
+    try {
+      const res = await fetch(`${API_URL}/api/backup/import`, {
+        method: 'POST',
+        headers: { 'x-auth-token': token },
+        body: formData
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setSuccess(`Backup imported successfully! ID: ${data.backup.id}`);
+        fetchBackups();
+        setTimeout(() => setSuccess(''), 5000);
+      } else {
+        setError(data.msg || 'Failed to import backup');
+      }
+    } catch (err) {
+      setError('Error importing backup: ' + err.message);
+    }
+    
+    event.target.value = '';
+    setCreatingBackup(false);
+  };
+
+  // Restore from backup
+  const handleRestoreBackup = async (backupId, restoreType) => {
+    const typeLabels = {
+      database: 'DATABASE ONLY',
+      files: 'FILES ONLY',
+      full: 'FULL RESTORE (Database + Files)'
+    };
+    
+    if (!window.confirm(
+      `⚠️ WARNING: Restore ${typeLabels[restoreType]}?\n\n` +
+      `Backup: ${backupId}\n\n` +
+      `This will OVERWRITE existing data. Are you absolutely sure?`
+    )) {
+      return;
+    }
+    
+    // Double confirmation for safety
+    if (!window.confirm('🔴 FINAL CONFIRMATION: This action cannot be undone. Continue?')) {
+      return;
+    }
+    
+    setVerifyingBackup(backupId);
+    setSuccess(`Restoring ${restoreType} from backup...`);
+    
+    const token = localStorage.getItem('token');
+    
+    try {
+      const res = await fetch(`${API_URL}/api/backup/${backupId}/restore`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({ restoreType })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        let message = `Restore completed!\n`;
+        if (data.results.database) {
+          message += `Database: ${data.results.database.success ? `✅ ${data.results.database.collections} collections, ${data.results.database.documents} documents` : `❌ ${data.results.database.error}`}\n`;
+        }
+        if (data.results.files) {
+          message += `Files: ${data.results.files.success ? `✅ ${data.results.files.filesRestored} files` : `❌ ${data.results.files.error}`}`;
+        }
+        setSuccess(message);
+        setTimeout(() => setSuccess(''), 10000);
+      } else {
+        setError(data.msg || 'Failed to restore backup');
+      }
+    } catch (err) {
+      setError('Error restoring backup: ' + err.message);
+    }
+    
+    setVerifyingBackup(null);
+  };
+
   useEffect(() => {
     if (activeTab === 'users') {
       fetchUsers();
@@ -178,13 +532,18 @@ const SuperAdminDashboard = () => {
     } else if (activeTab === 'logs') {
       fetchAuditLogs();
       fetchAuditStats();
+    } else if (activeTab === 'backup') {
+      fetchBackups();
+      fetchBackupConfig();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   useEffect(() => {
     if (activeTab === 'logs') {
       fetchAuditLogs();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auditPage, auditFilters]);
 
   const handleUserSelect = (user) => {
@@ -308,12 +667,6 @@ const SuperAdminDashboard = () => {
         managedDepartments: [...currentDepts, department]
       });
     }
-  };
-
-  const getStatusBadge = (status) => {
-    const statusClass = status === 'active' || status === 'approved' ? 'badge-success' : 
-                       status === 'pending' ? 'badge-warning' : 'badge-danger';
-    return <span className={`badge-elegant ${statusClass}`}>{status}</span>;
   };
 
   // Form Management Functions
@@ -516,12 +869,16 @@ const SuperAdminDashboard = () => {
       <div className="main-content">
         <div className="grid-4">
           <div className="stats-card hover-lift">
-            <div className="stats-number">{users.length}</div>
+            <div className="stats-number">{users.length + pendingUsers.length}</div>
             <div className="stats-label">Total Users</div>
           </div>
           <div className="stats-card hover-lift">
-            <div className="stats-number">{users.filter(u => u.status === 'active').length}</div>
+            <div className="stats-number">{users.length}</div>
             <div className="stats-label">Active Users</div>
+          </div>
+          <div className="stats-card hover-lift" style={{ background: pendingUsers.length > 0 ? 'linear-gradient(135deg, #ff9800, #f57c00)' : undefined }}>
+            <div className="stats-number">{pendingUsers.length}</div>
+            <div className="stats-label">Pending Approvals</div>
           </div>
           <div className="stats-card hover-lift">
             <div className="stats-number">{forms.length}</div>
@@ -558,6 +915,13 @@ const SuperAdminDashboard = () => {
               onClick={() => setActiveTab('attendance')}
             >
               Attendance
+            </button>
+            <button 
+              className={`btn-elegant ${activeTab === 'backup' ? 'btn-success' : ''}`}
+              onClick={() => setActiveTab('backup')}
+              style={{ background: activeTab === 'backup' ? undefined : 'linear-gradient(135deg, #2196F3, #1976D2)' }}
+            >
+              Backup & Restore
             </button>
           </div>
 
@@ -629,6 +993,126 @@ const SuperAdminDashboard = () => {
                   </button>
                 </div>
               </div>
+
+              {/* Pending User Approvals Section */}
+              {pendingUsers.length > 0 && (
+                <div style={{ 
+                  marginBottom: '2rem', 
+                  padding: '1.5rem', 
+                  background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 193, 7, 0.1))',
+                  borderRadius: '12px',
+                  border: '2px solid rgba(255, 152, 0, 0.3)'
+                }}>
+                  <h3 style={{ 
+                    color: '#ff9800', 
+                    marginBottom: '1rem', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem' 
+                  }}>
+                    🔔 Pending User Registrations ({pendingUsers.length})
+                  </h3>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', 
+                    gap: '1rem' 
+                  }}>
+                    {pendingUsers
+                      .filter(user => 
+                        user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+                      )
+                      .map(user => (
+                      <div key={user._id} style={{
+                        background: 'rgba(255, 255, 255, 0.95)',
+                        borderRadius: '10px',
+                        padding: '1.25rem',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        border: '1px solid rgba(255, 152, 0, 0.2)'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                          <div>
+                            <h4 style={{ margin: 0, color: '#333', fontSize: '1.1rem' }}>{user.name}</h4>
+                            <p style={{ margin: '0.25rem 0', color: '#666', fontSize: '0.9rem' }}>{user.email}</p>
+                          </div>
+                          <span style={{
+                            background: user.role === 'manager' ? '#9C27B0' : '#2196F3',
+                            color: 'white',
+                            padding: '4px 10px',
+                            borderRadius: '20px',
+                            fontSize: '0.8rem',
+                            fontWeight: 'bold'
+                          }}>
+                            {user.role === 'manager' ? '👔 Manager' : '👤 Employee'}
+                          </span>
+                        </div>
+                        
+                        <div style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#555' }}>
+                          <p style={{ margin: '0.25rem 0' }}><strong>Department:</strong> {user.department}</p>
+                          {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
+                            <div style={{ marginTop: '0.5rem' }}>
+                              <strong>Wants to Manage:</strong>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                                {user.managedDepartments.map((dept, idx) => (
+                                  <span key={idx} style={{
+                                    background: '#FF9800',
+                                    color: 'white',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    fontSize: '0.75rem'
+                                  }}>
+                                    {dept}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <p style={{ margin: '0.25rem 0', marginTop: '0.5rem' }}>
+                            <strong>Registered:</strong> {new Date(user.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                          <button
+                            onClick={() => handleApproveUser(user._id)}
+                            style={{
+                              flex: 1,
+                              padding: '0.6rem 1rem',
+                              background: 'linear-gradient(135deg, #4caf50, #66bb6a)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              fontSize: '0.9rem',
+                              transition: 'transform 0.2s'
+                            }}
+                          >
+                            ✅ Approve
+                          </button>
+                          <button
+                            onClick={() => handleRejectUser(user._id)}
+                            style={{
+                              flex: 1,
+                              padding: '0.6rem 1rem',
+                              background: 'linear-gradient(135deg, #f44336, #e53935)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              fontSize: '0.9rem',
+                              transition: 'transform 0.2s'
+                            }}
+                          >
+                            ❌ Reject
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="users-container">
                 {users
@@ -1647,6 +2131,442 @@ const SuperAdminDashboard = () => {
       {/* Attendance Tab */}
       {activeTab === 'attendance' && (
         <AttendanceManagement />
+      )}
+
+      {/* Backup Management Tab */}
+      {activeTab === 'backup' && (
+        <div>
+          <div className="section-header-redesign">
+            <div className="section-info">
+              <h3 className="text-gradient">Backup & Restore</h3>
+              <p className="section-description">Manage system backups and data recovery</p>
+            </div>
+            <div className="section-actions" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button 
+                className="btn-elegant btn-success"
+                onClick={() => handleCreateBackup(false)}
+                disabled={creatingBackup}
+              >
+                {creatingBackup ? 'Creating...' : '+ Create Backup'}
+              </button>
+              {backupConfig?.encryptionAvailable && (
+                <button 
+                  className="btn-elegant"
+                  onClick={() => handleCreateBackup(true)}
+                  disabled={creatingBackup}
+                  style={{ background: 'linear-gradient(135deg, #9C27B0, #7B1FA2)' }}
+                >
+                  + Encrypted Backup
+                </button>
+              )}
+              <label 
+                className="btn-elegant"
+                style={{ 
+                  background: 'linear-gradient(135deg, #00BCD4, #0097A7)', 
+                  cursor: creatingBackup ? 'not-allowed' : 'pointer',
+                  opacity: creatingBackup ? 0.6 : 1,
+                  marginBottom: 0
+                }}
+              >
+                Import ZIP
+                <input
+                  type="file"
+                  accept=".zip"
+                  onChange={handleImportBackup}
+                  disabled={creatingBackup}
+                  style={{ display: 'none' }}
+                />
+              </label>
+              <button 
+                className="btn-elegant"
+                onClick={handleCleanupBackups}
+                style={{ background: 'linear-gradient(135deg, #FF9800, #F57C00)' }}
+              >
+                Cleanup
+              </button>
+              <button 
+                className="btn-elegant"
+                onClick={fetchBackups}
+                disabled={backupLoading}
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          {/* Backup Configuration Info */}
+          {backupConfig && (
+            <div className="grid-4" style={{ marginBottom: '2rem' }}>
+              <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #2196F3, #1976D2)' }}>
+                <div className="stats-number">{backups.length}</div>
+                <div className="stats-label">Total Backups</div>
+              </div>
+              <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #FF9800, #F57C00)' }}>
+                <div className="stats-number">{backupConfig.retentionDays}</div>
+                <div className="stats-label">Retention (Days)</div>
+              </div>
+              <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #9C27B0, #7B1FA2)' }}>
+                <div className="stats-number">{backupConfig.maxBackups}</div>
+                <div className="stats-label">Max Backups</div>
+              </div>
+              <div className="stats-card hover-lift" style={{ 
+                background: backupConfig.encryptionAvailable 
+                  ? 'linear-gradient(135deg, #4CAF50, #388E3C)' 
+                  : 'linear-gradient(135deg, #607D8B, #455A64)' 
+              }}>
+                <div className="stats-number" style={{ fontSize: '1.5rem' }}>
+                  {backupConfig.encryptionAvailable ? '✓' : '✗'}
+                </div>
+                <div className="stats-label">Encryption</div>
+              </div>
+            </div>
+          )}
+
+          {/* Verification Result */}
+          {backupVerificationResult && (
+            <div className={`notification ${backupVerificationResult.valid ? 'success' : 'error'}`} 
+              style={{ 
+                position: 'relative', 
+                top: 'auto', 
+                right: 'auto', 
+                marginBottom: '1.5rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+              <div>
+                <strong>{backupVerificationResult.valid ? '✓ Verification Passed' : '✗ Verification Failed'}</strong>
+                <span style={{ marginLeft: '1rem', opacity: 0.9 }}>
+                  {backupVerificationResult.verified}/{backupVerificationResult.total} files verified
+                </span>
+              </div>
+              <button 
+                onClick={() => setBackupVerificationResult(null)}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  fontSize: '1.2rem',
+                  color: 'inherit',
+                  padding: '0 0.5rem'
+                }}
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {/* Backups List */}
+          {backupLoading ? (
+            <div style={{ textAlign: 'center', padding: '3rem' }}>
+              <div className="spinner-elegant"></div>
+              <p style={{ marginTop: '1rem', color: '#666' }}>Loading backups...</p>
+            </div>
+          ) : backups.length === 0 ? (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '3rem',
+              background: 'rgba(0,0,0,0.02)',
+              borderRadius: '12px',
+              border: '2px dashed rgba(0,0,0,0.1)'
+            }}>
+              <div style={{ fontSize: '4rem', marginBottom: '1rem', opacity: 0.5 }}>📭</div>
+              <h3 style={{ color: '#666', margin: 0 }}>No Backups Found</h3>
+              <p style={{ color: '#999', marginTop: '0.5rem' }}>Create your first backup to protect your data</p>
+            </div>
+          ) : (
+            <div className="table-container">
+              <table className="elegant-table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '1rem' }}>Backup ID</th>
+                    <th style={{ textAlign: 'left', padding: '1rem' }}>Created</th>
+                    <th style={{ textAlign: 'left', padding: '1rem' }}>Size</th>
+                    <th style={{ textAlign: 'center', padding: '1rem' }}>Files</th>
+                    <th style={{ textAlign: 'center', padding: '1rem' }}>Status</th>
+                    <th style={{ textAlign: 'right', padding: '1rem' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {backups.map((backup, index) => (
+                    <tr key={backup.id} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ 
+                            width: '32px', 
+                            height: '32px', 
+                            background: backup.encrypted ? '#9c27b0' : '#2196F3',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: '0.9rem'
+                          }}>
+                            {backup.encrypted ? '🔐' : '💾'}
+                          </span>
+                          <div>
+                            <code style={{ 
+                              fontSize: '0.85rem', 
+                              color: '#333',
+                              fontWeight: '500'
+                            }}>
+                              {backup.id}
+                            </code>
+                            {index === 0 && (
+                              <span style={{
+                                background: 'linear-gradient(135deg, #4caf50, #66bb6a)',
+                                color: 'white',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                fontSize: '0.65rem',
+                                fontWeight: 'bold',
+                                marginLeft: '0.5rem',
+                                textTransform: 'uppercase'
+                              }}>
+                                Latest
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem', color: '#666', fontSize: '0.9rem' }}>
+                        {backup.createdAt ? new Date(backup.createdAt).toLocaleString() : 'N/A'}
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        <span style={{
+                          background: '#2196F3',
+                          color: '#ffffff',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          fontSize: '0.85rem',
+                          fontWeight: '600'
+                        }}>
+                          {backup.size || 'Unknown'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>
+                        {backup.fileCount || 0}
+                      </td>
+                      <td style={{ padding: '1rem', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                          {backup.manifest?.database && (
+                            <span style={{
+                              background: '#4caf50',
+                              color: '#ffffff',
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              fontSize: '0.75rem',
+                              fontWeight: '600'
+                            }}>
+                              ✓ DB
+                            </span>
+                          )}
+                          {backup.manifest?.files > 0 && (
+                            <span style={{
+                              background: '#ff9800',
+                              color: '#ffffff',
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              fontSize: '0.75rem',
+                              fontWeight: '600'
+                            }}>
+                              {backup.manifest.files} files
+                            </span>
+                          )}
+                          {backup.encrypted && (
+                            <span style={{
+                              background: '#9c27b0',
+                              color: '#ffffff',
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              fontSize: '0.75rem',
+                              fontWeight: '600'
+                            }}>
+                              Encrypted
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => handleExportBackup(backup.id)}
+                            className="btn-elegant btn-sm"
+                            style={{
+                              padding: '6px 12px',
+                              background: 'linear-gradient(135deg, #00BCD4, #0097A7)',
+                              fontSize: '0.8rem'
+                            }}
+                            title="Download as ZIP"
+                          >
+                            Export
+                          </button>
+                          <button
+                            onClick={() => handleVerifyBackup(backup.id)}
+                            disabled={verifyingBackup === backup.id}
+                            className="btn-elegant btn-sm"
+                            style={{
+                              padding: '6px 12px',
+                              background: 'linear-gradient(135deg, #2196F3, #1976D2)',
+                              fontSize: '0.8rem'
+                            }}
+                          >
+                            {verifyingBackup === backup.id ? 'Verifying...' : 'Verify'}
+                          </button>
+                          <div className="restore-dropdown-container" style={{ position: 'relative' }}>
+                            <button
+                              onClick={() => setOpenRestoreDropdown(openRestoreDropdown === backup.id ? null : backup.id)}
+                              disabled={verifyingBackup === backup.id}
+                              className="btn-elegant btn-sm btn-success"
+                              style={{
+                                padding: '6px 12px',
+                                fontSize: '0.8rem'
+                              }}
+                              title="Restore from backup"
+                            >
+                              Restore {openRestoreDropdown === backup.id ? '▴' : '▾'}
+                            </button>
+                            {openRestoreDropdown === backup.id && (
+                              <div 
+                                style={{
+                                  position: 'absolute',
+                                  top: '100%',
+                                  right: 0,
+                                  background: 'white',
+                                  borderRadius: '8px',
+                                  boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                                  zIndex: 1000,
+                                  minWidth: '160px',
+                                  marginTop: '4px',
+                                  overflow: 'hidden'
+                                }}
+                              >
+                                <button
+                                  onClick={() => { 
+                                    setOpenRestoreDropdown(null);
+                                    handleRestoreBackup(backup.id, 'database'); 
+                                  }}
+                                  style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    padding: '10px 14px',
+                                    background: 'none',
+                                    border: 'none',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    borderBottom: '1px solid #eee',
+                                    transition: 'background 0.2s'
+                                  }}
+                                  onMouseOver={(e) => e.target.style.background = '#f5f5f5'}
+                                  onMouseOut={(e) => e.target.style.background = 'none'}
+                                >
+                                  💾 Database Only
+                                </button>
+                                <button
+                                  onClick={() => { 
+                                    setOpenRestoreDropdown(null);
+                                    handleRestoreBackup(backup.id, 'files'); 
+                                  }}
+                                  style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    padding: '10px 14px',
+                                    background: 'none',
+                                    border: 'none',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    borderBottom: '1px solid #eee',
+                                    transition: 'background 0.2s'
+                                  }}
+                                  onMouseOver={(e) => e.target.style.background = '#f5f5f5'}
+                                  onMouseOut={(e) => e.target.style.background = 'none'}
+                                >
+                                  📁 Files Only
+                                </button>
+                                <button
+                                  onClick={() => { 
+                                    setOpenRestoreDropdown(null);
+                                    handleRestoreBackup(backup.id, 'full'); 
+                                  }}
+                                  style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    padding: '10px 14px',
+                                    background: '#fff5f5',
+                                    border: 'none',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    color: '#d32f2f',
+                                    fontWeight: '600',
+                                    transition: 'background 0.2s'
+                                  }}
+                                  onMouseOver={(e) => e.target.style.background = '#ffebee'}
+                                  onMouseOut={(e) => e.target.style.background = '#fff5f5'}
+                                >
+                                  ⚠️ Full Restore
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleDeleteBackup(backup.id)}
+                            className="btn-elegant btn-sm"
+                            style={{
+                              padding: '6px 12px',
+                              background: 'linear-gradient(135deg, #f44336, #d32f2f)',
+                              fontSize: '0.8rem'
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Backup Guide */}
+          <div className="elegant-card" style={{ marginTop: '2rem', padding: '1.5rem' }}>
+            <h4 style={{ margin: '0 0 1rem 0', color: '#333', fontWeight: '600' }}>
+              Backup & Restore Guide
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+              <div>
+                <h5 style={{ color: '#2196F3', marginBottom: '0.5rem' }}>Automatic Backups</h5>
+                <p style={{ color: '#666', fontSize: '0.9rem', margin: 0 }}>
+                  System creates backups daily at 2:00 AM. Old backups are cleaned after {backupConfig?.retentionDays || 30} days.
+                </p>
+              </div>
+              <div>
+                <h5 style={{ color: '#4CAF50', marginBottom: '0.5rem' }}>Export / Import</h5>
+                <p style={{ color: '#666', fontSize: '0.9rem', margin: 0 }}>
+                  Export downloads a ZIP file. Import uploads a ZIP to add it to the system.
+                </p>
+              </div>
+              <div>
+                <h5 style={{ color: '#FF9800', marginBottom: '0.5rem' }}>Restore Options</h5>
+                <p style={{ color: '#666', fontSize: '0.9rem', margin: 0 }}>
+                  <strong>Database:</strong> Users, forms, records<br />
+                  <strong>Files:</strong> Resumes, documents<br />
+                  <strong>Full:</strong> Everything
+                </p>
+              </div>
+              <div>
+                <h5 style={{ color: '#f44336', marginBottom: '0.5rem' }}>⚠️ Warning</h5>
+                <p style={{ color: '#666', fontSize: '0.9rem', margin: 0 }}>
+                  Restore will <strong>OVERWRITE</strong> existing data. Always verify backups first.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Delete Confirmation Modal */}

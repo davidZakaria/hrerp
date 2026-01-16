@@ -14,6 +14,37 @@ const Audit = require('./models/Audit');
 // Load environment variables
 dotenv.config();
 
+// Validate required environment variables
+const validateEnvironment = () => {
+    const requiredEnvVars = ['JWT_SECRET'];
+    
+    // Additional required vars in production
+    if (process.env.NODE_ENV === 'production') {
+        requiredEnvVars.push('MONGODB_URI', 'CORS_ORIGIN');
+    }
+    
+    const missing = requiredEnvVars.filter(varName => !process.env[varName]);
+    
+    if (missing.length > 0) {
+        console.error('========================================');
+        console.error('FATAL: Missing required environment variables:');
+        missing.forEach(varName => console.error(`  - ${varName}`));
+        console.error('========================================');
+        console.error('Please set these variables in your .env file or system environment.');
+        console.error('See env.production.example for reference.');
+        process.exit(1);
+    }
+    
+    // Warn about weak JWT_SECRET
+    if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+        console.warn('WARNING: JWT_SECRET is less than 32 characters. Consider using a stronger secret.');
+    }
+    
+    console.log('✅ Environment variables validated');
+};
+
+validateEnvironment();
+
 const app = express();
 
 // Initialize server after database connection
@@ -94,17 +125,34 @@ const corsOptions = {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
         
-        const allowedOrigins = [
+        // Default development origins
+        const devOrigins = [
             'http://localhost:3000',
             'http://127.0.0.1:3000',
             'http://localhost:5000',
             'http://127.0.0.1:5000'
         ];
         
+        // Production origins from environment variable (comma-separated)
+        const prodOrigins = process.env.CORS_ORIGIN 
+            ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+            : [];
+        
+        // Combine allowed origins based on environment
+        const allowedOrigins = process.env.NODE_ENV === 'production'
+            ? prodOrigins
+            : [...devOrigins, ...prodOrigins];
+        
         if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
+        } else if (process.env.NODE_ENV === 'production') {
+            // In production, reject unknown origins
+            console.warn(`CORS blocked request from origin: ${origin}`);
+            callback(new Error('CORS policy: Origin not allowed'), false);
         } else {
-            callback(null, true); // Allow all origins in development
+            // In development, allow all origins with a warning
+            console.warn(`CORS: Allowing unknown origin in development: ${origin}`);
+            callback(null, true);
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
@@ -302,8 +350,46 @@ app.get('/api/metrics', async (req, res) => {
     }
 });
 
-// Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded files with security considerations
+// SECURITY: Medical documents and resumes contain sensitive data
+// They should only be accessed through authenticated API endpoints
+// However, for backwards compatibility, we add basic path validation
+
+const auth = require('./middleware/auth');
+
+// Protected file access middleware - validates file path and logs access
+const protectedFileAccess = (baseDir, resourceType) => {
+    return (req, res, next) => {
+        const filePath = path.join(__dirname, 'uploads', baseDir, req.params[0] || req.path);
+        const normalizedPath = path.normalize(filePath);
+        const uploadsDir = path.join(__dirname, 'uploads', baseDir);
+        
+        // Prevent directory traversal attacks
+        if (!normalizedPath.startsWith(uploadsDir)) {
+            console.warn(`Blocked directory traversal attempt: ${req.path}`);
+            return res.status(403).json({ msg: 'Access denied' });
+        }
+        
+        // Log access in production for audit
+        if (process.env.NODE_ENV === 'production') {
+            console.log(`File access: ${resourceType} - ${req.path} by user: ${req.user?.id || 'unknown'}`);
+        }
+        
+        next();
+    };
+};
+
+// Medical documents - require authentication
+app.use('/uploads/medical-documents', auth, protectedFileAccess('medical-documents', 'medical-document'), 
+    express.static(path.join(__dirname, 'uploads/medical-documents')));
+
+// Resumes - require authentication
+app.use('/uploads/resumes', auth, protectedFileAccess('resumes', 'resume'),
+    express.static(path.join(__dirname, 'uploads/resumes')));
+
+// Attendance files - require authentication (admin only access through API)
+app.use('/uploads/attendance', auth, protectedFileAccess('attendance', 'attendance'),
+    express.static(path.join(__dirname, 'uploads/attendance')));
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -314,6 +400,7 @@ app.use('/api/job-applications', require('./routes/jobApplications'));
 app.use('/api/audit', require('./routes/audit').router);
 app.use('/api/excuse-hours', require('./routes/excuse-hours'));
 app.use('/api/attendance', require('./routes/attendance'));
+app.use('/api/backup', require('./routes/backup'));
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
@@ -367,6 +454,76 @@ app.use('*', (req, res) => {
         success: false,
         message: 'Route not found'
     });
+});
+
+// Automated daily backup at 2:00 AM
+cron.schedule('0 2 * * *', async () => {
+    console.log('Starting automated daily backup...');
+    const startTime = Date.now();
+    
+    try {
+        const { createBackup } = require('./utils/backup');
+        
+        const result = await createBackup({
+            encryptionKey: process.env.BACKUP_ENCRYPTION_KEY,
+            performedBy: 'SCHEDULED_BACKUP'
+        });
+        
+        const duration = Date.now() - startTime;
+        
+        if (result.success) {
+            console.log(`✅ Automated backup completed: ${result.backupId} (${result.formattedSize}) in ${(duration/1000).toFixed(2)}s`);
+            
+            // Create audit log
+            await Audit.create({
+                action: 'AUTOMATED_BACKUP_COMPLETED',
+                performedBy: 'SYSTEM',
+                targetResource: 'backup',
+                targetResourceId: result.backupId,
+                description: `Automated daily backup completed successfully`,
+                details: {
+                    backupId: result.backupId,
+                    size: result.size,
+                    formattedSize: result.formattedSize,
+                    encrypted: result.encrypted,
+                    duration: duration,
+                    triggerType: 'cron_job'
+                },
+                severity: 'LOW'
+            });
+        } else {
+            console.error('❌ Automated backup failed:', result.error);
+            
+            await Audit.create({
+                action: 'AUTOMATED_BACKUP_FAILED',
+                performedBy: 'SYSTEM',
+                targetResource: 'backup',
+                description: `Automated daily backup failed: ${result.error}`,
+                details: {
+                    error: result.error,
+                    triggerType: 'cron_job'
+                },
+                severity: 'HIGH'
+            });
+        }
+    } catch (error) {
+        console.error('❌ Automated backup error:', error.message);
+        
+        await Audit.create({
+            action: 'AUTOMATED_BACKUP_FAILED',
+            performedBy: 'SYSTEM',
+            targetResource: 'backup',
+            description: `Automated daily backup error: ${error.message}`,
+            details: {
+                error: error.message,
+                stack: error.stack,
+                triggerType: 'cron_job'
+            },
+            severity: 'HIGH'
+        }).catch(auditError => {
+            console.error('Failed to create audit log:', auditError);
+        });
+    }
 });
 
 // Optimized monthly excuse hours reset with better error handling

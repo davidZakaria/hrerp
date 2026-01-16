@@ -12,9 +12,9 @@ module.exports = {
     },
     env_production: {
       NODE_ENV: 'production',
-      PORT: 5000,
-      MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/hr-erp',
-      JWT_SECRET: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production'
+      PORT: 5000
+      // IMPORTANT: JWT_SECRET and MONGODB_URI must be set in .env file or system environment
+      // Do NOT add fallback values here - the application will fail fast if they're missing
     }
   }]
 }; 

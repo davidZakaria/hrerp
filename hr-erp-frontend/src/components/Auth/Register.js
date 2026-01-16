@@ -32,14 +32,6 @@ const Register = ({ onBack, onRegisterSuccess }) => {
     setForm({ ...form, managedDepartments: updatedDepartments });
   };
 
-  const handleSelectAllDepartments = () => {
-    setForm({ ...form, managedDepartments: [...departments] });
-  };
-
-  const handleClearAllDepartments = () => {
-    setForm({ ...form, managedDepartments: [] });
-  };
-
   const departments = ['Human Resources', 'Finance', 'Marketing', 'Sales', 'IT', 'Operations', 'Engineer', 'Customer Service', 'Legal', 'Reception', 'Jamila Engineer', 'Jura Engineer', 'Green Icon Engineer', 'Green Avenue Engineer', 'Architectural Engineer', 'Technical Office Engineer', 'Personal Assistant', 'Service', 'Site Service', 'Driver', 'Other'];
 
   const handleSubmit = async (e) => {

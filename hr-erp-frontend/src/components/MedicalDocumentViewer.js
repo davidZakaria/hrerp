@@ -122,22 +122,6 @@ const MedicalDocumentViewer = ({ form, userRole = 'admin' }) => {
     setDownloading(false);
   };
 
-  // Function to get document info
-  const getDocumentInfo = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/forms/document-info/${form._id}`, {
-        headers: {
-          'x-auth-token': token
-        }
-      });
-      return response.data;
-    } catch (err) {
-      logger.error('Error getting document info:', err);
-      return null;
-    }
-  };
-
   if (!form.medicalDocument) {
     return (
       <div className="medical-document-viewer no-document">

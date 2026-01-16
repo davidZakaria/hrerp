@@ -93,7 +93,20 @@ const formSchema = new mongoose.Schema({
     },
     fromHour: String,
     toHour: String,
-    // Working from home fields
+    // Working from home fields (for Marketing department)
+    wfhDate: {
+        type: Date,
+        required: function() {
+            return this.type === 'wfh';
+        }
+    },
+    wfhWorkingOn: {
+        type: String, // Free text description of what they're working on
+        required: function() {
+            return this.type === 'wfh';
+        }
+    },
+    // Legacy WFH fields (kept for backward compatibility)
     wfhDescription: String,
     wfhHours: Number,
     createdAt: {

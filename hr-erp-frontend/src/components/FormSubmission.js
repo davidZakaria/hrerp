@@ -20,7 +20,9 @@ const FormSubmission = ({ onFormSubmitted }) => {
     fromHour: '',
     toHour: '',
     wfhDescription: '',
-    wfhHours: ''
+    wfhHours: '',
+    wfhDate: '',
+    wfhWorkingOn: ''
   });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -71,10 +73,6 @@ const FormSubmission = ({ onFormSubmitted }) => {
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleVacationTypeChange = e => {
-    setForm({ ...form, vacationType: e.target.value });
   };
 
   const handleFileChange = e => {
@@ -145,11 +143,12 @@ const FormSubmission = ({ onFormSubmitted }) => {
       }
       isFileUpload = true;
     } else {
+      // WFH form - simplified for Marketing department
       payload = {
         type: 'wfh',
-        wfhDescription: form.wfhDescription,
-        wfhHours: parseInt(form.wfhHours),
-        reason: form.reason
+        wfhDate: form.wfhDate,
+        wfhWorkingOn: form.wfhWorkingOn,
+        reason: form.wfhWorkingOn // Use working on as the reason
       };
     }
 
@@ -186,7 +185,9 @@ const FormSubmission = ({ onFormSubmitted }) => {
           fromHour: '', 
           toHour: '', 
           wfhDescription: '', 
-          wfhHours: '' 
+          wfhHours: '',
+          wfhDate: '',
+          wfhWorkingOn: ''
         });
         fetchExcuseRequests(); // Refresh excuse requests after submission
         if (onFormSubmitted) onFormSubmitted();
@@ -644,52 +645,61 @@ const FormSubmission = ({ onFormSubmitted }) => {
           </div>
         ) : (
           <div className="wfh-selection-section">
-            <h4 className="form-section-title">🏠 {t('forms.workFromHomeDetails')}</h4>
+            <h4 className="form-section-title">🏠 Work From Home Request</h4>
+            <p style={{ color: '#666', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+              Marketing team only - Submit your work from home request with the date and what you'll be working on.
+            </p>
+            
             <div className="form-group-elegant">
               <label className="form-label-elegant">
-                <span className="label-icon">📝</span>
-                {t('forms.workDescription')}
+                <span className="label-icon">📅</span>
+                Date
+              </label>
+              <input 
+                name="wfhDate" 
+                type="date" 
+                value={form.wfhDate} 
+                onChange={handleChange} 
+                className="form-input-elegant"
+                required 
+                title="Select the date you will be working from home"
+              />
+              <small className="input-helper">Select the date you will be working from home</small>
+            </div>
+            
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">
+                <span className="label-icon">💼</span>
+                Working On
               </label>
               <textarea 
-                name="wfhDescription" 
-                placeholder={t('forms.describeWorkFromHome')} 
-                value={form.wfhDescription} 
+                name="wfhWorkingOn" 
+                placeholder="Describe what you will be working on today (e.g., Social media content, Campaign analysis, Client proposals...)" 
+                value={form.wfhWorkingOn} 
                 onChange={handleChange} 
                 className="form-input-elegant"
                 rows="3"
                 required 
-                title={t('forms.provideWorkDetails')}
+                title="Describe your tasks for the day"
               />
-              <small className="input-helper">{t('forms.provideWorkDetails')}</small>
+              <small className="input-helper">Describe your tasks/projects for the day</small>
             </div>
-            <div className="form-group-elegant">
-              <label className="form-label-elegant">
-                <span className="label-icon">⏱️</span>
-                {t('forms.numberOfHours')}
-              </label>
-              <input 
-                name="wfhHours" 
-                type="number" 
-                value={form.wfhHours} 
-                onChange={handleChange} 
-                className="form-input-elegant"
-                required 
-                title={t('forms.enterHoursFromHome')}
-              />
-              <small className="input-helper">{t('forms.enterHoursFromHome')}</small>
-            </div>
-            {form.wfhHours && (
-              <div className="wfh-summary">
-                <div className="summary-card">
-                  <h5>🏠 {t('forms.workFromHomeSummary')}</h5>
-                  <div className="summary-details">
-                    <div className="summary-item">
-                      <span className="summary-label">{t('forms.hours')}:</span>
-                      <span className="summary-value">{form.wfhHours} {form.wfhHours != 1 ? t('forms.hours') : t('forms.hours')}</span>
+            
+            {form.wfhDate && form.wfhWorkingOn && (
+              <div className="wfh-summary" style={{ marginTop: '1rem' }}>
+                <div className="summary-card" style={{ 
+                  background: 'linear-gradient(135deg, #E3F2FD, #BBDEFB)', 
+                  padding: '1rem', 
+                  borderRadius: '8px',
+                  border: '1px solid #90CAF9'
+                }}>
+                  <h5 style={{ margin: '0 0 0.5rem 0', color: '#1565C0' }}>🏠 WFH Request Summary</h5>
+                  <div style={{ color: '#333' }}>
+                    <div style={{ marginBottom: '0.25rem' }}>
+                      <strong>Date:</strong> {new Date(form.wfhDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </div>
-                    <div className="summary-item">
-                      <span className="summary-label">{t('forms.workType')}:</span>
-                      <span className="summary-value">{t('forms.remoteWork')}</span>
+                    <div>
+                      <strong>Working On:</strong> {form.wfhWorkingOn.substring(0, 100)}{form.wfhWorkingOn.length > 100 ? '...' : ''}
                     </div>
                   </div>
                 </div>
@@ -698,37 +708,40 @@ const FormSubmission = ({ onFormSubmitted }) => {
           </div>
         )}
 
-        <div className="form-group-elegant">
-          <label className="form-label-elegant">
-            <span className="label-icon">✏️</span>
-            {t('forms.reasonForRequest')}
-          </label>
-          <textarea 
-            name="reason" 
-            placeholder={
-              userInfo?.role === 'manager' ? 
-                t('forms.managerReasonPlaceholder') :
-                t('forms.provideDetailedReason')
-            }
-            value={form.reason} 
-            onChange={handleChange} 
-            className="form-input-elegant"
-            rows="4"
-            required 
-            style={{ 
-              border: '2px solid rgba(76, 175, 80, 0.3)',
-              background: 'rgba(0, 0, 0, 0.7)',
-              color: '#ffffff',
-              backdropFilter: 'blur(10px)'
-            }}
-          />
-          <small className="input-helper">
-            {userInfo?.role === 'manager' ? 
-              t('forms.managerApprovalHelp') :
-              t('forms.helpApprovalProcess')
-            }
-          </small>
-        </div>
+        {/* Reason field - not shown for WFH since "Working On" serves as the reason */}
+        {form.type !== 'wfh' && (
+          <div className="form-group-elegant">
+            <label className="form-label-elegant">
+              <span className="label-icon">✏️</span>
+              {t('forms.reasonForRequest')}
+            </label>
+            <textarea 
+              name="reason" 
+              placeholder={
+                userInfo?.role === 'manager' ? 
+                  t('forms.managerReasonPlaceholder') :
+                  t('forms.provideDetailedReason')
+              }
+              value={form.reason} 
+              onChange={handleChange} 
+              className="form-input-elegant"
+              rows="4"
+              required 
+              style={{ 
+                border: '2px solid rgba(76, 175, 80, 0.3)',
+                background: 'rgba(0, 0, 0, 0.7)',
+                color: '#ffffff',
+                backdropFilter: 'blur(10px)'
+              }}
+            />
+            <small className="input-helper">
+              {userInfo?.role === 'manager' ? 
+                t('forms.managerApprovalHelp') :
+                t('forms.helpApprovalProcess')
+              }
+            </small>
+          </div>
+        )}
 
         {(userInfo?.role === 'manager' || userInfo?.role === 'admin') && (
           <div style={{

@@ -10,6 +10,7 @@ const { shouldResetExcuseRequests, getNextResetDate } = require('../utils/excuse
 
 // Middleware to verify JWT token
 const auth = require('../middleware/auth');
+const { validateObjectId } = require('../middleware/validateObjectId');
 
 // Optimized multer configuration with better error handling
 const storage = multer.diskStorage({
@@ -118,7 +119,9 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             fromHour,
             toHour,
             wfhDescription,
-            wfhHours
+            wfhHours,
+            wfhDate,
+            wfhWorkingOn
         } = req.body;
 
         // Enhanced validation
@@ -128,8 +131,18 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
         }
 
         // WFH is only available for Marketing department
-        if (type === 'wfh' && user.department !== 'Marketing') {
-            return res.status(403).json({ msg: 'Work from Home requests are only available for the Marketing department' });
+        if (type === 'wfh') {
+            // Case-insensitive department check
+            if (user.department.toLowerCase() !== 'marketing') {
+                return res.status(403).json({ msg: 'Work from Home requests are only available for the Marketing department' });
+            }
+            // Validate required WFH fields
+            if (!wfhDate) {
+                return res.status(400).json({ msg: 'Date is required for Work from Home requests' });
+            }
+            if (!wfhWorkingOn || !wfhWorkingOn.trim()) {
+                return res.status(400).json({ msg: 'Please specify what you will be working on' });
+            }
         }
 
         // Type-specific validation
@@ -220,10 +233,11 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
                 medicalDocument: req.file?.path
             }),
             ...(type === 'wfh' && {
-                wfhDescription: wfhDescription?.trim(),
-                wfhHours: parseInt(wfhHours) || 8,
-                startDate: new Date(startDate),
-                endDate: new Date(endDate)
+                wfhDate: new Date(wfhDate),
+                wfhWorkingOn: wfhWorkingOn?.trim(),
+                // Legacy fields for backward compatibility
+                wfhDescription: wfhWorkingOn?.trim(),
+                wfhHours: 8
             })
         };
 
@@ -729,7 +743,7 @@ router.get('/manager/personal-forms', auth, async (req, res) => {
 });
 
 // Update form status (admin only - now handles manager-approved forms) + Super admin form editing
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
     try {
         console.log('Admin form action request:', {
             adminId: req.user.id,
@@ -914,7 +928,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // Delete form (admin and super admin only)
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, validateObjectId('id'), async (req, res) => {
     try {
         console.log('🗑️ Delete form request received:', {
             formId: req.params.id,
@@ -1113,6 +1127,9 @@ router.get('/approved-by-month/:month', auth, async (req, res) => {
 router.get('/all', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(401).json({ msg: 'User not found. Please login again.' });
+        }
         if (user.role !== 'super_admin') {
             return res.status(403).json({ msg: 'Not authorized as super admin' });
         }

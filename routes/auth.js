@@ -134,10 +134,16 @@ router.post('/login', async (req, res) => {
             }
         };
 
-        // Sign token
+        // Sign token - require JWT_SECRET, no fallback
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+            console.error('JWT_SECRET is not configured');
+            return res.status(500).json({ msg: 'Server configuration error' });
+        }
+        
         jwt.sign(
             payload,
-            process.env.JWT_SECRET || 'your-secret-key',
+            jwtSecret,
             { expiresIn: '24h' },
             (err, token) => {
                 if (err) throw err;

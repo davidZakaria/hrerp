@@ -16,6 +16,7 @@ const EmployeeAttendance = () => {
 
   useEffect(() => {
     fetchMyAttendance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMonth]);
 
   const fetchMyAttendance = async () => {

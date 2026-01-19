@@ -628,8 +628,16 @@ const ManagerDashboard = ({ onLogout }) => {
                     
                     {form.type === 'wfh' && (
                       <>
-                        <p><strong>{t('hours')}:</strong> {form.wfhHours} {t('hours')}</p>
-                        <p><strong>{t('description')}:</strong> {form.wfhDescription?.substring(0, 50)}...</p>
+                        <p><strong>{t('forms.date')}:</strong> {formatDate(form.wfhDate)}</p>
+                        <p><strong>{t('forms.workingOn')}:</strong> {form.wfhWorkingOn || form.wfhDescription?.substring(0, 50)}...</p>
+                      </>
+                    )}
+
+                    {form.type === 'extra_hours' && (
+                      <>
+                        <p><strong>{t('forms.date')}:</strong> {formatDate(form.extraHoursDate)}</p>
+                        <p><strong>{t('forms.extraHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked} {t('forms.hours')}</span></p>
+                        <p><strong>{t('forms.workDone')}:</strong> {form.extraHoursDescription?.substring(0, 50)}...</p>
                       </>
                     )}
                     
@@ -747,8 +755,16 @@ const ManagerDashboard = ({ onLogout }) => {
                     
                     {form.type === 'wfh' && (
                       <>
-                        <p><strong>{t('hours')}:</strong> {form.wfhHours} {t('hours')}</p>
-                        <p><strong>{t('description')}:</strong> {form.wfhDescription?.substring(0, 50)}...</p>
+                        <p><strong>{t('forms.date')}:</strong> {formatDate(form.wfhDate)}</p>
+                        <p><strong>{t('forms.workingOn')}:</strong> {form.wfhWorkingOn || form.wfhDescription?.substring(0, 50)}...</p>
+                      </>
+                    )}
+
+                    {form.type === 'extra_hours' && (
+                      <>
+                        <p><strong>{t('forms.date')}:</strong> {formatDate(form.extraHoursDate)}</p>
+                        <p><strong>{t('forms.extraHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked} {t('forms.hours')}</span></p>
+                        <p><strong>{t('forms.workDone')}:</strong> {form.extraHoursDescription?.substring(0, 50)}...</p>
                       </>
                     )}
                     
@@ -908,8 +924,16 @@ const ManagerDashboard = ({ onLogout }) => {
                   
                   {form.type === 'wfh' && (
                     <>
-                      <p><strong>{t('workFromHomeHours')}:</strong> {form.wfhHours} {t('hours')}</p>
-                      <p><strong>{t('workDescription')}:</strong> {form.wfhDescription}</p>
+                      <p><strong>{t('forms.date')}:</strong> {form.wfhDate?.slice(0,10) || 'N/A'}</p>
+                      <p><strong>{t('forms.workingOn')}:</strong> {form.wfhWorkingOn || form.wfhDescription}</p>
+                    </>
+                  )}
+
+                  {form.type === 'extra_hours' && (
+                    <>
+                      <p><strong>{t('forms.date')}:</strong> {form.extraHoursDate?.slice(0,10) || 'N/A'}</p>
+                      <p><strong>{t('forms.extraHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked} {t('forms.hours')}</span></p>
+                      <p><strong>{t('forms.workDone')}:</strong> {form.extraHoursDescription}</p>
                     </>
                   )}
                   
@@ -991,8 +1015,16 @@ const ManagerDashboard = ({ onLogout }) => {
                   
                   {selectedForm.type === 'wfh' && (
                     <>
-                      <p><strong>{t('workFromHomeHours')}:</strong> {selectedForm.wfhHours} {t('hours')}</p>
-                      <p><strong>{t('workDescription')}:</strong> {selectedForm.wfhDescription}</p>
+                      <p><strong>{t('forms.date')}:</strong> {selectedForm.wfhDate?.slice(0,10) || 'N/A'}</p>
+                      <p><strong>{t('forms.workingOn')}:</strong> {selectedForm.wfhWorkingOn || selectedForm.wfhDescription}</p>
+                    </>
+                  )}
+
+                  {selectedForm.type === 'extra_hours' && (
+                    <>
+                      <p><strong>{t('forms.date')}:</strong> {selectedForm.extraHoursDate?.slice(0,10) || 'N/A'}</p>
+                      <p><strong>{t('forms.extraHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{selectedForm.extraHoursWorked} {t('forms.hours')}</span></p>
+                      <p><strong>{t('forms.workDone')}:</strong> {selectedForm.extraHoursDescription}</p>
                     </>
                   )}
                   

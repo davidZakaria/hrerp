@@ -9,6 +9,9 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { createAuditLog } = require('./audit');
 
+// Allowed company email domains
+const ALLOWED_EMAIL_DOMAINS = ['@newjerseyegypt.com', '@gycegypt.com'];
+
 // Register User (Employee Registration)
 router.post('/register', async (req, res) => {
     try {
@@ -17,6 +20,13 @@ router.post('/register', async (req, res) => {
         // Validate required fields
         if (!name || !email || !password || !department) {
             return res.status(400).json({ msg: 'Please provide all required fields' });
+        }
+
+        // Validate company email domain
+        const emailLower = email.toLowerCase();
+        const isValidDomain = ALLOWED_EMAIL_DOMAINS.some(domain => emailLower.endsWith(domain));
+        if (!isValidDomain) {
+            return res.status(400).json({ msg: 'Registration is only allowed with company email addresses (@newjerseyegypt.com or @gycegypt.com)' });
         }
 
         // Validate employeeCode if provided

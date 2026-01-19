@@ -22,7 +22,10 @@ const FormSubmission = ({ onFormSubmitted }) => {
     wfhDescription: '',
     wfhHours: '',
     wfhDate: '',
-    wfhWorkingOn: ''
+    wfhWorkingOn: '',
+    extraHoursDate: '',
+    extraHoursWorked: '',
+    extraHoursDescription: ''
   });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -142,13 +145,22 @@ const FormSubmission = ({ onFormSubmitted }) => {
         payload.append('medicalDocument', form.medicalDocument);
       }
       isFileUpload = true;
-    } else {
+    } else if (form.type === 'wfh') {
       // WFH form - simplified for Marketing department
       payload = {
         type: 'wfh',
         wfhDate: form.wfhDate,
         wfhWorkingOn: form.wfhWorkingOn,
         reason: form.wfhWorkingOn // Use working on as the reason
+      };
+    } else if (form.type === 'extra_hours') {
+      // Extra Hours form - for Marketing department
+      payload = {
+        type: 'extra_hours',
+        extraHoursDate: form.extraHoursDate,
+        extraHoursWorked: form.extraHoursWorked,
+        extraHoursDescription: form.extraHoursDescription,
+        reason: form.extraHoursDescription // Use description as the reason
       };
     }
 
@@ -187,7 +199,10 @@ const FormSubmission = ({ onFormSubmitted }) => {
           wfhDescription: '', 
           wfhHours: '',
           wfhDate: '',
-          wfhWorkingOn: ''
+          wfhWorkingOn: '',
+          extraHoursDate: '',
+          extraHoursWorked: '',
+          extraHoursDescription: ''
         });
         fetchExcuseRequests(); // Refresh excuse requests after submission
         if (onFormSubmitted) onFormSubmitted();
@@ -305,12 +320,16 @@ const FormSubmission = ({ onFormSubmitted }) => {
             {userInfo?.department === 'Marketing' && (
               <option value="wfh">🏠 {t('forms.wfhRequestOption')}</option>
             )}
+            {userInfo?.department === 'Marketing' && (
+              <option value="extra_hours">⏱️ {t('forms.extraHoursRequestOption')}</option>
+            )}
             <option value="sick_leave">🏥 {t('forms.sickLeaveRequestOption')}</option>
           </select>
           <small className="input-helper" style={{ marginTop: '0.5rem', display: 'block' }}>
             {form.type === 'vacation' && t('forms.vacationRequestHelp')}
             {form.type === 'excuse' && t('forms.excuseRequestHelp')}
             {form.type === 'wfh' && t('forms.wfhRequestHelp')}
+            {form.type === 'extra_hours' && t('forms.extraHoursRequestHelp')}
             {form.type === 'sick_leave' && t('forms.sickLeaveRequestHelp')}
           </small>
         </div>
@@ -643,17 +662,17 @@ const FormSubmission = ({ onFormSubmitted }) => {
               </div>
             )}
           </div>
-        ) : (
+        ) : form.type === 'wfh' ? (
           <div className="wfh-selection-section">
-            <h4 className="form-section-title">🏠 Work From Home Request</h4>
+            <h4 className="form-section-title">🏠 {t('forms.workFromHomeRequest')}</h4>
             <p style={{ color: '#666', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
-              Marketing team only - Submit your work from home request with the date and what you'll be working on.
+              {t('forms.wfhMarketingOnly')}
             </p>
             
             <div className="form-group-elegant">
               <label className="form-label-elegant">
                 <span className="label-icon">📅</span>
-                Date
+                {t('forms.date')}
               </label>
               <input 
                 name="wfhDate" 
@@ -662,27 +681,27 @@ const FormSubmission = ({ onFormSubmitted }) => {
                 onChange={handleChange} 
                 className="form-input-elegant"
                 required 
-                title="Select the date you will be working from home"
+                title={t('forms.selectWfhDate')}
               />
-              <small className="input-helper">Select the date you will be working from home</small>
+              <small className="input-helper">{t('forms.selectWfhDate')}</small>
             </div>
             
             <div className="form-group-elegant">
               <label className="form-label-elegant">
                 <span className="label-icon">💼</span>
-                Working On
+                {t('forms.workingOn')}
               </label>
               <textarea 
                 name="wfhWorkingOn" 
-                placeholder="Describe what you will be working on today (e.g., Social media content, Campaign analysis, Client proposals...)" 
+                placeholder={t('forms.wfhWorkingOnPlaceholder')}
                 value={form.wfhWorkingOn} 
                 onChange={handleChange} 
                 className="form-input-elegant"
                 rows="3"
                 required 
-                title="Describe your tasks for the day"
+                title={t('forms.describeTasksForDay')}
               />
-              <small className="input-helper">Describe your tasks/projects for the day</small>
+              <small className="input-helper">{t('forms.describeTasksForDay')}</small>
             </div>
             
             {form.wfhDate && form.wfhWorkingOn && (
@@ -693,23 +712,110 @@ const FormSubmission = ({ onFormSubmitted }) => {
                   borderRadius: '8px',
                   border: '1px solid #90CAF9'
                 }}>
-                  <h5 style={{ margin: '0 0 0.5rem 0', color: '#1565C0' }}>🏠 WFH Request Summary</h5>
+                  <h5 style={{ margin: '0 0 0.5rem 0', color: '#1565C0' }}>🏠 {t('forms.wfhRequestSummary')}</h5>
                   <div style={{ color: '#333' }}>
                     <div style={{ marginBottom: '0.25rem' }}>
-                      <strong>Date:</strong> {new Date(form.wfhDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      <strong>{t('forms.date')}:</strong> {new Date(form.wfhDate).toLocaleDateString(t('common.locale'), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </div>
                     <div>
-                      <strong>Working On:</strong> {form.wfhWorkingOn.substring(0, 100)}{form.wfhWorkingOn.length > 100 ? '...' : ''}
+                      <strong>{t('forms.workingOn')}:</strong> {form.wfhWorkingOn.substring(0, 100)}{form.wfhWorkingOn.length > 100 ? '...' : ''}
                     </div>
                   </div>
                 </div>
               </div>
             )}
           </div>
-        )}
+        ) : form.type === 'extra_hours' ? (
+          <div className="extra-hours-selection-section">
+            <h4 className="form-section-title">⏱️ {t('forms.extraHoursReport')}</h4>
+            <p style={{ color: '#666', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+              {t('forms.extraHoursMarketingOnly')}
+            </p>
+            
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">
+                <span className="label-icon">📅</span>
+                {t('forms.date')}
+              </label>
+              <input 
+                name="extraHoursDate" 
+                type="date" 
+                value={form.extraHoursDate} 
+                onChange={handleChange} 
+                className="form-input-elegant"
+                required 
+                title={t('forms.selectExtraHoursDate')}
+              />
+              <small className="input-helper">{t('forms.selectExtraHoursDate')}</small>
+            </div>
+            
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">
+                <span className="label-icon">⏰</span>
+                {t('forms.numberOfExtraHours')}
+              </label>
+              <input 
+                name="extraHoursWorked" 
+                type="number" 
+                min="0.5"
+                max="12"
+                step="0.5"
+                value={form.extraHoursWorked} 
+                onChange={handleChange} 
+                className="form-input-elegant"
+                placeholder={t('forms.enterExtraHours')}
+                required 
+                title={t('forms.enterExtraHours')}
+              />
+              <small className="input-helper">{t('forms.extraHoursHelper')}</small>
+            </div>
+            
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">
+                <span className="label-icon">💼</span>
+                {t('forms.workDoneDescription')}
+              </label>
+              <textarea 
+                name="extraHoursDescription" 
+                placeholder={t('forms.extraHoursDescriptionPlaceholder')}
+                value={form.extraHoursDescription} 
+                onChange={handleChange} 
+                className="form-input-elegant"
+                rows="3"
+                required 
+                title={t('forms.describeWorkDone')}
+              />
+              <small className="input-helper">{t('forms.describeWorkDone')}</small>
+            </div>
+            
+            {form.extraHoursDate && form.extraHoursWorked && form.extraHoursDescription && (
+              <div className="extra-hours-summary" style={{ marginTop: '1rem' }}>
+                <div className="summary-card" style={{ 
+                  background: 'linear-gradient(135deg, #FFF3E0, #FFE0B2)', 
+                  padding: '1rem', 
+                  borderRadius: '8px',
+                  border: '1px solid #FFB74D'
+                }}>
+                  <h5 style={{ margin: '0 0 0.5rem 0', color: '#E65100' }}>⏱️ {t('forms.extraHoursSummary')}</h5>
+                  <div style={{ color: '#333' }}>
+                    <div style={{ marginBottom: '0.25rem' }}>
+                      <strong>{t('forms.date')}:</strong> {new Date(form.extraHoursDate).toLocaleDateString(t('common.locale'), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </div>
+                    <div style={{ marginBottom: '0.25rem' }}>
+                      <strong>{t('forms.extraHours')}:</strong> {form.extraHoursWorked} {t('forms.hours')}
+                    </div>
+                    <div>
+                      <strong>{t('forms.workDone')}:</strong> {form.extraHoursDescription.substring(0, 100)}{form.extraHoursDescription.length > 100 ? '...' : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
 
-        {/* Reason field - not shown for WFH since "Working On" serves as the reason */}
-        {form.type !== 'wfh' && (
+        {/* Reason field - not shown for WFH or Extra Hours since their description fields serve as the reason */}
+        {form.type !== 'wfh' && form.type !== 'extra_hours' && (
           <div className="form-group-elegant">
             <label className="form-label-elegant">
               <span className="label-icon">✏️</span>

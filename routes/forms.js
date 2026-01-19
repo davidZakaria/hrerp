@@ -121,13 +121,32 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             wfhDescription,
             wfhHours,
             wfhDate,
-            wfhWorkingOn
+            wfhWorkingOn,
+            extraHoursDate,
+            extraHoursWorked,
+            extraHoursDescription
         } = req.body;
 
         // Enhanced validation
-        const validFormTypes = ['vacation', 'excuse', 'wfh', 'sick_leave'];
+        const validFormTypes = ['vacation', 'excuse', 'wfh', 'sick_leave', 'extra_hours'];
         if (!validFormTypes.includes(type)) {
             return res.status(400).json({ msg: 'Invalid form type' });
+        }
+
+        // Extra Hours is only available for Marketing department
+        if (type === 'extra_hours') {
+            if (user.department.toLowerCase() !== 'marketing') {
+                return res.status(403).json({ msg: 'Extra Hours reports are only available for the Marketing department' });
+            }
+            if (!extraHoursDate) {
+                return res.status(400).json({ msg: 'Date is required for Extra Hours reports' });
+            }
+            if (!extraHoursWorked || extraHoursWorked <= 0) {
+                return res.status(400).json({ msg: 'Number of extra hours worked is required' });
+            }
+            if (!extraHoursDescription || !extraHoursDescription.trim()) {
+                return res.status(400).json({ msg: 'Please describe the work done during extra hours' });
+            }
         }
 
         // WFH is only available for Marketing department
@@ -238,6 +257,11 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
                 // Legacy fields for backward compatibility
                 wfhDescription: wfhWorkingOn?.trim(),
                 wfhHours: 8
+            }),
+            ...(type === 'extra_hours' && {
+                extraHoursDate: new Date(extraHoursDate),
+                extraHoursWorked: Number(extraHoursWorked),
+                extraHoursDescription: extraHoursDescription?.trim()
             })
         };
 

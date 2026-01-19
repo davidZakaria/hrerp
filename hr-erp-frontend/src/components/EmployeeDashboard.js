@@ -155,7 +155,7 @@ const EmployeeDashboard = () => {
             fontWeight: '600',
             textShadow: '0 2px 4px rgba(0,0,0,0.1)'
           }}>
-            👋 Welcome, {user.name}!
+            👋 {t('dashboard.welcome')}, {user.name}!
           </h2>
           <div style={{ 
             display: 'flex', 
@@ -170,9 +170,9 @@ const EmployeeDashboard = () => {
               borderRadius: '12px',
               backdropFilter: 'blur(10px)'
             }}>
-              <span style={{ opacity: 0.9, fontSize: '0.9rem' }}>🏢 Department</span>
+              <span style={{ opacity: 0.9, fontSize: '0.9rem' }}>🏢 {t('common.department')}</span>
               <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginTop: '0.25rem' }}>
-                {user.department}
+                {t(`departments.${user.department}`) || user.department}
               </div>
             </div>
             <div style={{ 
@@ -181,9 +181,9 @@ const EmployeeDashboard = () => {
               borderRadius: '12px',
               backdropFilter: 'blur(10px)'
             }}>
-              <span style={{ opacity: 0.9, fontSize: '0.9rem' }}>🆔 Employee Code</span>
+              <span style={{ opacity: 0.9, fontSize: '0.9rem' }}>🆔 {t('common.employeeCode')}</span>
               <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginTop: '0.25rem' }}>
-                {user.employeeCode || 'Not Assigned'}
+                {user.employeeCode || t('common.notAssigned')}
               </div>
             </div>
           </div>
@@ -202,27 +202,27 @@ const EmployeeDashboard = () => {
           </div>
           <div className="stats-label">{t('dashboard.daysRemaining')}</div>
           <small style={{ fontSize: '0.85rem', opacity: 0.7, display: 'block', marginTop: '0.5rem' }}>
-            💡 Unpaid excuse requests deduct 0.5 days
+            💡 {t('dashboard.unpaidExcuseDeduct')}
           </small>
         </div>
 
         {/* Excuse Requests Card */}
         <div className="elegant-card hover-lift" style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
-            ⏰ Paid Excuse Requests
+            ⏰ {t('dashboard.paidExcuseRequests')}
           </h2>
           <div className="stats-number" style={{ fontSize: '3rem', marginBottom: '0.5rem', color: excuseRequestsLeft > 0 ? '#4caf50' : '#ff9800' }}>
             {excuseRequestsLeft !== null ? `${excuseRequestsLeft} / 2` : '...'}
           </div>
-          <div className="stats-label">Current Period (Each = 2 hours)</div>
+          <div className="stats-label">{t('dashboard.currentPeriod')}</div>
           <small style={{ fontSize: '0.85rem', opacity: 0.7, display: 'block', marginTop: '0.5rem' }}>
-            {excuseRequestsLeft > 0 ? 'You can submit paid excuse requests' : 'Submit unpaid excuse requests instead'}
+            {excuseRequestsLeft > 0 ? t('dashboard.canSubmitPaidExcuse') : t('dashboard.submitUnpaidInstead')}
           </small>
           {nextResetDate && (
             <small style={{ fontSize: '0.8rem', opacity: 0.6, display: 'block', marginTop: '0.5rem', color: '#64b5f6' }}>
-              🔄 Resets on the 25th of each month
+              🔄 {t('dashboard.resetsMonthly')}
               <br />
-              Next reset: {nextResetDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              {t('dashboard.nextReset')}: {nextResetDate.toLocaleDateString(t('common.locale'), { month: 'long', day: 'numeric', year: 'numeric' })}
             </small>
           )}
         </div>
@@ -335,12 +335,31 @@ const EmployeeDashboard = () => {
                       {form.type === 'wfh' && (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.workHours')}:</span>
-                            <span className="text-elegant">{form.wfhHours} {t('forms.hours')}</span>
+                            <span className="form-label-elegant">{t('forms.date')}:</span>
+                            <span className="text-elegant">{new Date(form.wfhDate).toLocaleDateString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.description')}:</span>
-                            <span className="text-elegant">{form.wfhDescription?.substring(0, 50)}...</span>
+                            <span className="form-label-elegant">{t('forms.workingOn')}:</span>
+                            <span className="text-elegant">{form.wfhWorkingOn?.substring(0, 50) || form.wfhDescription?.substring(0, 50)}...</span>
+                          </div>
+                        </>
+                      )}
+                      
+                      {form.type === 'extra_hours' && (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">{t('forms.extraHoursDate')}:</span>
+                            <span className="text-elegant">{new Date(form.extraHoursDate).toLocaleDateString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">{t('forms.extraHoursWorked')}:</span>
+                            <span className="text-elegant" style={{ color: '#E65100', fontWeight: 'bold' }}>
+                              ⏱️ {form.extraHoursWorked} {t('forms.hours')}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">{t('forms.extraHoursDescription')}:</span>
+                            <span className="text-elegant">{form.extraHoursDescription?.substring(0, 50)}...</span>
                           </div>
                         </>
                       )}

@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import API_URL from '../../config/api';
 
+// Allowed company email domains
+const ALLOWED_EMAIL_DOMAINS = ['@newjerseyegypt.com', '@gycegypt.com'];
+
 const Register = ({ onBack, onRegisterSuccess }) => {
   const { t } = useTranslation();
   const [form, setForm] = useState({
@@ -34,9 +37,20 @@ const Register = ({ onBack, onRegisterSuccess }) => {
 
   const departments = ['Human Resources', 'Finance', 'Marketing', 'Sales', 'IT', 'Operations', 'Engineer', 'Customer Service', 'Legal', 'Reception', 'Jamila Engineer', 'Jura Engineer', 'Green Icon Engineer', 'Green Avenue Engineer', 'Architectural Engineer', 'Technical Office Engineer', 'Personal Assistant', 'Service', 'Site Service', 'Driver', 'Other'];
 
+  const isValidCompanyEmail = (email) => {
+    const emailLower = email.toLowerCase();
+    return ALLOWED_EMAIL_DOMAINS.some(domain => emailLower.endsWith(domain));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
+    
+    // Email domain validation
+    if (!isValidCompanyEmail(form.email)) {
+      setMessage(t('register.companyEmailRequired'));
+      return;
+    }
     
     // Validation
     if (form.password.length < 6) {
@@ -130,12 +144,15 @@ const Register = ({ onBack, onRegisterSuccess }) => {
             <input
               name="email"
               type="email"
-              placeholder={t('register.emailPlaceholder')}
+              placeholder="name@newjerseyegypt.com"
               value={form.email}
               onChange={handleChange}
               className="form-input-elegant focus-elegant"
               required
             />
+            <small style={{ color: '#64b5f6', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block', textAlign: 'left' }}>
+              📧 {t('register.allowedDomains')}: @newjerseyegypt.com, @gycegypt.com
+            </small>
           </div>
 
           <div className="form-group-elegant">

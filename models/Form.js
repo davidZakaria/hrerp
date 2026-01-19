@@ -8,7 +8,7 @@ const formSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['vacation', 'excuse', 'wfh', 'sick_leave'],
+        enum: ['vacation', 'excuse', 'wfh', 'sick_leave', 'extra_hours'],
         required: true
     },
     vacationType: {
@@ -109,6 +109,25 @@ const formSchema = new mongoose.Schema({
     // Legacy WFH fields (kept for backward compatibility)
     wfhDescription: String,
     wfhHours: Number,
+    // Extra Hours fields (for Marketing department - overtime reporting)
+    extraHoursDate: {
+        type: Date,
+        required: function() {
+            return this.type === 'extra_hours';
+        }
+    },
+    extraHoursWorked: {
+        type: Number, // Number of extra hours worked
+        required: function() {
+            return this.type === 'extra_hours';
+        }
+    },
+    extraHoursDescription: {
+        type: String, // Description of work done during extra hours
+        required: function() {
+            return this.type === 'extra_hours';
+        }
+    },
     createdAt: {
         type: Date,
         default: Date.now

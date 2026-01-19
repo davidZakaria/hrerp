@@ -2,28 +2,89 @@
  * Super Admin Creation Script (Production)
  * =========================================
  * This script creates the ONLY super admin account for the HR-ERP system.
- * Uses environment variables for MongoDB connection.
+ * Uses environment variables for all configuration.
  * Run this ONCE after deployment.
  * 
- * Usage: node scripts/createSuperAdmin.js
+ * Required Environment Variables:
+ *   MONGODB_URI    - MongoDB connection string
+ *   ADMIN_NAME     - Super admin's full name
+ *   ADMIN_EMAIL    - Super admin's email address
+ *   ADMIN_PASSWORD - Super admin's password
+ * 
+ * Optional Environment Variables:
+ *   ADMIN_DEPARTMENT - Department (defaults to "Administration")
+ * 
+ * Usage (Windows PowerShell):
+ *   $env:MONGODB_URI="mongodb://your-server/hr-erp"
+ *   $env:ADMIN_NAME="Your Name"
+ *   $env:ADMIN_EMAIL="your@email.com"
+ *   $env:ADMIN_PASSWORD="YourSecurePassword"
+ *   node scripts/createSuperAdmin.js
+ * 
+ * Usage (Linux/Mac):
+ *   MONGODB_URI=mongodb://your-server/hr-erp \
+ *   ADMIN_NAME="Your Name" \
+ *   ADMIN_EMAIL="your@email.com" \
+ *   ADMIN_PASSWORD="YourSecurePassword" \
+ *   node scripts/createSuperAdmin.js
  */
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 
-// Load environment variables
+// Load environment variables from .env file (if exists)
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 // Import the User model
 const User = require('../models/User');
 
-// Super Admin Credentials
-const SUPER_ADMIN_CONFIG = {
-    name: 'David Sami',
-    email: 'davidsamii97@gmail.com',
-    department: 'Administration'
-};
+// Validate required environment variables
+function validateEnvironment() {
+    const required = ['ADMIN_NAME', 'ADMIN_EMAIL', 'ADMIN_PASSWORD'];
+    const missing = required.filter(key => !process.env[key]);
+    
+    if (missing.length > 0) {
+        console.error('\n❌ Missing required environment variables:');
+        missing.forEach(key => console.error(`   - ${key}`));
+        console.error('\n📋 Required variables:');
+        console.error('   ADMIN_NAME     - Super admin\'s full name');
+        console.error('   ADMIN_EMAIL    - Super admin\'s email address');
+        console.error('   ADMIN_PASSWORD - Super admin\'s password');
+        console.error('\n📋 Optional variables:');
+        console.error('   MONGODB_URI      - MongoDB connection (default: mongodb://localhost:27017/hr-erp)');
+        console.error('   ADMIN_DEPARTMENT - Department (default: Administration)');
+        console.error('\n💡 Example (PowerShell):');
+        console.error('   $env:ADMIN_NAME="John Doe"');
+        console.error('   $env:ADMIN_EMAIL="john@example.com"');
+        console.error('   $env:ADMIN_PASSWORD="SecurePass123"');
+        console.error('   node scripts/createSuperAdmin.js\n');
+        process.exit(1);
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(process.env.ADMIN_EMAIL)) {
+        console.error('\n❌ Invalid email format:', process.env.ADMIN_EMAIL);
+        process.exit(1);
+    }
+    
+    // Validate password strength (minimum 8 characters)
+    if (process.env.ADMIN_PASSWORD.length < 8) {
+        console.error('\n❌ Password must be at least 8 characters long');
+        process.exit(1);
+    }
+}
+
+// Get configuration from environment variables
+function getConfig() {
+    return {
+        name: process.env.ADMIN_NAME,
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD,
+        department: process.env.ADMIN_DEPARTMENT || 'Administration'
+    };
+}
 
 // Connect to MongoDB
 const connectDB = async () => {
@@ -42,6 +103,11 @@ const connectDB = async () => {
 
 async function createSuperAdmin() {
     try {
+        // Validate environment variables first
+        validateEnvironment();
+        
+        const config = getConfig();
+        
         await connectDB();
 
         console.log('\n🔐 Super Admin Creation Script (Production)');
@@ -58,7 +124,7 @@ async function createSuperAdmin() {
         }
 
         // SECURITY CHECK 2: Check if user with this email exists
-        let user = await User.findOne({ email: SUPER_ADMIN_CONFIG.email });
+        let user = await User.findOne({ email: config.email });
         if (user) {
             // Upgrade existing user to super admin
             user.role = 'super_admin';
@@ -66,7 +132,7 @@ async function createSuperAdmin() {
             
             // Update password with secure hash
             const salt = await bcrypt.genSalt(12);
-            user.password = await bcrypt.hash('David01858971234M$.P@$$w0rd824600', salt);
+            user.password = await bcrypt.hash(config.password, salt);
             
             await user.save();
             
@@ -74,20 +140,19 @@ async function createSuperAdmin() {
             console.log(`   Name: ${user.name}`);
             console.log(`   Email: ${user.email}`);
             console.log('\n🔒 Password has been securely updated.');
-            console.log('\n⚠️  IMPORTANT: Delete this script after deployment!\n');
             process.exit(0);
         }
 
         // Create new super admin user with secure password hash
         const salt = await bcrypt.genSalt(12); // 12 rounds for extra security
-        const hashedPassword = await bcrypt.hash('David01858971234M$.P@$$w0rd824600', salt);
+        const hashedPassword = await bcrypt.hash(config.password, salt);
 
         user = new User({
-            name: SUPER_ADMIN_CONFIG.name,
-            email: SUPER_ADMIN_CONFIG.email,
+            name: config.name,
+            email: config.email,
             password: hashedPassword,
             role: 'super_admin',
-            department: SUPER_ADMIN_CONFIG.department,
+            department: config.department,
             status: 'active',
             vacationDaysLeft: 21,
             excuseRequestsLeft: 2
@@ -97,16 +162,13 @@ async function createSuperAdmin() {
 
         console.log('✅ Super Admin created successfully!');
         console.log('─────────────────────────────────────');
-        console.log(`   Name:       ${SUPER_ADMIN_CONFIG.name}`);
-        console.log(`   Email:      ${SUPER_ADMIN_CONFIG.email}`);
+        console.log(`   Name:       ${config.name}`);
+        console.log(`   Email:      ${config.email}`);
         console.log(`   Role:       super_admin`);
-        console.log(`   Department: ${SUPER_ADMIN_CONFIG.department}`);
+        console.log(`   Department: ${config.department}`);
         console.log('─────────────────────────────────────');
         console.log('\n🔒 Password is securely hashed in database.');
-        console.log('\n⚠️  SECURITY REMINDERS:');
-        console.log('   1. DELETE this script after running it');
-        console.log('   2. Never share your credentials');
-        console.log('   3. Change password from the dashboard if needed\n');
+        console.log('\n✅ Super admin account is ready to use!\n');
 
         process.exit(0);
     } catch (err) {

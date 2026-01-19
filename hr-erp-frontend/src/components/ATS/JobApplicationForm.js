@@ -10,6 +10,7 @@ const JobApplicationForm = () => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState(''); // 'success' or 'error'
+    const [resumeFile, setResumeFile] = useState(null);
     const [resumeFileName, setResumeFileName] = useState('');
     const [parsingResume, setParsingResume] = useState(false);
     

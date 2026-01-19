@@ -1158,6 +1158,12 @@ const AdminDashboard = () => {
                 >
                   🏥 Sick Leave ({forms.filter(f => f.type === 'sick_leave').length})
                 </button>
+                <button 
+                  className={`form-type-tab ${activeFormType === 'extra_hours' ? 'active' : ''}`}
+                  onClick={() => setActiveFormType('extra_hours')}
+                >
+                  ⏱️ Extra Hours ({forms.filter(f => f.type === 'extra_hours').length})
+                </button>
               </div>
             </div>
 
@@ -1214,7 +1220,8 @@ const AdminDashboard = () => {
                       <div className="form-type-icon">
                         {form.type === 'vacation' ? '🏖️' : 
                          form.type === 'sick_leave' ? '🏥' : 
-                         form.type === 'excuse' ? '🕐' : '🏠'}
+                         form.type === 'excuse' ? '🕐' : 
+                         form.type === 'extra_hours' ? '⏱️' : '🏠'}
                       </div>
                       <div className="form-info">
                         <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
@@ -1226,14 +1233,48 @@ const AdminDashboard = () => {
                         <span className="info-label">Type:</span>
                         <span className="info-value">
                           {form.type === 'vacation' ? 'Annual Vacation' :
+                           form.type === 'wfh' ? '🏠 Work From Home' :
+                           form.type === 'extra_hours' ? '⏱️ Extra Hours' :
                            form.type}
                         </span>
                       </div>
+                      {form.type === 'extra_hours' && (
+                        <>
+                          <div className="info-row">
+                            <span className="info-label">Date:</span>
+                            <span className="info-value">{form.extraHoursDate?.slice(0,10) || 'N/A'}</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">Extra Hours:</span>
+                            <span className="info-value" style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked || 0} hours</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">Work Done:</span>
+                            <span className="info-value">{form.extraHoursDescription || 'N/A'}</span>
+                          </div>
+                        </>
+                      )}
+                      {form.type === 'wfh' && (
+                        <>
+                          <div className="info-row">
+                            <span className="info-label">WFH Date:</span>
+                            <span className="info-value">{form.wfhDate?.slice(0,10) || 'N/A'}</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">Working On:</span>
+                            <span className="info-value">{form.wfhWorkingOn || form.wfhDescription || 'N/A'}</span>
+                          </div>
+                        </>
+                      )}
                       <div className="info-row">
                         <span className="info-label">Duration:</span>
                         <span className="info-value">
                           {form.type === 'vacation' ? (
                             `${form.startDate?.slice(0,10)} to ${form.endDate?.slice(0,10)}`
+                          ) : form.type === 'wfh' ? (
+                            form.wfhDate?.slice(0,10) || 'N/A'
+                          ) : form.type === 'extra_hours' ? (
+                            <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -1301,7 +1342,8 @@ const AdminDashboard = () => {
                       <div className="form-type-icon">
                         {form.type === 'vacation' ? '🏖️' : 
                          form.type === 'sick_leave' ? '🏥' : 
-                         form.type === 'excuse' ? '🕐' : '🏠'}
+                         form.type === 'excuse' ? '🕐' : 
+                         form.type === 'extra_hours' ? '⏱️' : '🏠'}
                       </div>
                       <div className="form-info">
                         <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
@@ -1315,6 +1357,8 @@ const AdminDashboard = () => {
                           {form.type === 'vacation' ? 'Annual Vacation' :
                            form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
                            form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
+                           form.type === 'wfh' ? '🏠 Work From Home' :
+                           form.type === 'extra_hours' ? '⏱️ Extra Hours' :
                            form.type}
                         </span>
                       </div>
@@ -1323,6 +1367,34 @@ const AdminDashboard = () => {
                           <span className="info-label">Excuse Date:</span>
                           <span className="info-value">{form.excuseDate?.slice(0,10) || 'N/A'}</span>
                         </div>
+                      )}
+                      {form.type === 'wfh' && (
+                        <>
+                          <div className="info-row">
+                            <span className="info-label">WFH Date:</span>
+                            <span className="info-value">{form.wfhDate?.slice(0,10) || 'N/A'}</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">Working On:</span>
+                            <span className="info-value">{form.wfhWorkingOn || form.wfhDescription || 'N/A'}</span>
+                          </div>
+                        </>
+                      )}
+                      {form.type === 'extra_hours' && (
+                        <>
+                          <div className="info-row">
+                            <span className="info-label">Date:</span>
+                            <span className="info-value">{form.extraHoursDate?.slice(0,10) || 'N/A'}</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">Extra Hours:</span>
+                            <span className="info-value" style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked || 0} hours</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">Work Done:</span>
+                            <span className="info-value">{form.extraHoursDescription || 'N/A'}</span>
+                          </div>
+                        </>
                       )}
                       <div className="info-row">
                         <span className="info-label">Duration:</span>
@@ -1338,6 +1410,10 @@ const AdminDashboard = () => {
                                 </span>
                               )}
                             </>
+                          ) : form.type === 'wfh' ? (
+                            form.wfhDate?.slice(0,10) || 'N/A'
+                          ) : form.type === 'extra_hours' ? (
+                            <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -1453,7 +1529,8 @@ const AdminDashboard = () => {
                       <div className="form-type-icon">
                         {form.type === 'vacation' ? '🏖️' : 
                          form.type === 'sick_leave' ? '🏥' : 
-                         form.type === 'excuse' ? '🕐' : '🏠'}
+                         form.type === 'excuse' ? '🕐' : 
+                         form.type === 'extra_hours' ? '⏱️' : '🏠'}
                       </div>
                       <div className="form-info">
                         <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
@@ -1467,6 +1544,8 @@ const AdminDashboard = () => {
                           {form.type === 'vacation' ? 'Annual Vacation' :
                            form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
                            form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
+                           form.type === 'wfh' ? '🏠 Work From Home' :
+                           form.type === 'extra_hours' ? '⏱️ Extra Hours' :
                            form.type}
                         </span>
                       </div>
@@ -1475,6 +1554,34 @@ const AdminDashboard = () => {
                           <span className="info-label">Excuse Date:</span>
                           <span className="info-value">{form.excuseDate?.slice(0,10) || 'N/A'}</span>
                         </div>
+                      )}
+                      {form.type === 'wfh' && (
+                        <>
+                          <div className="info-row">
+                            <span className="info-label">WFH Date:</span>
+                            <span className="info-value">{form.wfhDate?.slice(0,10) || 'N/A'}</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">Working On:</span>
+                            <span className="info-value">{form.wfhWorkingOn || form.wfhDescription || 'N/A'}</span>
+                          </div>
+                        </>
+                      )}
+                      {form.type === 'extra_hours' && (
+                        <>
+                          <div className="info-row">
+                            <span className="info-label">Date:</span>
+                            <span className="info-value">{form.extraHoursDate?.slice(0,10) || 'N/A'}</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">Extra Hours:</span>
+                            <span className="info-value" style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked || 0} hours</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">Work Done:</span>
+                            <span className="info-value">{form.extraHoursDescription || 'N/A'}</span>
+                          </div>
+                        </>
                       )}
                       <div className="info-row">
                         <span className="info-label">Duration:</span>
@@ -1490,6 +1597,10 @@ const AdminDashboard = () => {
                                 </span>
                               )}
                             </>
+                          ) : form.type === 'wfh' ? (
+                            form.wfhDate?.slice(0,10) || 'N/A'
+                          ) : form.type === 'extra_hours' ? (
+                            <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}

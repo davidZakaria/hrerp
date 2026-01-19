@@ -228,48 +228,49 @@ tr:hover {
 
 .status-badge {
     display: inline-block;
-    padding: 6px 14px;
+    padding: 8px 16px;
     border-radius: 20px;
     font-size: 0.85rem;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
+    text-shadow: none !important;
 }
 
 .status-pending {
-    background: #fef3c7;
-    color: #78350f;
-    border: 1px solid #fbbf24;
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    border: 2px solid #f59e0b !important;
 }
 
 .status-review {
-    background: #dbeafe;
-    color: #1e3a8a;
-    border: 1px solid #3b82f6;
+    background: #dbeafe !important;
+    color: #1e40af !important;
+    border: 2px solid #3b82f6 !important;
 }
 
 .status-interview {
-    background: #e0e7ff;
-    color: #312e81;
-    border: 1px solid #6366f1;
+    background: #e0e7ff !important;
+    color: #3730a3 !important;
+    border: 2px solid #6366f1 !important;
 }
 
 .status-evaluated {
-    background: #ede9fe;
-    color: #4c1d95;
-    border: 1px solid #8b5cf6;
+    background: #ede9fe !important;
+    color: #5b21b6 !important;
+    border: 2px solid #8b5cf6 !important;
 }
 
 .status-accepted {
-    background: #d1fae5;
-    color: #064e3b;
-    border: 1px solid #10b981;
+    background: #d1fae5 !important;
+    color: #065f46 !important;
+    border: 2px solid #10b981 !important;
 }
 
 .status-rejected {
-    background: #fee2e2;
-    color: #7f1d1d;
-    border: 1px solid #ef4444;
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border: 2px solid #ef4444 !important;
 }
 
 .interviewer-select {

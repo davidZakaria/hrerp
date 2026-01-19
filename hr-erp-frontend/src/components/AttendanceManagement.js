@@ -363,59 +363,151 @@ const AttendanceManagement = () => {
             {/* Overtime Summary Panel */}
             {attendanceReport.overtimeSummary && attendanceReport.overtimeSummary.totalOvertimeMinutes > 0 && (
               <div style={{ 
-                marginBottom: '1.5rem', 
-                padding: '1.5rem', 
-                background: 'linear-gradient(135deg, #FFF8E1, #FFECB3)', 
-                borderRadius: '12px',
-                border: '2px solid #FFB300',
-                boxShadow: '0 2px 8px rgba(255,179,0,0.2)'
+                marginBottom: '2rem', 
+                background: 'linear-gradient(135deg, #1a202c 0%, #2d3748 100%)',
+                borderRadius: '16px',
+                border: '1px solid #4a5568',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                overflow: 'hidden'
               }}>
-                <h4 style={{ margin: '0 0 1rem 0', color: '#E65100', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  ⏱️ Overtime Summary This Month
-                </h4>
-                <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <div style={{ 
-                    background: '#fff', 
-                    padding: '1rem 1.5rem', 
-                    borderRadius: '8px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                {/* Header */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  padding: '1.5rem',
+                  borderBottom: '2px solid #4a5568'
+                }}>
+                  <h4 style={{ 
+                    margin: 0, 
+                    color: '#ffffff', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.75rem',
+                    fontSize: '1.5rem',
+                    fontWeight: '700',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.2)'
                   }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#E65100' }}>
+                    ⏱️ Overtime Summary This Month
+                  </h4>
+                </div>
+
+                {/* Summary Cards */}
+                <div style={{ 
+                  padding: '1.5rem',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '1rem',
+                  borderBottom: '1px solid #4a5568'
+                }}>
+                  <div style={{ 
+                    background: 'linear-gradient(135deg, #0f4c3a 0%, #1a5f4a 100%)',
+                    padding: '1.25rem', 
+                    borderRadius: '12px',
+                    border: '1px solid #10b981',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
+                  }}>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#34d399', marginBottom: '0.5rem' }}>
                       {attendanceReport.overtimeSummary.totalOvertimeHours}h
                     </div>
-                    <div style={{ color: '#666', fontSize: '0.85rem' }}>Total Overtime Hours</div>
+                    <div style={{ color: '#a7f3d0', fontSize: '0.9rem', fontWeight: '500' }}>Total Overtime Hours</div>
                   </div>
                   <div style={{ 
-                    background: '#fff', 
-                    padding: '1rem 1.5rem', 
-                    borderRadius: '8px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    background: 'linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%)',
+                    padding: '1.25rem', 
+                    borderRadius: '12px',
+                    border: '1px solid #3b82f6',
+                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
                   }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#E65100' }}>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#60a5fa', marginBottom: '0.5rem' }}>
                       {attendanceReport.overtimeSummary.employeesWithOvertime.length}
                     </div>
-                    <div style={{ color: '#666', fontSize: '0.85rem' }}>Employees with Overtime</div>
+                    <div style={{ color: '#bfdbfe', fontSize: '0.9rem', fontWeight: '500' }}>Employees with Overtime</div>
                   </div>
-                  {attendanceReport.overtimeSummary.employeesWithOvertime.length > 0 && (
-                    <div style={{ flex: 1 }}>
-                      <div style={{ color: '#666', fontSize: '0.85rem', marginBottom: '0.5rem' }}>Top Overtime:</div>
-                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        {attendanceReport.overtimeSummary.employeesWithOvertime.slice(0, 5).map((emp, idx) => (
-                          <span key={idx} style={{ 
-                            background: '#fff', 
-                            padding: '4px 10px', 
-                            borderRadius: '20px',
-                            fontSize: '0.85rem',
-                            color: '#333',
-                            border: '1px solid #FFB300'
-                          }}>
-                            {emp.name}: <strong style={{ color: '#E65100' }}>+{emp.overtimeHours}h</strong>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
+
+                {/* Employee Overtime List */}
+                {attendanceReport.overtimeSummary.employeesWithOvertime.length > 0 && (
+                  <div style={{ padding: '1.5rem' }}>
+                    <h5 style={{ 
+                      color: '#e2e8f0', 
+                      fontSize: '1.1rem', 
+                      marginBottom: '1rem',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      👥 Employee Overtime Details
+                    </h5>
+                    <div style={{
+                      display: 'grid',
+                      gap: '0.75rem'
+                    }}>
+                      {attendanceReport.overtimeSummary.employeesWithOvertime
+                        .sort((a, b) => b.overtimeHours - a.overtimeHours)
+                        .map((emp, idx) => (
+                        <div key={idx} style={{ 
+                          background: 'linear-gradient(135deg, #2d3748 0%, #1a202c 100%)',
+                          padding: '1rem 1.25rem', 
+                          borderRadius: '10px',
+                          border: '1px solid #4a5568',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          transition: 'all 0.3s ease',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = '#667eea';
+                          e.currentTarget.style.transform = 'translateX(4px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = '#4a5568';
+                          e.currentTarget.style.transform = 'translateX(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+                        }}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <div style={{ 
+                              color: '#ffffff', 
+                              fontSize: '1rem', 
+                              fontWeight: '600',
+                              marginBottom: '0.25rem'
+                            }}>
+                              {emp.name}
+                            </div>
+                            {emp.department && (
+                              <div style={{ 
+                                color: '#a0aec0', 
+                                fontSize: '0.85rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                              }}>
+                                <span>🏢</span>
+                                <span>{emp.department}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div style={{
+                            background: 'linear-gradient(135deg, #E65100 0%, #FF6F00 100%)',
+                            color: '#ffffff',
+                            padding: '0.75rem 1.25rem',
+                            borderRadius: '8px',
+                            fontSize: '1.25rem',
+                            fontWeight: '700',
+                            minWidth: '100px',
+                            textAlign: 'center',
+                            boxShadow: '0 4px 12px rgba(230, 81, 0, 0.3)',
+                            border: '1px solid #FF6F00'
+                          }}>
+                            +{emp.overtimeHours}h
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './ATSDashboard.css';
 import EvaluationForm from './EvaluationForm';
@@ -17,6 +17,8 @@ const ATSDashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [evaluations, setEvaluations] = useState({});
     const [userRole, setUserRole] = useState('');
+    const [interviewerSearch, setInterviewerSearch] = useState({});
+    const [showInterviewerDropdown, setShowInterviewerDropdown] = useState({});
 
     useEffect(() => {
         fetchApplications();
@@ -24,6 +26,20 @@ const ATSDashboard = () => {
         fetchStatistics();
         const role = localStorage.getItem('userRole');
         setUserRole(role);
+    }, []);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (!event.target.closest('.interviewer-dropdown-container')) {
+                setShowInterviewerDropdown({});
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
     }, []);
 
     const fetchApplications = async () => {
@@ -441,18 +457,126 @@ const ATSDashboard = () => {
                                             app.assignedInterviewer ? (
                                                 <span>{app.assignedInterviewer.name}</span>
                                             ) : (
-                                                <select
-                                                    onChange={(e) => handleAssignInterviewer(app._id, e.target.value)}
-                                                    defaultValue=""
-                                                    className="interviewer-select"
-                                                >
-                                                    <option value="" disabled>Assign Interviewer</option>
-                                                    {managers.map(manager => (
-                                                        <option key={manager._id} value={manager._id}>
-                                                            {manager.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                <div className="interviewer-dropdown-container" style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
+                                                    <button
+                                                        onClick={() => setShowInterviewerDropdown(prev => ({
+                                                            ...prev,
+                                                            [app._id]: !prev[app._id]
+                                                        }))}
+                                                        className="interviewer-select"
+                                                        style={{ width: '100%', textAlign: 'left', cursor: 'pointer' }}
+                                                    >
+                                                        🔍 Search Managers...
+                                                    </button>
+                                                    {showInterviewerDropdown[app._id] && (
+                                                        <div style={{
+                                                            position: 'absolute',
+                                                            top: '100%',
+                                                            left: 0,
+                                                            right: 0,
+                                                            background: '#2d3748',
+                                                            border: '2px solid #4a5568',
+                                                            borderRadius: '8px',
+                                                            zIndex: 1000,
+                                                            marginTop: '4px',
+                                                            maxHeight: '300px',
+                                                            overflow: 'hidden',
+                                                            boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+                                                        }}>
+                                                            <div style={{ padding: '0.75rem', borderBottom: '1px solid #4a5568' }}>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Search by name, email, or department..."
+                                                                    value={interviewerSearch[app._id] || ''}
+                                                                    onChange={(e) => setInterviewerSearch(prev => ({
+                                                                        ...prev,
+                                                                        [app._id]: e.target.value
+                                                                    }))}
+                                                                    onFocus={(e) => e.stopPropagation()}
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        padding: '0.5rem',
+                                                                        background: '#1a202c',
+                                                                        border: '1px solid #4a5568',
+                                                                        borderRadius: '6px',
+                                                                        color: '#ffffff',
+                                                                        fontSize: '0.9rem'
+                                                                    }}
+                                                                    autoFocus
+                                                                />
+                                                            </div>
+                                                            <div style={{
+                                                                maxHeight: '250px',
+                                                                overflowY: 'auto'
+                                                            }}>
+                                                                {managers
+                                                                    .filter(manager => {
+                                                                        const search = (interviewerSearch[app._id] || '').toLowerCase();
+                                                                        if (!search) return true;
+                                                                        return (
+                                                                            manager.name?.toLowerCase().includes(search) ||
+                                                                            manager.email?.toLowerCase().includes(search) ||
+                                                                            manager.department?.toLowerCase().includes(search)
+                                                                        );
+                                                                    })
+                                                                    .map(manager => (
+                                                                        <div
+                                                                            key={manager._id}
+                                                                            onClick={() => {
+                                                                                handleAssignInterviewer(app._id, manager._id);
+                                                                                setShowInterviewerDropdown(prev => ({
+                                                                                    ...prev,
+                                                                                    [app._id]: false
+                                                                                }));
+                                                                                setInterviewerSearch(prev => ({
+                                                                                    ...prev,
+                                                                                    [app._id]: ''
+                                                                                }));
+                                                                            }}
+                                                                            style={{
+                                                                                padding: '0.75rem 1rem',
+                                                                                cursor: 'pointer',
+                                                                                borderBottom: '1px solid #4a5568',
+                                                                                transition: 'background 0.2s',
+                                                                                color: '#e2e8f0'
+                                                                            }}
+                                                                            onMouseEnter={(e) => {
+                                                                                e.currentTarget.style.background = '#374151';
+                                                                            }}
+                                                                            onMouseLeave={(e) => {
+                                                                                e.currentTarget.style.background = 'transparent';
+                                                                            }}
+                                                                        >
+                                                                            <div style={{ fontWeight: '600', color: '#ffffff' }}>
+                                                                                {manager.name}
+                                                                            </div>
+                                                                            <div style={{ fontSize: '0.85rem', color: '#a0aec0', marginTop: '0.25rem' }}>
+                                                                                {manager.email} • {manager.department}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                {managers.filter(manager => {
+                                                                    const search = (interviewerSearch[app._id] || '').toLowerCase();
+                                                                    if (!search) return true;
+                                                                    return (
+                                                                        manager.name?.toLowerCase().includes(search) ||
+                                                                        manager.email?.toLowerCase().includes(search) ||
+                                                                        manager.department?.toLowerCase().includes(search)
+                                                                    );
+                                                                }).length === 0 && (
+                                                                    <div style={{
+                                                                        padding: '1rem',
+                                                                        textAlign: 'center',
+                                                                        color: '#a0aec0',
+                                                                        fontSize: '0.9rem'
+                                                                    }}>
+                                                                        No managers found
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             )
                                         ) : (
                                             app.assignedInterviewer?.name || 'Not Assigned'

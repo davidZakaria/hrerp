@@ -293,143 +293,296 @@ class CVParser {
     }
 
     /**
-     * Extract education information - ENHANCED VERSION
+     * Extract education information - SUPER ENHANCED VERSION
      */
     extractEducation(text) {
         const education = [];
-        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        // Normalize text: replace multiple spaces/newlines with single space, then split
+        const normalizedText = text.replace(/\s+/g, ' ').replace(/\n\s*\n/g, '\n');
+        const lines = normalizedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         
-        // Find education section
+        // Enhanced section detection with more patterns
         let startIdx = -1;
         let endIdx = lines.length;
         
+        const educationSectionPatterns = [
+            /^(education|academic|qualifications?|academic background|educational background|academics)$/i,
+            /^education\s+and\s+qualifications?$/i,
+            /^academic\s+qualifications?$/i
+        ];
+        
+        const endSectionPatterns = [
+            /^(experience|work|employment|skills|projects|certifications?|languages?|references?|awards|publications)$/i,
+            /^(professional experience|work history|career|technical skills|work experience|employment history)$/i,
+            /^(professional|work|employment)\s+(experience|history|background)$/i
+        ];
+        
         for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].toLowerCase();
-            // Start of education section
-            if (line.match(/^(education|academic|qualifications?|academic background)$/i) || 
-                line.match(/education|academic background/i) && lines[i].length < 50) {
-                startIdx = i + 1;
+            const line = lines[i].toLowerCase().trim();
+            
+            // Check for education section start
+            if (startIdx === -1) {
+                for (const pattern of educationSectionPatterns) {
+                    if (pattern.test(line) && lines[i].length < 60) {
+                        startIdx = i + 1;
+                        console.log(`📚 Found education section header: "${lines[i]}" at line ${i}`);
+                        break;
+                    }
+                }
             }
-            // End of education section
-            if (startIdx > 0 && i > startIdx && 
-                (line.match(/^(experience|work|employment|skills|projects|certifications?|languages?)$/i) ||
-                 line.match(/^(professional experience|work history|career|technical skills)$/i))) {
-                endIdx = i;
-                    break;
+            
+            // Check for section end (only after finding start)
+            if (startIdx > 0 && i > startIdx) {
+                for (const pattern of endSectionPatterns) {
+                    if (pattern.test(line) && lines[i].length < 60) {
+                        endIdx = i;
+                        console.log(`📚 Education section ends at: "${lines[i]}" (line ${i})`);
+                        break;
+                    }
+                }
+                if (endIdx < lines.length) break;
             }
         }
         
         if (startIdx === -1) {
+            console.log('❌ Education section not found - trying fallback method');
+            // Fallback: look for degree keywords anywhere in first half of document
+            const firstHalf = lines.slice(0, Math.floor(lines.length / 2));
+            for (let i = 0; i < firstHalf.length; i++) {
+                if (firstHalf[i].match(/(bachelor|master|phd|doctorate|b\.?s\.?c?\.?|m\.?s\.?c?\.?|mba|diploma)/i)) {
+                    startIdx = Math.max(0, i - 2);
+                    endIdx = Math.min(lines.length, i + 20);
+                    console.log(`📚 Fallback: Found education around line ${i}`);
+                    break;
+                }
+            }
+        }
+        
+        if (startIdx === -1 || startIdx >= endIdx) {
             console.log('❌ Education section not found in resume');
             return [{university: '', majorAndDegree: '', yearOfCompletion: ''}];
         }
         
         console.log(`📚 Education section found (lines ${startIdx} to ${endIdx})`);
         
-        // Extract education entries
+        // Extract education entries with improved parsing
         const educationLines = lines.slice(startIdx, endIdx);
-        console.log('Education section text:', educationLines.join(' | '));
+        console.log('Education section text:', educationLines.slice(0, 10).join(' | '));
+        
         let currentEntry = {};
+        let entryLines = [];
         
         for (let i = 0; i < educationLines.length; i++) {
             const line = educationLines[i];
+            const lineLower = line.toLowerCase();
             
-            // Look for degree patterns
-            const degreeMatch = line.match(/(bachelor|master|phd|doctorate|b\.?s\.?c?\.?|m\.?s\.?c?\.?|mba|diploma|associate|B\.?A\.?|M\.?A\.?|B\.?Tech|M\.?Tech|B\.?E\.?|M\.?E\.?)/i);
+            // Enhanced degree patterns
+            const degreePatterns = [
+                /(bachelor|bachelor'?s|b\.?s\.?c?\.?|b\.?a\.?|b\.?tech|b\.?e\.?|b\.?eng)/i,
+                /(master|master'?s|m\.?s\.?c?\.?|m\.?a\.?|m\.?tech|m\.?e\.?|m\.?eng|mba|m\.?sc)/i,
+                /(phd|ph\.?d\.?|doctorate|d\.?phil)/i,
+                /(diploma|associate|certificate)/i
+            ];
             
-            // Look for university/college
-            const universityMatch = line.match(/(university|college|institute|school|polytechnic|academy)/i);
+            const hasDegree = degreePatterns.some(pattern => pattern.test(line));
+            const hasUniversity = /(university|college|institute|school|polytechnic|academy|faculty)/i.test(line);
             
-            // Look for years (graduation year)
-            const yearMatch = line.match(/\b(19|20)\d{2}\b/);
+            // Enhanced year patterns
+            const yearPatterns = [
+                /\b(19|20)\d{2}\b/,  // Simple year
+                /(\d{4})\s*[-–—]\s*(\d{4}|present|current)/i,  // Date range
+                /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{4})/i,  // Month year
+                /(\d{1,2})\/(\d{4})/  // Month/Year
+            ];
             
-            // Look for date ranges like "2018 - 2022" or "Sept 2018 - May 2022"
-            const dateRangeMatch = line.match(/(\d{4})\s*[-–]\s*(\d{4}|present|current)/i);
-            
-            if (degreeMatch || universityMatch || yearMatch) {
-                // If we have a degree, it's likely a new entry
-                if (degreeMatch) {
-                    if (currentEntry.majorAndDegree) {
-                        education.push({...currentEntry});
-                        currentEntry = {};
-                    }
-                    
-                    // Extract full degree with major
-                    let degreeText = line;
-                    // Check if next line might be the major/field
-                    if (i + 1 < educationLines.length && educationLines[i + 1].length < 100) {
-                        degreeText += ' in ' + educationLines[i + 1];
-                    }
-                    
-                    currentEntry.majorAndDegree = degreeText.replace(/\s+/g, ' ').trim();
+            let yearMatch = null;
+            for (const pattern of yearPatterns) {
+                const match = line.match(pattern);
+                if (match) {
+                    yearMatch = match;
+                    break;
                 }
-                
-                // Extract university
-                if (universityMatch && !currentEntry.university) {
-                    currentEntry.university = line;
+            }
+            
+            // Detect new entry: degree keyword or clear separation
+            const isNewEntry = hasDegree && (currentEntry.majorAndDegree || currentEntry.university);
+            
+            if (isNewEntry && currentEntry.majorAndDegree) {
+                // Save previous entry
+                this.finalizeEducationEntry(currentEntry, entryLines);
+                education.push({...currentEntry});
+                currentEntry = {};
+                entryLines = [];
+            }
+            
+            // Collect lines for current entry
+            if (hasDegree || hasUniversity || yearMatch || line.length > 5) {
+                entryLines.push(line);
+            }
+            
+            // Extract degree and major
+            if (hasDegree && !currentEntry.majorAndDegree) {
+                let degreeText = line;
+                // Check next 2 lines for major/field
+                for (let j = 1; j <= 2 && i + j < educationLines.length; j++) {
+                    const nextLine = educationLines[i + j];
+                    if (nextLine.length < 100 && !/(university|college|institute)/i.test(nextLine)) {
+                        degreeText += ' in ' + nextLine;
+                        i += j; // Skip processed lines
+                        break;
+                    }
                 }
-                
-                // Extract year
-                if (dateRangeMatch) {
-                    currentEntry.yearOfCompletion = parseInt(dateRangeMatch[2] === 'present' || dateRangeMatch[2] === 'current' ? new Date().getFullYear() : dateRangeMatch[2]);
-                } else if (yearMatch && !currentEntry.yearOfCompletion) {
-                    currentEntry.yearOfCompletion = parseInt(yearMatch[0]);
+                currentEntry.majorAndDegree = degreeText.replace(/\s+/g, ' ').trim();
+            }
+            
+            // Extract university (usually on same or next line after degree)
+            if (hasUniversity && !currentEntry.university) {
+                // Try to extract clean university name
+                let uniName = line;
+                // Remove common prefixes/suffixes
+                uniName = uniName.replace(/^(at|from|studied at|graduated from)\s+/i, '');
+                // Remove trailing dates/punctuation
+                uniName = uniName.replace(/\s*[-–—]\s*\d{4}.*$/, '').trim();
+                if (uniName.length > 3 && uniName.length < 150) {
+                    currentEntry.university = uniName;
+                }
+            }
+            
+            // Extract year (prefer date ranges, then single years)
+            if (yearMatch && !currentEntry.yearOfCompletion) {
+                if (yearMatch[0].match(/\d{4}\s*[-–—]\s*(\d{4}|present|current)/i)) {
+                    // Date range - use end year
+                    const endYear = yearMatch[2] || yearMatch[0].match(/\d{4}/g)?.[1];
+                    currentEntry.yearOfCompletion = endYear && !/present|current/i.test(endYear) 
+                        ? parseInt(endYear) 
+                        : new Date().getFullYear();
+                } else {
+                    // Single year - extract it
+                    const year = yearMatch[0].match(/\d{4}/);
+                    if (year) {
+                        currentEntry.yearOfCompletion = parseInt(year[0]);
+                    }
                 }
             }
         }
         
-        // Push last entry
+        // Finalize last entry
         if (currentEntry.majorAndDegree || currentEntry.university) {
+            this.finalizeEducationEntry(currentEntry, entryLines);
             education.push(currentEntry);
         }
         
         console.log(`📚 Extracted ${education.length} education entries`);
         
-        // Fill in missing fields with empty strings
+        // Clean and format entries
         const finalEducation = education.map((edu, idx) => {
-            console.log(`  Education ${idx + 1}:`, {
-                university: edu.university || '(empty)',
-                degree: edu.majorAndDegree || '(empty)',
-                year: edu.yearOfCompletion || '(empty)'
-            });
-            return {
-                university: edu.university || '',
-                majorAndDegree: edu.majorAndDegree || '',
+            const cleaned = {
+                university: (edu.university || '').replace(/\s+/g, ' ').trim(),
+                majorAndDegree: (edu.majorAndDegree || '').replace(/\s+/g, ' ').trim(),
                 yearOfCompletion: edu.yearOfCompletion || ''
             };
+            console.log(`  Education ${idx + 1}:`, cleaned);
+            return cleaned;
         });
         
         return finalEducation.length > 0 ? finalEducation : [{university: '', majorAndDegree: '', yearOfCompletion: ''}];
     }
+    
+    /**
+     * Helper to finalize education entry by extracting missing info from collected lines
+     */
+    finalizeEducationEntry(entry, lines) {
+        if (!entry.university && lines.length > 0) {
+            // Try to find university in collected lines
+            for (const line of lines) {
+                if (/(university|college|institute|school|polytechnic|academy)/i.test(line)) {
+                    entry.university = line.replace(/\s*[-–—]\s*\d{4}.*$/, '').trim();
+                    break;
+                }
+            }
+        }
+        
+        if (!entry.yearOfCompletion && lines.length > 0) {
+            // Try to find year in collected lines
+            for (const line of lines) {
+                const yearMatch = line.match(/\b(19|20)\d{2}\b/);
+                if (yearMatch) {
+                    entry.yearOfCompletion = parseInt(yearMatch[0]);
+                    break;
+                }
+            }
+        }
+    }
 
     /**
-     * Extract professional experience - ENHANCED VERSION
+     * Extract professional experience - SUPER ENHANCED VERSION
      */
     extractExperience(text) {
         const experience = [];
-        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        // Normalize text
+        const normalizedText = text.replace(/\s+/g, ' ').replace(/\n\s*\n/g, '\n');
+        const lines = normalizedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         
-        // Find experience section
+        // Enhanced section detection
         let startIdx = -1;
         let endIdx = lines.length;
         
+        const experienceSectionPatterns = [
+            /^(experience|work|employment|career|professional experience|work history|employment history)$/i,
+            /^work\s+experience$/i,
+            /^professional\s+background$/i,
+            /^employment\s+history$/i
+        ];
+        
+        const endSectionPatterns = [
+            /^(education|skills|projects?|certifications?|languages?|references?|awards|publications|volunteer)$/i,
+            /^(technical skills|academic background|academic qualifications|academics)$/i,
+            /^(summary|objective|profile|about)$/i
+        ];
+        
         for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].toLowerCase();
-            // Start of experience section
-            if (line.match(/^(experience|work|employment|career|professional experience|work history)$/i) ||
-                line.match(/professional experience|work experience/i) && lines[i].length < 50) {
-                startIdx = i + 1;
+            const line = lines[i].toLowerCase().trim();
+            
+            // Check for experience section start
+            if (startIdx === -1) {
+                for (const pattern of experienceSectionPatterns) {
+                    if (pattern.test(line) && lines[i].length < 60) {
+                        startIdx = i + 1;
+                        console.log(`💼 Found experience section header: "${lines[i]}" at line ${i}`);
+                        break;
+                    }
+                }
             }
-            // End of experience section
-            if (startIdx > 0 && i > startIdx && 
-                (line.match(/^(education|skills|projects?|certifications?|languages?|references?)$/i) ||
-                 line.match(/^(technical skills|academic background|volunteer)$/i))) {
-                endIdx = i;
-                    break;
+            
+            // Check for section end
+            if (startIdx > 0 && i > startIdx) {
+                for (const pattern of endSectionPatterns) {
+                    if (pattern.test(line) && lines[i].length < 60) {
+                        endIdx = i;
+                        console.log(`💼 Experience section ends at: "${lines[i]}" (line ${i})`);
+                        break;
+                    }
+                }
+                if (endIdx < lines.length) break;
             }
         }
         
         if (startIdx === -1) {
+            console.log('❌ Experience section not found - trying fallback method');
+            // Fallback: look for job title keywords in middle section
+            const middleStart = Math.floor(lines.length * 0.2);
+            const middleEnd = Math.floor(lines.length * 0.8);
+            for (let i = middleStart; i < middleEnd; i++) {
+                if (/(manager|engineer|developer|analyst|specialist|director|consultant)/i.test(lines[i])) {
+                    startIdx = Math.max(0, i - 2);
+                    endIdx = Math.min(lines.length, i + 30);
+                    console.log(`💼 Fallback: Found experience around line ${i}`);
+                    break;
+                }
+            }
+        }
+        
+        if (startIdx === -1 || startIdx >= endIdx) {
             console.log('❌ Experience section not found in resume');
             return [{companyName: '', jobTitle: '', from: '', to: '', salary: ''}];
         }
@@ -438,101 +591,189 @@ class CVParser {
         
         // Extract experience entries
         const experienceLines = lines.slice(startIdx, endIdx);
-        console.log('Experience section text:', experienceLines.join(' | '));
+        console.log('Experience section text:', experienceLines.slice(0, 10).join(' | '));
+        
         let currentEntry = {};
+        let entryLines = [];
+        
+        // Enhanced job title patterns
+        const jobTitlePatterns = [
+            /(senior|junior|lead|chief|head|principal|associate|assistant)?\s*(manager|engineer|developer|analyst|specialist|coordinator|director|consultant|designer|administrator|officer|supervisor|executive|architect|scientist|researcher|developer|programmer|tester|qa|sales|marketing|hr|accountant|auditor)/i,
+            /(software|web|front.?end|back.?end|full.?stack|devops|data|business|product|project|operations|technical)/i
+        ];
+        
+        // Enhanced company indicators
+        const companyIndicators = ['inc', 'ltd', 'llc', 'corp', 'company', 'group', 'technologies', 
+                                   'solutions', 'systems', 'services', 'consulting', 'pvt', 'limited',
+                                   'enterprises', 'industries', 'holdings', 'international'];
         
         for (let i = 0; i < experienceLines.length; i++) {
             const line = experienceLines[i];
+            const lineLower = line.toLowerCase();
             
-            // Look for job titles (usually starts with capital letters and doesn't have "at" or company indicators)
-            const jobTitleIndicators = ['manager', 'engineer', 'developer', 'analyst', 'specialist', 'coordinator', 
-                                       'director', 'consultant', 'designer', 'administrator', 'officer', 'lead', 
-                                       'senior', 'junior', 'associate', 'intern', 'supervisor', 'head', 'chief'];
-            const hasJobTitle = jobTitleIndicators.some(title => line.toLowerCase().includes(title));
+            // Enhanced date range patterns
+            const datePatterns = [
+                /(\w+\s+)?(19|20)\d{2}\s*[-–—]\s*(\w+\s+)?(19|20)\d{2}/i,  // 2018 - 2022
+                /(\w+\s+)?(19|20)\d{2}\s*[-–—]\s*(present|current|now)/i,  // 2020 - Present
+                /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{4})\s*[-–—]\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{4})/i,  // Jan 2018 - Dec 2022
+                /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{4})\s*[-–—]\s*(present|current)/i,  // Jan 2020 - Present
+                /\b(19|20)\d{2}\b/  // Single year
+            ];
             
-            // Look for company names (usually has company keywords or is after "at")
-            const companyIndicators = ['inc', 'ltd', 'llc', 'corp', 'company', 'group', 'technologies', 
-                                       'solutions', 'systems', 'services', 'consulting', 'pvt'];
-            const hasCompanyKeyword = companyIndicators.some(keyword => line.toLowerCase().includes(keyword));
-            
-            // Look for date ranges
-            const dateRangeMatch = line.match(/(\w+\s+)?(19|20)\d{2}\s*[-–]\s*(\w+\s+)?(19|20)\d{2}|present|current/i);
-            const singleDateMatch = line.match(/(19|20)\d{2}/);
-            
-            // Parse dates more carefully
-            let fromDate = null;
-            let toDate = null;
-            if (dateRangeMatch) {
-                const fullMatch = dateRangeMatch[0];
-                const years = fullMatch.match(/(19|20)\d{2}/g);
-                if (years && years.length >= 1) {
-                    fromDate = new Date(years[0], 0, 1);
-                    if (years.length >= 2) {
-                        toDate = new Date(years[1], 11, 31);
-                    } else if (/present|current/i.test(fullMatch)) {
-                        toDate = null; // Currently working
-                    }
+            let dateMatch = null;
+            for (const pattern of datePatterns) {
+                const match = line.match(pattern);
+                if (match) {
+                    dateMatch = match;
+                    break;
                 }
             }
             
-            // Detect new entry (usually starts with job title or has dates)
-            if ((hasJobTitle || dateRangeMatch) && (currentEntry.jobTitle || currentEntry.companyName)) {
+            const hasJobTitle = jobTitlePatterns.some(pattern => pattern.test(line));
+            const hasCompanyKeyword = companyIndicators.some(keyword => lineLower.includes(keyword));
+            const hasAtKeyword = /\s+at\s+/i.test(line);
+            
+            // Detect new entry: date range or job title with existing entry
+            const isNewEntry = (dateMatch || hasJobTitle) && 
+                              (currentEntry.jobTitle || currentEntry.companyName) &&
+                              entryLines.length > 0;
+            
+            if (isNewEntry) {
+                // Finalize previous entry
+                this.finalizeExperienceEntry(currentEntry, entryLines);
                 experience.push({...currentEntry});
                 currentEntry = {};
+                entryLines = [];
             }
             
-            // Extract job title (usually the first line or line with job keywords)
-            if (hasJobTitle && !currentEntry.jobTitle && line.length < 100) {
-                currentEntry.jobTitle = line.split(/\s+at\s+/i)[0].trim();
+            // Collect lines for current entry
+            if (hasJobTitle || hasCompanyKeyword || hasAtKeyword || dateMatch || line.length > 5) {
+                entryLines.push(line);
+            }
+            
+            // Extract job title
+            if (hasJobTitle && !currentEntry.jobTitle) {
+                let title = line;
+                // Remove "at Company" part
+                title = title.split(/\s+at\s+/i)[0];
+                // Remove date ranges
+                title = title.replace(/\s*[-–—]\s*(\d{4}|present|current).*$/i, '').trim();
+                // Remove company keywords if accidentally included
+                title = title.replace(/\s+(inc|ltd|llc|corp|company)$/i, '').trim();
+                if (title.length > 3 && title.length < 100) {
+                    currentEntry.jobTitle = title;
+                }
             }
             
             // Extract company name
             if (!currentEntry.companyName) {
-                // Check if line has "at Company Name"
-                const atMatch = line.match(/\s+at\s+(.+?)(\s*[-–]|\s*\d{4}|$)/i);
+                // Pattern 1: "Job Title at Company Name"
+                const atMatch = line.match(/\s+at\s+([^–—\-]+?)(\s*[-–—]\s*|\s*\d{4}|$)/i);
                 if (atMatch) {
-                    currentEntry.companyName = atMatch[1].trim();
-                } else if (hasCompanyKeyword && line.length < 100) {
-                    currentEntry.companyName = line;
-                } else if (i > 0 && currentEntry.jobTitle && !currentEntry.companyName) {
-                    // Company name often comes right after job title
-                    currentEntry.companyName = line.split(/\s*[-–]\s*/)[0].trim();
+                    let company = atMatch[1].trim();
+                    // Clean up company name
+                    company = company.replace(/\s*[-–—]\s*.*$/, '').trim();
+                    if (company.length > 2 && company.length < 150) {
+                        currentEntry.companyName = company;
+                    }
+                }
+                // Pattern 2: Company on separate line (after job title)
+                else if (hasCompanyKeyword && line.length < 150 && currentEntry.jobTitle) {
+                    let company = line;
+                    // Remove dates
+                    company = company.replace(/\s*[-–—]\s*(\d{4}|present|current).*$/i, '').trim();
+                    if (company.length > 2) {
+                        currentEntry.companyName = company;
+                    }
+                }
+                // Pattern 3: Company name on its own line
+                else if (hasCompanyKeyword && !hasJobTitle && line.length < 150 && i > 0) {
+                    currentEntry.companyName = line.replace(/\s*[-–—]\s*.*$/, '').trim();
                 }
             }
             
             // Extract dates
-            if (dateRangeMatch && !currentEntry.from) {
-                currentEntry.from = fromDate || '';
-                currentEntry.to = toDate;
-                currentEntry.salary = null;
+            if (dateMatch && !currentEntry.from) {
+                const dateStr = dateMatch[0];
+                const years = dateStr.match(/\b(19|20)\d{2}\b/g);
+                
+                if (years && years.length >= 1) {
+                    // Format: YYYY-MM-DD for from date
+                    const fromYear = parseInt(years[0]);
+                    currentEntry.from = `${fromYear}-01-01`;
+                    
+                    if (years.length >= 2) {
+                        const toYear = parseInt(years[1]);
+                        currentEntry.to = `${toYear}-12-31`;
+                    } else if (/present|current|now/i.test(dateStr)) {
+                        currentEntry.to = ''; // Currently working
+                    }
+                }
             }
         }
         
-        // Push last entry
+        // Finalize last entry
         if (currentEntry.jobTitle || currentEntry.companyName) {
+            this.finalizeExperienceEntry(currentEntry, entryLines);
             experience.push(currentEntry);
         }
         
         console.log(`💼 Extracted ${experience.length} experience entries`);
         
-        // Fill in missing fields
+        // Clean and format entries
         const finalExperience = experience.map((exp, idx) => {
-            console.log(`  Experience ${idx + 1}:`, {
-                company: exp.companyName || '(empty)',
-                title: exp.jobTitle || '(empty)',
-                from: exp.from || '(empty)',
-                to: exp.to || '(empty)'
-            });
-            return {
-                companyName: exp.companyName || '',
-                jobTitle: exp.jobTitle || '',
+            const cleaned = {
+                companyName: (exp.companyName || '').replace(/\s+/g, ' ').trim(),
+                jobTitle: (exp.jobTitle || '').replace(/\s+/g, ' ').trim(),
                 from: exp.from || '',
                 to: exp.to === undefined ? '' : exp.to,
                 salary: exp.salary || ''
             };
+            console.log(`  Experience ${idx + 1}:`, cleaned);
+            return cleaned;
         });
         
         return finalExperience.length > 0 ? finalExperience : [{companyName: '', jobTitle: '', from: '', to: '', salary: ''}];
+    }
+    
+    /**
+     * Helper to finalize experience entry by extracting missing info from collected lines
+     */
+    finalizeExperienceEntry(entry, lines) {
+        // Try to extract missing job title
+        if (!entry.jobTitle && lines.length > 0) {
+            for (const line of lines) {
+                if (/(manager|engineer|developer|analyst|specialist|director|consultant)/i.test(line)) {
+                    const title = line.split(/\s+at\s+/i)[0].replace(/\s*[-–—]\s*.*$/, '').trim();
+                    if (title.length > 3 && title.length < 100) {
+                        entry.jobTitle = title;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Try to extract missing company
+        if (!entry.companyName && lines.length > 0) {
+            for (const line of lines) {
+                const atMatch = line.match(/\s+at\s+([^–—\-]+?)(\s*[-–—]|\s*\d{4}|$)/i);
+                if (atMatch) {
+                    entry.companyName = atMatch[1].trim();
+                    break;
+                }
+            }
+        }
+        
+        // Try to extract missing dates
+        if (!entry.from && lines.length > 0) {
+            for (const line of lines) {
+                const yearMatch = line.match(/\b(19|20)\d{2}\b/);
+                if (yearMatch) {
+                    entry.from = `${parseInt(yearMatch[0])}-01-01`;
+                    break;
+                }
+            }
+        }
     }
 
     /**

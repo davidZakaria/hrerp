@@ -37,7 +37,8 @@ const SuperAdminDashboard = () => {
     role: '',
     vacationDaysLeft: 0,
     status: '',
-    managedDepartments: []
+    managedDepartments: [],
+    password: ''
   });
 
   // Create User state
@@ -555,7 +556,8 @@ const SuperAdminDashboard = () => {
       role: user.role,
       vacationDaysLeft: user.vacationDaysLeft,
       status: user.status,
-      managedDepartments: user.managedDepartments || []
+      managedDepartments: user.managedDepartments || [],
+      password: '' // Empty - only fill if admin wants to change password
     });
   };
 
@@ -1325,9 +1327,21 @@ const SuperAdminDashboard = () => {
                           className="form-input-elegant"
                         >
                           <option value="active">Active</option>
-                          <option value="inactive">Inactive</option>
+                          <option value="inactive">Inactive (Disabled)</option>
                           <option value="pending">Pending</option>
                         </select>
+                      </div>
+                      <div className="form-group-elegant">
+                        <label className="form-label-elegant">New Password (leave empty to keep current)</label>
+                        <input
+                          type="password"
+                          value={userEdit.password}
+                          onChange={(e) => setUserEdit({...userEdit, password: e.target.value})}
+                          className="form-input-elegant"
+                          placeholder="Enter new password (min 6 characters)"
+                          minLength="6"
+                        />
+                        <small style={{color: '#888', fontSize: '0.8rem'}}>Only fill this if you want to change the user's password</small>
                       </div>
                       <div className="form-group-elegant">
                         <label className="form-label-elegant">Vacation Days Left</label>

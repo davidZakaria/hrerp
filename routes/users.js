@@ -342,7 +342,7 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
-    const { name, email, department, role, managedDepartments } = req.body;
+    const { name, email, department, role, managedDepartments, password, status } = req.body;
 
     const user = await User.findById(req.params.userId);
     if (!user) {
@@ -363,6 +363,17 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     user.department = department;
     user.role = role;
     user.managedDepartments = (role === 'manager' && managedDepartments) ? managedDepartments : [];
+    
+    // Update status if provided
+    if (status && ['active', 'inactive', 'pending'].includes(status)) {
+      user.status = status;
+    }
+    
+    // Update password if provided (admin can reset user password)
+    if (password && password.trim().length >= 6) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
 
     await user.save();
     
@@ -447,7 +458,8 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
       role,
       vacationDaysLeft,
       status,
-      modificationReason
+      modificationReason,
+      password
     } = req.body;
 
     const user = await User.findById(req.params.userId);
@@ -463,6 +475,7 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     if (role !== user.role) modifications.push({ field: 'role', oldValue: user.role, newValue: role });
     if (vacationDaysLeft !== user.vacationDaysLeft) modifications.push({ field: 'vacationDaysLeft', oldValue: user.vacationDaysLeft, newValue: vacationDaysLeft });
     if (status !== user.status) modifications.push({ field: 'status', oldValue: user.status, newValue: status });
+    if (password && password.trim().length >= 6) modifications.push({ field: 'password', oldValue: '***', newValue: '*** (changed)' });
 
     // Check if vacation days are being modified for separate audit logging
     const oldVacationDays = user.vacationDaysLeft;
@@ -475,6 +488,12 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     user.role = role;
     user.vacationDaysLeft = vacationDaysLeft;
     user.status = status;
+    
+    // Update password if provided (super admin can reset user password)
+    if (password && password.trim().length >= 6) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
 
     // Add modifications to history
     modifications.forEach(mod => {

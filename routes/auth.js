@@ -63,13 +63,14 @@ router.post('/register', async (req, res) => {
 
         await user.save();
 
-        console.log('New user registered:', {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            status: user.status
-        });
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('New user registered:', {
+                id: user.id,
+                name: user.name,
+                role: user.role,
+                status: user.status
+            });
+        }
 
         // Return success message (don't auto-login for pending users)
         res.json({ 
@@ -128,12 +129,13 @@ router.post('/login', async (req, res) => {
             severity: 'LOW'
         }).catch(err => console.error('Audit log error:', err));
 
-        console.log('User logged in:', {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role
-        });
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('User logged in:', {
+                id: user.id,
+                name: user.name,
+                role: user.role
+            });
+        }
 
         const payload = {
             user: {
@@ -166,7 +168,6 @@ router.post('/login', async (req, res) => {
                     email: user.email,
                     managedDepartments: user.managedDepartments || []
                 };
-                console.log('Sending login response:', response);
                 res.json(response);
             }
         );

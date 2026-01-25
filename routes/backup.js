@@ -62,18 +62,13 @@ const backupUpload = multer({
  */
 const requireSuperAdmin = async (req, res, next) => {
   try {
-    // Debug: Log req.user to see what auth middleware provided
-    console.log('Backup auth check - req.user:', req.user);
-    
     if (!req.user || !req.user.id) {
-      console.log('Backup auth failed: req.user or req.user.id is missing');
       return res.status(401).json({ 
         msg: 'Authentication required. Please login.' 
       });
     }
     
     const user = await User.findById(req.user.id);
-    console.log('Backup auth check - found user:', user ? `${user.email} (${user.role})` : 'null');
     
     if (!user) {
       return res.status(401).json({ 
@@ -82,7 +77,6 @@ const requireSuperAdmin = async (req, res, next) => {
     }
     // Allow both super_admin and admin to access backup operations
     if (user.role !== 'super_admin' && user.role !== 'admin') {
-      console.log(`Backup access denied for user ${user.email} with role ${user.role}`);
       return res.status(403).json({ 
         msg: `Access denied. Admin privileges required. Your role: ${user.role}` 
       });

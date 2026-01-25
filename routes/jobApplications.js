@@ -7,6 +7,7 @@ const JobApplication = require('../models/JobApplication');
 const Evaluation = require('../models/Evaluation');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const { validateObjectId } = require('../middleware/validateObjectId');
 const cvParser = require('../utils/cvParser');
 const { createAuditLog } = require('./audit');
 
@@ -248,7 +249,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // ADMIN: Assign interviewer to application
-router.put('/:id/assign-interviewer', auth, async (req, res) => {
+router.put('/:id/assign-interviewer', auth, validateObjectId('id'), async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         
@@ -304,7 +305,7 @@ router.put('/:id/assign-interviewer', auth, async (req, res) => {
 });
 
 // ADMIN/MANAGER: Submit evaluation
-router.post('/:id/evaluate', auth, async (req, res) => {
+router.post('/:id/evaluate', auth, validateObjectId('id'), async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         
@@ -411,7 +412,7 @@ router.post('/:id/evaluate', auth, async (req, res) => {
 });
 
 // ADMIN/MANAGER: Get evaluations for an application
-router.get('/:id/evaluations', auth, async (req, res) => {
+router.get('/:id/evaluations', auth, validateObjectId('id'), async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         

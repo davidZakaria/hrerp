@@ -40,6 +40,10 @@ const AdminDashboard = () => {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState('');
   
+  // Employee Summary state (for Overview insights)
+  const [employeeSummary, setEmployeeSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  
   // Vacation Manager state
   const [allEmployees, setAllEmployees] = useState([]);
   const [vacationEdits, setVacationEdits] = useState({});
@@ -115,6 +119,27 @@ const AdminDashboard = () => {
       }
     } catch (err) {
       logger.error('Error fetching user balances:', err);
+    }
+  }, []);
+
+  // Fetch employee summary for overview insights
+  const fetchEmployeeSummary = useCallback(async () => {
+    setSummaryLoading(true);
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/users/employee-summary`, {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setEmployeeSummary(data);
+      } else {
+        logger.error('Failed to fetch employee summary:', data.msg);
+      }
+    } catch (err) {
+      logger.error('Error fetching employee summary:', err);
+    } finally {
+      setSummaryLoading(false);
     }
   }, []);
 
@@ -650,6 +675,9 @@ const AdminDashboard = () => {
     } else if (activeTab === 'users' || activeTab === 'overview') {
       fetchUsers();
     }
+    if (activeTab === 'overview') {
+      fetchEmployeeSummary();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]); // Only depend on activeTab, not fetchForms
 
@@ -864,6 +892,394 @@ const AdminDashboard = () => {
                   📊 Vacation Report
                 </button>
               </div>
+            </div>
+
+            {/* Employee Insights Section */}
+            <div className="elegant-card" style={{ marginTop: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <h2 className="section-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  📈 Employee Insights
+                  {summaryLoading && <span style={{ fontSize: '0.8rem', color: '#666', fontWeight: 'normal' }}>(Loading...)</span>}
+                </h2>
+                {employeeSummary && (
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => {
+                        // Export to CSV
+                        const headers = ['Name', 'Email', 'Department', 'Role', 'Vacation Days', 'Present Days', 'Absent Days', 'Late Days', 'Deductions', 'Attendance %'];
+                        const csvContent = [
+                          headers.join(','),
+                          ...employeeSummary.allEmployees.map(emp => [
+                            `"${emp.name}"`,
+                            `"${emp.email}"`,
+                            `"${emp.department}"`,
+                            emp.role,
+                            emp.vacationDaysLeft,
+                            emp.presentDays,
+                            emp.absentDays,
+                            emp.lateDays,
+                            emp.deductions,
+                            emp.attendanceRate
+                          ].join(','))
+                        ].join('\n');
+                        
+                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `employee_insights_${employeeSummary.currentMonth}.csv`;
+                        link.click();
+                      }}
+                      className="btn-elegant"
+                      style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                    >
+                      📥 Export CSV
+                    </button>
+                    <button
+                      onClick={() => {
+                        // Print functionality
+                        const printContent = document.getElementById('employee-insights-table');
+                        const printWindow = window.open('', '_blank');
+                        printWindow.document.write(`
+                          <html>
+                            <head>
+                              <title>Employee Insights - ${employeeSummary.currentMonth}</title>
+                              <style>
+                                body { font-family: Arial, sans-serif; padding: 20px; }
+                                h1 { color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+                                .stats-row { display: flex; gap: 20px; margin-bottom: 20px; }
+                                .stat-card { background: #f5f5f5; padding: 15px; border-radius: 8px; text-align: center; flex: 1; }
+                                .stat-value { font-size: 24px; font-weight: bold; color: #667eea; }
+                                .stat-label { color: #666; font-size: 12px; }
+                                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                                th { background: #667eea; color: white; padding: 12px 8px; text-align: left; font-size: 12px; }
+                                td { padding: 10px 8px; border-bottom: 1px solid #eee; font-size: 12px; }
+                                tr:nth-child(even) { background: #f9f9f9; }
+                                .warning { color: #E65100; font-weight: bold; }
+                                .danger { color: #C62828; font-weight: bold; }
+                                .footer { margin-top: 20px; text-align: right; color: #999; font-size: 12px; }
+                                @media print { body { -webkit-print-color-adjust: exact; } }
+                              </style>
+                            </head>
+                            <body>
+                              <h1>📈 Employee Insights Report</h1>
+                              <div class="stats-row">
+                                <div class="stat-card"><div class="stat-value">${employeeSummary.totalEmployees}</div><div class="stat-label">Total Employees</div></div>
+                                <div class="stat-card"><div class="stat-value">${employeeSummary.averageVacationDays}</div><div class="stat-label">Avg Vacation Days</div></div>
+                                <div class="stat-card"><div class="stat-value">${employeeSummary.attendanceRate}%</div><div class="stat-label">Attendance Rate</div></div>
+                                <div class="stat-card"><div class="stat-value">${employeeSummary.totalDeductions}</div><div class="stat-label">Total Deductions</div></div>
+                              </div>
+                              ${printContent.outerHTML}
+                              <div class="footer">Generated on ${new Date().toLocaleString()} | Data for: ${employeeSummary.currentMonth}</div>
+                            </body>
+                          </html>
+                        `);
+                        printWindow.document.close();
+                        printWindow.print();
+                      }}
+                      className="btn-elegant"
+                      style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                    >
+                      🖨️ Print
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              {employeeSummary && (
+                <>
+                  {/* Summary Stats Cards */}
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(4, 1fr)', 
+                    gap: '1rem', 
+                    marginBottom: '1.5rem' 
+                  }}>
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      padding: '1.5rem',
+                      borderRadius: '12px',
+                      color: 'white',
+                      textAlign: 'center',
+                      boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
+                    }}>
+                      <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{employeeSummary.totalEmployees}</div>
+                      <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '0.25rem' }}>Total Employees</div>
+                    </div>
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                      padding: '1.5rem',
+                      borderRadius: '12px',
+                      color: 'white',
+                      textAlign: 'center',
+                      boxShadow: '0 4px 15px rgba(17, 153, 142, 0.3)'
+                    }}>
+                      <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{employeeSummary.averageVacationDays}</div>
+                      <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '0.25rem' }}>Avg Vacation Days</div>
+                    </div>
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                      padding: '1.5rem',
+                      borderRadius: '12px',
+                      color: 'white',
+                      textAlign: 'center',
+                      boxShadow: '0 4px 15px rgba(79, 172, 254, 0.3)'
+                    }}>
+                      <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{employeeSummary.attendanceRate}%</div>
+                      <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '0.25rem' }}>Attendance Rate</div>
+                    </div>
+                    <div style={{ 
+                      background: employeeSummary.totalDeductions > 0 
+                        ? 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+                        : 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                      padding: '1.5rem',
+                      borderRadius: '12px',
+                      color: employeeSummary.totalDeductions > 0 ? 'white' : '#333',
+                      textAlign: 'center',
+                      boxShadow: employeeSummary.totalDeductions > 0 
+                        ? '0 4px 15px rgba(245, 87, 108, 0.3)'
+                        : '0 4px 15px rgba(168, 237, 234, 0.3)'
+                    }}>
+                      <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{employeeSummary.totalDeductions}</div>
+                      <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '0.25rem' }}>Total Deductions</div>
+                    </div>
+                  </div>
+
+                  {/* All Employees Table */}
+                  <div style={{ 
+                    background: '#fff',
+                    borderRadius: '12px',
+                    border: '1px solid #e0e0e0',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+                      padding: '1rem 1.5rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem', fontWeight: '600' }}>
+                        👥 All Employees Data
+                      </h3>
+                      <span style={{ color: '#a0aec0', fontSize: '0.85rem' }}>
+                        {employeeSummary.allEmployees?.length || 0} employees | {employeeSummary.currentMonth}
+                      </span>
+                    </div>
+                    
+                    <div style={{ overflowX: 'auto' }}>
+                      <table id="employee-insights-table" style={{ 
+                        width: '100%', 
+                        borderCollapse: 'collapse',
+                        fontSize: '0.9rem'
+                      }}>
+                        <thead>
+                          <tr style={{ background: '#f8f9fa' }}>
+                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Employee</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Department</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Vacation Days</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Present</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Absent</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Late</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Deductions</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Attendance %</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {employeeSummary.allEmployees?.map((emp, idx) => (
+                            <tr key={emp._id} style={{ 
+                              background: idx % 2 === 0 ? '#ffffff' : '#f8f9fa',
+                              transition: 'background 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#e3f2fd';
+                              Array.from(e.currentTarget.cells).forEach(cell => cell.style.background = '#e3f2fd');
+                            }}
+                            onMouseLeave={(e) => {
+                              const bg = idx % 2 === 0 ? '#ffffff' : '#f8f9fa';
+                              e.currentTarget.style.background = bg;
+                              Array.from(e.currentTarget.cells).forEach(cell => cell.style.background = '#fff');
+                            }}
+                            >
+                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', background: '#fff' }}>
+                                <div style={{ fontWeight: '600', color: '#1a1a1a' }}>{emp.name}</div>
+                                <div style={{ fontSize: '0.8rem', color: '#666' }}>{emp.email}</div>
+                              </td>
+                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', color: '#333', background: '#fff', fontWeight: '500' }}>
+                                {emp.department}
+                              </td>
+                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
+                                <span style={{ 
+                                  background: emp.vacationDaysLeft < 5 ? '#FFF3E0' : '#E8F5E9',
+                                  color: emp.vacationDaysLeft < 5 ? '#E65100' : '#1B5E20',
+                                  padding: '4px 12px',
+                                  borderRadius: '20px',
+                                  fontWeight: '600',
+                                  fontSize: '0.85rem',
+                                  display: 'inline-block'
+                                }}>
+                                  {emp.vacationDaysLeft}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
+                                <span style={{ 
+                                  background: '#E8F5E9',
+                                  color: '#1B5E20',
+                                  padding: '4px 12px',
+                                  borderRadius: '20px',
+                                  fontWeight: '600',
+                                  fontSize: '0.85rem',
+                                  display: 'inline-block'
+                                }}>
+                                  {emp.presentDays || 0}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
+                                <span style={{ 
+                                  background: emp.absentDays >= 3 ? '#FFCDD2' : emp.absentDays > 0 ? '#FFF3E0' : '#f5f5f5',
+                                  color: emp.absentDays >= 3 ? '#B71C1C' : emp.absentDays > 0 ? '#E65100' : '#333',
+                                  padding: '4px 12px',
+                                  borderRadius: '20px',
+                                  fontWeight: '600',
+                                  fontSize: '0.85rem',
+                                  display: 'inline-block'
+                                }}>
+                                  {emp.absentDays || 0}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
+                                <span style={{ 
+                                  background: emp.lateDays > 5 ? '#FFF3E0' : '#f5f5f5',
+                                  color: emp.lateDays > 5 ? '#E65100' : '#333',
+                                  padding: '4px 12px',
+                                  borderRadius: '20px',
+                                  fontWeight: '600',
+                                  fontSize: '0.85rem',
+                                  display: 'inline-block'
+                                }}>
+                                  {emp.lateDays || 0}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
+                                <span style={{ 
+                                  background: emp.deductions > 0 ? '#FFEBEE' : '#f5f5f5',
+                                  color: emp.deductions > 0 ? '#B71C1C' : '#333',
+                                  padding: '4px 12px',
+                                  borderRadius: '20px',
+                                  fontWeight: '600',
+                                  fontSize: '0.85rem',
+                                  display: 'inline-block'
+                                }}>
+                                  {emp.deductions > 0 ? `-${emp.deductions}` : '0'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
+                                <span style={{ 
+                                  background: emp.attendanceRate !== '-' 
+                                    ? (parseFloat(emp.attendanceRate) >= 90 ? '#E8F5E9' : parseFloat(emp.attendanceRate) >= 75 ? '#FFF3E0' : '#FFEBEE')
+                                    : '#f5f5f5',
+                                  color: emp.attendanceRate !== '-'
+                                    ? (parseFloat(emp.attendanceRate) >= 90 ? '#1B5E20' : parseFloat(emp.attendanceRate) >= 75 ? '#E65100' : '#B71C1C')
+                                    : '#666',
+                                  padding: '4px 12px',
+                                  borderRadius: '20px',
+                                  fontWeight: '600',
+                                  fontSize: '0.85rem',
+                                  display: 'inline-block'
+                                }}>
+                                  {emp.attendanceRate !== '-' ? `${emp.attendanceRate}%` : 'No data'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    {(!employeeSummary.allEmployees || employeeSummary.allEmployees.length === 0) && (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
+                        No employee data available
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Attention Alerts (compact) */}
+                  {(employeeSummary.summary.lowVacationCount > 0 || 
+                    employeeSummary.summary.highAbsenceCount > 0 || 
+                    employeeSummary.summary.deductionCount > 0) && (
+                    <div style={{ 
+                      display: 'flex',
+                      gap: '1rem',
+                      marginTop: '1.5rem',
+                      flexWrap: 'wrap'
+                    }}>
+                      {employeeSummary.summary.lowVacationCount > 0 && (
+                        <div style={{ 
+                          flex: '1',
+                          minWidth: '200px',
+                          background: '#FFF8E1',
+                          border: '1px solid #FFB300',
+                          borderRadius: '8px',
+                          padding: '1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem'
+                        }}>
+                          <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+                          <div>
+                            <div style={{ fontWeight: '600', color: '#E65100' }}>{employeeSummary.summary.lowVacationCount} employees</div>
+                            <div style={{ fontSize: '0.85rem', color: '#666' }}>with low vacation days (&lt;5)</div>
+                          </div>
+                        </div>
+                      )}
+                      {employeeSummary.summary.highAbsenceCount > 0 && (
+                        <div style={{ 
+                          flex: '1',
+                          minWidth: '200px',
+                          background: '#FFEBEE',
+                          border: '1px solid #EF9A9A',
+                          borderRadius: '8px',
+                          padding: '1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem'
+                        }}>
+                          <span style={{ fontSize: '1.5rem' }}>🚨</span>
+                          <div>
+                            <div style={{ fontWeight: '600', color: '#C62828' }}>{employeeSummary.summary.highAbsenceCount} employees</div>
+                            <div style={{ fontSize: '0.85rem', color: '#666' }}>with high absences (3+)</div>
+                          </div>
+                        </div>
+                      )}
+                      {employeeSummary.summary.deductionCount > 0 && (
+                        <div style={{ 
+                          flex: '1',
+                          minWidth: '200px',
+                          background: '#F3E5F5',
+                          border: '1px solid #CE93D8',
+                          borderRadius: '8px',
+                          padding: '1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem'
+                        }}>
+                          <span style={{ fontSize: '1.5rem' }}>⚡</span>
+                          <div>
+                            <div style={{ fontWeight: '600', color: '#7B1FA2' }}>{employeeSummary.summary.deductionCount} employees</div>
+                            <div style={{ fontSize: '0.85rem', color: '#666' }}>with fingerprint deductions</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {!employeeSummary && !summaryLoading && (
+                <div style={{ textAlign: 'center', padding: '3rem', color: '#666' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+                  <div>No data available. Upload attendance data to see employee insights.</div>
+                </div>
+              )}
             </div>
           </div>
         )}

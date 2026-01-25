@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Attendance = require('../models/Attendance');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -21,6 +22,167 @@ router.get('/', auth, async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
+  }
+});
+
+// Get employee summary for admin dashboard overview
+router.get('/employee-summary', auth, async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id);
+    if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+
+    // Get current month in YYYY-MM format
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    // Get all active employees (excluding super_admin for regular admins)
+    const employeeFilter = admin.role === 'super_admin' 
+      ? { status: 'active' }
+      : { status: 'active', role: { $ne: 'super_admin' } };
+    
+    const employees = await User.find(employeeFilter).select('-password');
+    const totalEmployees = employees.length;
+
+    // Calculate average vacation days
+    const totalVacationDays = employees.reduce((sum, emp) => sum + (emp.vacationDaysLeft || 0), 0);
+    const averageVacationDays = totalEmployees > 0 ? (totalVacationDays / totalEmployees).toFixed(1) : 0;
+
+    // Find employees with low vacation days (< 5 days)
+    const lowVacationEmployees = employees
+      .filter(emp => (emp.vacationDaysLeft || 0) < 5)
+      .map(emp => ({
+        _id: emp._id,
+        name: emp.name,
+        department: emp.department,
+        vacationDaysLeft: emp.vacationDaysLeft || 0
+      }))
+      .sort((a, b) => a.vacationDaysLeft - b.vacationDaysLeft);
+
+    // Get current month attendance records
+    const attendanceRecords = await Attendance.find({ month: currentMonth });
+
+    // Build attendance stats per user
+    const userAttendanceMap = {};
+    attendanceRecords.forEach(record => {
+      const odId = record.odId;
+      if (!userAttendanceMap[odId]) {
+        userAttendanceMap[odId] = {
+          totalDays: 0,
+          presentDays: 0,
+          absentDays: 0,
+          lateDays: 0,
+          totalDeductions: 0
+        };
+      }
+      userAttendanceMap[odId].totalDays++;
+      
+      if (record.status === 'present' || record.status === 'late' || record.status === 'wfh') {
+        userAttendanceMap[odId].presentDays++;
+      }
+      if (record.status === 'absent') {
+        userAttendanceMap[odId].absentDays++;
+      }
+      if (record.status === 'late') {
+        userAttendanceMap[odId].lateDays++;
+      }
+      userAttendanceMap[odId].totalDeductions += record.fingerprintDeduction || 0;
+    });
+
+    // Find employees with high absences (3+ this month)
+    const highAbsenceEmployees = employees
+      .filter(emp => {
+        const stats = userAttendanceMap[emp.odId];
+        return stats && stats.absentDays >= 3;
+      })
+      .map(emp => ({
+        _id: emp._id,
+        name: emp.name,
+        department: emp.department,
+        odId: emp.odId,
+        absences: userAttendanceMap[emp.odId]?.absentDays || 0
+      }))
+      .sort((a, b) => b.absences - a.absences);
+
+    // Find employees with fingerprint deductions
+    const deductionEmployees = employees
+      .filter(emp => {
+        const stats = userAttendanceMap[emp.odId];
+        return stats && stats.totalDeductions > 0;
+      })
+      .map(emp => ({
+        _id: emp._id,
+        name: emp.name,
+        department: emp.department,
+        odId: emp.odId,
+        deductions: userAttendanceMap[emp.odId]?.totalDeductions || 0
+      }))
+      .sort((a, b) => b.deductions - a.deductions);
+
+    // Calculate overall attendance rate
+    let totalPresentDays = 0;
+    let totalWorkDays = 0;
+    Object.values(userAttendanceMap).forEach(stats => {
+      totalPresentDays += stats.presentDays;
+      totalWorkDays += stats.totalDays;
+    });
+    const attendanceRate = totalWorkDays > 0 
+      ? ((totalPresentDays / totalWorkDays) * 100).toFixed(1) 
+      : 100;
+
+    // Calculate total deductions
+    const totalDeductions = Object.values(userAttendanceMap)
+      .reduce((sum, stats) => sum + stats.totalDeductions, 0);
+
+    // Build complete employee list with all stats
+    const allEmployeesData = employees.map(emp => {
+      const stats = userAttendanceMap[emp.odId] || {
+        totalDays: 0,
+        presentDays: 0,
+        absentDays: 0,
+        lateDays: 0,
+        totalDeductions: 0
+      };
+      
+      return {
+        _id: emp._id,
+        name: emp.name,
+        email: emp.email,
+        department: emp.department,
+        role: emp.role,
+        odId: emp.odId,
+        vacationDaysLeft: emp.vacationDaysLeft || 0,
+        presentDays: stats.presentDays,
+        absentDays: stats.absentDays,
+        lateDays: stats.lateDays,
+        totalDays: stats.totalDays,
+        deductions: stats.totalDeductions,
+        attendanceRate: stats.totalDays > 0 
+          ? ((stats.presentDays / stats.totalDays) * 100).toFixed(1)
+          : '-'
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+
+    res.json({
+      currentMonth,
+      totalEmployees,
+      averageVacationDays: parseFloat(averageVacationDays),
+      attendanceRate: parseFloat(attendanceRate),
+      totalDeductions,
+      allEmployees: allEmployeesData,
+      lowVacationEmployees,
+      highAbsenceEmployees,
+      deductionEmployees,
+      summary: {
+        lowVacationCount: lowVacationEmployees.length,
+        highAbsenceCount: highAbsenceEmployees.length,
+        deductionCount: deductionEmployees.length
+      }
+    });
+  } catch (err) {
+    console.error('Employee summary error:', err.message);
+    res.status(500).json({ msg: 'Server error fetching employee summary' });
   }
 });
 
@@ -255,9 +417,7 @@ router.delete('/:userId', auth, validateObjectId('userId'), async (req, res) => 
 // Super Admin: Get all users with full details
 router.get('/all', auth, async (req, res) => {
   try {
-    console.log('GET /all - req.user:', req.user);
     const user = await User.findById(req.user.id);
-    console.log('GET /all - found user:', user ? user.email : 'null');
     if (!user) {
       return res.status(401).json({ msg: 'User not found. Please login again.', requestedId: req.user.id });
     }
@@ -273,7 +433,7 @@ router.get('/all', auth, async (req, res) => {
 });
 
 // Super Admin: Update any user
-router.put('/super/:userId', auth, async (req, res) => {
+router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) => {
   try {
     const superAdmin = await User.findById(req.user.id);
     if (superAdmin.role !== 'super_admin') {
@@ -367,7 +527,7 @@ router.put('/super/:userId', auth, async (req, res) => {
 });
 
 // Super Admin: Get modification history for a user
-router.get('/history/:userId', auth, async (req, res) => {
+router.get('/history/:userId', auth, validateObjectId('userId'), async (req, res) => {
   try {
     const superAdmin = await User.findById(req.user.id);
     if (superAdmin.role !== 'super_admin') {

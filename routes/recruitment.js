@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
+const { validateObjectId } = require('../middleware/validateObjectId');
 const Recruitment = require('../models/Recruitment');
 const User = require('../models/User');
 
@@ -61,7 +62,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Update recruit (admin only)
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (user.role !== 'admin') {
@@ -105,7 +106,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // Delete recruit (admin only)
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, validateObjectId('id'), async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (user.role !== 'admin') {

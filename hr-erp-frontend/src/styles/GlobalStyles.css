@@ -5480,4 +5480,82 @@ form select:focus {
 
 /* ===== END VACATION MODALS REDESIGN ===== */
 
+/* ===== EMPLOYEE INSIGHTS TABLE OVERRIDE ===== */
+/* Override dark theme for the employee insights table which needs light background */
+
+#employee-insights-table,
+#employee-insights-table * {
+  color: #333333 !important;
+  text-shadow: none !important;
+}
+
+#employee-insights-table {
+  background: #ffffff !important;
+  border-collapse: collapse !important;
+}
+
+#employee-insights-table thead {
+  background: #f8f9fa !important;
+}
+
+#employee-insights-table th {
+  background: #f8f9fa !important;
+  color: #1a1a1a !important;
+  font-weight: 600 !important;
+  padding: 12px 16px !important;
+  border-bottom: 2px solid #e0e0e0 !important;
+}
+
+#employee-insights-table tbody tr {
+  background: #ffffff !important;
+}
+
+#employee-insights-table tbody tr:nth-child(even) {
+  background: #f8f9fa !important;
+}
+
+#employee-insights-table tbody tr:hover {
+  background: #e3f2fd !important;
+}
+
+#employee-insights-table td {
+  background: inherit !important;
+  color: #333333 !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid #eee !important;
+}
+
+#employee-insights-table td div,
+#employee-insights-table td span,
+#employee-insights-table td p,
+#employee-insights-table td strong,
+#employee-insights-table td b {
+  text-shadow: none !important;
+}
+
+/* Employee name - first column */
+#employee-insights-table td:first-child div:first-child {
+  color: #1a1a1a !important;
+  font-weight: 600 !important;
+}
+
+/* Employee email - second div in first column */
+#employee-insights-table td:first-child div:last-child {
+  color: #666666 !important;
+  font-size: 0.8rem !important;
+}
+
+/* Department column */
+#employee-insights-table td:nth-child(2) {
+  color: #333333 !important;
+  font-weight: 500 !important;
+}
+
+/* Badge spans inside table - preserve their colors */
+#employee-insights-table td span[style*="background"] {
+  text-shadow: none !important;
+}
+
+/* ===== END EMPLOYEE INSIGHTS TABLE OVERRIDE ===== */
+
 /* ===== END ADMIN DASHBOARD CARD STYLES ===== */

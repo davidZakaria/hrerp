@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
+const { validateObjectId } = require('../middleware/validateObjectId');
 const Audit = require('../models/Audit');
 const User = require('../models/User');
 
@@ -118,7 +119,7 @@ router.get('/stats', auth, async (req, res) => {
 });
 
 // Get audit logs for a specific user (Super Admin only)
-router.get('/user/:userId', auth, async (req, res) => {
+router.get('/user/:userId', auth, validateObjectId('userId'), async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (user.role !== 'super_admin') {

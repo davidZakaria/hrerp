@@ -1,4 +1,4 @@
 {
-    "mongoURI": "mongodb://localhost:27017/hr-erp",
-    "jwtSecret": "hr_erp_secret_token"
+    "mongoURI": "USE_MONGODB_URI_ENV_VARIABLE",
+    "jwtSecret": "USE_JWT_SECRET_ENV_VARIABLE"
 } 

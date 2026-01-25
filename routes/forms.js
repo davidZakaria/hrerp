@@ -1037,7 +1037,7 @@ router.get('/excuse-hours', auth, async (req, res) => {
 });
 
 // Get any user's vacation days left (admin only) - optimized with lean()
-router.get('/vacation-days/:userId', auth, async (req, res) => {
+router.get('/vacation-days/:userId', auth, validateObjectId('userId'), async (req, res) => {
     try {
         const admin = await User.findById(req.user.id).select('role').lean();
         if (!admin || !['admin', 'super_admin'].includes(admin.role)) {
@@ -1055,7 +1055,7 @@ router.get('/vacation-days/:userId', auth, async (req, res) => {
 });
 
 // Get any user's excuse hours left (admin only) - optimized with lean()
-router.get('/excuse-hours/:userId', auth, async (req, res) => {
+router.get('/excuse-hours/:userId', auth, validateObjectId('userId'), async (req, res) => {
     try {
         const admin = await User.findById(req.user.id).select('role').lean();
         if (!admin || !['admin', 'super_admin'].includes(admin.role)) {
@@ -1248,7 +1248,7 @@ router.put('/super/:formId', auth, async (req, res) => {
 });
 
 // Super Admin: Get form modification history
-router.get('/history/:formId', auth, async (req, res) => {
+router.get('/history/:formId', auth, validateObjectId('formId'), async (req, res) => {
     try {
         const superAdmin = await User.findById(req.user.id);
         if (superAdmin.role !== 'super_admin') {

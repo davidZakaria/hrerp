@@ -801,7 +801,9 @@ router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
         const { type, startDate, endDate, days, reason, status, adminComment } = req.body;
         
         // Super admin can edit form data directly
-        if (user.role === 'super_admin' && (type || startDate || endDate || days || reason)) {
+        if (user.role === 'super_admin' && (type || startDate || endDate || days || reason || status)) {
+            const previousStatus = form.status;
+            
             // Update form fields if provided
             if (type) form.type = type;
             if (startDate) form.startDate = startDate;
@@ -810,6 +812,63 @@ router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
             if (reason) form.reason = reason;
             if (status) form.status = status;
             if (adminComment) form.adminComment = adminComment;
+            
+            // Handle vacation days deduction when super admin approves vacation form
+            if (
+                form.type === 'vacation' && 
+                form.vacationType === 'annual' && 
+                status === 'approved' && 
+                previousStatus !== 'approved'
+            ) {
+                const employee = await User.findById(form.user._id || form.user);
+                if (employee) {
+                    // Calculate number of days (inclusive)
+                    const start = new Date(form.startDate);
+                    const end = new Date(form.endDate);
+                    const calculatedDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                    
+                    // Check if employee has enough vacation days
+                    if ((employee.vacationDaysLeft || 0) < calculatedDays) {
+                        return res.status(400).json({ 
+                            msg: `Cannot approve: Employee has insufficient vacation days (${employee.vacationDaysLeft} remaining, ${calculatedDays} requested)`
+                        });
+                    }
+                    
+                    const oldVacationDays = employee.vacationDaysLeft;
+                    employee.vacationDaysLeft = Math.max(0, (employee.vacationDaysLeft || 21) - calculatedDays);
+                    await employee.save();
+                    
+                    // Create audit log for automatic vacation days deduction
+                    await createAuditLog({
+                        action: 'VACATION_DAYS_MODIFIED',
+                        performedBy: user._id,
+                        targetUser: employee._id,
+                        targetResource: 'user',
+                        targetResourceId: employee._id,
+                        description: `Vacation days automatically deducted for ${employee.name}: ${calculatedDays} days deducted due to approved annual vacation by super admin (Form ID: ${form._id})`,
+                        oldValues: {
+                            vacationDaysLeft: oldVacationDays
+                        },
+                        newValues: {
+                            vacationDaysLeft: employee.vacationDaysLeft
+                        },
+                        details: {
+                            targetUserName: employee.name,
+                            targetUserEmail: employee.email,
+                            targetUserDepartment: employee.department,
+                            formId: form._id.toString(),
+                            daysDeducted: calculatedDays,
+                            approvedBy: 'super_admin'
+                        },
+                        ipAddress: req.ip || req.connection.remoteAddress,
+                        userAgent: req.get('User-Agent'),
+                        severity: 'HIGH'
+                    });
+                    
+                    console.log(`✅ Super Admin approved vacation - Deducted ${calculatedDays} days from ${employee.name}`);
+                    console.log(`   Old balance: ${oldVacationDays}, New balance: ${employee.vacationDaysLeft}`);
+                }
+            }
             
             form.updatedAt = Date.now();
             await form.save();

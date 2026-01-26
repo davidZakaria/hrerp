@@ -1110,6 +1110,18 @@ const SuperAdminDashboard = () => {
                         
                         <div style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#555' }}>
                           <p style={{ margin: '0.25rem 0' }}><strong>Department:</strong> {user.department}</p>
+                          <p style={{ margin: '0.25rem 0' }}>
+                            <strong>Employee Code:</strong>{' '}
+                            <span style={{ 
+                              background: user.employeeCode ? '#4caf50' : '#ff9800',
+                              color: 'white',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              fontSize: '0.8rem'
+                            }}>
+                              {user.employeeCode || 'Not Assigned'}
+                            </span>
+                          </p>
                           {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
                             <div style={{ marginTop: '0.5rem' }}>
                               <strong>Wants to Manage:</strong>

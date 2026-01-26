@@ -880,6 +880,18 @@ const AdminDashboard = () => {
                           </span>
                         </p>
                         <p><strong>Department:</strong> {user.department}</p>
+                        <p>
+                          <strong>Employee Code:</strong>{' '}
+                          <span style={{ 
+                            background: user.employeeCode ? '#4caf50' : '#ff9800',
+                            color: 'white',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.85rem'
+                          }}>
+                            {user.employeeCode || 'Not Assigned'}
+                          </span>
+                        </p>
                         {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
                           <p style={{ marginTop: '0.5rem' }}>
                             <strong>🎯 Wants to Manage:</strong>

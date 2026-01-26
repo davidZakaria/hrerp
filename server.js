@@ -47,6 +47,10 @@ validateEnvironment();
 
 const app = express();
 
+// Trust proxy - required when running behind Nginx/reverse proxy
+// This allows express-rate-limit to get the real client IP from X-Forwarded-For header
+app.set('trust proxy', 1);
+
 // Initialize server after database connection
 const startServer = async () => {
   try {

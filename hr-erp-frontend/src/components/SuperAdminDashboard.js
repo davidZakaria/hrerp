@@ -98,6 +98,10 @@ const SuperAdminDashboard = () => {
   const [backupConfig, setBackupConfig] = useState(null);
   const [creatingBackup, setCreatingBackup] = useState(false);
   const [verifyingBackup, setVerifyingBackup] = useState(null);
+  
+  // Flags state
+  const [allFlags, setAllFlags] = useState([]);
+  const [flagsSummary, setFlagsSummary] = useState({ totalDeductions: 0, totalRewards: 0 });
   const [backupVerificationResult, setBackupVerificationResult] = useState(null);
   const [openRestoreDropdown, setOpenRestoreDropdown] = useState(null);
 
@@ -132,6 +136,56 @@ const SuperAdminDashboard = () => {
       setError('Error connecting to server');
     }
     setLoading(false);
+  };
+
+  // Fetch all employee flags
+  const fetchAllFlags = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/employee-flags/all`, {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAllFlags(data.flags || []);
+        // Calculate summary
+        const flags = data.flags || [];
+        const deductions = flags.filter(f => f.type === 'deduction').length;
+        const rewards = flags.filter(f => f.type === 'reward').length;
+        setFlagsSummary({ totalDeductions: deductions, totalRewards: rewards });
+      }
+    } catch (err) {
+      console.error('Error fetching flags:', err);
+    }
+  };
+
+  // Get flags for a specific employee
+  const getEmployeeFlags = (employeeId) => {
+    return allFlags.filter(flag => flag.employee?._id === employeeId || flag.employee === employeeId);
+  };
+
+  // Remove a flag
+  const handleRemoveFlag = async (flagId) => {
+    if (!window.confirm('Are you sure you want to remove this flag?')) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/employee-flags/${flagId}`, {
+        method: 'DELETE',
+        headers: { 'x-auth-token': token }
+      });
+      if (res.ok) {
+        setSuccess('Flag removed successfully');
+        fetchAllFlags();
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        const data = await res.json();
+        setError(data.msg || 'Error removing flag');
+      }
+    } catch (err) {
+      setError('Error removing flag');
+    }
   };
 
   // Approve pending user
@@ -530,6 +584,7 @@ const SuperAdminDashboard = () => {
   useEffect(() => {
     if (activeTab === 'users') {
       fetchUsers();
+      fetchAllFlags();
     } else if (activeTab === 'forms') {
       fetchForms();
     } else if (activeTab === 'logs') {
@@ -1210,6 +1265,29 @@ const SuperAdminDashboard = () => {
                               <div className="departments-tags">
                                 {user.managedDepartments.map(dept => (
                                   <span key={dept} className="department-tag-small">{dept}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Employee Flags */}
+                          {getEmployeeFlags(user._id).length > 0 && (
+                            <div className="user-flags-display" style={{ marginTop: '12px' }}>
+                              <span className="info-label">🚩 Active Flags:</span>
+                              <div className="employee-flags-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                                {getEmployeeFlags(user._id).map(flag => (
+                                  <span 
+                                    key={flag._id}
+                                    className={`flag-badge-admin ${flag.type === 'deduction' ? 'deduction' : 'reward'}`}
+                                    title={`${flag.reason} - By: ${flag.flaggedBy?.name || 'Manager'} on ${new Date(flag.createdAt).toLocaleDateString()}`}
+                                  >
+                                    {flag.type === 'deduction' ? '⚠️' : '⭐'} {flag.type}
+                                    <button 
+                                      className="flag-remove-btn-admin"
+                                      onClick={(e) => { e.stopPropagation(); handleRemoveFlag(flag._id); }}
+                                      title="Remove flag"
+                                    >×</button>
+                                  </span>
                                 ))}
                               </div>
                             </div>

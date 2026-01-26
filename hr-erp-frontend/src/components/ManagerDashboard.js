@@ -33,6 +33,14 @@ const ManagerDashboard = ({ onLogout }) => {
   const [submitting, setSubmitting] = useState(false);
   const [processingForms, setProcessingForms] = useState(new Set());
   const [refreshingPending, setRefreshingPending] = useState(false);
+  
+  // Flag modal state
+  const [showFlagModal, setShowFlagModal] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [flagType, setFlagType] = useState('deduction');
+  const [flagReason, setFlagReason] = useState('');
+  const [teamFlags, setTeamFlags] = useState([]);
+  const [flagSubmitting, setFlagSubmitting] = useState(false);
 
   useEffect(() => {
     fetchUserData();
@@ -40,6 +48,7 @@ const ManagerDashboard = ({ onLogout }) => {
     fetchTeamMembers();
     fetchVacationDays();
     fetchExcuseHours();
+    fetchTeamFlags();
   }, []);
 
   // Auto-refresh pending forms every 20 seconds to keep data synchronized
@@ -285,6 +294,88 @@ const ManagerDashboard = ({ onLogout }) => {
       console.error('Error fetching team members:', error);
       setLoading(false);
     }
+  };
+
+  const fetchTeamFlags = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/employee-flags/team`, {
+        headers: { 'x-auth-token': token }
+      });
+      setTeamFlags(response.data.flags || []);
+    } catch (error) {
+      console.error('Error fetching team flags:', error);
+    }
+  };
+
+  const openFlagModal = (employee) => {
+    setSelectedEmployee(employee);
+    setFlagType('deduction');
+    setFlagReason('');
+    setShowFlagModal(true);
+  };
+
+  const closeFlagModal = () => {
+    setShowFlagModal(false);
+    setSelectedEmployee(null);
+    setFlagType('deduction');
+    setFlagReason('');
+    setFlagSubmitting(false);
+  };
+
+  const handleCreateFlag = async () => {
+    if (!selectedEmployee || !flagReason.trim()) {
+      setMessage(t('flags.enterReason') || 'Please enter a reason for the flag');
+      return;
+    }
+
+    setFlagSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_URL}/api/employee-flags`, {
+        employeeId: selectedEmployee._id,
+        type: flagType,
+        reason: flagReason.trim()
+      }, {
+        headers: { 'x-auth-token': token }
+      });
+
+      setMessage(`✅ ${t('flags.flagCreated') || 'Flag created successfully'}`);
+      closeFlagModal();
+      fetchTeamFlags();
+      
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Error creating flag:', error);
+      setMessage(error.response?.data?.msg || 'Error creating flag');
+    } finally {
+      setFlagSubmitting(false);
+    }
+  };
+
+  const handleRemoveFlag = async (flagId) => {
+    if (!window.confirm(t('flags.confirmRemove') || 'Are you sure you want to remove this flag?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/employee-flags/${flagId}`, {
+        headers: { 'x-auth-token': token }
+      });
+
+      setMessage(`✅ ${t('flags.flagRemoved') || 'Flag removed successfully'}`);
+      fetchTeamFlags();
+      
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Error removing flag:', error);
+      setMessage(error.response?.data?.msg || 'Error removing flag');
+    }
+  };
+
+  const getEmployeeFlags = (employeeId) => {
+    return teamFlags.filter(flag => flag.employee?._id === employeeId || flag.employee === employeeId);
   };
 
   const openCommentModal = (form, action) => {
@@ -849,14 +940,46 @@ const ManagerDashboard = ({ onLogout }) => {
         </div>
         {teamMembers.length > 0 ? (
           <div className="team-grid">
-            {teamMembers.map(member => (
-              <div key={member._id} className="team-card team-member-card">
-                <div className="member-avatar">👤</div>
-                <h4>{member.name}</h4>
-                <p className="member-department">{member.department}</p>
-                <span className="vacation-days team-stat">{Number(member.vacationDaysLeft).toFixed(1)} {t('daysLeft')}</span>
-              </div>
-            ))}
+            {teamMembers.map(member => {
+              const memberFlags = getEmployeeFlags(member._id);
+              return (
+                <div key={member._id} className="team-card team-member-card">
+                  <div className="member-avatar">👤</div>
+                  <h4>{member.name}</h4>
+                  <p className="member-department">{member.department}</p>
+                  <span className="vacation-days team-stat">{Number(member.vacationDaysLeft).toFixed(1)} {t('daysLeft')}</span>
+                  
+                  {/* Display existing flags */}
+                  {memberFlags.length > 0 && (
+                    <div className="member-flags">
+                      {memberFlags.map(flag => (
+                        <div 
+                          key={flag._id} 
+                          className={`flag-badge ${flag.type === 'deduction' ? 'flag-deduction' : 'flag-reward'}`}
+                          title={`${flag.reason} - ${new Date(flag.createdAt).toLocaleDateString()}`}
+                        >
+                          {flag.type === 'deduction' ? '⚠️' : '⭐'} {flag.type === 'deduction' ? t('flags.deduction') : t('flags.reward')}
+                          <button 
+                            className="flag-remove-btn"
+                            onClick={(e) => { e.stopPropagation(); handleRemoveFlag(flag._id); }}
+                            title={t('flags.removeFlag')}
+                          >×</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Flag Employee Button */}
+                  <button 
+                    className="btn-flag-employee"
+                    onClick={() => openFlagModal(member)}
+                    title={t('flags.flagEmployee')}
+                  >
+                    🚩 {t('flags.flagEmployee') || 'Flag'}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="no-content">
@@ -1077,6 +1200,77 @@ const ManagerDashboard = ({ onLogout }) => {
               >
                 {submitting ? t('processing') : 
                  actionType === 'approve' ? t('approveRequest') : t('rejectRequest')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Flag Modal */}
+      {showFlagModal && selectedEmployee && (
+        <div className="modal-overlay" onClick={closeFlagModal}>
+          <div className="modal-content flag-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🚩 {t('flags.flagEmployee') || 'Flag Employee'}</h3>
+              <button className="close-btn" onClick={closeFlagModal}>×</button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="employee-summary">
+                <div className="employee-avatar">👤</div>
+                <div className="employee-info">
+                  <h4>{selectedEmployee.name}</h4>
+                  <p>{selectedEmployee.department}</p>
+                </div>
+              </div>
+              
+              <div className="flag-type-section">
+                <label>{t('flags.flagType') || 'Flag Type'}:</label>
+                <div className="flag-type-options">
+                  <button 
+                    className={`flag-type-btn ${flagType === 'deduction' ? 'active deduction' : ''}`}
+                    onClick={() => setFlagType('deduction')}
+                  >
+                    ⚠️ {t('flags.deduction') || 'Deduction'}
+                  </button>
+                  <button 
+                    className={`flag-type-btn ${flagType === 'reward' ? 'active reward' : ''}`}
+                    onClick={() => setFlagType('reward')}
+                  >
+                    ⭐ {t('flags.reward') || 'Reward'}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flag-reason-section">
+                <label>{t('flags.reason') || 'Reason'}:</label>
+                <textarea
+                  value={flagReason}
+                  onChange={(e) => setFlagReason(e.target.value)}
+                  placeholder={t('flags.enterReason') || 'Enter reason for flag...'}
+                  rows={4}
+                  className={!flagReason.trim() ? 'required-field' : ''}
+                />
+                {!flagReason.trim() && (
+                  <small className="error-text">{t('validation.required') || 'This field is required'}</small>
+                )}
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <button 
+                className="cancel-btn" 
+                onClick={closeFlagModal}
+                disabled={flagSubmitting}
+              >
+                {t('common.cancel') || 'Cancel'}
+              </button>
+              <button 
+                className={`flag-submit-btn ${flagType === 'deduction' ? 'deduction' : 'reward'}`}
+                onClick={handleCreateFlag}
+                disabled={flagSubmitting || !flagReason.trim()}
+              >
+                {flagSubmitting ? (t('managerDashboard.processing') || 'Processing...') : (t('flags.createFlag') || 'Create Flag')}
               </button>
             </div>
           </div>
@@ -2305,6 +2499,231 @@ const ManagerDashboard = ({ onLogout }) => {
         .no-content small {
           color: rgba(255, 255, 255, 0.6);
           font-style: italic;
+        }
+
+        /* Flag Styles */
+        .member-flags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin: 10px 0;
+          justify-content: center;
+        }
+
+        .flag-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          font-weight: bold;
+          position: relative;
+        }
+
+        .flag-deduction {
+          background: linear-gradient(135deg, #f44336, #d32f2f);
+          color: white;
+          border: 1px solid rgba(244, 67, 54, 0.5);
+        }
+
+        .flag-reward {
+          background: linear-gradient(135deg, #4caf50, #388e3c);
+          color: white;
+          border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+
+        .flag-remove-btn {
+          background: rgba(255, 255, 255, 0.3) !important;
+          border: none !important;
+          color: white !important;
+          width: 16px !important;
+          height: 16px !important;
+          border-radius: 50% !important;
+          padding: 0 !important;
+          margin-left: 4px !important;
+          cursor: pointer !important;
+          font-size: 12px !important;
+          line-height: 1 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        .flag-remove-btn:hover {
+          background: rgba(255, 255, 255, 0.5) !important;
+        }
+
+        .btn-flag-employee {
+          margin-top: 12px !important;
+          padding: 8px 16px !important;
+          background: linear-gradient(135deg, #ff9800, #f57c00) !important;
+          color: white !important;
+          border: none !important;
+          border-radius: 8px !important;
+          font-size: 0.85rem !important;
+          font-weight: 600 !important;
+          cursor: pointer !important;
+          transition: all 0.3s ease !important;
+          width: 100% !important;
+        }
+
+        .btn-flag-employee:hover {
+          background: linear-gradient(135deg, #f57c00, #ef6c00) !important;
+          transform: translateY(-2px) !important;
+          box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4) !important;
+        }
+
+        /* Flag Modal Styles */
+        .flag-modal {
+          max-width: 450px !important;
+        }
+
+        .employee-summary {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 15px;
+          border-radius: 12px;
+          margin-bottom: 20px;
+        }
+
+        .employee-avatar {
+          font-size: 2.5rem;
+        }
+
+        .employee-info h4 {
+          margin: 0 0 5px 0;
+          color: #ffffff;
+          font-size: 1.2rem;
+        }
+
+        .employee-info p {
+          margin: 0;
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 0.9rem;
+        }
+
+        .flag-type-section {
+          margin-bottom: 20px;
+        }
+
+        .flag-type-section label {
+          display: block;
+          margin-bottom: 10px;
+          font-weight: 600;
+          color: #ffffff;
+        }
+
+        .flag-type-options {
+          display: flex;
+          gap: 10px;
+        }
+
+        .flag-type-btn {
+          flex: 1 !important;
+          padding: 12px 16px !important;
+          border: 2px solid rgba(255, 255, 255, 0.2) !important;
+          background: rgba(0, 0, 0, 0.4) !important;
+          color: rgba(255, 255, 255, 0.7) !important;
+          border-radius: 10px !important;
+          font-size: 1rem !important;
+          font-weight: 600 !important;
+          cursor: pointer !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .flag-type-btn:hover {
+          background: rgba(0, 0, 0, 0.6) !important;
+          color: #ffffff !important;
+        }
+
+        .flag-type-btn.active.deduction {
+          background: linear-gradient(135deg, #f44336, #d32f2f) !important;
+          border-color: #f44336 !important;
+          color: white !important;
+        }
+
+        .flag-type-btn.active.reward {
+          background: linear-gradient(135deg, #4caf50, #388e3c) !important;
+          border-color: #4caf50 !important;
+          color: white !important;
+        }
+
+        .flag-reason-section {
+          margin-bottom: 10px;
+        }
+
+        .flag-reason-section label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: 600;
+          color: #ffffff;
+        }
+
+        .flag-reason-section textarea {
+          width: 100%;
+          padding: 12px;
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          background: rgba(0, 0, 0, 0.5);
+          color: #ffffff;
+          border-radius: 8px;
+          font-family: inherit;
+          font-size: 14px;
+          resize: vertical;
+          transition: all 0.3s ease;
+        }
+
+        .flag-reason-section textarea:focus {
+          outline: none;
+          border-color: #667eea;
+          background: rgba(0, 0, 0, 0.7);
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .flag-submit-btn {
+          padding: 12px 24px !important;
+          border: none !important;
+          border-radius: 8px !important;
+          font-weight: 600 !important;
+          cursor: pointer !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .flag-submit-btn.deduction {
+          background: linear-gradient(135deg, #f44336, #d32f2f) !important;
+          color: white !important;
+        }
+
+        .flag-submit-btn.deduction:hover:not(:disabled) {
+          background: linear-gradient(135deg, #d32f2f, #c62828) !important;
+        }
+
+        .flag-submit-btn.reward {
+          background: linear-gradient(135deg, #4caf50, #388e3c) !important;
+          color: white !important;
+        }
+
+        .flag-submit-btn.reward:hover:not(:disabled) {
+          background: linear-gradient(135deg, #388e3c, #2e7d32) !important;
+        }
+
+        .flag-submit-btn:disabled {
+          opacity: 0.5 !important;
+          cursor: not-allowed !important;
+        }
+
+        /* ATS Button */
+        .btn-manager.ats-btn {
+          background: linear-gradient(135deg, #9c27b0, #7b1fa2) !important;
+        }
+
+        .btn-manager.ats-btn:hover {
+          background: linear-gradient(135deg, #7b1fa2, #6a1b9a) !important;
+          transform: translateY(-3px) !important;
+          box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4) !important;
         }
 
         /* Responsive Design */

@@ -17,6 +17,7 @@ const EmployeeDashboard = () => {
   const [excuseRequestsLeft, setExcuseRequestsLeft] = useState(null);
   const [nextResetDate, setNextResetDate] = useState(null);
   const [user, setUser] = useState(null);
+  const [myFlags, setMyFlags] = useState([]);
 
   const fetchUserData = async () => {
     const token = localStorage.getItem('token');
@@ -66,10 +67,26 @@ const EmployeeDashboard = () => {
     }
   };
 
+  const fetchMyFlags = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/employee-flags/my-flags`, {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMyFlags(data.flags || []);
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     fetchUserData();
     fetchVacationDays();
     fetchExcuseRequests();
+    fetchMyFlags();
   }, []);
 
   const fetchForms = async () => {
@@ -186,6 +203,78 @@ const EmployeeDashboard = () => {
                 {user.employeeCode || t('common.notAssigned')}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Flags Section */}
+      {myFlags.length > 0 && (
+        <div className="flags-section" style={{ marginBottom: '2rem' }}>
+          <h3 style={{ 
+            fontSize: '1.3rem', 
+            marginBottom: '1rem',
+            color: '#333',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            🚩 {t('flags.myFlags') || 'My Flags'}
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {myFlags.map(flag => (
+              <div 
+                key={flag._id} 
+                className="flag-card"
+                style={{
+                  background: flag.type === 'deduction' 
+                    ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(244, 67, 54, 0.05))' 
+                    : 'linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.05))',
+                  border: flag.type === 'deduction' 
+                    ? '2px solid rgba(244, 67, 54, 0.4)' 
+                    : '2px solid rgba(76, 175, 80, 0.4)',
+                  borderRadius: '12px',
+                  padding: '1.25rem',
+                  borderLeft: flag.type === 'deduction' 
+                    ? '5px solid #f44336' 
+                    : '5px solid #4caf50'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '20px',
+                    fontSize: '0.9rem',
+                    fontWeight: 'bold',
+                    background: flag.type === 'deduction' ? '#f44336' : '#4caf50',
+                    color: 'white'
+                  }}>
+                    {flag.type === 'deduction' ? '⚠️' : '⭐'} {flag.type === 'deduction' ? (t('flags.deduction') || 'Deduction') : (t('flags.reward') || 'Reward')}
+                  </span>
+                  <span style={{ fontSize: '0.85rem', color: '#666' }}>
+                    {new Date(flag.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <div style={{ 
+                  background: 'rgba(255, 255, 255, 0.5)', 
+                  padding: '0.75rem', 
+                  borderRadius: '8px',
+                  marginBottom: '0.75rem'
+                }}>
+                  <p style={{ margin: 0, color: '#333', lineHeight: '1.5' }}>
+                    {flag.reason}
+                  </p>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#666' }}>
+                  <span>{t('flags.flaggedBy') || 'Flagged by'}: </span>
+                  <span style={{ fontWeight: '600', color: '#333' }}>
+                    👔 {flag.flaggedBy?.name || 'Manager'}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

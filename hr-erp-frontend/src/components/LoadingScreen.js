@@ -1,7 +1,15 @@
-import React from 'react';
-import logo from '../assets/njd-logo.png';
+import React, { useState } from 'react';
+
+// Try to import logo - will use fallback if not available
+let logo;
+try {
+  logo = require('../assets/njd-logo.png');
+} catch (e) {
+  logo = null;
+}
 
 const LoadingScreen = ({ message = "Loading...", size = "default", overlay = true }) => {
+  const [logoError, setLogoError] = useState(false);
   const sizeConfig = {
     small: { logo: '80px', title: '1.5rem', spinner: '40px' },
     default: { logo: '120px', title: '2rem', spinner: '60px' },
@@ -188,7 +196,29 @@ const LoadingScreen = ({ message = "Loading...", size = "default", overlay = tru
       `}</style>
       
       <div className="loading-content">
-        <img src={logo} alt="NJD Logo" className="loading-logo" />
+        {logo && !logoError ? (
+          <img 
+            src={logo} 
+            alt="NJD Logo" 
+            className="loading-logo" 
+            onError={() => setLogoError(true)}
+          />
+        ) : (
+          <div className="loading-logo-fallback" style={{
+            width: config.logo,
+            height: config.logo,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '50%',
+            fontSize: '3rem',
+            marginBottom: '1.5rem',
+            animation: 'pulse 2.5s ease-in-out infinite'
+          }}>
+            🏢
+          </div>
+        )}
         <h1 className="loading-title">NEW JERSEY DEVELOPMENTS</h1>
         <p className="loading-subtitle">It's all about The Experience</p>
         <p className="loading-message">{message}</p>

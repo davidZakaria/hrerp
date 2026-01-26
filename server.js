@@ -405,6 +405,7 @@ app.use('/api/audit', require('./routes/audit').router);
 app.use('/api/excuse-hours', require('./routes/excuse-hours'));
 app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/backup', require('./routes/backup'));
+app.use('/api/employee-flags', require('./routes/employee-flags'));
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

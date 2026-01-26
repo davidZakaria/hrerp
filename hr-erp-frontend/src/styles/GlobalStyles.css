@@ -5559,3 +5559,96 @@ form select:focus {
 /* ===== END EMPLOYEE INSIGHTS TABLE OVERRIDE ===== */
 
 /* ===== END ADMIN DASHBOARD CARD STYLES ===== */
+
+/* ===== EMPLOYEE FLAGS STYLES ===== */
+
+/* Flag badges for Admin Dashboard */
+.flag-badge-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.flag-badge-admin.deduction {
+  background: linear-gradient(135deg, #f44336, #d32f2f);
+  color: white;
+  border: 1px solid rgba(244, 67, 54, 0.5);
+}
+
+.flag-badge-admin.reward {
+  background: linear-gradient(135deg, #4caf50, #388e3c);
+  color: white;
+  border: 1px solid rgba(76, 175, 80, 0.5);
+}
+
+.flag-remove-btn-admin {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border: none !important;
+  color: white !important;
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  margin-left: 4px !important;
+  cursor: pointer !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 16px !important;
+}
+
+.flag-remove-btn-admin:hover {
+  background: rgba(255, 255, 255, 0.5) !important;
+}
+
+.employee-flags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Flags summary card */
+.flags-summary-card {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 152, 0, 0.05));
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.flags-summary-row {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+}
+
+.flag-stat {
+  padding: 0.5rem 1rem;
+}
+
+.flag-stat-number {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.flag-stat-number.deduction {
+  color: #f44336;
+}
+
+.flag-stat-number.reward {
+  color: #4caf50;
+}
+
+.flag-stat-label {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* ===== END EMPLOYEE FLAGS STYLES ===== */

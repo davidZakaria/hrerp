@@ -67,6 +67,10 @@ const AdminDashboard = () => {
   // Current user state
   const [currentUser, setCurrentUser] = useState(null);
 
+  // Flags state
+  const [allFlags, setAllFlags] = useState([]);
+  const [flagsSummary, setFlagsSummary] = useState({ totalDeductions: 0, totalRewards: 0 });
+
   // Edit User state
   const [showEditUserModal, setShowEditUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -212,6 +216,48 @@ const AdminDashboard = () => {
       setUsersError('Error fetching users');
     }
     setUsersLoading(false);
+  };
+
+  // Fetch all employee flags
+  const fetchAllFlags = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/api/employee-flags/all`, {
+        headers: { 'x-auth-token': token }
+      });
+      setAllFlags(res.data.flags || []);
+      
+      // Calculate summary
+      const flags = res.data.flags || [];
+      const deductions = flags.filter(f => f.type === 'deduction').length;
+      const rewards = flags.filter(f => f.type === 'reward').length;
+      setFlagsSummary({ totalDeductions: deductions, totalRewards: rewards });
+    } catch (err) {
+      logger.error('Error fetching flags:', err);
+    }
+  };
+
+  // Get flags for a specific employee
+  const getEmployeeFlags = (employeeId) => {
+    return allFlags.filter(flag => flag.employee?._id === employeeId || flag.employee === employeeId);
+  };
+
+  // Remove a flag
+  const handleRemoveFlag = async (flagId) => {
+    if (!window.confirm('Are you sure you want to remove this flag?')) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/employee-flags/${flagId}`, {
+        headers: { 'x-auth-token': token }
+      });
+      setMessage('✅ Flag removed successfully');
+      fetchAllFlags();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      setMessage(err.response?.data?.msg || 'Error removing flag');
+    }
   };
 
   // Approve pending user
@@ -693,6 +739,7 @@ const AdminDashboard = () => {
     fetchCurrentUser();
     fetchUsers();
     fetchForms();
+    fetchAllFlags();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - run only once on mount
 
@@ -1456,6 +1503,28 @@ const AdminDashboard = () => {
                           </div>
                         </div>
                       )}
+                      {/* Employee Flags */}
+                      {getEmployeeFlags(user._id).length > 0 && (
+                        <div className="info-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                          <span className="info-label" style={{ marginBottom: '8px' }}>🚩 Active Flags:</span>
+                          <div className="employee-flags-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            {getEmployeeFlags(user._id).map(flag => (
+                              <span 
+                                key={flag._id}
+                                className={`flag-badge-admin ${flag.type === 'deduction' ? 'deduction' : 'reward'}`}
+                                title={`${flag.reason} - By: ${flag.flaggedBy?.name || 'Manager'} on ${new Date(flag.createdAt).toLocaleDateString()}`}
+                              >
+                                {flag.type === 'deduction' ? '⚠️' : '⭐'} {flag.type}
+                                <button 
+                                  className="flag-remove-btn-admin"
+                                  onClick={(e) => { e.stopPropagation(); handleRemoveFlag(flag._id); }}
+                                  title="Remove flag"
+                                >×</button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="card-actions">
                       <button 
@@ -1585,7 +1654,7 @@ const AdminDashboard = () => {
                   className={`form-type-tab ${activeFormType === 'extra_hours' ? 'active' : ''}`}
                   onClick={() => setActiveFormType('extra_hours')}
                 >
-                  ⏱️ Extra Hours ({forms.filter(f => f.type === 'extra_hours').length})
+                  ⏱️ Overtime Hours ({forms.filter(f => f.type === 'extra_hours').length})
                 </button>
               </div>
             </div>
@@ -1657,7 +1726,7 @@ const AdminDashboard = () => {
                         <span className="info-value">
                           {form.type === 'vacation' ? 'Annual Vacation' :
                            form.type === 'wfh' ? '🏠 Work From Home' :
-                           form.type === 'extra_hours' ? '⏱️ Extra Hours' :
+                           form.type === 'extra_hours' ? '⏱️ Overtime Hours' :
                            form.type}
                         </span>
                       </div>
@@ -1668,7 +1737,7 @@ const AdminDashboard = () => {
                             <span className="info-value">{form.extraHoursDate?.slice(0,10) || 'N/A'}</span>
                           </div>
                           <div className="info-row">
-                            <span className="info-label">Extra Hours:</span>
+                            <span className="info-label">Overtime Hours:</span>
                             <span className="info-value" style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked || 0} hours</span>
                           </div>
                           <div className="info-row">
@@ -1781,7 +1850,7 @@ const AdminDashboard = () => {
                            form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
                            form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
                            form.type === 'wfh' ? '🏠 Work From Home' :
-                           form.type === 'extra_hours' ? '⏱️ Extra Hours' :
+                           form.type === 'extra_hours' ? '⏱️ Overtime Hours' :
                            form.type}
                         </span>
                       </div>
@@ -1810,7 +1879,7 @@ const AdminDashboard = () => {
                             <span className="info-value">{form.extraHoursDate?.slice(0,10) || 'N/A'}</span>
                           </div>
                           <div className="info-row">
-                            <span className="info-label">Extra Hours:</span>
+                            <span className="info-label">Overtime Hours:</span>
                             <span className="info-value" style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked || 0} hours</span>
                           </div>
                           <div className="info-row">
@@ -1968,7 +2037,7 @@ const AdminDashboard = () => {
                            form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
                            form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
                            form.type === 'wfh' ? '🏠 Work From Home' :
-                           form.type === 'extra_hours' ? '⏱️ Extra Hours' :
+                           form.type === 'extra_hours' ? '⏱️ Overtime Hours' :
                            form.type}
                         </span>
                       </div>
@@ -1997,7 +2066,7 @@ const AdminDashboard = () => {
                             <span className="info-value">{form.extraHoursDate?.slice(0,10) || 'N/A'}</span>
                           </div>
                           <div className="info-row">
-                            <span className="info-label">Extra Hours:</span>
+                            <span className="info-label">Overtime Hours:</span>
                             <span className="info-value" style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked || 0} hours</span>
                           </div>
                           <div className="info-row">

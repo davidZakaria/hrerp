@@ -59,7 +59,8 @@ const AdminDashboard = () => {
     password: '', 
     department: '', 
     role: 'employee',
-    managedDepartments: []
+    managedDepartments: [],
+    employeeCode: ''
   });
   const [message, setMessage] = useState('');
 
@@ -74,7 +75,10 @@ const AdminDashboard = () => {
     email: '',
     department: '',
     role: 'employee',
-    managedDepartments: []
+    managedDepartments: [],
+    employeeCode: '',
+    password: '',
+    status: 'active'
   });
 
   // Available departments
@@ -251,7 +255,7 @@ const AdminDashboard = () => {
         { headers: { 'x-auth-token': token } }
       );
       setMessage('User created successfully');
-      setNewUser({ name: '', email: '', password: '', department: '', role: 'employee', managedDepartments: [] });
+      setNewUser({ name: '', email: '', password: '', department: '', role: 'employee', managedDepartments: [], employeeCode: '' });
       setShowCreateUserModal(false);
       fetchUsers();
     } catch (err) {
@@ -277,7 +281,10 @@ const AdminDashboard = () => {
       email: user.email,
       department: user.department,
       role: user.role,
-      managedDepartments: user.managedDepartments || []
+      managedDepartments: user.managedDepartments || [],
+      employeeCode: user.employeeCode || '',
+      password: '', // Empty - only fill if admin wants to change password
+      status: user.status || 'active'
     });
     setShowEditUserModal(true);
   };
@@ -2148,6 +2155,17 @@ const AdminDashboard = () => {
                 />
               </div>
               <div className="form-group-elegant">
+                <label className="form-label-elegant">Biometric Code (Employee ID)</label>
+                <input
+                  type="text"
+                  value={newUser.employeeCode}
+                  onChange={(e) => setNewUser({...newUser, employeeCode: e.target.value})}
+                  className="form-input-elegant"
+                  placeholder="Enter biometric/fingerprint device code"
+                />
+                <small style={{color: '#888', fontSize: '0.8rem'}}>This code must match the employee's ID in the biometric attendance system</small>
+              </div>
+              <div className="form-group-elegant">
                 <label className="form-label-elegant">Department</label>
                 <select
                   value={newUser.department}
@@ -2251,6 +2269,17 @@ const AdminDashboard = () => {
                 />
               </div>
               <div className="form-group-elegant">
+                <label className="form-label-elegant">Biometric Code (Employee ID)</label>
+                <input
+                  type="text"
+                  value={editUserData.employeeCode}
+                  onChange={(e) => setEditUserData({...editUserData, employeeCode: e.target.value})}
+                  className="form-input-elegant"
+                  placeholder="Enter biometric/fingerprint device code"
+                />
+                <small style={{color: '#888', fontSize: '0.8rem'}}>This code must match the employee's ID in the biometric attendance system</small>
+              </div>
+              <div className="form-group-elegant">
                 <label className="form-label-elegant">Department</label>
                 <select
                   value={editUserData.department}
@@ -2277,6 +2306,30 @@ const AdminDashboard = () => {
                     <option value="admin">Admin</option>
                   )}
                 </select>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Status</label>
+                <select
+                  value={editUserData.status}
+                  onChange={(e) => setEditUserData({...editUserData, status: e.target.value})}
+                  className="form-input-elegant"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive (Disabled)</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">New Password (leave empty to keep current)</label>
+                <input
+                  type="password"
+                  value={editUserData.password}
+                  onChange={(e) => setEditUserData({...editUserData, password: e.target.value})}
+                  className="form-input-elegant"
+                  placeholder="Enter new password (min 6 characters)"
+                  minLength="6"
+                />
+                <small style={{color: '#888', fontSize: '0.8rem'}}>Only fill this if you want to change the user's password</small>
               </div>
               {editUserData.role === 'manager' && (
                 <div className="form-group-elegant">

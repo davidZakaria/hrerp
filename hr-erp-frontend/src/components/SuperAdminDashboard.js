@@ -38,7 +38,8 @@ const SuperAdminDashboard = () => {
     vacationDaysLeft: 0,
     status: '',
     managedDepartments: [],
-    password: ''
+    password: '',
+    employeeCode: ''
   });
 
   // Create User state
@@ -51,7 +52,8 @@ const SuperAdminDashboard = () => {
     role: 'employee',
     status: 'active',
     vacationDaysLeft: 21,
-    managedDepartments: []
+    managedDepartments: [],
+    employeeCode: ''
   });
 
   // Form Management state
@@ -557,7 +559,8 @@ const SuperAdminDashboard = () => {
       vacationDaysLeft: user.vacationDaysLeft,
       status: user.status,
       managedDepartments: user.managedDepartments || [],
-      password: '' // Empty - only fill if admin wants to change password
+      password: '', // Empty - only fill if admin wants to change password
+      employeeCode: user.employeeCode || ''
     });
   };
 
@@ -626,7 +629,8 @@ const SuperAdminDashboard = () => {
           role: 'employee',
           status: 'active',
           vacationDaysLeft: 21,
-          managedDepartments: []
+          managedDepartments: [],
+          employeeCode: ''
         });
         setShowCreateUserModal(false);
         fetchUsers();
@@ -1292,6 +1296,17 @@ const SuperAdminDashboard = () => {
                           onChange={(e) => setUserEdit({...userEdit, email: e.target.value})}
                           className="form-input-elegant"
                         />
+                      </div>
+                      <div className="form-group-elegant">
+                        <label className="form-label-elegant">Biometric Code (Employee ID)</label>
+                        <input
+                          type="text"
+                          value={userEdit.employeeCode}
+                          onChange={(e) => setUserEdit({...userEdit, employeeCode: e.target.value})}
+                          className="form-input-elegant"
+                          placeholder="Enter biometric/fingerprint device code"
+                        />
+                        <small style={{color: '#888', fontSize: '0.8rem'}}>This code must match the employee's ID in the biometric attendance system</small>
                       </div>
                       <div className="form-group-elegant">
                         <label className="form-label-elegant">Department</label>
@@ -2702,6 +2717,18 @@ const SuperAdminDashboard = () => {
                   required
                   minLength="6"
                 />
+              </div>
+              
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Biometric Code (Employee ID)</label>
+                <input
+                  type="text"
+                  value={newUser.employeeCode}
+                  onChange={(e) => setNewUser({...newUser, employeeCode: e.target.value})}
+                  className="form-input-elegant"
+                  placeholder="Enter biometric/fingerprint device code"
+                />
+                <small style={{color: '#888', fontSize: '0.8rem'}}>This code must match the employee's ID in the biometric attendance system</small>
               </div>
               
               <div className="form-group-elegant">

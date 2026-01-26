@@ -194,12 +194,20 @@ router.post('/', auth, async (req, res) => {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
-    const { name, email, password, department, role, status, managedDepartments } = req.body;
+    const { name, email, password, department, role, status, managedDepartments, employeeCode } = req.body;
 
     // Check if user exists
     let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ msg: 'User already exists' });
+    }
+
+    // Check if employeeCode already exists (if provided)
+    if (employeeCode) {
+      const existingCode = await User.findOne({ employeeCode });
+      if (existingCode) {
+        return res.status(400).json({ msg: 'Biometric code already in use by another user' });
+      }
     }
 
     // Create new user
@@ -212,7 +220,8 @@ router.post('/', auth, async (req, res) => {
       status: status || 'active',
       vacationDaysLeft: 21,
       excuseHoursLeft: 2,
-      managedDepartments: (role === 'manager' && managedDepartments) ? managedDepartments : []
+      managedDepartments: (role === 'manager' && managedDepartments) ? managedDepartments : [],
+      employeeCode: employeeCode || undefined
     });
 
     // Hash password
@@ -235,7 +244,8 @@ router.post('/', auth, async (req, res) => {
         department: user.department,
         role: user.role,
         status: user.status,
-        managedDepartments: user.managedDepartments
+        managedDepartments: user.managedDepartments,
+        employeeCode: user.employeeCode
       },
       ipAddress: req.ip || req.connection.remoteAddress,
       userAgent: req.get('User-Agent'),
@@ -342,7 +352,7 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
-    const { name, email, department, role, managedDepartments, password, status } = req.body;
+    const { name, email, department, role, managedDepartments, password, status, employeeCode } = req.body;
 
     const user = await User.findById(req.params.userId);
     if (!user) {
@@ -357,12 +367,25 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
       }
     }
 
+    // Check if employeeCode is already taken by another user
+    if (employeeCode && employeeCode !== user.employeeCode) {
+      const existingCode = await User.findOne({ employeeCode, _id: { $ne: user._id } });
+      if (existingCode) {
+        return res.status(400).json({ msg: 'Biometric code already in use by another user' });
+      }
+    }
+
     // Update user fields
     user.name = name;
     user.email = email;
     user.department = department;
     user.role = role;
     user.managedDepartments = (role === 'manager' && managedDepartments) ? managedDepartments : [];
+    
+    // Update employeeCode (biometric code)
+    if (employeeCode !== undefined) {
+      user.employeeCode = employeeCode || undefined;
+    }
     
     // Update status if provided
     if (status && ['active', 'inactive', 'pending'].includes(status)) {
@@ -459,12 +482,21 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
       vacationDaysLeft,
       status,
       modificationReason,
-      password
+      password,
+      employeeCode
     } = req.body;
 
     const user = await User.findById(req.params.userId);
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
+    }
+
+    // Check if employeeCode is already taken by another user
+    if (employeeCode && employeeCode !== user.employeeCode) {
+      const existingCode = await User.findOne({ employeeCode, _id: { $ne: user._id } });
+      if (existingCode) {
+        return res.status(400).json({ msg: 'Biometric code already in use by another user' });
+      }
     }
 
     // Create modification history entry
@@ -476,6 +508,7 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     if (vacationDaysLeft !== user.vacationDaysLeft) modifications.push({ field: 'vacationDaysLeft', oldValue: user.vacationDaysLeft, newValue: vacationDaysLeft });
     if (status !== user.status) modifications.push({ field: 'status', oldValue: user.status, newValue: status });
     if (password && password.trim().length >= 6) modifications.push({ field: 'password', oldValue: '***', newValue: '*** (changed)' });
+    if (employeeCode !== undefined && employeeCode !== user.employeeCode) modifications.push({ field: 'employeeCode', oldValue: user.employeeCode || 'Not set', newValue: employeeCode || 'Removed' });
 
     // Check if vacation days are being modified for separate audit logging
     const oldVacationDays = user.vacationDaysLeft;
@@ -488,6 +521,11 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     user.role = role;
     user.vacationDaysLeft = vacationDaysLeft;
     user.status = status;
+    
+    // Update employeeCode (biometric code)
+    if (employeeCode !== undefined) {
+      user.employeeCode = employeeCode || undefined;
+    }
     
     // Update password if provided (super admin can reset user password)
     if (password && password.trim().length >= 6) {

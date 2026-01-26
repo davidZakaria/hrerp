@@ -62,6 +62,13 @@ const SuperAdminDashboard = () => {
   const [formEditData, setFormEditData] = useState({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
+  // Password Reset state
+  const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
+  const [passwordResetUser, setPasswordResetUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+
   // Available departments
   const availableDepartments = [
     'Human Resources',
@@ -617,6 +624,53 @@ const SuperAdminDashboard = () => {
       password: '', // Empty - only fill if admin wants to change password
       employeeCode: user.employeeCode || ''
     });
+  };
+
+  // Open password reset modal
+  const openPasswordResetModal = (user) => {
+    setPasswordResetUser(user);
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowPasswordResetModal(true);
+  };
+
+  // Handle password reset
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    setPasswordResetLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/api/users/${passwordResetUser._id}`, 
+        { 
+          name: passwordResetUser.name,
+          email: passwordResetUser.email,
+          department: passwordResetUser.department,
+          role: passwordResetUser.role,
+          password: newPassword 
+        },
+        { headers: { 'x-auth-token': token } }
+      );
+      setSuccess(`Password reset successfully for ${passwordResetUser.name}`);
+      setShowPasswordResetModal(false);
+      setPasswordResetUser(null);
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setError(err.response?.data?.msg || 'Error resetting password');
+    } finally {
+      setPasswordResetLoading(false);
+    }
   };
 
   const handleUserUpdate = async () => {
@@ -1313,6 +1367,17 @@ const SuperAdminDashboard = () => {
                           >
                             <span className="btn-icon">✏️</span>
                             Edit User
+                          </button>
+                          <button 
+                            className="btn-elegant"
+                            onClick={() => openPasswordResetModal(user)}
+                            style={{ 
+                              background: 'linear-gradient(135deg, #ff9800, #f57c00)',
+                              color: 'white'
+                            }}
+                          >
+                            <span className="btn-icon">🔑</span>
+                            Reset Password
                           </button>
                           <button 
                             className="btn-elegant btn-view-user"
@@ -2740,6 +2805,74 @@ const SuperAdminDashboard = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Password Reset Modal */}
+      {showPasswordResetModal && (
+        <div className="modal-elegant" onClick={() => setShowPasswordResetModal(false)}>
+          <div className="modal-content-elegant" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+            <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              🔑 Reset Password
+            </h2>
+            <p style={{ color: '#888', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+              Reset password for: <strong style={{ color: '#fff' }}>{passwordResetUser?.name}</strong>
+              <br />
+              <span style={{ fontSize: '0.85rem' }}>{passwordResetUser?.email}</span>
+            </p>
+            <form className="form-elegant" onSubmit={handlePasswordReset}>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">New Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="form-input-elegant"
+                  placeholder="Enter new password (min 6 characters)"
+                  minLength="6"
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Confirm Password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="form-input-elegant"
+                  placeholder="Confirm new password"
+                  minLength="6"
+                  required
+                />
+              </div>
+              {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                <p style={{ color: '#f44336', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                  ⚠️ Passwords do not match
+                </p>
+              )}
+              <div className="action-buttons" style={{ marginTop: '1.5rem' }}>
+                <button 
+                  type="submit" 
+                  className="btn-elegant btn-success"
+                  disabled={passwordResetLoading || newPassword !== confirmPassword || newPassword.length < 6}
+                  style={{ 
+                    opacity: (passwordResetLoading || newPassword !== confirmPassword || newPassword.length < 6) ? 0.6 : 1 
+                  }}
+                >
+                  {passwordResetLoading ? '⏳ Resetting...' : '✅ Reset Password'}
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-elegant"
+                  onClick={() => setShowPasswordResetModal(false)}
+                  disabled={passwordResetLoading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

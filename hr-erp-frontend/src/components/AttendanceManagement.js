@@ -533,24 +533,30 @@ const AttendanceManagement = () => {
 
             {/* Summary View */}
             {activeView === 'summary' && (
-              <div style={{ overflowX: 'auto' }}>
-                <table className="table-elegant">
+              <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
+                <table style={{ 
+                  width: '100%', 
+                  minWidth: '1200px',
+                  borderCollapse: 'separate',
+                  borderSpacing: '0',
+                  fontSize: '0.9rem'
+                }}>
                   <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Code</th>
-                      <th>Department</th>
-                      <th>Total Days</th>
-                      <th>Present</th>
-                      <th>Late</th>
-                      <th>Absent</th>
-                      <th>On Leave</th>
-                      <th>WFH</th>
-                      <th>Excused</th>
-                      <th>Fingerprint Miss</th>
-                      <th>Deduction (days)</th>
-                      <th>Overtime (min)</th>
-                      <th>Actions</th>
+                    <tr style={{ background: 'linear-gradient(135deg, #1a202c 0%, #2d3748 100%)' }}>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#fff', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '150px' }}>Employee</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fff', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '60px' }}>Code</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'left', color: '#fff', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '120px' }}>Department</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fff', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '50px' }}>Days</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#4ade80', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '60px' }}>Present</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fb923c', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '50px' }}>Late</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#f87171', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '55px' }}>Absent</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#c084fc', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '55px' }}>Leave</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#38bdf8', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '50px' }}>WFH</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#60a5fa', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '60px' }}>Excused</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fbbf24', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '70px' }}>FP Miss</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#f87171', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '70px' }}>Deduct</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#4ade80', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '70px' }}>OT</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fff', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '90px' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -561,73 +567,85 @@ const AttendanceManagement = () => {
                         emp.user.department.toLowerCase().includes(searchQuery.toLowerCase())
                       )
                       .map((emp, idx) => (
-                      <tr key={idx}>
-                        <td>{emp.user.name}</td>
-                        <td><code>{emp.user.employeeCode || 'N/A'}</code></td>
-                        <td>{emp.user.department}</td>
-                        <td>{emp.stats.totalDays}</td>
-                        <td style={{ color: '#2E7D32' }}>{emp.stats.present}</td>
-                        <td style={{ color: '#EF6C00' }}>{emp.stats.late}</td>
-                        <td style={{ color: '#C62828' }}>{emp.stats.unexcusedAbsences}</td>
-                        <td style={{ color: '#9C27B0' }}>{emp.stats.onLeave || 0}</td>
-                        <td>
+                      <tr key={idx} style={{ 
+                        background: idx % 2 === 0 ? 'rgba(30, 41, 59, 0.5)' : 'rgba(15, 23, 42, 0.5)',
+                        borderBottom: '1px solid #334155'
+                      }}>
+                        <td style={{ padding: '12px 16px', color: '#e2e8f0', fontWeight: '500' }}>{emp.user.name}</td>
+                        <td style={{ padding: '12px 10px', textAlign: 'center' }}>
+                          <code style={{ background: '#334155', color: '#94a3b8', padding: '2px 6px', borderRadius: '4px', fontSize: '0.85rem' }}>
+                            {emp.user.employeeCode || 'N/A'}
+                          </code>
+                        </td>
+                        <td style={{ padding: '12px 10px', color: '#94a3b8', fontSize: '0.85rem' }}>{emp.user.department}</td>
+                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#cbd5e1', fontWeight: '600' }}>{emp.stats.totalDays}</td>
+                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#4ade80', fontWeight: '600', fontSize: '1rem' }}>{emp.stats.present}</td>
+                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#fb923c', fontWeight: '600', fontSize: '1rem' }}>{emp.stats.late}</td>
+                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#f87171', fontWeight: '600', fontSize: '1rem' }}>{emp.stats.unexcusedAbsences}</td>
+                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#c084fc', fontWeight: '600', fontSize: '1rem' }}>{emp.stats.onLeave || 0}</td>
+                        <td style={{ padding: '12px 10px', textAlign: 'center' }}>
                           {(emp.stats.wfh || 0) > 0 ? (
                             <span style={{ 
-                              background: '#E1F5FE', 
-                              color: '#0277BD', 
+                              background: 'rgba(56, 189, 248, 0.2)', 
+                              color: '#38bdf8', 
                               padding: '4px 8px', 
                               borderRadius: '4px',
                               fontWeight: 'bold',
-                              fontSize: '0.85rem'
+                              fontSize: '0.9rem'
                             }}>
                               🏠 {emp.stats.wfh}
                             </span>
                           ) : (
-                            <span style={{ color: '#666' }}>0</span>
+                            <span style={{ color: '#64748b' }}>0</span>
                           )}
                         </td>
-                        <td style={{ color: '#1565C0' }}>{emp.stats.excused || 0}</td>
-                        <td style={{ 
-                          color: (emp.stats.fingerprintMisses || 0) > 0 ? '#F44336' : '#666', 
-                          fontWeight: (emp.stats.fingerprintMisses || 0) > 0 ? 'bold' : 'normal' 
-                        }}>
-                          {emp.stats.fingerprintMisses || 0}
+                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#60a5fa', fontWeight: '600', fontSize: '1rem' }}>{emp.stats.excused || 0}</td>
+                        <td style={{ padding: '12px 10px', textAlign: 'center' }}>
+                          {(emp.stats.fingerprintMisses || 0) > 0 ? (
+                            <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '1rem' }}>
+                              {emp.stats.fingerprintMisses}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#64748b' }}>0</span>
+                          )}
                         </td>
-                        <td>
+                        <td style={{ padding: '12px 10px', textAlign: 'center' }}>
                           {(emp.stats.totalFingerprintDeduction || 0) > 0 ? (
                             <span style={{ 
-                              background: '#FFEBEE', 
-                              color: '#C62828', 
+                              background: 'rgba(248, 113, 113, 0.2)', 
+                              color: '#f87171', 
                               padding: '4px 8px', 
                               borderRadius: '4px',
                               fontWeight: 'bold',
-                              fontSize: '0.85rem'
+                              fontSize: '0.9rem'
                             }}>
                               -{emp.stats.totalFingerprintDeduction}
                             </span>
                           ) : (
-                            <span style={{ color: '#666' }}>0</span>
+                            <span style={{ color: '#64748b' }}>0</span>
                           )}
                         </td>
-                        <td style={{ color: (emp.stats.totalMinutesOvertime || 0) > 0 ? '#4CAF50' : '#666', fontWeight: (emp.stats.totalMinutesOvertime || 0) > 0 ? 'bold' : 'normal' }}>
+                        <td style={{ padding: '12px 10px', textAlign: 'center' }}>
                           {(emp.stats.totalMinutesOvertime || 0) > 0 ? (
                             <span style={{ 
-                              background: '#E8F5E9', 
-                              color: '#2E7D32', 
+                              background: 'rgba(74, 222, 128, 0.2)', 
+                              color: '#4ade80', 
                               padding: '4px 8px', 
                               borderRadius: '4px',
                               fontWeight: 'bold',
-                              fontSize: '0.85rem'
+                              fontSize: '0.9rem'
                             }}>
                               +{emp.stats.totalMinutesOvertime}
                             </span>
-                          ) : '0'}
+                          ) : (
+                            <span style={{ color: '#64748b' }}>0</span>
+                          )}
                         </td>
-                        <td>
+                        <td style={{ padding: '12px 10px', textAlign: 'center' }}>
                           <button
                             onClick={() => viewEmployeeDetails(emp)}
                             className="btn-elegant btn-info"
-                            style={{ padding: '0.3rem 0.8rem', fontSize: '0.85rem' }}
+                            style={{ padding: '6px 12px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
                           >
                             View Details
                           </button>

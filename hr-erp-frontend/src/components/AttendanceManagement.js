@@ -673,11 +673,11 @@ const AttendanceManagement = () => {
                     return (
                       <div key={idx} style={{ 
                         marginBottom: '2rem', 
-                        background: '#fff', 
+                        background: '#ffffff', 
                         borderRadius: '12px', 
                         padding: '1.5rem',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        border: '1px solid #e0e0e0'
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        border: '1px solid #d0d0d0'
                       }}>
                         {/* Employee Header */}
                         <div style={{ 
@@ -686,49 +686,51 @@ const AttendanceManagement = () => {
                           alignItems: 'center',
                           marginBottom: '1rem',
                           paddingBottom: '1rem',
-                          borderBottom: '2px solid #f0f0f0'
+                          borderBottom: '2px solid #e0e0e0',
+                          flexWrap: 'wrap',
+                          gap: '1rem'
                         }}>
                           <div>
-                            <h4 style={{ margin: 0, color: '#333', fontSize: '1.2rem' }}>
+                            <h4 style={{ margin: 0, color: '#1a1a1a', fontSize: '1.3rem', fontWeight: '700' }}>
                               {emp.user.name}
                             </h4>
-                            <div style={{ color: '#666', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                              <code style={{ background: '#f5f5f5', padding: '2px 6px', borderRadius: '4px' }}>
+                            <div style={{ color: '#555555', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                              <code style={{ background: '#e8e8e8', color: '#333333', padding: '3px 8px', borderRadius: '4px', fontWeight: '600' }}>
                                 {emp.user.employeeCode || 'N/A'}
                               </code>
-                              <span style={{ margin: '0 0.5rem' }}>•</span>
-                              {emp.user.department}
-                              <span style={{ margin: '0 0.5rem' }}>•</span>
-                              Schedule: {emp.user.workSchedule ? `${emp.user.workSchedule.startTime} - ${emp.user.workSchedule.endTime}` : 'Not set'}
+                              <span style={{ margin: '0 0.5rem', color: '#888888' }}>•</span>
+                              <span style={{ color: '#444444' }}>{emp.user.department}</span>
+                              <span style={{ margin: '0 0.5rem', color: '#888888' }}>•</span>
+                              <span style={{ color: '#666666' }}>Schedule: {emp.user.workSchedule ? `${emp.user.workSchedule.startTime} - ${emp.user.workSchedule.endTime}` : 'Default (10:00-19:00)'}</span>
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            <span style={{ background: '#E8F5E9', color: '#2E7D32', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>
+                            <span style={{ background: '#E8F5E9', color: '#2E7D32', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '600' }}>
                               ✓ {emp.stats.present} Present
                             </span>
-                            <span style={{ background: '#FFF3E0', color: '#EF6C00', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>
+                            <span style={{ background: '#FFF3E0', color: '#E65100', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '600' }}>
                               ⏰ {emp.stats.late} Late
                             </span>
-                            <span style={{ background: '#FFEBEE', color: '#C62828', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>
+                            <span style={{ background: '#FFEBEE', color: '#C62828', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '600' }}>
                               ✗ {emp.stats.unexcusedAbsences} Absent
                             </span>
                             {emp.stats.onLeave > 0 && (
-                              <span style={{ background: '#F3E5F5', color: '#6A1B9A', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>
+                              <span style={{ background: '#F3E5F5', color: '#6A1B9A', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '600' }}>
                                 🏖️ {emp.stats.onLeave} On Leave
                               </span>
                             )}
                             {(emp.stats.wfh || 0) > 0 && (
-                              <span style={{ background: '#E1F5FE', color: '#0277BD', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                              <span style={{ background: '#E1F5FE', color: '#0277BD', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>
                                 🏠 {emp.stats.wfh} WFH
                               </span>
                             )}
                             {(emp.stats.totalFingerprintDeduction || 0) > 0 && (
-                              <span style={{ background: '#FFCDD2', color: '#B71C1C', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                              <span style={{ background: '#FFCDD2', color: '#B71C1C', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>
                                 ⚠️ -{emp.stats.totalFingerprintDeduction} days deduction
                               </span>
                             )}
                             {(emp.stats.totalMinutesOvertime || 0) > 0 && (
-                              <span style={{ background: '#C8E6C9', color: '#1B5E20', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                              <span style={{ background: '#C8E6C9', color: '#1B5E20', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>
                                 ⏱️ +{Math.round(emp.stats.totalMinutesOvertime / 60 * 10) / 10}h overtime
                               </span>
                             )}
@@ -764,18 +766,18 @@ const AttendanceManagement = () => {
 
                         {/* Daily Records Table */}
                         <div style={{ overflowX: 'auto' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                             <thead>
-                              <tr style={{ background: '#f5f5f5' }}>
-                                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Date</th>
-                                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Day</th>
-                                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Clock In</th>
-                                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Clock Out</th>
-                                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Status</th>
-                                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Late</th>
-                                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Overtime</th>
-                                <th style={{ padding: '10px', textAlign: 'center', borderBottom: '2px solid #ddd' }}>Deduction</th>
-                                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Notes</th>
+                              <tr style={{ background: '#2d3748' }}>
+                                <th style={{ padding: '12px 10px', textAlign: 'left', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Date</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'left', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Day</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Clock In</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Clock Out</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Status</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Late</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Overtime</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Deduction</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'left', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Notes</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -786,58 +788,65 @@ const AttendanceManagement = () => {
                                 
                                 return (
                                   <tr key={rIdx} style={{ 
-                                    background: isWeekend ? '#f9f9f9' : (rIdx % 2 === 0 ? '#fff' : '#fafafa'),
-                                    borderBottom: '1px solid #eee'
+                                    background: isWeekend ? '#f0f0f0' : (rIdx % 2 === 0 ? '#ffffff' : '#f8f9fa'),
+                                    borderBottom: '1px solid #e0e0e0'
                                   }}>
-                                    <td style={{ padding: '8px' }}>{formatDate(record.date)}</td>
-                                    <td style={{ padding: '8px', color: isWeekend ? '#9e9e9e' : '#333' }}>{dayName}</td>
-                                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                                    <td style={{ padding: '10px', color: '#1a1a1a', fontWeight: '500' }}>{formatDate(record.date)}</td>
+                                    <td style={{ padding: '10px', color: isWeekend ? '#888888' : '#333333', fontWeight: '500' }}>{dayName}</td>
+                                    <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {record.missedClockIn ? (
-                                        <span style={{ color: '#F44336', fontWeight: 'bold' }}>❌ MISSED</span>
+                                        <span style={{ color: '#D32F2F', fontWeight: 'bold' }}>❌ MISSED</span>
                                       ) : (
-                                        <span style={{ fontFamily: 'monospace' }}>{record.clockIn}</span>
+                                        <span style={{ fontFamily: 'monospace', color: '#1a1a1a', fontWeight: '600', fontSize: '0.95rem' }}>{record.clockIn || '-'}</span>
                                       )}
                                     </td>
-                                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                                    <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {record.missedClockOut ? (
-                                        <span style={{ color: '#FF9800', fontWeight: 'bold' }}>⚠️ MISSED</span>
+                                        <span style={{ color: '#F57C00', fontWeight: 'bold' }}>⚠️ MISSED</span>
                                       ) : (
-                                        <span style={{ fontFamily: 'monospace' }}>{record.clockOut || '-'}</span>
+                                        <span style={{ fontFamily: 'monospace', color: '#1a1a1a', fontWeight: '600', fontSize: '0.95rem' }}>{record.clockOut || '-'}</span>
                                       )}
                                     </td>
-                                    <td style={{ padding: '8px', textAlign: 'center' }}>{getStatusBadge(record.status)}</td>
-                                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                                    <td style={{ padding: '10px', textAlign: 'center' }}>{getStatusBadge(record.status)}</td>
+                                    <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {record.minutesLate > 0 ? (
-                                        <span style={{ color: '#F44336', fontWeight: 'bold' }}>{record.minutesLate}m</span>
-                                      ) : '-'}
+                                        <span style={{ color: '#D32F2F', fontWeight: 'bold', fontSize: '0.95rem' }}>{record.minutesLate}m</span>
+                                      ) : (
+                                        <span style={{ color: '#888888' }}>-</span>
+                                      )}
                                     </td>
-                                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                                    <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {record.minutesOvertime > 0 ? (
-                                        <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>+{record.minutesOvertime}m</span>
-                                      ) : '-'}
+                                        <span style={{ color: '#2E7D32', fontWeight: 'bold', fontSize: '0.95rem' }}>+{record.minutesOvertime}m</span>
+                                      ) : (
+                                        <span style={{ color: '#888888' }}>-</span>
+                                      )}
                                     </td>
-                                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                                    <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {(record.fingerprintDeduction || 0) > 0 ? (
                                         <span style={{ 
                                           background: '#FFEBEE', 
                                           color: '#C62828', 
-                                          padding: '2px 8px', 
+                                          padding: '4px 10px', 
                                           borderRadius: '4px',
                                           fontWeight: 'bold',
-                                          fontSize: '0.8rem'
+                                          fontSize: '0.85rem'
                                         }}>
                                           -{record.fingerprintDeduction}d
                                         </span>
-                                      ) : '-'}
+                                      ) : (
+                                        <span style={{ color: '#888888' }}>-</span>
+                                      )}
                                     </td>
-                                    <td style={{ padding: '8px', fontSize: '0.85rem', color: '#666' }}>
+                                    <td style={{ padding: '10px', fontSize: '0.85rem' }}>
                                       {record.relatedForm && (
                                         <span style={{ 
                                           background: record.status === 'on_leave' ? '#F3E5F5' : '#E3F2FD',
                                           color: record.status === 'on_leave' ? '#6A1B9A' : '#1565C0',
-                                          padding: '2px 6px',
+                                          padding: '4px 8px',
                                           borderRadius: '4px',
-                                          marginRight: '4px'
+                                          marginRight: '4px',
+                                          fontWeight: '500'
                                         }}>
                                           {record.status === 'on_leave' ? '🏖️ Approved Leave' : '✓ Excused'}
                                         </span>
@@ -846,9 +855,10 @@ const AttendanceManagement = () => {
                                         <span style={{ 
                                           background: '#FFF3E0', 
                                           color: '#E65100', 
-                                          padding: '2px 6px',
+                                          padding: '4px 8px',
                                           borderRadius: '4px',
-                                          fontSize: '0.8rem'
+                                          fontSize: '0.8rem',
+                                          fontWeight: '500'
                                         }}>
                                           ⚠️ Forgot {record.fingerprintMissType === 'both' ? 'In & Out' : record.fingerprintMissType === 'clock_in' ? 'Clock In' : 'Clock Out'}
                                         </span>

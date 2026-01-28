@@ -540,17 +540,23 @@ router.get('/monthly-report/:month', auth, async (req, res) => {
                 stats.fingerprintMisses++;
             }
             
-            if (record.status === 'present') stats.present++;
-            else if (record.status === 'late') stats.late++;
-            else if (record.status === 'absent') stats.absent++;
-            else if (record.status === 'excused') stats.excused++;
-            else if (record.status === 'on_leave') stats.onLeave++;
-            else if (record.status === 'wfh') stats.wfh++;
-            
-            if (record.isExcused) {
-                stats.excused++;
+            // Count present (includes both on-time and late arrivals)
+            if (record.status === 'present') {
+                stats.present++;
+            } else if (record.status === 'late') {
+                stats.present++; // Late employees ARE present
+                stats.late++;
             } else if (record.status === 'absent') {
-                stats.unexcusedAbsences++;
+                stats.absent++;
+                if (!record.isExcused) {
+                    stats.unexcusedAbsences++;
+                }
+            } else if (record.status === 'excused') {
+                stats.excused++;
+            } else if (record.status === 'on_leave') {
+                stats.onLeave++;
+            } else if (record.status === 'wfh') {
+                stats.wfh++;
             }
         }
         

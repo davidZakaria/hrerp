@@ -318,16 +318,31 @@ function calculateAttendanceStatus(clockIn, clockOut, workSchedule, gracePeriodM
     const missedClockIn = !clockIn;
     const missedClockOut = !clockOut;
     
-    if (!clockIn) {
+    // Case 1: No clock-in AND no clock-out = truly absent
+    if (!clockIn && !clockOut) {
         return { 
             status: 'absent', 
             minutesLate: 0, 
             minutesOvertime: 0,
             missedClockIn: true,
-            missedClockOut: missedClockOut
+            missedClockOut: true
         };
     }
     
+    // Case 2: Has clock-out but no clock-in = present but forgot to clock in
+    // Treat as late (since we don't know actual arrival time, assume they were late)
+    if (!clockIn && clockOut) {
+        const minutesOvertime = calculateMinutesOvertime(clockOut, workSchedule.endTime);
+        return { 
+            status: 'late', 
+            minutesLate: 0, // Can't calculate without clock-in
+            minutesOvertime: minutesOvertime,
+            missedClockIn: true,
+            missedClockOut: false
+        };
+    }
+    
+    // Case 3: Has clock-in (with or without clock-out)
     const minutesLate = calculateMinutesLate(clockIn, workSchedule.startTime, gracePeriodMinutes);
     const minutesOvertime = calculateMinutesOvertime(clockOut, workSchedule.endTime);
     

@@ -703,5 +703,110 @@ router.get('/months', auth, async (req, res) => {
     }
 });
 
+/**
+ * GET /api/attendance/data-summary/:month
+ * Get detailed data summary for verification
+ * Admin only
+ */
+router.get('/data-summary/:month', auth, async (req, res) => {
+    try {
+        const admin = await User.findById(req.user.id);
+        if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
+            return res.status(403).json({ msg: 'Access denied. Admin only.' });
+        }
+        
+        const { month } = req.params;
+        
+        // Get all users with employee codes
+        const users = await User.find({ 
+            employeeCode: { $exists: true, $ne: null } 
+        }).select('name employeeCode department');
+        
+        // Get all attendance records for the month
+        const records = await Attendance.find({ month: month })
+            .populate('user', 'name employeeCode department')
+            .sort({ date: 1 });
+        
+        // Build detailed summary per employee
+        const employeeSummaries = [];
+        
+        for (const user of users) {
+            const userRecords = records.filter(r => 
+                r.user && r.user._id.toString() === user._id.toString()
+            );
+            
+            if (userRecords.length === 0) continue;
+            
+            const summary = {
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    employeeCode: user.employeeCode,
+                    department: user.department
+                },
+                totalRecords: userRecords.length,
+                daysWithClockIn: 0,
+                daysWithClockOut: 0,
+                daysMissedClockIn: 0,
+                daysMissedClockOut: 0,
+                daysPresent: 0,
+                daysLate: 0,
+                daysAbsent: 0,
+                totalMinutesLate: 0,
+                totalMinutesOvertime: 0,
+                totalDeduction: 0,
+                dailyRecords: []
+            };
+            
+            for (const record of userRecords) {
+                const dayData = {
+                    date: record.date,
+                    day: getDayName(record.date),
+                    clockIn: record.clockIn || null,
+                    clockOut: record.clockOut || null,
+                    status: record.status,
+                    minutesLate: record.minutesLate || 0,
+                    minutesOvertime: record.minutesOvertime || 0,
+                    deduction: record.fingerprintDeduction || 0,
+                    missedClockIn: record.missedClockIn || false,
+                    missedClockOut: record.missedClockOut || false
+                };
+                
+                summary.dailyRecords.push(dayData);
+                
+                if (record.clockIn) summary.daysWithClockIn++;
+                if (record.clockOut) summary.daysWithClockOut++;
+                if (record.missedClockIn) summary.daysMissedClockIn++;
+                if (record.missedClockOut) summary.daysMissedClockOut++;
+                
+                if (record.status === 'present') {
+                    summary.daysPresent++;
+                } else if (record.status === 'late') {
+                    summary.daysPresent++;
+                    summary.daysLate++;
+                } else if (record.status === 'absent') {
+                    summary.daysAbsent++;
+                }
+                
+                summary.totalMinutesLate += record.minutesLate || 0;
+                summary.totalMinutesOvertime += record.minutesOvertime || 0;
+                summary.totalDeduction += record.fingerprintDeduction || 0;
+            }
+            
+            employeeSummaries.push(summary);
+        }
+        
+        res.json({
+            month,
+            totalEmployeesWithData: employeeSummaries.length,
+            summaries: employeeSummaries
+        });
+        
+    } catch (error) {
+        console.error('Error getting data summary:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+});
+
 module.exports = router;
 

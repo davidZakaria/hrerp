@@ -314,24 +314,35 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                         let status = 'present';
                         let minutesLate = 0;
                         let minutesOvertime = 0;
-                        let missedClockIn = false;
-                        let missedClockOut = false;
+                        let missedClockIn = !record.clockIn;
+                        let missedClockOut = !record.clockOut;
                         let isExcused = false;
                         let relatedForm = null;
                         
-                        if (user.workSchedule && user.workSchedule.startTime) {
-                            const attendanceStatus = calculateAttendanceStatus(
-                                record.clockIn,
-                                record.clockOut,
-                                user.workSchedule,
-                                15 // 15-minute grace period
-                            );
-                            status = attendanceStatus.status;
-                            minutesLate = attendanceStatus.minutesLate;
-                            minutesOvertime = attendanceStatus.minutesOvertime;
-                            missedClockIn = attendanceStatus.missedClockIn;
-                            missedClockOut = attendanceStatus.missedClockOut;
-                        }
+                        // Default work schedule if user doesn't have one configured
+                        // Standard Egyptian office hours: 10:00 AM - 7:00 PM
+                        const defaultWorkSchedule = {
+                            startTime: '10:00',
+                            endTime: '19:00'
+                        };
+                        
+                        // Use user's work schedule or default
+                        const workSchedule = (user.workSchedule && user.workSchedule.startTime) 
+                            ? user.workSchedule 
+                            : defaultWorkSchedule;
+                        
+                        // Calculate attendance status using work schedule
+                        const attendanceStatus = calculateAttendanceStatus(
+                            record.clockIn,
+                            record.clockOut,
+                            workSchedule,
+                            15 // 15-minute grace period
+                        );
+                        status = attendanceStatus.status;
+                        minutesLate = attendanceStatus.minutesLate;
+                        minutesOvertime = attendanceStatus.minutesOvertime;
+                        missedClockIn = attendanceStatus.missedClockIn;
+                        missedClockOut = attendanceStatus.missedClockOut;
                         
                         // Cross-reference with approved forms FIRST (before fingerprint deduction)
                         // This ensures WFH days don't get fingerprint deductions

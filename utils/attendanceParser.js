@@ -82,24 +82,23 @@ function parseAttendanceRow(row, rowNumber) {
         throw new Error(`Row ${rowNumber}: Missing Date`);
     }
     
-    if (!clockIn) {
-        throw new Error(`Row ${rowNumber}: Missing Clock In time`);
-    }
-    
     // Parse and validate date
     const parsedDate = parseDate(date);
     if (!parsedDate) {
         throw new Error(`Row ${rowNumber}: Invalid date format: ${date}`);
     }
     
-    // Parse times
-    const parsedClockIn = parseTime(clockIn);
-    if (!parsedClockIn) {
-        throw new Error(`Row ${rowNumber}: Invalid Clock In time format: ${clockIn}`);
+    // Parse times - clockIn can be empty (indicates absent or no scan)
+    let parsedClockIn = null;
+    if (clockIn && String(clockIn).trim()) {
+        parsedClockIn = parseTime(clockIn);
+        if (!parsedClockIn) {
+            console.warn(`Row ${rowNumber}: Invalid Clock In time format: ${clockIn}, setting as null`);
+        }
     }
     
     let parsedClockOut = null;
-    if (clockOut) {
+    if (clockOut && String(clockOut).trim()) {
         parsedClockOut = parseTime(clockOut);
         if (!parsedClockOut) {
             console.warn(`Row ${rowNumber}: Invalid Clock Out time format: ${clockOut}, setting as null`);
@@ -112,6 +111,7 @@ function parseAttendanceRow(row, rowNumber) {
         date: parsedDate,
         clockIn: parsedClockIn,
         clockOut: parsedClockOut,
+        noClockData: !parsedClockIn && !parsedClockOut, // Flag for rows with no clock data
         rawRow: row,
         rowNumber
     };
@@ -132,7 +132,47 @@ function parseDate(dateValue) {
     
     const dateStr = String(dateValue).trim();
     
-    // Try parsing different date formats
+    // Month name to number mapping
+    const monthNames = {
+        'jan': 0, 'january': 0,
+        'feb': 1, 'february': 1,
+        'mar': 2, 'march': 2,
+        'apr': 3, 'april': 3,
+        'may': 4,
+        'jun': 5, 'june': 5,
+        'jul': 6, 'july': 6,
+        'aug': 7, 'august': 7,
+        'sep': 8, 'september': 8,
+        'oct': 9, 'october': 9,
+        'nov': 10, 'november': 10,
+        'dec': 11, 'december': 11
+    };
+    
+    // Handle DD-MMM-YY or DD-MMM-YYYY format (e.g., "26-Dec-25" or "26-Dec-2025")
+    const monthNamePattern = /^(\d{1,2})-([A-Za-z]{3,9})-(\d{2,4})$/;
+    const monthNameMatch = dateStr.match(monthNamePattern);
+    if (monthNameMatch) {
+        const day = parseInt(monthNameMatch[1]);
+        const monthStr = monthNameMatch[2].toLowerCase();
+        let year = parseInt(monthNameMatch[3]);
+        
+        // Convert 2-digit year to 4-digit year
+        if (year < 100) {
+            // Assume 2000s for years 00-99
+            year = year >= 50 ? 1900 + year : 2000 + year;
+        }
+        
+        const month = monthNames[monthStr];
+        if (month !== undefined && day >= 1 && day <= 31) {
+            const date = new Date(year, month, day);
+            // Validate the date (handles invalid dates like Feb 31)
+            if (!isNaN(date.getTime()) && date.getDate() === day) {
+                return date;
+            }
+        }
+    }
+    
+    // Try parsing different numeric date formats
     const datePatterns = [
         /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, // MM/DD/YYYY or DD/MM/YYYY
         /^(\d{4})-(\d{1,2})-(\d{1,2})$/, // YYYY-MM-DD

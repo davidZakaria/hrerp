@@ -174,16 +174,17 @@ const AttendanceManagement = () => {
 
   const getStatusBadge = (status) => {
     const styles = {
-      present: { background: '#E8F5E9', color: '#2E7D32', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' },
-      late: { background: '#FFF3E0', color: '#EF6C00', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' },
-      absent: { background: '#FFEBEE', color: '#C62828', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' },
-      excused: { background: '#E3F2FD', color: '#1565C0', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' },
-      on_leave: { background: '#F3E5F5', color: '#6A1B9A', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' },
-      wfh: { background: '#E1F5FE', color: '#0277BD', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold' }
+      present: { background: '#22c55e', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' },
+      late: { background: '#f97316', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' },
+      absent: { background: '#ef4444', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' },
+      excused: { background: '#3b82f6', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' },
+      on_leave: { background: '#a855f7', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' },
+      wfh: { background: '#06b6d4', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' }
     };
 
     const labels = {
-      wfh: '🏠 WFH'
+      wfh: '🏠 WFH',
+      on_leave: '🏖️ ON LEAVE'
     };
 
     return (

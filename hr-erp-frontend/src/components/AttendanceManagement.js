@@ -216,49 +216,60 @@ const AttendanceManagement = () => {
           color: #000000 !important;
         }
         
-        /* Detailed attendance view styles */
+        /* Detailed attendance view styles - Dark Theme */
         .attendance-detailed-card {
-          background: #ffffff !important;
-          color: #1a1a1a !important;
+          background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+          border: 1px solid #334155 !important;
+          color: #e2e8f0 !important;
         }
         .attendance-detailed-card h4 {
-          color: #1a1a1a !important;
+          color: #f1f5f9 !important;
         }
-        .attendance-detailed-card td {
-          color: #1a1a1a !important;
+        .attendance-detailed-card code {
+          background: #334155 !important;
+          color: #94a3b8 !important;
         }
-        .attendance-detailed-card .clock-time {
-          color: #1a1a1a !important;
+        .attendance-detailed-card .employee-info {
+          color: #94a3b8 !important;
+        }
+        .attendance-detailed-table {
+          border-collapse: separate !important;
+          border-spacing: 0 !important;
+        }
+        .attendance-detailed-table th {
+          background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%) !important;
+          color: #ffffff !important;
+          font-weight: 600 !important;
+          padding: 12px 10px !important;
+          border-bottom: 2px solid #3b82f6 !important;
+        }
+        .attendance-detailed-table td {
+          padding: 10px !important;
+          color: #e2e8f0 !important;
+          border-bottom: 1px solid #334155 !important;
+        }
+        .attendance-detailed-table tr:nth-child(even) td {
+          background: rgba(30, 41, 59, 0.7) !important;
+        }
+        .attendance-detailed-table tr:nth-child(odd) td {
+          background: rgba(15, 23, 42, 0.7) !important;
+        }
+        .attendance-detailed-table .clock-time {
+          color: #f1f5f9 !important;
           font-family: 'Courier New', monospace !important;
           font-weight: 700 !important;
           font-size: 0.95rem !important;
         }
-        .attendance-detailed-card .late-value {
-          color: #D32F2F !important;
+        .attendance-detailed-table .late-value {
+          color: #f87171 !important;
           font-weight: 700 !important;
         }
-        .attendance-detailed-card .overtime-value {
-          color: #2E7D32 !important;
+        .attendance-detailed-table .overtime-value {
+          color: #4ade80 !important;
           font-weight: 700 !important;
         }
-        .attendance-detailed-card .dash-value {
-          color: #888888 !important;
-        }
-        .attendance-detailed-table th {
-          background: #2d3748 !important;
-          color: #ffffff !important;
-          font-weight: 600 !important;
-          padding: 12px 10px !important;
-        }
-        .attendance-detailed-table td {
-          padding: 10px !important;
-          color: #1a1a1a !important;
-        }
-        .attendance-detailed-table tr:nth-child(even) {
-          background: #f8f9fa !important;
-        }
-        .attendance-detailed-table tr:nth-child(odd) {
-          background: #ffffff !important;
+        .attendance-detailed-table .dash-value {
+          color: #64748b !important;
         }
       `}</style>
       <h2 className="text-gradient" style={{ marginBottom: '2rem' }}>Attendance Management</h2>
@@ -718,11 +729,11 @@ const AttendanceManagement = () => {
                     return (
                       <div key={idx} className="attendance-detailed-card" style={{ 
                         marginBottom: '2rem', 
-                        background: '#ffffff', 
+                        background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', 
                         borderRadius: '12px', 
                         padding: '1.5rem',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        border: '1px solid #d0d0d0'
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                        border: '1px solid #334155'
                       }}>
                         {/* Employee Header */}
                         <div style={{ 
@@ -731,22 +742,22 @@ const AttendanceManagement = () => {
                           alignItems: 'center',
                           marginBottom: '1rem',
                           paddingBottom: '1rem',
-                          borderBottom: '2px solid #e0e0e0',
+                          borderBottom: '2px solid #334155',
                           flexWrap: 'wrap',
                           gap: '1rem'
                         }}>
                           <div>
-                            <h4 style={{ margin: 0, color: '#1a1a1a', fontSize: '1.3rem', fontWeight: '700' }}>
+                            <h4 style={{ margin: 0, color: '#f1f5f9', fontSize: '1.3rem', fontWeight: '700' }}>
                               {emp.user.name}
                             </h4>
-                            <div style={{ color: '#555555', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                              <code style={{ background: '#e8e8e8', color: '#333333', padding: '3px 8px', borderRadius: '4px', fontWeight: '600' }}>
+                            <div className="employee-info" style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                              <code style={{ background: '#334155', color: '#cbd5e1', padding: '3px 8px', borderRadius: '4px', fontWeight: '600' }}>
                                 {emp.user.employeeCode || 'N/A'}
                               </code>
-                              <span style={{ margin: '0 0.5rem', color: '#888888' }}>•</span>
-                              <span style={{ color: '#444444' }}>{emp.user.department}</span>
-                              <span style={{ margin: '0 0.5rem', color: '#888888' }}>•</span>
-                              <span style={{ color: '#666666' }}>Schedule: {emp.user.workSchedule ? `${emp.user.workSchedule.startTime} - ${emp.user.workSchedule.endTime}` : 'Default (10:00-19:00)'}</span>
+                              <span style={{ margin: '0 0.5rem', color: '#64748b' }}>•</span>
+                              <span style={{ color: '#94a3b8' }}>{emp.user.department}</span>
+                              <span style={{ margin: '0 0.5rem', color: '#64748b' }}>•</span>
+                              <span style={{ color: '#94a3b8' }}>Schedule: {emp.user.workSchedule ? `${emp.user.workSchedule.startTime} - ${emp.user.workSchedule.endTime}` : 'Default (10:00-19:00)'}</span>
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -785,12 +796,13 @@ const AttendanceManagement = () => {
                         {/* Approved Forms for this Employee */}
                         {employeeForms.length > 0 && (
                           <div style={{ 
-                            background: '#E3F2FD', 
+                            background: 'rgba(59, 130, 246, 0.1)', 
+                            border: '1px solid #3b82f6',
                             padding: '1rem', 
                             borderRadius: '8px', 
                             marginBottom: '1rem' 
                           }}>
-                            <strong style={{ color: '#1565C0', fontSize: '0.9rem' }}>📝 Approved Requests:</strong>
+                            <strong style={{ color: '#60a5fa', fontSize: '0.9rem' }}>📝 Approved Requests:</strong>
                             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
                               {employeeForms.map((form, fIdx) => (
                                 <span key={fIdx} style={{ 
@@ -813,16 +825,16 @@ const AttendanceManagement = () => {
                         <div style={{ overflowX: 'auto' }}>
                           <table className="attendance-detailed-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                             <thead>
-                              <tr style={{ background: '#2d3748' }}>
-                                <th style={{ padding: '12px 10px', textAlign: 'left', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Date</th>
-                                <th style={{ padding: '12px 10px', textAlign: 'left', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Day</th>
-                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Clock In</th>
-                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Clock Out</th>
-                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Status</th>
-                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Late</th>
-                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Overtime</th>
-                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Deduction</th>
-                                <th style={{ padding: '12px 10px', textAlign: 'left', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Notes</th>
+                              <tr style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%)' }}>
+                                <th style={{ padding: '12px 10px', textAlign: 'left', borderBottom: '2px solid #3b82f6', color: '#ffffff', fontWeight: '600' }}>Date</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'left', borderBottom: '2px solid #3b82f6', color: '#ffffff', fontWeight: '600' }}>Day</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #3b82f6', color: '#ffffff', fontWeight: '600' }}>Clock In</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #3b82f6', color: '#ffffff', fontWeight: '600' }}>Clock Out</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #3b82f6', color: '#ffffff', fontWeight: '600' }}>Status</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #3b82f6', color: '#f87171', fontWeight: '600' }}>Late</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #3b82f6', color: '#4ade80', fontWeight: '600' }}>Overtime</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '2px solid #3b82f6', color: '#fbbf24', fontWeight: '600' }}>Deduction</th>
+                                <th style={{ padding: '12px 10px', textAlign: 'left', borderBottom: '2px solid #3b82f6', color: '#ffffff', fontWeight: '600' }}>Notes</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -833,45 +845,45 @@ const AttendanceManagement = () => {
                                 
                                 return (
                                   <tr key={rIdx} style={{ 
-                                    background: isWeekend ? '#f0f0f0' : (rIdx % 2 === 0 ? '#ffffff' : '#f8f9fa'),
-                                    borderBottom: '1px solid #e0e0e0'
+                                    background: isWeekend ? 'rgba(51, 65, 85, 0.5)' : (rIdx % 2 === 0 ? 'rgba(30, 41, 59, 0.7)' : 'rgba(15, 23, 42, 0.7)'),
+                                    borderBottom: '1px solid #334155'
                                   }}>
-                                    <td style={{ padding: '10px', color: '#1a1a1a', fontWeight: '500' }}>{formatDate(record.date)}</td>
-                                    <td style={{ padding: '10px', color: isWeekend ? '#888888' : '#333333', fontWeight: '500' }}>{dayName}</td>
+                                    <td style={{ padding: '10px', color: '#e2e8f0', fontWeight: '500' }}>{formatDate(record.date)}</td>
+                                    <td style={{ padding: '10px', color: isWeekend ? '#64748b' : '#cbd5e1', fontWeight: '500' }}>{dayName}</td>
                                     <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {record.missedClockIn ? (
-                                        <span style={{ color: '#D32F2F', fontWeight: 'bold' }}>❌ MISSED</span>
+                                        <span style={{ color: '#f87171', fontWeight: 'bold' }}>❌ MISSED</span>
                                       ) : (
-                                        <span className="clock-time" style={{ fontFamily: "'Courier New', monospace", color: '#1a1a1a', fontWeight: '700', fontSize: '0.95rem' }}>{record.clockIn || '-'}</span>
+                                        <span className="clock-time" style={{ fontFamily: "'Courier New', monospace", color: '#f1f5f9', fontWeight: '700', fontSize: '0.95rem' }}>{record.clockIn || '-'}</span>
                                       )}
                                     </td>
                                     <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {record.missedClockOut ? (
-                                        <span style={{ color: '#F57C00', fontWeight: 'bold' }}>⚠️ MISSED</span>
+                                        <span style={{ color: '#fb923c', fontWeight: 'bold' }}>⚠️ MISSED</span>
                                       ) : (
-                                        <span className="clock-time" style={{ fontFamily: "'Courier New', monospace", color: '#1a1a1a', fontWeight: '700', fontSize: '0.95rem' }}>{record.clockOut || '-'}</span>
+                                        <span className="clock-time" style={{ fontFamily: "'Courier New', monospace", color: '#f1f5f9', fontWeight: '700', fontSize: '0.95rem' }}>{record.clockOut || '-'}</span>
                                       )}
                                     </td>
                                     <td style={{ padding: '10px', textAlign: 'center' }}>{getStatusBadge(record.status)}</td>
                                     <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {record.minutesLate > 0 ? (
-                                        <span className="late-value" style={{ color: '#D32F2F', fontWeight: 'bold', fontSize: '0.95rem' }}>{record.minutesLate}m</span>
+                                        <span className="late-value" style={{ color: '#f87171', fontWeight: 'bold', fontSize: '0.95rem' }}>{record.minutesLate}m</span>
                                       ) : (
-                                        <span className="dash-value" style={{ color: '#888888' }}>-</span>
+                                        <span className="dash-value" style={{ color: '#64748b' }}>-</span>
                                       )}
                                     </td>
                                     <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {record.minutesOvertime > 0 ? (
-                                        <span className="overtime-value" style={{ color: '#2E7D32', fontWeight: 'bold', fontSize: '0.95rem' }}>+{record.minutesOvertime}m</span>
+                                        <span className="overtime-value" style={{ color: '#4ade80', fontWeight: 'bold', fontSize: '0.95rem' }}>+{record.minutesOvertime}m</span>
                                       ) : (
-                                        <span className="dash-value" style={{ color: '#888888' }}>-</span>
+                                        <span className="dash-value" style={{ color: '#64748b' }}>-</span>
                                       )}
                                     </td>
                                     <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {(record.fingerprintDeduction || 0) > 0 ? (
                                         <span style={{ 
-                                          background: '#FFEBEE', 
-                                          color: '#C62828', 
+                                          background: 'rgba(248, 113, 113, 0.2)', 
+                                          color: '#f87171', 
                                           padding: '4px 10px', 
                                           borderRadius: '4px',
                                           fontWeight: 'bold',
@@ -880,14 +892,14 @@ const AttendanceManagement = () => {
                                           -{record.fingerprintDeduction}d
                                         </span>
                                       ) : (
-                                        <span style={{ color: '#888888' }}>-</span>
+                                        <span style={{ color: '#64748b' }}>-</span>
                                       )}
                                     </td>
                                     <td style={{ padding: '10px', fontSize: '0.85rem' }}>
                                       {record.relatedForm && (
                                         <span style={{ 
-                                          background: record.status === 'on_leave' ? '#F3E5F5' : '#E3F2FD',
-                                          color: record.status === 'on_leave' ? '#6A1B9A' : '#1565C0',
+                                          background: record.status === 'on_leave' ? 'rgba(192, 132, 252, 0.2)' : 'rgba(96, 165, 250, 0.2)',
+                                          color: record.status === 'on_leave' ? '#c084fc' : '#60a5fa',
                                           padding: '4px 8px',
                                           borderRadius: '4px',
                                           marginRight: '4px',
@@ -898,8 +910,8 @@ const AttendanceManagement = () => {
                                       )}
                                       {record.fingerprintMissType && record.fingerprintMissType !== 'none' && (
                                         <span style={{ 
-                                          background: '#FFF3E0', 
-                                          color: '#E65100', 
+                                          background: 'rgba(251, 191, 36, 0.2)', 
+                                          color: '#fbbf24', 
                                           padding: '4px 8px',
                                           borderRadius: '4px',
                                           fontSize: '0.8rem',

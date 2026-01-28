@@ -215,6 +215,51 @@ const AttendanceManagement = () => {
         .attendance-modal-custom div {
           color: #000000 !important;
         }
+        
+        /* Detailed attendance view styles */
+        .attendance-detailed-card {
+          background: #ffffff !important;
+          color: #1a1a1a !important;
+        }
+        .attendance-detailed-card h4 {
+          color: #1a1a1a !important;
+        }
+        .attendance-detailed-card td {
+          color: #1a1a1a !important;
+        }
+        .attendance-detailed-card .clock-time {
+          color: #1a1a1a !important;
+          font-family: 'Courier New', monospace !important;
+          font-weight: 700 !important;
+          font-size: 0.95rem !important;
+        }
+        .attendance-detailed-card .late-value {
+          color: #D32F2F !important;
+          font-weight: 700 !important;
+        }
+        .attendance-detailed-card .overtime-value {
+          color: #2E7D32 !important;
+          font-weight: 700 !important;
+        }
+        .attendance-detailed-card .dash-value {
+          color: #888888 !important;
+        }
+        .attendance-detailed-table th {
+          background: #2d3748 !important;
+          color: #ffffff !important;
+          font-weight: 600 !important;
+          padding: 12px 10px !important;
+        }
+        .attendance-detailed-table td {
+          padding: 10px !important;
+          color: #1a1a1a !important;
+        }
+        .attendance-detailed-table tr:nth-child(even) {
+          background: #f8f9fa !important;
+        }
+        .attendance-detailed-table tr:nth-child(odd) {
+          background: #ffffff !important;
+        }
       `}</style>
       <h2 className="text-gradient" style={{ marginBottom: '2rem' }}>Attendance Management</h2>
 
@@ -671,7 +716,7 @@ const AttendanceManagement = () => {
                     const employeeForms = approvedForms.filter(f => f.user?._id === emp.user.id || f.user === emp.user.id);
                     
                     return (
-                      <div key={idx} style={{ 
+                      <div key={idx} className="attendance-detailed-card" style={{ 
                         marginBottom: '2rem', 
                         background: '#ffffff', 
                         borderRadius: '12px', 
@@ -766,7 +811,7 @@ const AttendanceManagement = () => {
 
                         {/* Daily Records Table */}
                         <div style={{ overflowX: 'auto' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
+                          <table className="attendance-detailed-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '800px' }}>
                             <thead>
                               <tr style={{ background: '#2d3748' }}>
                                 <th style={{ padding: '12px 10px', textAlign: 'left', borderBottom: '2px solid #4a5568', color: '#ffffff', fontWeight: '600' }}>Date</th>
@@ -797,29 +842,29 @@ const AttendanceManagement = () => {
                                       {record.missedClockIn ? (
                                         <span style={{ color: '#D32F2F', fontWeight: 'bold' }}>❌ MISSED</span>
                                       ) : (
-                                        <span style={{ fontFamily: 'monospace', color: '#1a1a1a', fontWeight: '600', fontSize: '0.95rem' }}>{record.clockIn || '-'}</span>
+                                        <span className="clock-time" style={{ fontFamily: "'Courier New', monospace", color: '#1a1a1a', fontWeight: '700', fontSize: '0.95rem' }}>{record.clockIn || '-'}</span>
                                       )}
                                     </td>
                                     <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {record.missedClockOut ? (
                                         <span style={{ color: '#F57C00', fontWeight: 'bold' }}>⚠️ MISSED</span>
                                       ) : (
-                                        <span style={{ fontFamily: 'monospace', color: '#1a1a1a', fontWeight: '600', fontSize: '0.95rem' }}>{record.clockOut || '-'}</span>
+                                        <span className="clock-time" style={{ fontFamily: "'Courier New', monospace", color: '#1a1a1a', fontWeight: '700', fontSize: '0.95rem' }}>{record.clockOut || '-'}</span>
                                       )}
                                     </td>
                                     <td style={{ padding: '10px', textAlign: 'center' }}>{getStatusBadge(record.status)}</td>
                                     <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {record.minutesLate > 0 ? (
-                                        <span style={{ color: '#D32F2F', fontWeight: 'bold', fontSize: '0.95rem' }}>{record.minutesLate}m</span>
+                                        <span className="late-value" style={{ color: '#D32F2F', fontWeight: 'bold', fontSize: '0.95rem' }}>{record.minutesLate}m</span>
                                       ) : (
-                                        <span style={{ color: '#888888' }}>-</span>
+                                        <span className="dash-value" style={{ color: '#888888' }}>-</span>
                                       )}
                                     </td>
                                     <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {record.minutesOvertime > 0 ? (
-                                        <span style={{ color: '#2E7D32', fontWeight: 'bold', fontSize: '0.95rem' }}>+{record.minutesOvertime}m</span>
+                                        <span className="overtime-value" style={{ color: '#2E7D32', fontWeight: 'bold', fontSize: '0.95rem' }}>+{record.minutesOvertime}m</span>
                                       ) : (
-                                        <span style={{ color: '#888888' }}>-</span>
+                                        <span className="dash-value" style={{ color: '#888888' }}>-</span>
                                       )}
                                     </td>
                                     <td style={{ padding: '10px', textAlign: 'center' }}>

@@ -1451,7 +1451,22 @@ const AdminDashboard = () => {
                           {user.role === 'manager' ? '👔' : '👤'}
                         </div>
                         <div className="user-info">
-                          <h4 className="user-name">{user.name}</h4>
+                          <h4 className="user-name">
+                            {user.name}
+                            {user.employeeCode && (
+                              <span style={{
+                                marginLeft: '8px',
+                                background: '#2196F3',
+                                color: 'white',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                fontSize: '0.75rem',
+                                fontWeight: '500'
+                              }}>
+                                #{user.employeeCode}
+                              </span>
+                            )}
+                          </h4>
                           <p className="user-email">{user.email}</p>
                         </div>
                       </div>
@@ -1541,7 +1556,22 @@ const AdminDashboard = () => {
                         {user.role === 'admin' ? '👑' : user.role === 'manager' ? '👔' : '👤'}
                       </div>
                       <div className="user-info">
-                        <h4 className="user-name">{user.name}</h4>
+                        <h4 className="user-name">
+                          {user.name}
+                          {user.employeeCode && (
+                            <span style={{
+                              marginLeft: '8px',
+                              background: '#2196F3',
+                              color: 'white',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              fontSize: '0.75rem',
+                              fontWeight: '500'
+                            }}>
+                              #{user.employeeCode}
+                            </span>
+                          )}
+                        </h4>
                         <p className="user-email">{user.email}</p>
                       </div>
                     </div>

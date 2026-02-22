@@ -239,28 +239,37 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
             try {
                 console.log(`\nProcessing file: ${file.originalname}`);
                 
-                // Validate file structure
+                // Validate (don't block - attempt parse; include note in results for debugging)
                 const validation = validateXLSStructure(file.path);
                 if (!validation.isValid) {
+                    console.log(`  Validation note: ${validation.message}`);
                     results.errors.push({
                         file: file.originalname,
-                        error: validation.message
+                        error: `${validation.message} (parsing was still attempted)`
                     });
-                    continue;
                 }
                 
-                // Parse the file
+                // Always attempt to parse - we'll get useful errors if structure is wrong
                 const parseResult = parseXLSFile(file.path);
                 
+                results.processedFiles++;
+                
                 if (!parseResult.success) {
-                    results.errors.push({
-                        file: file.originalname,
-                        error: parseResult.error
+                    results.errors.push({ file: file.originalname, error: parseResult.error });
+                    results.summary.push({
+                        filename: file.originalname,
+                        totalRows: 0,
+                        validRows: 0,
+                        saved: 0,
+                        skipped: 0,
+                        weekendSkipped: 0,
+                        errors: parseResult.errors || [{ row: 0, error: parseResult.error, data: null }],
+                        sampleKeys: null
                     });
+                    try { fs.unlinkSync(file.path); } catch (e) { /* ignore */ }
                     continue;
                 }
                 
-                results.processedFiles++;
                 results.totalRecords += parseResult.totalRows;
                 
                 const fileResults = {
@@ -270,7 +279,8 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                     saved: 0,
                     skipped: 0,
                     weekendSkipped: 0,
-                    errors: parseResult.errors
+                    errors: parseResult.errors,
+                    sampleKeys: parseResult.data?.[0] ? null : (parseResult.errors?.[0]?.data ? Object.keys(parseResult.errors[0].data) : null)
                 };
                 
                 // Log first few errors for debugging

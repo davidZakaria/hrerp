@@ -351,6 +351,40 @@ const AttendanceManagement = () => {
                 </ul>
               </details>
             )}
+            {uploadResult.errors && uploadResult.errors.length > 0 && (
+              <div style={{ marginTop: '1rem', color: '#C62828' }}>
+                <strong>⚠ File errors:</strong>
+                <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
+                  {uploadResult.errors.map((item, idx) => (
+                    <li key={idx}>
+                      {item.file}: {item.error}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {uploadResult.summary?.map((fileSummary, fidx) =>
+              (fileSummary.errors?.length > 0 || fileSummary.sampleKeys || fileSummary.validRows === 0) ? (
+                <details key={fidx} style={{ marginTop: '1rem', color: '#C62828' }} open={fileSummary.validRows === 0}>
+                  <summary style={{ cursor: 'pointer' }}>
+                    ⚠ {fileSummary.filename}: {fileSummary.validRows} valid, {fileSummary.errors?.length || 0} failed
+                    {fileSummary.sampleKeys && ` — Columns: [${fileSummary.sampleKeys.join(', ')}]`}
+                    {fileSummary.validRows === 0 && fileSummary.errors?.[0]?.error && !fileSummary.sampleKeys && ` — ${fileSummary.errors[0].error}`}
+                  </summary>
+                  <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem', maxHeight: '200px', overflow: 'auto' }}>
+                    {fileSummary.errors?.slice(0, 10).map((err, idx) => (
+                      <li key={idx}>
+                        Row {err.row}: {err.error}
+                        {err.data && ` — Sample: ${JSON.stringify(err.data).slice(0, 80)}...`}
+                      </li>
+                    ))}
+                    {fileSummary.errors?.length > 10 && (
+                      <li><em>... and {fileSummary.errors.length - 10} more</em></li>
+                    )}
+                  </ul>
+                </details>
+              ) : null
+            )}
           </div>
         )}
       </div>

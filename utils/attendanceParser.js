@@ -1,4 +1,5 @@
 const xlsx = require('xlsx');
+const fs = require('fs');
 
 /**
  * Parse XLS file and extract attendance data
@@ -7,19 +8,40 @@ const xlsx = require('xlsx');
  * @returns {Array} Array of attendance records
  */
 function parseXLSFile(filePath) {
+    let workbook;
     try {
-        // Read the workbook
-        const workbook = xlsx.readFile(filePath);
+        // Try readFile first, fallback to buffer read (works better for some .xls)
+        try {
+            workbook = xlsx.readFile(filePath);
+        } catch (readErr) {
+            const buf = fs.readFileSync(filePath);
+            workbook = xlsx.read(buf, { type: 'buffer' });
+        }
         
         // Get the first sheet
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
-        // Convert to JSON
-        const jsonData = xlsx.utils.sheet_to_json(worksheet, { 
-            raw: false, // Don't parse dates automatically
-            defval: null // Default value for empty cells
+        // Convert to JSON (default: first row = headers)
+        let jsonData = xlsx.utils.sheet_to_json(worksheet, { 
+            raw: false,
+            defval: null
         });
+        
+        // Fallback: if empty, try header:1 and build objects (some .xls need this)
+        if (!jsonData || jsonData.length === 0) {
+            const raw = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+            if (raw.length > 1) {
+                const headers = raw[0].map((h, idx) => String(h || '').trim() || `Col${idx}`);
+                jsonData = raw.slice(1).map((row, i) => {
+                    const obj = {};
+                    (Array.isArray(row) ? row : []).forEach((val, j) => {
+                        obj[headers[j] || `Col${j}`] = val;
+                    });
+                    return obj;
+                });
+            }
+        }
         
         // Parse and validate each row
         const parsedData = [];
@@ -52,11 +74,27 @@ function parseXLSFile(filePath) {
     } catch (error) {
         return {
             success: false,
-            error: `Failed to parse XLS file: ${error.message}`,
+            error: `Failed to parse: ${error.message}`,
             data: [],
-            errors: []
+            errors: [{ row: 0, error: error.message, data: null }]
         };
     }
+}
+
+/**
+ * Get value from row with flexible key matching (handles trimmed keys, variations)
+ */
+function getRowValue(row, keys) {
+    const val = keys.reduce((v, k) => v || row[k], null);
+    if (val != null && val !== '') return val;
+    // Try trimmed keys - Excel sometimes adds trailing/leading spaces to headers
+    for (const key of Object.keys(row || {})) {
+        const kTrim = key.trim();
+        if (keys.some(k => k.trim() === kTrim) && row[key] != null && row[key] !== '') {
+            return row[key];
+        }
+    }
+    return null;
 }
 
 /**
@@ -66,12 +104,12 @@ function parseXLSFile(filePath) {
  * @returns {Object} Parsed attendance record
  */
 function parseAttendanceRow(row, rowNumber) {
-    // Try different possible column name variations
-    const employeeCode = row['Employee Code'] || row['EmployeeCode'] || row['Code'] || row['ID'] || row['AC-No.'] || row['AC-No'] || row['Ac-No'] || row['AC No'] || row['Employee ID'];
-    const name = row['Name'] || row['Employee Name'] || row['EmployeeName'];
-    const date = row['Date'] || row['date'];
-    const clockIn = row['Clock In'] || row['ClockIn'] || row['In'] || row['Time In'] || row['Time'] || row['CheckIn'];
-    const clockOut = row['Clock Out'] || row['ClockOut'] || row['Out'] || row['Time Out'] || row['CheckOut'];
+    // Try different possible column name variations (flexible matching)
+    const employeeCode = getRowValue(row, ['Employee Code', 'EmployeeCode', 'Code', 'ID', 'AC-No.', 'AC-No', 'Ac-No', 'AC No', 'Employee ID']) || row['AC-No.'] || row['AC-No'] || row['Employee Code'] || row['Code'] || row['ID'];
+    const name = getRowValue(row, ['Name', 'Employee Name', 'EmployeeName']) || row['Name'];
+    const date = getRowValue(row, ['Date', 'date', 'Time']) || row['Date'] || row['Time']; // "Time" = date in some biometric exports
+    const clockIn = getRowValue(row, ['Clock In', 'ClockIn', 'In', 'Time In', 'C/In', 'CheckIn']) || row['C/In'] || row['Clock In'] || row['In'];
+    const clockOut = getRowValue(row, ['Clock Out', 'ClockOut', 'Out', 'Time Out', 'C/Out', 'CheckOut']) || row['C/Out'] || row['Clock Out'] || row['Out'];
     
     // Validate required fields
     if (!employeeCode) {
@@ -123,15 +161,27 @@ function parseAttendanceRow(row, rowNumber) {
  * @returns {Date|null} Parsed date or null
  */
 function parseDate(dateValue) {
-    if (!dateValue) return null;
+    if (dateValue == null || dateValue === '') return null;
     
     // If already a Date object
     if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
         return dateValue;
     }
     
-    const dateStr = String(dateValue).trim();
+    // Excel date serial number (days since 1900-01-01)
+    const num = Number(dateValue);
+    if (!isNaN(num) && num > 0 && num < 100000) {
+        const d = new Date((num - 25569) * 86400 * 1000); // Excel epoch to JS
+        if (!isNaN(d.getTime())) return d;
+    }
     
+    const dateStr = String(dateValue).trim();
+    if (!dateStr) return null;
+
+    // Handle datetime format (e.g. "01/02/2026 09:30" or "01-Feb-2026 09:30:00") - extract date part
+    const dateTimeMatch = dateStr.match(/^(.+?)\s+[\d:]+/);
+    const datePart = dateTimeMatch ? dateTimeMatch[1].trim() : dateStr;
+
     // Month name to number mapping
     const monthNames = {
         'jan': 0, 'january': 0,
@@ -150,7 +200,7 @@ function parseDate(dateValue) {
     
     // Handle DD-MMM-YY or DD-MMM-YYYY format (e.g., "26-Dec-25" or "26-Dec-2025")
     const monthNamePattern = /^(\d{1,2})-([A-Za-z]{3,9})-(\d{2,4})$/;
-    const monthNameMatch = dateStr.match(monthNamePattern);
+    const monthNameMatch = datePart.match(monthNamePattern);
     if (monthNameMatch) {
         const day = parseInt(monthNameMatch[1]);
         const monthStr = monthNameMatch[2].toLowerCase();
@@ -180,7 +230,7 @@ function parseDate(dateValue) {
     ];
     
     for (const pattern of datePatterns) {
-        const match = dateStr.match(pattern);
+        const match = datePart.match(pattern);
         if (match) {
             // Try both DD/MM/YYYY and MM/DD/YYYY interpretations
             const variations = [
@@ -197,8 +247,9 @@ function parseDate(dateValue) {
         }
     }
     
-    // Try native Date parsing as last resort
-    const parsed = new Date(dateStr);
+    // Try native Date parsing as last resort (try both full string and date part)
+    let parsed = new Date(datePart);
+    if (isNaN(parsed.getTime())) parsed = new Date(dateStr);
     if (!isNaN(parsed.getTime())) {
         return parsed;
     }
@@ -393,7 +444,7 @@ function getDayName(date) {
 }
 
 /**
- * Validate XLS file structure
+ * Validate XLS file structure - uses same parsing as parseXLSFile for consistency
  * @param {String} filePath 
  * @returns {Object} {isValid, message, columns}
  */
@@ -403,31 +454,36 @@ function validateXLSStructure(filePath) {
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
-        // Get headers (first row)
-        const range = xlsx.utils.decode_range(worksheet['!ref']);
-        const headers = [];
+        // Get headers the same way sheet_to_json does - ensures consistency with parsing
+        const asObject = xlsx.utils.sheet_to_json(worksheet, { defval: '', raw: false });
+        const headers = asObject.length > 0
+            ? Object.keys(asObject[0] || {})
+            : xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: '' })[0]?.map(h => String(h || '').trim()) || [];
         
-        for (let col = range.s.c; col <= range.e.c; col++) {
-            const cellAddress = xlsx.utils.encode_cell({ r: 0, c: col });
-            const cell = worksheet[cellAddress];
-            if (cell && cell.v) {
-                headers.push(String(cell.v).trim());
-            }
-        }
-        
-        // Check for required columns (flexible matching)
-        const hasEmployeeCode = headers.some(h => 
-            /employee\s*code|code|id|employee\s*id|ac[-\s]*no\.?|emp[-\s]*no/i.test(h)
-        );
-        const hasDate = headers.some(h => /date/i.test(h));
-        const hasClockIn = headers.some(h => 
-            /clock\s*in|time\s*in|in|check\s*in|time|check[-\s]*in/i.test(h)
-        );
+        // Very permissive matching - biometric exports use various names
+        const hasEmployeeCode = headers.some(h => {
+            const lower = String(h).toLowerCase();
+            return /ac[\s\-]*no|employee\s*code|emp.*code|code|^\s*id\s*$|card\s*no/i.test(h) ||
+                (lower.includes('no') && (lower.includes('ac') || lower.includes('emp')));
+        });
+        const hasDate = headers.some(h => {
+            const lower = String(h).toLowerCase();
+            return /date|^time$|datetime|day|record/i.test(h);
+        });
+        const hasClockIn = headers.some(h => {
+            const lower = String(h).toLowerCase();
+            return /c\/in|clock\s*in|time\s*in|check\s*in|^\s*in\s*$|first\s*in|punch\s*in|entrance/i.test(h) ||
+                (lower === 'in' || lower === 'time');
+        });
         
         if (!hasEmployeeCode || !hasDate || !hasClockIn) {
+            const missing = [];
+            if (!hasEmployeeCode) missing.push('Employee Code (AC-No., Code, ID)');
+            if (!hasDate) missing.push('Date (Date, Time)');
+            if (!hasClockIn) missing.push('Clock In (C/In, In)');
             return {
                 isValid: false,
-                message: 'Missing required columns. Expected: Employee Code, Date, Clock In (Clock Out optional)',
+                message: `Missing columns: ${missing.join(', ')}. Found: [${headers.join(', ')}]`,
                 columns: headers
             };
         }

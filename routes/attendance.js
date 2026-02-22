@@ -602,6 +602,178 @@ router.get('/monthly-report/:month', auth, async (req, res) => {
 });
 
 /**
+ * GET /api/attendance/team-report/:month
+ * Get team members' attendance for a specific month
+ * Manager only - returns attendance for employees in managed departments
+ */
+router.get('/team-report/:month', auth, async (req, res) => {
+    try {
+        const manager = await User.findById(req.user.id);
+        if (!manager || manager.role !== 'manager') {
+            return res.status(403).json({ msg: 'Access denied. Manager only.' });
+        }
+        if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
+            return res.status(403).json({ msg: 'No managed departments assigned.' });
+        }
+
+        const { month } = req.params;
+        if (!/^\d{4}-\d{2}$/.test(month)) {
+            return res.status(400).json({ msg: 'Invalid month format. Use YYYY-MM' });
+        }
+
+        // Get ALL team members (employees in managed departments) with full details
+        const teamMembers = await User.find({
+            department: { $in: manager.managedDepartments },
+            role: 'employee',
+            status: 'active'
+        }).select('name email employeeCode department workSchedule');
+
+        if (teamMembers.length === 0) {
+            return res.json({
+                month,
+                totalEmployees: 0,
+                overtimeSummary: { totalOvertimeMinutes: 0, totalOvertimeHours: 0, employeesWithOvertime: [] },
+                report: []
+            });
+        }
+
+        const teamMemberIds = teamMembers.map(u => u._id);
+
+        // Initialize report with ALL team members (zeros for those without attendance data)
+        const userAttendanceMap = {};
+        for (const member of teamMembers) {
+            const userId = member._id.toString();
+            userAttendanceMap[userId] = {
+                user: {
+                    id: member._id,
+                    name: member.name,
+                    email: member.email,
+                    employeeCode: member.employeeCode,
+                    department: member.department,
+                    workSchedule: member.workSchedule
+                },
+                records: [],
+                stats: {
+                    totalDays: 0,
+                    present: 0,
+                    late: 0,
+                    absent: 0,
+                    excused: 0,
+                    onLeave: 0,
+                    wfh: 0,
+                    unexcusedAbsences: 0,
+                    totalMinutesLate: 0,
+                    totalMinutesOvertime: 0,
+                    totalFingerprintDeduction: 0,
+                    fingerprintMisses: 0
+                }
+            };
+        }
+
+        // Get attendance records and fill in stats for team members who have data
+        const attendanceRecords = await Attendance.find({
+            month,
+            user: { $in: teamMemberIds }
+        })
+            .populate('relatedForm', 'type status')
+            .sort({ date: 1 });
+
+        for (const record of attendanceRecords) {
+            const userId = record.user.toString();
+            if (!userAttendanceMap[userId]) continue;
+            userAttendanceMap[userId].records.push(record);
+            userAttendanceMap[userId].stats.totalDays++;
+            const stats = userAttendanceMap[userId].stats;
+            stats.totalMinutesLate += record.minutesLate || 0;
+            stats.totalMinutesOvertime += record.minutesOvertime || 0;
+            stats.totalFingerprintDeduction += record.fingerprintDeduction || 0;
+            if (record.fingerprintMissType && record.fingerprintMissType !== 'none') {
+                stats.fingerprintMisses++;
+            }
+            if (record.status === 'present') {
+                stats.present++;
+            } else if (record.status === 'late') {
+                stats.present++;
+                stats.late++;
+            } else if (record.status === 'absent') {
+                stats.absent++;
+                if (!record.isExcused) stats.unexcusedAbsences++;
+            } else if (record.status === 'excused') {
+                stats.excused++;
+            } else if (record.status === 'on_leave') {
+                stats.onLeave++;
+            } else if (record.status === 'wfh') {
+                stats.wfh++;
+            }
+        }
+
+        const report = Object.values(userAttendanceMap);
+        const overtimeSummary = {
+            totalOvertimeMinutes: 0,
+            totalOvertimeHours: 0,
+            employeesWithOvertime: []
+        };
+        for (const emp of report) {
+            if (emp.stats.totalMinutesOvertime > 0) {
+                overtimeSummary.totalOvertimeMinutes += emp.stats.totalMinutesOvertime;
+                overtimeSummary.employeesWithOvertime.push({
+                    name: emp.user.name,
+                    department: emp.user.department,
+                    employeeCode: emp.user.employeeCode,
+                    overtimeMinutes: emp.stats.totalMinutesOvertime,
+                    overtimeHours: Math.round((emp.stats.totalMinutesOvertime / 60) * 100) / 100
+                });
+            }
+        }
+        overtimeSummary.totalOvertimeHours = Math.round((overtimeSummary.totalOvertimeMinutes / 60) * 100) / 100;
+        overtimeSummary.employeesWithOvertime.sort((a, b) => b.overtimeMinutes - a.overtimeMinutes);
+
+        res.json({ month, totalEmployees: report.length, overtimeSummary, report });
+    } catch (error) {
+        console.error('Error getting team attendance report:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+});
+
+/**
+ * GET /api/attendance/team-employee/:userId/:month
+ * Get specific team member's attendance for a month
+ * Manager only - must verify employee is in managed departments
+ */
+router.get('/team-employee/:userId/:month', auth, validateObjectId('userId'), async (req, res) => {
+    try {
+        const manager = await User.findById(req.user.id);
+        if (!manager || manager.role !== 'manager') {
+            return res.status(403).json({ msg: 'Access denied. Manager only.' });
+        }
+        if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
+            return res.status(403).json({ msg: 'No managed departments assigned.' });
+        }
+
+        const { userId, month } = req.params;
+        if (!/^\d{4}-\d{2}$/.test(month)) {
+            return res.status(400).json({ msg: 'Invalid month format. Use YYYY-MM' });
+        }
+
+        const user = await User.findById(userId).select('-password');
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        if (!manager.managedDepartments.includes(user.department) || user.role !== 'employee') {
+            return res.status(403).json({ msg: 'Employee is not in your managed departments.' });
+        }
+
+        const records = await Attendance.getMonthlyAttendance(userId, month);
+        const stats = await Attendance.getUserStats(userId, month);
+
+        res.json({ user, month, records, stats });
+    } catch (error) {
+        console.error('Error getting team employee attendance:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+});
+
+/**
  * GET /api/attendance/employee/:userId/:month
  * Get specific employee's attendance for a month
  * Admin only

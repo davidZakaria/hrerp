@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import ATSDashboard from './ATS/ATSDashboard';
+import ManagerTeamAttendance from './ManagerTeamAttendance';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
 
@@ -20,6 +21,7 @@ const ManagerDashboard = ({ onLogout }) => {
   const [showMyForms, setShowMyForms] = useState(false);
   const [showTeamForms, setShowTeamForms] = useState(false);
   const [showATS, setShowATS] = useState(false);
+  const [showTeamAttendance, setShowTeamAttendance] = useState(true);
   const [myForms, setMyForms] = useState([]);
   const [teamForms, setTeamForms] = useState([]);
   const [vacationDaysLeft, setVacationDaysLeft] = useState(null);
@@ -170,6 +172,7 @@ const ManagerDashboard = ({ onLogout }) => {
     setShowMyForms(false);
     setShowTeamForms(false);
     setShowATS(false);
+    setShowTeamAttendance(false);
     fetchVacationDays();
     fetchExcuseHours();
   };
@@ -179,6 +182,7 @@ const ManagerDashboard = ({ onLogout }) => {
     setShowForm(false);
     setShowTeamForms(false);
     setShowATS(false);
+    setShowTeamAttendance(false);
     fetchMyForms();
     fetchVacationDays();
     fetchExcuseHours();
@@ -189,11 +193,21 @@ const ManagerDashboard = ({ onLogout }) => {
     setShowForm(false);
     setShowMyForms(false);
     setShowATS(false);
+    setShowTeamAttendance(false);
     fetchTeamForms();
   };
 
   const handleShowATS = () => {
     setShowATS(true);
+    setShowForm(false);
+    setShowMyForms(false);
+    setShowTeamForms(false);
+    setShowTeamAttendance(false);
+  };
+
+  const handleShowTeamAttendance = () => {
+    setShowTeamAttendance(true);
+    setShowATS(false);
     setShowForm(false);
     setShowMyForms(false);
     setShowTeamForms(false);
@@ -585,6 +599,19 @@ const ManagerDashboard = ({ onLogout }) => {
 
       {/* Stats */}
       <div className="stats-section">
+        <div 
+          className="stat-card stat-card-clickable team-attendance-stat"
+          onClick={() => { handleShowTeamAttendance(); setShowForm(false); setShowMyForms(false); setShowTeamForms(false); setShowATS(false); }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && handleShowTeamAttendance()}
+          title={t('managerDashboard.teamAttendance', 'Team Attendance')}
+        >
+          <div className="stat-icon">📊</div>
+          <h3>→</h3>
+          <p>{t('managerDashboard.teamAttendance', 'Team Attendance')}</p>
+          <small>{t('managerDashboard.viewEmployeeAttendance', 'View your team\'s attendance')}</small>
+        </div>
         <div className="stat-card">
           <h3>{teamMembers.length}</h3>
           <p>{t('managerDashboard.myTeamMembers')}</p>
@@ -628,6 +655,13 @@ const ManagerDashboard = ({ onLogout }) => {
         {/* Action Buttons */}
         <div className="action-buttons manager-actions">
           <button 
+            className={`btn-manager team-attendance-btn ${showTeamAttendance ? 'active' : ''}`}
+            onClick={handleShowTeamAttendance}
+          >
+            <span className="btn-icon">📊</span>
+            {t('managerDashboard.teamAttendance', 'Team Attendance')}
+          </button>
+          <button 
             className="btn-manager submit-btn"
             onClick={handleShowForm}
           >
@@ -653,10 +687,17 @@ const ManagerDashboard = ({ onLogout }) => {
             onClick={handleShowATS}
           >
             <span className="btn-icon">🎯</span>
-            {t('managerDashboard.atsSystem') || 'ATS System'}
+            {t('managerDashboard.atsSystem', 'ATS System')}
           </button>
         </div>
       </div>
+
+      {/* Team Attendance */}
+      {showTeamAttendance && (
+        <div className="section manager-team-attendance-section">
+          <ManagerTeamAttendance />
+        </div>
+      )}
 
       {/* ATS System */}
       {showATS && (
@@ -1375,6 +1416,18 @@ const ManagerDashboard = ({ onLogout }) => {
           transform: translateY(-5px);
           box-shadow: 0 12px 40px rgba(255, 255, 255, 0.15);
           background: rgba(0, 0, 0, 0.7);
+        }
+
+        .stat-card-clickable {
+          cursor: pointer;
+          border: 2px solid rgba(6, 182, 212, 0.4);
+          background: rgba(6, 182, 212, 0.1);
+        }
+
+        .stat-card-clickable:hover {
+          border-color: rgba(6, 182, 212, 0.8);
+          background: rgba(6, 182, 212, 0.2);
+          box-shadow: 0 12px 40px rgba(6, 182, 212, 0.2);
         }
 
         .stat-card h3 {
@@ -2261,6 +2314,28 @@ const ManagerDashboard = ({ onLogout }) => {
         }
 
         /* Team Management Section Styles */
+        .manager-team-attendance-section {
+          background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.05));
+          border: 2px solid rgba(6, 182, 212, 0.3);
+          border-radius: 20px;
+          position: relative;
+        }
+
+        .manager-team-attendance-section::before {
+          content: "📊 TEAM ATTENDANCE";
+          position: absolute;
+          top: -12px;
+          left: 20px;
+          background: linear-gradient(135deg, #06b6d4, #0891b2);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 12px;
+          font-size: 0.7rem;
+          font-weight: bold;
+          letter-spacing: 1px;
+          box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+        }
+
         .team-management-section {
           background: linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(33, 150, 243, 0.05));
           border: 2px solid rgba(33, 150, 243, 0.3);
@@ -2329,6 +2404,7 @@ const ManagerDashboard = ({ onLogout }) => {
         /* Manager Buttons */
         .manager-actions {
           display: flex;
+          flex-wrap: wrap;
           gap: 20px;
           justify-content: center;
           margin-top: 25px;
@@ -2377,6 +2453,21 @@ const ManagerDashboard = ({ onLogout }) => {
           background: linear-gradient(135deg, #1976D2, #1565C0);
           transform: translateY(-3px);
           box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn-manager.team-attendance-btn {
+          background: linear-gradient(135deg, #06b6d4, #0891b2);
+        }
+
+        .btn-manager.team-attendance-btn:hover {
+          background: linear-gradient(135deg, #0891b2, #0e7490);
+          transform: translateY(-3px);
+          box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+        }
+
+        .btn-manager.team-attendance-btn.active {
+          box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.5);
+          outline: 2px solid rgba(255, 255, 255, 0.5);
         }
 
         .btn-icon {

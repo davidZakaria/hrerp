@@ -138,6 +138,7 @@ router.get('/team', auth, async (req, res) => {
         // Get all employees in managed departments
         const teamMembers = await User.find({
             department: { $in: currentUser.managedDepartments },
+            role: 'employee',
             status: 'active'
         }).select('_id');
 

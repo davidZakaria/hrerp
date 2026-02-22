@@ -35,7 +35,7 @@ const Register = ({ onBack, onRegisterSuccess }) => {
     setForm({ ...form, managedDepartments: updatedDepartments });
   };
 
-  const departments = ['Human Resources', 'Finance', 'Marketing', 'Sales', 'IT', 'Operations', 'Engineer', 'Customer Service', 'Legal', 'Reception', 'Jamila Engineer', 'Jura Engineer', 'Green Icon Engineer', 'Green Avenue Engineer', 'Architectural Engineer', 'Technical Office Engineer', 'Personal Assistant', 'Service', 'Site Service', 'Driver', 'Other'];
+  const departments = ['Human Resources', 'Finance', 'Marketing', 'Sales', 'IT', 'Operations', 'Engineer', 'Customer Service', 'Legal', 'Community', 'Reception', 'Jamila Engineer', 'Jura Engineer', 'Green Icon Engineer', 'Green Avenue Engineer', 'Architectural Engineer', 'Technical Office Engineer', 'Personal Assistant', 'Service', 'Site Service', 'Driver', 'Other'];
 
   const isValidCompanyEmail = (email) => {
     const emailLower = email.toLowerCase();

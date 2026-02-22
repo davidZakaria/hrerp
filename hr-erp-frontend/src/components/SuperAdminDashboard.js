@@ -81,6 +81,7 @@ const SuperAdminDashboard = () => {
     'Engineer',
     'Customer Service',
     'Legal',
+    'Community',
     'Personal Assistant',
     'Service',
     'Driver',

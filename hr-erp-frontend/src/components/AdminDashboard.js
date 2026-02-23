@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import ATSDashboard from './ATS/ATSDashboard';
 import LogoutButton from './LogoutButton';
 import ExportPrintButtons from './ExportPrintButtons';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import AttendanceManagement from './AttendanceManagement';
+import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
 
 const AdminDashboard = () => {
+  const { t } = useTranslation();
   // Navigation state
   const [activeTab, setActiveTab] = useState('overview');
   
@@ -84,6 +87,9 @@ const AdminDashboard = () => {
     password: '',
     status: 'active'
   });
+
+  // Admin personal form submission
+  const [showAdminFormSubmission, setShowAdminFormSubmission] = useState(false);
 
   // Password Reset state
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
@@ -1729,8 +1735,40 @@ const AdminDashboard = () => {
                     <span className="vacation-card-action">Generate Report →</span>
                   </div>
                 </div>
+
+                <div 
+                  className="vacation-action-card manage-card"
+                  onClick={() => {
+                    setShowAdminFormSubmission(!showAdminFormSubmission);
+                  }}
+                >
+                  <div className="vacation-card-header">
+                    <div className="vacation-card-icon manage-icon">
+                      ✈️
+                    </div>
+                    <div className="vacation-card-content">
+                      <h3 className="vacation-card-title">{t('managerDashboard.submitMyForm', 'Submit My Form')}</h3>
+                      <p className="vacation-card-description">{t('managerDashboard.thisIsForYourOwnPersonalRequestsVacationSickLeaveEtc', 'Submit vacation, mission, sick leave & more')}</p>
+                    </div>
+                  </div>
+                  <div className="vacation-card-footer">
+                    <span className="vacation-card-action">{showAdminFormSubmission ? 'Hide Form ▼' : 'Submit Request →'}</span>
+                  </div>
+                </div>
               </div>
             </div>
+
+            {showAdminFormSubmission && (
+              <div className="admin-form-submission-section" style={{ marginBottom: '2rem' }}>
+                <div className="section-header">
+                  <h2>📝 {t('managerDashboard.submitNewPersonalForm', 'Submit New Personal Form')}</h2>
+                  <small className="section-subtitle">{t('managerDashboard.thisIsForYourOwnPersonalRequestsVacationSickLeaveEtc', 'This is for your own personal requests: vacation, mission, sick leave, etc.')}</small>
+                </div>
+                <div className="form-container">
+                  <FormSubmission onFormSubmitted={() => { fetchForms(); setShowAdminFormSubmission(false); }} />
+                </div>
+              </div>
+            )}
 
             {/* Form Type Navigation */}
             <div className="elegant-card" style={{ marginBottom: '2rem' }}>

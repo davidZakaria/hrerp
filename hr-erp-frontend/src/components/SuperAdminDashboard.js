@@ -3,6 +3,7 @@ import axios from 'axios';
 import LogoutButton from './LogoutButton';
 import { useTranslation } from 'react-i18next';
 import AttendanceManagement from './AttendanceManagement';
+import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 
 const SuperAdminDashboard = () => {
@@ -42,6 +43,9 @@ const SuperAdminDashboard = () => {
     password: '',
     employeeCode: ''
   });
+
+  // Super admin personal form submission
+  const [showSuperAdminFormSubmission, setShowSuperAdminFormSubmission] = useState(false);
 
   // Create User state
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
@@ -1606,6 +1610,13 @@ const SuperAdminDashboard = () => {
                 </div>
                 <div className="section-actions">
                   <button 
+                    className="btn-elegant"
+                    onClick={() => setShowSuperAdminFormSubmission(!showSuperAdminFormSubmission)}
+                  >
+                    <span className="btn-icon">✈️</span>
+                    {showSuperAdminFormSubmission ? 'Hide Submit Form' : 'Submit My Form'}
+                  </button>
+                  <button 
                     className="btn-elegant btn-export"
                     onClick={handleExportForms}
                   >
@@ -1614,6 +1625,18 @@ const SuperAdminDashboard = () => {
                   </button>
                 </div>
               </div>
+
+              {showSuperAdminFormSubmission && (
+                <div className="admin-form-submission-section" style={{ marginBottom: '2rem' }}>
+                  <div className="section-header">
+                    <h2>📝 Submit New Personal Form</h2>
+                    <small className="section-subtitle">Submit your own vacation, mission, sick leave & more</small>
+                  </div>
+                  <div className="form-container">
+                    <FormSubmission onFormSubmitted={() => { fetchForms(); setShowSuperAdminFormSubmission(false); }} />
+                  </div>
+                </div>
+              )}
 
               <div className="forms-container">
                 {forms

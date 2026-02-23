@@ -331,14 +331,14 @@ const FormSubmission = ({ onFormSubmitted }) => {
           >
             <option value="vacation">🏖️ {t('forms.vacationRequestOption')}</option>
             <option value="excuse">⏰ {t('forms.excuseRequestOption')}</option>
+            <option value="mission">✈️ {t('forms.missionRequestOption')}</option>
+            <option value="sick_leave">🏥 {t('forms.sickLeaveRequestOption')}</option>
             {userInfo?.department === 'Marketing' && (
               <option value="wfh">🏠 {t('forms.wfhRequestOption')}</option>
             )}
             {userInfo?.department === 'Marketing' && (
               <option value="extra_hours">⏱️ {t('forms.extraHoursRequestOption')}</option>
             )}
-            <option value="sick_leave">🏥 {t('forms.sickLeaveRequestOption')}</option>
-            <option value="mission">✈️ {t('forms.missionRequestOption')}</option>
           </select>
           <small className="input-helper" style={{ marginTop: '0.5rem', display: 'block' }}>
             {form.type === 'vacation' && t('forms.vacationRequestHelp')}

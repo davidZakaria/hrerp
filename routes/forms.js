@@ -124,11 +124,14 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             wfhWorkingOn,
             extraHoursDate,
             extraHoursWorked,
-            extraHoursDescription
+            extraHoursDescription,
+            missionStartDate,
+            missionEndDate,
+            missionDestination
         } = req.body;
 
         // Enhanced validation
-        const validFormTypes = ['vacation', 'excuse', 'wfh', 'sick_leave', 'extra_hours'];
+        const validFormTypes = ['vacation', 'excuse', 'wfh', 'sick_leave', 'extra_hours', 'mission'];
         if (!validFormTypes.includes(type)) {
             return res.status(400).json({ msg: 'Invalid form type' });
         }
@@ -230,6 +233,15 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             }
         }
 
+        if (type === 'mission') {
+            if (!missionStartDate || !missionEndDate || !missionDestination?.trim()) {
+                return res.status(400).json({ msg: 'Start date, end date, and destination are required for mission requests' });
+            }
+            if (new Date(missionStartDate) > new Date(missionEndDate)) {
+                return res.status(400).json({ msg: 'Start date cannot be after end date' });
+            }
+        }
+
         // Create form with optimized structure
         const formData = {
             user: req.user.id,
@@ -262,6 +274,11 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
                 extraHoursDate: new Date(extraHoursDate),
                 extraHoursWorked: Number(extraHoursWorked),
                 extraHoursDescription: extraHoursDescription?.trim()
+            }),
+            ...(type === 'mission' && {
+                missionStartDate: new Date(missionStartDate),
+                missionEndDate: new Date(missionEndDate),
+                missionDestination: missionDestination?.trim()
             })
         };
 
@@ -386,6 +403,9 @@ router.get('/manager/pending', auth, async (req, res) => {
                     excuseDate: 1,
                     sickLeaveStartDate: 1,
                     sickLeaveEndDate: 1,
+                    missionStartDate: 1,
+                    missionEndDate: 1,
+                    missionDestination: 1,
                     reason: 1,
                     fromHour: 1,
                     toHour: 1,

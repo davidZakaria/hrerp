@@ -473,6 +473,23 @@ const EmployeeDashboard = () => {
                         </>
                       )}
                       
+                      {form.type === 'mission' && (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">{t('forms.startDate')}:</span>
+                            <span className="text-elegant">{new Date(form.missionStartDate).toLocaleDateString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">{t('forms.endDate')}:</span>
+                            <span className="text-elegant">{new Date(form.missionEndDate).toLocaleDateString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className="form-label-elegant">{t('forms.missionDestination')}:</span>
+                            <span className="text-elegant">📍 {form.missionDestination}</span>
+                          </div>
+                        </>
+                      )}
+                      
                       {form.reason && (
                         <div style={{ marginTop: '1rem' }}>
                           <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>{t('forms.reason')}:</div>

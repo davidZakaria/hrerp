@@ -8,7 +8,7 @@ const formSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['vacation', 'excuse', 'wfh', 'sick_leave', 'extra_hours'],
+        enum: ['vacation', 'excuse', 'wfh', 'sick_leave', 'extra_hours', 'mission'],
         required: true
     },
     vacationType: {
@@ -126,6 +126,25 @@ const formSchema = new mongoose.Schema({
         type: String, // Description of work done during extra hours
         required: function() {
             return this.type === 'extra_hours';
+        }
+    },
+    // Mission (business trip) fields
+    missionStartDate: {
+        type: Date,
+        required: function() {
+            return this.type === 'mission';
+        }
+    },
+    missionEndDate: {
+        type: Date,
+        required: function() {
+            return this.type === 'mission';
+        }
+    },
+    missionDestination: {
+        type: String,
+        required: function() {
+            return this.type === 'mission';
         }
     },
     createdAt: {

@@ -1765,6 +1765,12 @@ const AdminDashboard = () => {
                 >
                   ⏱️ Overtime Hours ({forms.filter(f => f.type === 'extra_hours').length})
                 </button>
+                <button 
+                  className={`form-type-tab ${activeFormType === 'mission' ? 'active' : ''}`}
+                  onClick={() => setActiveFormType('mission')}
+                >
+                  ✈️ Mission ({forms.filter(f => f.type === 'mission').length})
+                </button>
               </div>
             </div>
 
@@ -1822,7 +1828,8 @@ const AdminDashboard = () => {
                         {form.type === 'vacation' ? '🏖️' : 
                          form.type === 'sick_leave' ? '🏥' : 
                          form.type === 'excuse' ? '🕐' : 
-                         form.type === 'extra_hours' ? '⏱️' : '🏠'}
+                         form.type === 'extra_hours' ? '⏱️' : 
+                         form.type === 'mission' ? '✈️' : '🏠'}
                       </div>
                       <div className="form-info">
                         <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
@@ -1836,6 +1843,7 @@ const AdminDashboard = () => {
                           {form.type === 'vacation' ? 'Annual Vacation' :
                            form.type === 'wfh' ? '🏠 Work From Home' :
                            form.type === 'extra_hours' ? '⏱️ Overtime Hours' :
+                           form.type === 'mission' ? '✈️ Mission' :
                            form.type}
                         </span>
                       </div>
@@ -1876,6 +1884,8 @@ const AdminDashboard = () => {
                             form.wfhDate?.slice(0,10) || 'N/A'
                           ) : form.type === 'extra_hours' ? (
                             <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
+                          ) : form.type === 'mission' ? (
+                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)} • ${form.missionDestination || 'N/A'}`
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -1944,7 +1954,8 @@ const AdminDashboard = () => {
                         {form.type === 'vacation' ? '🏖️' : 
                          form.type === 'sick_leave' ? '🏥' : 
                          form.type === 'excuse' ? '🕐' : 
-                         form.type === 'extra_hours' ? '⏱️' : '🏠'}
+                         form.type === 'extra_hours' ? '⏱️' : 
+                         form.type === 'mission' ? '✈️' : '🏠'}
                       </div>
                       <div className="form-info">
                         <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
@@ -1960,6 +1971,7 @@ const AdminDashboard = () => {
                            form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
                            form.type === 'wfh' ? '🏠 Work From Home' :
                            form.type === 'extra_hours' ? '⏱️ Overtime Hours' :
+                           form.type === 'mission' ? '✈️ Mission' :
                            form.type}
                         </span>
                       </div>
@@ -2015,6 +2027,8 @@ const AdminDashboard = () => {
                             form.wfhDate?.slice(0,10) || 'N/A'
                           ) : form.type === 'extra_hours' ? (
                             <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
+                          ) : form.type === 'mission' ? (
+                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)} • ${form.missionDestination || 'N/A'}`
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -2131,7 +2145,8 @@ const AdminDashboard = () => {
                         {form.type === 'vacation' ? '🏖️' : 
                          form.type === 'sick_leave' ? '🏥' : 
                          form.type === 'excuse' ? '🕐' : 
-                         form.type === 'extra_hours' ? '⏱️' : '🏠'}
+                         form.type === 'extra_hours' ? '⏱️' : 
+                         form.type === 'mission' ? '✈️' : '🏠'}
                       </div>
                       <div className="form-info">
                         <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
@@ -2147,6 +2162,7 @@ const AdminDashboard = () => {
                            form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
                            form.type === 'wfh' ? '🏠 Work From Home' :
                            form.type === 'extra_hours' ? '⏱️ Overtime Hours' :
+                           form.type === 'mission' ? '✈️ Mission' :
                            form.type}
                         </span>
                       </div>
@@ -2202,6 +2218,8 @@ const AdminDashboard = () => {
                             form.wfhDate?.slice(0,10) || 'N/A'
                           ) : form.type === 'extra_hours' ? (
                             <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
+                          ) : form.type === 'mission' ? (
+                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)} • ${form.missionDestination || 'N/A'}`
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}

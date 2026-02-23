@@ -1,11 +1,39 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import axios from 'axios';
 import App from './App';
 import { NotificationProvider } from './components/NotificationSystem';
+import { handleSessionExpired } from './utils/sessionExpired';
 import './index.css';
 import './i18n'; // Initialize i18n configuration
 import reportWebVitals from './reportWebVitals';
 import logger from './utils/logger';
+
+// Global 401 handler: redirect to login when token is invalid
+const originalFetch = window.fetch;
+window.fetch = async function (url, options = {}) {
+  const response = await originalFetch.call(this, url, options);
+  if (response.status === 401) {
+    const urlStr = typeof url === 'string' ? url : (url?.url || '');
+    if (!urlStr.includes('/api/auth/login') && !urlStr.includes('/api/auth/register')) {
+      handleSessionExpired();
+    }
+  }
+  return response;
+};
+
+axios.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      const url = err.config?.url || '';
+      if (!url.includes('/api/auth/login') && !url.includes('/api/auth/register')) {
+        handleSessionExpired();
+      }
+    }
+    return Promise.reject(err);
+  }
+);
 
 // Performance optimizations
 const root = ReactDOM.createRoot(document.getElementById('root'));

@@ -781,6 +781,14 @@ const ManagerDashboard = ({ onLogout }) => {
                       </>
                     )}
                     
+                    {form.type === 'mission' && (
+                      <>
+                        <p><strong>{t('forms.startDate')}:</strong> {formatDate(form.missionStartDate)}</p>
+                        <p><strong>{t('forms.endDate')}:</strong> {formatDate(form.missionEndDate)}</p>
+                        <p><strong>{t('forms.missionDestination')}:</strong> 📍 {form.missionDestination}</p>
+                      </>
+                    )}
+                    
                     <p><strong>{t('reason')}:</strong> {form.reason?.substring(0, 80)}...</p>
                     
                     {form.managerApprovedBy && (
@@ -905,6 +913,14 @@ const ManagerDashboard = ({ onLogout }) => {
                         <p><strong>{t('dates')}:</strong> {formatDate(form.sickLeaveStartDate)} - {formatDate(form.sickLeaveEndDate)}</p>
                         <p><strong>{t('duration')}:</strong> {Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} {t('days')}</p>
                         <MedicalDocumentViewer form={form} userRole="manager" />
+                      </>
+                    )}
+                    
+                    {form.type === 'mission' && (
+                      <>
+                        <p><strong>{t('forms.startDate')}:</strong> {formatDate(form.missionStartDate)}</p>
+                        <p><strong>{t('forms.endDate')}:</strong> {formatDate(form.missionEndDate)}</p>
+                        <p><strong>{t('forms.missionDestination')}:</strong> 📍 {form.missionDestination}</p>
                       </>
                     )}
                     
@@ -1106,6 +1122,14 @@ const ManagerDashboard = ({ onLogout }) => {
                       <p><strong>{t('sickLeaveDates')}:</strong> {formatDate(form.sickLeaveStartDate)} - {formatDate(form.sickLeaveEndDate)}</p>
                       <p><strong>{t('duration')}:</strong> {Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} {t('days')}</p>
                       <MedicalDocumentViewer form={form} userRole="manager" />
+                    </>
+                  )}
+                  
+                  {form.type === 'mission' && (
+                    <>
+                      <p><strong>{t('forms.startDate')}:</strong> {formatDate(form.missionStartDate)}</p>
+                      <p><strong>{t('forms.endDate')}:</strong> {formatDate(form.missionEndDate)}</p>
+                      <p><strong>{t('forms.missionDestination')}:</strong> 📍 {form.missionDestination}</p>
                     </>
                   )}
                   

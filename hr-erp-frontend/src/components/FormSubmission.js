@@ -25,7 +25,10 @@ const FormSubmission = ({ onFormSubmitted }) => {
     wfhWorkingOn: '',
     extraHoursDate: '',
     extraHoursWorked: '',
-    extraHoursDescription: ''
+    extraHoursDescription: '',
+    missionStartDate: '',
+    missionEndDate: '',
+    missionDestination: ''
   });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -162,6 +165,14 @@ const FormSubmission = ({ onFormSubmitted }) => {
         extraHoursDescription: form.extraHoursDescription,
         reason: form.extraHoursDescription // Use description as the reason
       };
+    } else if (form.type === 'mission') {
+      payload = {
+        type: 'mission',
+        missionStartDate: form.missionStartDate,
+        missionEndDate: form.missionEndDate,
+        missionDestination: form.missionDestination.trim(),
+        reason: form.reason
+      };
     }
 
     try {
@@ -202,7 +213,10 @@ const FormSubmission = ({ onFormSubmitted }) => {
           wfhWorkingOn: '',
           extraHoursDate: '',
           extraHoursWorked: '',
-          extraHoursDescription: ''
+          extraHoursDescription: '',
+          missionStartDate: '',
+          missionEndDate: '',
+          missionDestination: ''
         });
         fetchExcuseRequests(); // Refresh excuse requests after submission
         if (onFormSubmitted) onFormSubmitted();
@@ -324,6 +338,7 @@ const FormSubmission = ({ onFormSubmitted }) => {
               <option value="extra_hours">⏱️ {t('forms.extraHoursRequestOption')}</option>
             )}
             <option value="sick_leave">🏥 {t('forms.sickLeaveRequestOption')}</option>
+            <option value="mission">✈️ {t('forms.missionRequestOption')}</option>
           </select>
           <small className="input-helper" style={{ marginTop: '0.5rem', display: 'block' }}>
             {form.type === 'vacation' && t('forms.vacationRequestHelp')}
@@ -331,6 +346,7 @@ const FormSubmission = ({ onFormSubmitted }) => {
             {form.type === 'wfh' && t('forms.wfhRequestHelp')}
             {form.type === 'extra_hours' && t('forms.extraHoursRequestHelp')}
             {form.type === 'sick_leave' && t('forms.sickLeaveRequestHelp')}
+            {form.type === 'mission' && t('forms.missionRequestHelp')}
           </small>
         </div>
 
@@ -806,6 +822,92 @@ const FormSubmission = ({ onFormSubmitted }) => {
                     </div>
                     <div>
                       <strong>{t('forms.workDone')}:</strong> {form.extraHoursDescription.substring(0, 100)}{form.extraHoursDescription.length > 100 ? '...' : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : form.type === 'mission' ? (
+          <div className="mission-selection-section">
+            <h4 className="form-section-title">✈️ {t('forms.missionDetails')}</h4>
+            <p style={{ color: '#666', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+              {t('forms.missionRequestHelp')}
+            </p>
+            
+            <div className="grid-2">
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">
+                  <span className="label-icon">📅</span>
+                  {t('forms.startDate')}
+                </label>
+                <input 
+                  name="missionStartDate" 
+                  type="date" 
+                  value={form.missionStartDate} 
+                  onChange={handleChange} 
+                  className="form-input-elegant date-input"
+                  min={new Date().toISOString().split('T')[0]}
+                  required 
+                  title={t('forms.selectMissionStartDate')}
+                />
+                <small className="input-helper">{t('forms.selectMissionStartDate')}</small>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">
+                  <span className="label-icon">📅</span>
+                  {t('forms.endDate')}
+                </label>
+                <input 
+                  name="missionEndDate" 
+                  type="date" 
+                  value={form.missionEndDate} 
+                  onChange={handleChange} 
+                  className="form-input-elegant date-input"
+                  min={form.missionStartDate || new Date().toISOString().split('T')[0]}
+                  required 
+                  title={t('forms.selectMissionEndDate')}
+                />
+                <small className="input-helper">{t('forms.selectMissionEndDate')}</small>
+              </div>
+            </div>
+            
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">
+                <span className="label-icon">📍</span>
+                {t('forms.missionDestination')}
+              </label>
+              <input 
+                name="missionDestination" 
+                type="text" 
+                placeholder={t('forms.missionDestinationPlaceholder')}
+                value={form.missionDestination} 
+                onChange={handleChange} 
+                className="form-input-elegant"
+                required 
+                title={t('forms.enterMissionDestination')}
+              />
+              <small className="input-helper">{t('forms.enterMissionDestination')}</small>
+            </div>
+            
+            {form.missionStartDate && form.missionEndDate && form.missionDestination && (
+              <div className="mission-summary" style={{ marginTop: '1rem' }}>
+                <div className="summary-card" style={{ 
+                  background: 'linear-gradient(135deg, #E8F5E9, #C8E6C9)', 
+                  padding: '1rem', 
+                  borderRadius: '8px',
+                  border: '1px solid #81C784'
+                }}>
+                  <h5 style={{ margin: '0 0 0.5rem 0', color: '#2E7D32' }}>✈️ {t('forms.missionSummary')}</h5>
+                  <div style={{ color: '#333' }}>
+                    <div style={{ marginBottom: '0.25rem' }}>
+                      <strong>{t('forms.from')}:</strong> {new Date(form.missionStartDate).toLocaleDateString(t('common.locale'), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </div>
+                    <div style={{ marginBottom: '0.25rem' }}>
+                      <strong>{t('forms.to')}:</strong> {new Date(form.missionEndDate).toLocaleDateString(t('common.locale'), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </div>
+                    <div>
+                      <strong>{t('forms.missionDestination')}:</strong> {form.missionDestination}
                     </div>
                   </div>
                 </div>

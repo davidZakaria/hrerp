@@ -1626,9 +1626,12 @@ const SuperAdminDashboard = () => {
                       switch(type) {
                         case 'sick_leave': return '🏥';
                         case 'annual_vacation': return '🏖️';
+                        case 'vacation': return '🏖️';
                         case 'maternity_leave': return '👶';
                         case 'paternity_leave': return '👨‍👶';
                         case 'excuse_hours': return '⏰';
+                        case 'excuse': return '⏰';
+                        case 'mission': return '✈️';
                         default: return '📝';
                       }
                     };
@@ -1637,9 +1640,12 @@ const SuperAdminDashboard = () => {
                       switch(type) {
                         case 'sick_leave': return '#f44336';
                         case 'annual_vacation': return '#2196f3';
+                        case 'vacation': return '#2196f3';
                         case 'maternity_leave': return '#e91e63';
                         case 'paternity_leave': return '#9c27b0';
                         case 'excuse_hours': return '#ff9800';
+                        case 'excuse': return '#ff9800';
+                        case 'mission': return '#2e7d32';
                         default: return '#757575';
                       }
                     };
@@ -1739,7 +1745,24 @@ const SuperAdminDashboard = () => {
                                 </div>
                               </>
                             )}
-                            {form.type !== 'vacation' && form.type !== 'excuse' && (
+                            {form.type === 'mission' && (
+                              <>
+                                <div className="info-item">
+                                  <span className="info-label">Dates:</span>
+                                  <span className="info-value">
+                                    {form.missionStartDate && form.missionEndDate ? 
+                                      `${new Date(form.missionStartDate).toLocaleDateString()} - ${new Date(form.missionEndDate).toLocaleDateString()}` : 
+                                      'N/A'
+                                    }
+                                  </span>
+                                </div>
+                                <div className="info-item">
+                                  <span className="info-label">Destination:</span>
+                                  <span className="info-value">📍 {form.missionDestination || 'N/A'}</span>
+                                </div>
+                              </>
+                            )}
+                            {form.type !== 'vacation' && form.type !== 'excuse' && form.type !== 'mission' && (
                               <>
                                 <div className="info-item">
                                   <span className="info-label">Duration:</span>

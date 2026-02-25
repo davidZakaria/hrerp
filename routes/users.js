@@ -1,7 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const fs = require('fs').promises;
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
+const Form = require('../models/Form');
+const EmployeeFlag = require('../models/EmployeeFlag');
+const JobApplication = require('../models/JobApplication');
+const Evaluation = require('../models/Evaluation');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -268,7 +274,7 @@ router.put('/:userId/status', auth, validateObjectId('userId'), async (req, res)
     }
 
     const { status } = req.body;
-    if (!['active', 'pending', 'inactive'].includes(status)) {
+    if (!['active', 'pending', 'inactive', 'draft'].includes(status)) {
       return res.status(400).json({ msg: 'Invalid status' });
     }
 
@@ -591,7 +597,7 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
   }
 });
 
-// Delete user (admin only)
+// Delete user (admin only) - full cascade delete
 router.delete('/:userId', auth, validateObjectId('userId'), async (req, res) => {
   try {
     const admin = await User.findById(req.user.id);
@@ -604,8 +610,79 @@ router.delete('/:userId', auth, validateObjectId('userId'), async (req, res) => 
       return res.status(404).json({ msg: 'User not found' });
     }
 
-    await User.findByIdAndDelete(req.params.userId);
-    res.json({ msg: 'User deleted successfully' });
+    // Block deletion of super_admin
+    const superAdminCount = await User.countDocuments({ role: 'super_admin' });
+    if (user.role === 'super_admin') {
+      if (superAdminCount <= 1) {
+        return res.status(400).json({ msg: 'Cannot delete the last super admin' });
+      }
+      return res.status(400).json({ msg: 'Super admin cannot be deleted' });
+    }
+
+    const userId = user._id;
+
+    // 1. Get forms for medical document paths
+    const forms = await Form.find({ user: userId }).select('medicalDocument');
+    for (const form of forms) {
+      if (form.medicalDocument) {
+        try {
+          const fullPath = path.isAbsolute(form.medicalDocument)
+            ? form.medicalDocument
+            : path.join(__dirname, '..', form.medicalDocument);
+          await fs.unlink(fullPath);
+        } catch (e) {
+          if (e.code !== 'ENOENT') console.warn('Failed to delete medical doc:', form.medicalDocument, e.message);
+        }
+      }
+    }
+
+    // 2. Delete EmployeeFlags (employee or flaggedBy)
+    await EmployeeFlag.deleteMany({ $or: [{ employee: userId }, { flaggedBy: userId }] });
+
+    // 3. Delete Evaluations where user is evaluator
+    await Evaluation.deleteMany({ evaluator: userId });
+
+    // 4. Clear assignedInterviewer on JobApplications (don't delete applications - they're external applicants)
+    await JobApplication.updateMany(
+      { assignedInterviewer: userId },
+      { $unset: { assignedInterviewer: 1 } }
+    );
+
+    // 5. Delete Attendance records
+    await Attendance.deleteMany({ user: userId });
+
+    // 6. Delete Forms
+    await Form.deleteMany({ user: userId });
+
+    // 7. Audit log before delete
+    await createAuditLog({
+      action: 'USER_DELETED',
+      performedBy: admin._id,
+      targetUser: userId,
+      description: `User deleted: ${user.name} (${user.email})`,
+      details: {
+        name: user.name,
+        email: user.email,
+        employeeCode: user.employeeCode,
+        department: user.department,
+        role: user.role
+      },
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      severity: 'HIGH'
+    });
+
+    // 8. Delete user
+    await User.findByIdAndDelete(userId);
+
+    const deletedUser = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      employeeCode: user.employeeCode,
+      department: user.department
+    };
+    res.json({ msg: 'User deleted successfully', user: deletedUser });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');

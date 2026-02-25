@@ -276,6 +276,21 @@
     "unauthorized": "You are not authorized to perform this action.",
     "sessionExpired": "Your session has expired. Please login again."
   },
+  "users": {
+    "deleteUser": "Delete User",
+    "deleteUserConfirm": "Confirm Delete",
+    "deleteUserWarning": "This will permanently delete the account and all related data (forms, attendance, files). This action cannot be undone.",
+    "typeToConfirm": "Type the user's name or email to confirm",
+    "userDeleted": "User deleted successfully",
+    "draft": "Draft",
+    "moveToDraft": "Move to Draft",
+    "reactivate": "Reactivate",
+    "accountDraft": "Account is in draft. Contact administrator to activate.",
+    "inactive": "Inactive",
+    "superAdminCannotDelete": "Super admin accounts cannot be deleted",
+    "onlySuperAdminCanDeleteAdmin": "Only super admins can delete admin accounts",
+    "superAdminCannotDraft": "Super admin cannot be moved to draft"
+  },
   "navigation": {
     "home": "Home",
     "dashboard": "Dashboard",

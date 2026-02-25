@@ -74,6 +74,11 @@ const AdminDashboard = () => {
   const [allFlags, setAllFlags] = useState([]);
   const [flagsSummary, setFlagsSummary] = useState({ totalDeductions: 0, totalRewards: 0 });
 
+  // Delete User confirmation modal state
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
+  const [deleteUserLoading, setDeleteUserLoading] = useState(false);
+
   // Edit User state
   const [showEditUserModal, setShowEditUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -223,7 +228,7 @@ const AdminDashboard = () => {
         headers: { 'x-auth-token': token }
       });
       const allUsers = res.data;
-      setUsers(allUsers.filter(user => user.status === 'active'));
+      setUsers(allUsers.filter(user => user.status !== 'pending'));
       setPendingUsers(allUsers.filter(user => user.status === 'pending'));
     } catch (err) {
       logger.error('Error fetching users:', err);
@@ -450,30 +455,74 @@ const AdminDashboard = () => {
     }
   };
 
-  // Delete user
-  const handleDeleteUser = async (userId) => {
-    // Check if trying to delete a super admin or admin user
-    const userToDelete = users.find(u => u._id === userId);
-    if (userToDelete?.role === 'super_admin' && currentUser?.role !== 'super_admin') {
-      setMessage('Super admin accounts cannot be deleted');
+  // Open delete confirmation modal
+  const handleDeleteUser = (user) => {
+    if (user?.role === 'super_admin' && currentUser?.role !== 'super_admin') {
+      setMessage(t('users.superAdminCannotDelete') || 'Super admin accounts cannot be deleted');
       return;
     }
-    if (userToDelete?.role === 'admin' && currentUser?.role !== 'super_admin') {
-      setMessage('Only super admins can delete admin accounts');
+    if (user?.role === 'admin' && currentUser?.role !== 'super_admin') {
+      setMessage(t('users.onlySuperAdminCanDeleteAdmin') || 'Only super admins can delete admin accounts');
       return;
     }
+    setUserToDelete(user);
+    setDeleteConfirmInput('');
+  };
 
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`${API_URL}/api/users/${userId}`, {
-          headers: { 'x-auth-token': token }
-        });
-        setMessage('User deleted successfully');
-        fetchUsers();
-      } catch (err) {
-        setMessage(err.response?.data?.msg || 'Error deleting user');
-      }
+  // Confirm delete (after typing user name)
+  const handleConfirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    const confirmMatch = deleteConfirmInput.trim().toLowerCase() === userToDelete.name.trim().toLowerCase() ||
+      deleteConfirmInput.trim().toLowerCase() === userToDelete.email.trim().toLowerCase();
+    if (!confirmMatch) {
+      setMessage(t('users.typeToConfirm') || 'Type the user\'s name or email to confirm');
+      return;
+    }
+    setDeleteUserLoading(true);
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/users/${userToDelete._id}`, {
+        headers: { 'x-auth-token': token }
+      });
+      setMessage(t('users.userDeleted') || 'User deleted successfully');
+      setUserToDelete(null);
+      setDeleteConfirmInput('');
+      fetchUsers();
+    } catch (err) {
+      setMessage(err.response?.data?.msg || 'Error deleting user');
+    } finally {
+      setDeleteUserLoading(false);
+    }
+  };
+
+  // Move user to draft
+  const handleMoveToDraft = async (user) => {
+    if (user?.role === 'super_admin') {
+      setMessage(t('users.superAdminCannotDraft') || 'Super admin cannot be moved to draft');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/api/users/${user._id}/status`, { status: 'draft' }, { headers: { 'x-auth-token': token } });
+      setMessage(t('users.moveToDraft') || 'User moved to draft');
+      fetchUsers();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      setMessage(err.response?.data?.msg || 'Error moving to draft');
+    }
+  };
+
+  // Reactivate user (from draft/inactive)
+  const handleReactivateUser = async (user) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/api/users/${user._id}/status`, { status: 'active' }, { headers: { 'x-auth-token': token } });
+      setMessage(t('users.reactivate') || 'User reactivated');
+      fetchUsers();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      setMessage(err.response?.data?.msg || 'Error reactivating user');
     }
   };
 
@@ -1546,11 +1595,11 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            {/* Active Users Section */}
+            {/* Users Section (Active, Draft, Inactive) */}
             <div className="super-admin-section">
               <div className="section-title-container">
                 <h3 className="section-title">
-                  👥 Active Users ({currentUser?.role === 'super_admin' 
+                  👥 Users ({currentUser?.role === 'super_admin' 
                     ? users.length 
                     : users.filter(u => u.role !== 'super_admin').length})
                 </h3>
@@ -1588,6 +1637,11 @@ const AdminDashboard = () => {
                         <span className={`role-badge role-${user.role}`}>
                           {user.role === 'admin' ? 'Admin' : user.role === 'manager' ? 'Manager' : 'Employee'}
                         </span>
+                        {(user.status === 'draft' || user.status === 'inactive') && (
+                          <span className={`role-badge ${user.status === 'draft' ? 'status-draft' : 'status-inactive'}`} style={{ marginLeft: '8px' }}>
+                            {user.status === 'draft' ? (t('users.draft') || 'Draft') : (t('users.inactive') || 'Inactive')}
+                          </span>
+                        )}
                       </div>
                       <div className="info-row">
                         <span className="info-label">Department:</span>
@@ -1635,6 +1689,24 @@ const AdminDashboard = () => {
                       )}
                     </div>
                     <div className="card-actions">
+                      {(user.status === 'draft' || user.status === 'inactive') ? (
+                        <button 
+                          className="btn-elegant btn-success btn-sm"
+                          onClick={() => handleReactivateUser(user)}
+                          title={t('users.reactivate') || 'Reactivate'}
+                        >
+                          ✅ {t('users.reactivate') || 'Reactivate'}
+                        </button>
+                      ) : user.role !== 'super_admin' ? (
+                        <button 
+                          className="btn-elegant btn-sm"
+                          onClick={() => handleMoveToDraft(user)}
+                          style={{ background: 'linear-gradient(135deg, #9e9e9e, #757575)' }}
+                          title={t('users.moveToDraft') || 'Move to Draft'}
+                        >
+                          📄 {t('users.moveToDraft') || 'Draft'}
+                        </button>
+                      ) : null}
                       <button 
                         className="btn-elegant btn-primary btn-sm"
                         onClick={() => handleEditUser(user)}
@@ -1650,7 +1722,7 @@ const AdminDashboard = () => {
                       </button>
                       <button 
                         className="btn-elegant btn-danger btn-sm"
-                        onClick={() => handleDeleteUser(user._id)}
+                        onClick={() => handleDeleteUser(user)}
                       >
                         🗑️ Delete
                       </button>
@@ -2550,6 +2622,7 @@ const AdminDashboard = () => {
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive (Disabled)</option>
+                  <option value="draft">Draft</option>
                   <option value="pending">Pending</option>
                 </select>
               </div>
@@ -2610,6 +2683,58 @@ const AdminDashboard = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {userToDelete && (
+        <div className="modal-elegant" onClick={() => !deleteUserLoading && setUserToDelete(null)}>
+          <div className="modal-content-elegant" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <h2 className="text-gradient" style={{ color: '#f44336' }}>
+              {t('users.deleteUser') || 'Delete User'}
+            </h2>
+            <div style={{ marginBottom: '1.5rem', color: '#ccc' }}>
+              <p style={{ marginBottom: '0.5rem' }}>
+                <strong>{userToDelete.name}</strong> ({userToDelete.email})
+              </p>
+              {userToDelete.employeeCode && <p style={{ marginBottom: '0.5rem' }}>#{userToDelete.employeeCode}</p>}
+              {userToDelete.department && <p>{userToDelete.department}</p>}
+            </div>
+            <p style={{ color: '#ff9800', marginBottom: '1rem', fontSize: '0.9rem' }}>
+              {t('users.deleteUserWarning') || 'This will permanently delete the account and all related data (forms, attendance, files). This action cannot be undone.'}
+            </p>
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">
+                {t('users.typeToConfirm') || 'Type the user\'s name or email to confirm'}
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmInput}
+                onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                className="form-input-elegant"
+                placeholder={userToDelete.name}
+                disabled={deleteUserLoading}
+              />
+            </div>
+            <div className="action-buttons">
+              <button
+                type="button"
+                className="btn-elegant btn-danger"
+                onClick={handleConfirmDeleteUser}
+                disabled={deleteUserLoading || !deleteConfirmInput.trim()}
+              >
+                {deleteUserLoading ? '...' : (t('users.deleteUserConfirm') || 'Confirm Delete')}
+              </button>
+              <button
+                type="button"
+                className="btn-elegant"
+                onClick={() => !deleteUserLoading && setUserToDelete(null)}
+                disabled={deleteUserLoading}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

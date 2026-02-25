@@ -115,6 +115,8 @@ router.post('/login', async (req, res) => {
         if (user.role !== 'super_admin' && user.status !== 'active') {
             if (user.status === 'pending') {
                 return res.status(403).json({ msg: 'Your account is pending approval by an administrator. Please wait for activation.' });
+            } else if (user.status === 'draft') {
+                return res.status(403).json({ msg: 'Account is in draft. Contact administrator to activate.' });
             } else {
                 return res.status(403).json({ msg: 'Account is not active. Please contact administrator.' });
             }

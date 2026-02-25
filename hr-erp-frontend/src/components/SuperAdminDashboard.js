@@ -7,7 +7,7 @@ import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 
 const SuperAdminDashboard = () => {
-  useTranslation(); // Initialize i18n
+  const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
   const [forms, setForms] = useState([]);
@@ -66,6 +66,11 @@ const SuperAdminDashboard = () => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [formEditData, setFormEditData] = useState({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+
+  // Delete User confirmation modal state
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
+  const [deleteUserLoading, setDeleteUserLoading] = useState(false);
 
   // Password Reset state
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
@@ -139,8 +144,8 @@ const SuperAdminDashboard = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        // Separate active and pending users
-        setUsers(data.filter(user => user.status === 'active'));
+        // Separate non-pending and pending users (include active, inactive, draft)
+        setUsers(data.filter(user => user.status !== 'pending'));
         setPendingUsers(data.filter(user => user.status === 'pending'));
       } else {
         setError(data.msg || 'Failed to fetch users');
@@ -220,6 +225,98 @@ const SuperAdminDashboard = () => {
         setTimeout(() => setSuccess(''), 3000);
       } else {
         setError(data.msg || 'Error approving user');
+      }
+    } catch (err) {
+      setError('Error connecting to server');
+    }
+  };
+
+  // Open delete user confirmation modal
+  const handleDeleteUser = (user) => {
+    if (user?.role === 'super_admin') {
+      setError(t('users.superAdminCannotDelete') || 'Super admin cannot be deleted');
+      return;
+    }
+    setUserToDelete(user);
+    setDeleteConfirmInput('');
+  };
+
+  // Confirm delete user (after typing name/email)
+  const handleConfirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    const confirmMatch = deleteConfirmInput.trim().toLowerCase() === userToDelete.name?.trim().toLowerCase() ||
+      deleteConfirmInput.trim().toLowerCase() === userToDelete.email?.trim().toLowerCase();
+    if (!confirmMatch) {
+      setError(t('users.typeToConfirm') || 'Type the user\'s name or email to confirm');
+      return;
+    }
+    setDeleteUserLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/users/${userToDelete._id}`, {
+        method: 'DELETE',
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(t('users.userDeleted') || 'User deleted successfully');
+        setUserToDelete(null);
+        setDeleteConfirmInput('');
+        fetchUsers();
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(data.msg || 'Error deleting user');
+      }
+    } catch (err) {
+      setError('Error connecting to server');
+    } finally {
+      setDeleteUserLoading(false);
+    }
+  };
+
+  // Move user to draft
+  const handleMoveToDraft = async (user) => {
+    if (user?.role === 'super_admin') {
+      setError(t('users.superAdminCannotDraft') || 'Super admin cannot be moved to draft');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/users/${user._id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+        body: JSON.stringify({ status: 'draft' })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(t('users.moveToDraft') || 'User moved to draft');
+        fetchUsers();
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(data.msg || 'Error moving to draft');
+      }
+    } catch (err) {
+      setError('Error connecting to server');
+    }
+  };
+
+  // Reactivate user (from draft/inactive)
+  const handleReactivateUser = async (user) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/users/${user._id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+        body: JSON.stringify({ status: 'active' })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(t('users.reactivate') || 'User reactivated');
+        fetchUsers();
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(data.msg || 'Error reactivating user');
       }
     } catch (err) {
       setError('Error connecting to server');
@@ -1281,6 +1378,7 @@ const SuperAdminDashboard = () => {
                         case 'active': return '#4caf50';
                         case 'inactive': return '#f44336';
                         case 'pending': return '#ff9800';
+                        case 'draft': return '#9e9e9e';
                         default: return '#747d8c';
                       }
                     };
@@ -1382,6 +1480,26 @@ const SuperAdminDashboard = () => {
                         </div>
                         
                         <div className="user-card-actions">
+                          {(user.status === 'draft' || user.status === 'inactive') ? (
+                            <button 
+                              className="btn-elegant btn-success"
+                              onClick={() => handleReactivateUser(user)}
+                              title={t('users.reactivate') || 'Reactivate'}
+                            >
+                              <span className="btn-icon">✅</span>
+                              {t('users.reactivate') || 'Reactivate'}
+                            </button>
+                          ) : user.role !== 'super_admin' ? (
+                            <button 
+                              className="btn-elegant"
+                              onClick={() => handleMoveToDraft(user)}
+                              style={{ background: 'linear-gradient(135deg, #9e9e9e, #757575)', color: 'white' }}
+                              title={t('users.moveToDraft') || 'Move to Draft'}
+                            >
+                              <span className="btn-icon">📄</span>
+                              {t('users.moveToDraft') || 'Draft'}
+                            </button>
+                          ) : null}
                           <button 
                             className="btn-elegant btn-edit-user"
                             onClick={() => handleUserSelect(user)}
@@ -1406,6 +1524,14 @@ const SuperAdminDashboard = () => {
                           >
                             <span className="btn-icon">👁️</span>
                             View Details
+                          </button>
+                          <button 
+                            className="btn-elegant btn-danger"
+                            onClick={() => handleDeleteUser(user)}
+                            title={t('users.deleteUser') || 'Delete User'}
+                          >
+                            <span className="btn-icon">🗑️</span>
+                            {t('users.deleteUser') || 'Delete'}
                           </button>
                         </div>
                       </div>
@@ -1519,6 +1645,7 @@ const SuperAdminDashboard = () => {
                         >
                           <option value="active">Active</option>
                           <option value="inactive">Inactive (Disabled)</option>
+                          <option value="draft">Draft</option>
                           <option value="pending">Pending</option>
                         </select>
                       </div>
@@ -2816,7 +2943,59 @@ const SuperAdminDashboard = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete User Confirmation Modal */}
+      {userToDelete && (
+        <div className="modal-elegant" onClick={() => !deleteUserLoading && setUserToDelete(null)}>
+          <div className="modal-content-elegant" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <h2 className="text-gradient" style={{ color: '#f44336' }}>
+              {t('users.deleteUser') || 'Delete User'}
+            </h2>
+            <div style={{ marginBottom: '1.5rem', color: '#ccc' }}>
+              <p style={{ marginBottom: '0.5rem' }}>
+                <strong>{userToDelete.name}</strong> ({userToDelete.email})
+              </p>
+              {userToDelete.employeeCode && <p style={{ marginBottom: '0.5rem' }}>#{userToDelete.employeeCode}</p>}
+              {userToDelete.department && <p>{userToDelete.department}</p>}
+            </div>
+            <p style={{ color: '#ff9800', marginBottom: '1rem', fontSize: '0.9rem' }}>
+              {t('users.deleteUserWarning') || 'This will permanently delete the account and all related data (forms, attendance, files). This action cannot be undone.'}
+            </p>
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">
+                {t('users.typeToConfirm') || 'Type the user\'s name or email to confirm'}
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmInput}
+                onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                className="form-input-elegant"
+                placeholder={userToDelete.name}
+                disabled={deleteUserLoading}
+              />
+            </div>
+            <div className="action-buttons">
+              <button
+                type="button"
+                className="btn-elegant btn-danger"
+                onClick={handleConfirmDeleteUser}
+                disabled={deleteUserLoading || !deleteConfirmInput.trim()}
+              >
+                {deleteUserLoading ? '...' : (t('users.deleteUserConfirm') || 'Confirm Delete')}
+              </button>
+              <button
+                type="button"
+                className="btn-elegant"
+                onClick={() => !deleteUserLoading && setUserToDelete(null)}
+                disabled={deleteUserLoading}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal (Forms) */}
       {showDeleteConfirm && (
         <div className="modal-elegant" onClick={() => setShowDeleteConfirm(null)}>
           <div className="modal-content-elegant" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>

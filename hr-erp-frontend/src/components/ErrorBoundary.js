@@ -56,6 +56,13 @@ class ErrorBoundary extends React.Component {
   };
 
   handleRefresh = () => {
+    // For chunk errors, force cache-bypass to get fresh index.html and new chunk refs
+    if (this.state.error?.message?.includes('chunk')) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('_cb', Date.now());
+      window.location.replace(url.toString());
+      return;
+    }
     window.location.reload();
   };
 
@@ -223,7 +230,7 @@ class ErrorBoundary extends React.Component {
             </p>
             {this.state.error?.message?.includes('chunk') && (
               <p className="error-subtitle" style={{ backgroundColor: 'rgba(76, 175, 80, 0.2)', padding: '1rem', borderRadius: '8px', marginTop: '0.5rem' }}>
-                💡 <strong>After a new deployment:</strong> Try a hard refresh (Ctrl+Shift+R or Cmd+Shift+R) to clear cached files.
+                💡 <strong>Stale app cache:</strong> Click &quot;Refresh Page&quot; below to load the latest version. Or do a hard refresh (Ctrl+Shift+R).
               </p>
             )}
 

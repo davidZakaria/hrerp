@@ -349,6 +349,140 @@ router.put('/:userId/vacation-days', auth, validateObjectId('userId'), async (re
   }
 });
 
+// Super Admin: Update any user - MUST be before PUT /:userId so /super/123 is not matched as userId="super"
+router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) => {
+  try {
+    const superAdmin = await User.findById(req.user.id);
+    if (superAdmin.role !== 'super_admin') {
+      return res.status(403).json({ msg: 'Not authorized as super admin' });
+    }
+
+    const {
+      name,
+      email,
+      department,
+      role,
+      vacationDaysLeft,
+      status,
+      modificationReason,
+      password,
+      employeeCode,
+      managedDepartments
+    } = req.body;
+
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    // Validate role
+    const validRoles = ['employee', 'manager', 'admin', 'super_admin'];
+    if (role && !validRoles.includes(role)) {
+      return res.status(400).json({ msg: 'Invalid role. Must be employee, manager, admin, or super_admin.' });
+    }
+
+    // Check if email is already taken by another user
+    if (email !== undefined && email !== user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ msg: 'Email already in use by another user' });
+      }
+    }
+
+    // Check if employeeCode is already taken by another user
+    if (employeeCode !== undefined && employeeCode !== user.employeeCode) {
+      const existingCode = await User.findOne({ employeeCode, _id: { $ne: user._id } });
+      if (existingCode) {
+        return res.status(400).json({ msg: 'Biometric code already in use by another user' });
+      }
+    }
+
+    // Create modification history entry
+    const modifications = [];
+    if (name !== undefined && name !== user.name) modifications.push({ field: 'name', oldValue: user.name, newValue: name });
+    if (email !== undefined && email !== user.email) modifications.push({ field: 'email', oldValue: user.email, newValue: email });
+    if (department !== undefined && department !== user.department) modifications.push({ field: 'department', oldValue: user.department, newValue: department });
+    if (role !== undefined && role !== user.role) modifications.push({ field: 'role', oldValue: user.role, newValue: role });
+    if (vacationDaysLeft !== undefined && vacationDaysLeft !== user.vacationDaysLeft) modifications.push({ field: 'vacationDaysLeft', oldValue: user.vacationDaysLeft, newValue: vacationDaysLeft });
+    if (status !== undefined && status !== user.status) modifications.push({ field: 'status', oldValue: user.status, newValue: status });
+    if (password && password.trim().length >= 6) modifications.push({ field: 'password', oldValue: '***', newValue: '*** (changed)' });
+    if (employeeCode !== undefined && employeeCode !== user.employeeCode) modifications.push({ field: 'employeeCode', oldValue: user.employeeCode || 'Not set', newValue: employeeCode || 'Removed' });
+
+    // Update user fields - only update if provided
+    if (name !== undefined) user.name = name;
+    if (email !== undefined) user.email = email;
+    if (department !== undefined) user.department = department;
+    if (role !== undefined) user.role = role;
+    const oldVacationDays = user.vacationDaysLeft;
+    if (vacationDaysLeft !== undefined) user.vacationDaysLeft = vacationDaysLeft;
+
+    // Managed departments - required when role is manager
+    if (role !== undefined) {
+      if (role === 'manager') {
+        user.managedDepartments = Array.isArray(managedDepartments) && managedDepartments.length > 0
+          ? managedDepartments
+          : (user.department ? [user.department] : []);
+      } else {
+        user.managedDepartments = [];
+      }
+    }
+
+    // Never deactivate super_admin
+    if (status !== undefined) {
+      if (user.role !== 'super_admin' || status === 'active') {
+        user.status = status;
+      } else if (user.role === 'super_admin') {
+        user.status = 'active';
+      }
+    }
+
+    // Update employeeCode
+    if (employeeCode !== undefined) {
+      user.employeeCode = employeeCode || undefined;
+    }
+
+    // Update password if provided
+    if (password && password.trim().length >= 6) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
+
+    // Add modifications to history
+    modifications.forEach(mod => {
+      user.modificationHistory.push({
+        ...mod,
+        modifiedBy: superAdmin._id,
+        reason: modificationReason
+      });
+    });
+
+    await user.save();
+
+    // Audit log for vacation days if changed
+    if (vacationDaysLeft !== undefined && vacationDaysLeft !== oldVacationDays) {
+      await createAuditLog({
+        action: 'VACATION_DAYS_MODIFIED',
+        performedBy: superAdmin._id,
+        targetUser: user._id,
+        targetResource: 'user',
+        targetResourceId: user._id,
+        description: `Vacation days for ${user.name} (${user.email}) changed from ${oldVacationDays} to ${vacationDaysLeft} by super admin ${superAdmin.name}`,
+        oldValues: { vacationDaysLeft: oldVacationDays },
+        newValues: { vacationDaysLeft },
+        details: { targetUserName: user.name, adminName: superAdmin.name, modificationReason },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        severity: 'HIGH'
+      });
+    }
+
+    res.json({ msg: 'User updated successfully', user: { ...user.toObject(), password: undefined } });
+  } catch (err) {
+    console.error('Super admin user update error:', err.message);
+    res.status(500).json({ msg: err.message || 'Server error' });
+  }
+});
+
 // Update user (admin only) - MAIN UPDATE ROUTE
 router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
   try {
@@ -362,6 +496,17 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     const user = await User.findById(req.params.userId);
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
+    }
+
+    // Validate role if provided
+    const validRoles = ['employee', 'manager', 'admin', 'super_admin'];
+    if (role !== undefined && !validRoles.includes(role)) {
+      return res.status(400).json({ msg: 'Invalid role. Must be employee, manager, admin, or super_admin.' });
+    }
+
+    // Regular admins cannot set or change users to super_admin
+    if (admin.role !== 'super_admin' && role === 'super_admin') {
+      return res.status(403).json({ msg: 'Only super admins can assign the super admin role' });
     }
 
     // Check if email is already taken by another user
@@ -385,7 +530,10 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     user.email = email;
     user.department = department;
     user.role = role;
-    user.managedDepartments = (role === 'manager' && managedDepartments) ? managedDepartments : [];
+    // Managed departments: when role is manager, use provided array or fallback to [department]
+    user.managedDepartments = role === 'manager'
+      ? (Array.isArray(managedDepartments) && managedDepartments.length > 0 ? managedDepartments : [department])
+      : [];
     
     // Update employeeCode (biometric code)
     if (employeeCode !== undefined) {
@@ -467,128 +615,6 @@ router.get('/all', auth, async (req, res) => {
     }
     const users = await User.find().select('-password');
     res.json(users);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
-  }
-});
-
-// Super Admin: Update any user
-router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) => {
-  try {
-    const superAdmin = await User.findById(req.user.id);
-    if (superAdmin.role !== 'super_admin') {
-      return res.status(403).json({ msg: 'Not authorized as super admin' });
-    }
-
-    const {
-      name,
-      email,
-      department,
-      role,
-      vacationDaysLeft,
-      status,
-      modificationReason,
-      password,
-      employeeCode
-    } = req.body;
-
-    const user = await User.findById(req.params.userId);
-    if (!user) {
-      return res.status(404).json({ msg: 'User not found' });
-    }
-
-    // Check if employeeCode is already taken by another user
-    if (employeeCode && employeeCode !== user.employeeCode) {
-      const existingCode = await User.findOne({ employeeCode, _id: { $ne: user._id } });
-      if (existingCode) {
-        return res.status(400).json({ msg: 'Biometric code already in use by another user' });
-      }
-    }
-
-    // Create modification history entry
-    const modifications = [];
-    if (name !== user.name) modifications.push({ field: 'name', oldValue: user.name, newValue: name });
-    if (email !== user.email) modifications.push({ field: 'email', oldValue: user.email, newValue: email });
-    if (department !== user.department) modifications.push({ field: 'department', oldValue: user.department, newValue: department });
-    if (role !== user.role) modifications.push({ field: 'role', oldValue: user.role, newValue: role });
-    if (vacationDaysLeft !== user.vacationDaysLeft) modifications.push({ field: 'vacationDaysLeft', oldValue: user.vacationDaysLeft, newValue: vacationDaysLeft });
-    if (status !== user.status) modifications.push({ field: 'status', oldValue: user.status, newValue: status });
-    if (password && password.trim().length >= 6) modifications.push({ field: 'password', oldValue: '***', newValue: '*** (changed)' });
-    if (employeeCode !== undefined && employeeCode !== user.employeeCode) modifications.push({ field: 'employeeCode', oldValue: user.employeeCode || 'Not set', newValue: employeeCode || 'Removed' });
-
-    // Check if vacation days are being modified for separate audit logging
-    const oldVacationDays = user.vacationDaysLeft;
-    const vacationDaysChanged = vacationDaysLeft !== user.vacationDaysLeft;
-
-    // Update user fields
-    user.name = name;
-    user.email = email;
-    user.department = department;
-    user.role = role;
-    user.vacationDaysLeft = vacationDaysLeft;
-    // Never deactivate super_admin
-    if (user.role !== 'super_admin' || status === 'active') {
-      user.status = status;
-    } else if (user.role === 'super_admin') {
-      user.status = 'active'; // Force active for super_admin
-    }
-    
-    // Update employeeCode (biometric code)
-    if (employeeCode !== undefined) {
-      user.employeeCode = employeeCode || undefined;
-    }
-    
-    // Update password if provided (super admin can reset user password)
-    if (password && password.trim().length >= 6) {
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(password, salt);
-    }
-
-    // Add modifications to history
-    modifications.forEach(mod => {
-      user.modificationHistory.push({
-        ...mod,
-        modifiedBy: superAdmin._id,
-        reason: modificationReason
-      });
-    });
-
-    await user.save();
-    
-    // Create separate audit log for vacation days modification if changed
-    if (vacationDaysChanged) {
-      await createAuditLog({
-        action: 'VACATION_DAYS_MODIFIED',
-        performedBy: superAdmin._id,
-        targetUser: user._id,
-        targetResource: 'user',
-        targetResourceId: user._id,
-        description: `Vacation days for ${user.name} (${user.email}) changed from ${oldVacationDays} to ${vacationDaysLeft} by super admin ${superAdmin.name}`,
-        oldValues: {
-          vacationDaysLeft: oldVacationDays
-        },
-        newValues: {
-          vacationDaysLeft: vacationDaysLeft
-        },
-        details: {
-          targetUserName: user.name,
-          targetUserEmail: user.email,
-          targetUserDepartment: user.department,
-          adminName: superAdmin.name,
-          adminEmail: superAdmin.email,
-          changeAmount: vacationDaysLeft - oldVacationDays,
-          modificationReason: modificationReason,
-          modifiedBy: 'super_admin'
-        },
-        reason: modificationReason,
-        ipAddress: req.ip || req.connection.remoteAddress,
-        userAgent: req.get('User-Agent'),
-        severity: 'HIGH'
-      });
-    }
-    
-    res.json({ msg: 'User updated successfully', user });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');

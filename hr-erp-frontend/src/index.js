@@ -77,8 +77,9 @@ if ('PerformanceObserver' in window) {
   }
 }
 
-// Service Worker registration for better caching (if available)
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+// Service Worker registration - skip in Capacitor (native app) to avoid WebView issues
+const isCapacitor = typeof window !== 'undefined' && window.Capacitor;
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production' && !isCapacitor) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {

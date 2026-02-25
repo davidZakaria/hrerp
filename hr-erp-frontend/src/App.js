@@ -8,6 +8,19 @@ import { preloadData } from './hooks/useApi';
 import './App.css';
 import './i18n';
 
+// Capacitor native plugins - dynamically imported only in native app context
+const initCapacitorPlugins = async () => {
+  if (typeof window === 'undefined' || !window.Capacitor) return;
+  try {
+    const { StatusBar } = await import('@capacitor/status-bar');
+    const { SplashScreen } = await import('@capacitor/splash-screen');
+    await StatusBar?.setStyle({ style: 'dark' });
+    await SplashScreen?.hide();
+  } catch (e) {
+    console.warn('Capacitor plugins not available:', e?.message);
+  }
+};
+
 // Lazy load components for better performance
 const Login = lazy(() => import('./components/Auth/Login'));
 const EmployeeDashboard = lazy(() => import('./components/EmployeeDashboard'));
@@ -187,6 +200,10 @@ const AuthenticatedApp = () => {
 
 const AppContent = () => {
   const { i18n } = useTranslation();
+
+  useEffect(() => {
+    initCapacitorPlugins();
+  }, []);
 
   useEffect(() => {
     // Set initial document direction based on language

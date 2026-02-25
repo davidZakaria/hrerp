@@ -178,6 +178,15 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             if (new Date(startDate) > new Date(endDate)) {
                 return res.status(400).json({ msg: 'Start date cannot be after end date' });
             }
+            // Dates must be within current month
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            if (start < monthStart || end > monthEnd) {
+                return res.status(400).json({ msg: 'Vacation dates must be within the current month' });
+            }
         }
 
         if (type === 'excuse') {
@@ -239,6 +248,15 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             }
             if (new Date(missionStartDate) > new Date(missionEndDate)) {
                 return res.status(400).json({ msg: 'Start date cannot be after end date' });
+            }
+            // Dates must be within current month
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+            const start = new Date(missionStartDate);
+            const end = new Date(missionEndDate);
+            if (start < monthStart || end > monthEnd) {
+                return res.status(400).json({ msg: 'Mission dates must be within the current month' });
             }
         }
 

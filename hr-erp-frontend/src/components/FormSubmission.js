@@ -4,8 +4,20 @@ import logo from '../assets/njd-logo.png';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
 
+// First and last day of current month (YYYY-MM-DD) - for vacation & mission forms
+const getCurrentMonthBounds = () => {
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return {
+    first: first.toISOString().split('T')[0],
+    last: last.toISOString().split('T')[0]
+  };
+};
+
 const FormSubmission = ({ onFormSubmitted }) => {
   const { t } = useTranslation();
+  const monthBounds = getCurrentMonthBounds();
   const [form, setForm] = useState({
     type: 'vacation',
     vacationType: 'annual', // Default to annual (unpaid vacation removed)
@@ -385,11 +397,12 @@ const FormSubmission = ({ onFormSubmitted }) => {
                   value={form.startDate} 
                   onChange={handleChange} 
                   className="form-input-elegant date-input"
-                  min={new Date().toISOString().split('T')[0]}
+                  min={monthBounds.first}
+                  max={monthBounds.last}
                   required 
                   title={t('forms.selectFirstDayVacation')}
                 />
-                <small className="input-helper">{t('forms.selectFirstDayVacation')}</small>
+                <small className="input-helper">{t('forms.selectFirstDayVacation')} ({t('forms.currentMonthOnly') || 'Current month only'})</small>
               </div>
               <div className="form-group-elegant">
                 <label className="form-label-elegant">
@@ -397,16 +410,17 @@ const FormSubmission = ({ onFormSubmitted }) => {
                   {t('forms.endDate')}
                 </label>
                 <input 
-                  name="endDate" 
+                  name="endDate"
                   type="date" 
                   value={form.endDate} 
                   onChange={handleChange} 
                   className="form-input-elegant date-input"
-                  min={form.startDate || new Date().toISOString().split('T')[0]}
+                  min={form.startDate || monthBounds.first}
+                  max={monthBounds.last}
                   required 
                   title={t('forms.selectLastDayVacation')}
                 />
-                <small className="input-helper">{t('forms.selectLastDayVacation')}</small>
+                <small className="input-helper">{t('forms.selectLastDayVacation')} ({t('forms.currentMonthOnly') || 'Current month only'})</small>
               </div>
             </div>
             {form.startDate && form.endDate && (
@@ -847,11 +861,12 @@ const FormSubmission = ({ onFormSubmitted }) => {
                   value={form.missionStartDate} 
                   onChange={handleChange} 
                   className="form-input-elegant date-input"
-                  min={new Date().toISOString().split('T')[0]}
+                  min={monthBounds.first}
+                  max={monthBounds.last}
                   required 
                   title={t('forms.selectMissionStartDate')}
                 />
-                <small className="input-helper">{t('forms.selectMissionStartDate')}</small>
+                <small className="input-helper">{t('forms.selectMissionStartDate')} ({t('forms.currentMonthOnly') || 'Current month only'})</small>
               </div>
               <div className="form-group-elegant">
                 <label className="form-label-elegant">
@@ -864,11 +879,12 @@ const FormSubmission = ({ onFormSubmitted }) => {
                   value={form.missionEndDate} 
                   onChange={handleChange} 
                   className="form-input-elegant date-input"
-                  min={form.missionStartDate || new Date().toISOString().split('T')[0]}
+                  min={form.missionStartDate || monthBounds.first}
+                  max={monthBounds.last}
                   required 
                   title={t('forms.selectMissionEndDate')}
                 />
-                <small className="input-helper">{t('forms.selectMissionEndDate')}</small>
+                <small className="input-helper">{t('forms.selectMissionEndDate')} ({t('forms.currentMonthOnly') || 'Current month only'})</small>
               </div>
             </div>
             

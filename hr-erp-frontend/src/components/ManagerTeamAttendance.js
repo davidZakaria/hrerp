@@ -341,8 +341,8 @@ const ManagerTeamAttendance = () => {
                   {selectedEmployee.records && selectedEmployee.records.map((record, idx) => (
                     <tr key={idx} style={{ borderBottom: '1px solid #eee', backgroundColor: idx % 2 === 0 ? '#fff' : '#f9f9f9' }}>
                       <td style={{ padding: '10px', color: '#000', fontSize: '0.9rem' }}>{formatDate(record.date)}</td>
-                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>{record.missedClockIn ? <span style={{ color: '#F44336', fontWeight: 'bold' }}>MISSED</span> : record.clockIn || '-'}</td>
-                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>{record.missedClockOut ? <span style={{ color: '#FF9800', fontWeight: 'bold' }}>MISSED</span> : record.clockOut || '-'}</td>
+                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>{record.missedClockIn ? <span style={{ color: '#F44336', fontWeight: 'bold' }}>MISSED</span> : (record.clockIn ? record.clockIn : <span style={{ color: '#ef4444', fontStyle: 'italic' }}>Missing</span>)}</td>
+                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>{record.missedClockOut ? <span style={{ color: '#FF9800', fontWeight: 'bold' }}>MISSED</span> : (record.clockOut ? record.clockOut : <span style={{ color: '#ef4444', fontStyle: 'italic' }}>Missing</span>)}</td>
                       <td style={{ padding: '10px' }}>{getStatusBadge(record.status)}</td>
                       <td style={{ padding: '10px', fontSize: '0.9rem' }}>{record.minutesLate > 0 ? <span style={{ color: '#F44336', fontWeight: 'bold' }}>{record.minutesLate}m</span> : '-'}</td>
                       <td style={{ padding: '10px', fontSize: '0.9rem' }}>{record.minutesOvertime > 0 ? <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>+{record.minutesOvertime}m</span> : '-'}</td>

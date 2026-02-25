@@ -167,6 +167,7 @@
     "selectVacationDates": "Select Your Vacation Dates",
     "selectFirstDayVacation": "Choose the first day of your vacation",
     "selectLastDayVacation": "Choose the last day of your vacation",
+    "currentMonthOnly": "Current month only",
     "vacationSummary": "Vacation Summary",
     "from": "From",
     "to": "To",
@@ -451,6 +452,7 @@
     "date": "Date",
     "clockIn": "Clock In",
     "clockOut": "Clock Out",
+    "missing": "Missing",
     "status": "Status",
     "overtime": "Overtime"
   },

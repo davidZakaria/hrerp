@@ -303,15 +303,34 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                             continue;
                         }
                         
-                        // Find user by employee code
-                        const user = await User.findOne({ employeeCode: record.employeeCode });
+                        // Find user by employee code (flexible: try raw, EMP prefix, zero-padded)
+                        const code = String(record.employeeCode || '').trim();
+                        let user = await User.findOne({ employeeCode: code });
+                        if (!user) {
+                            const variants = [
+                                code,
+                                'EMP' + code,
+                                'EMP' + code.padStart(4, '0'),
+                                code.padStart(4, '0'),
+                                code.padStart(3, '0')
+                            ].filter((v, i, a) => a.indexOf(v) === i);
+                            for (const v of variants) {
+                                user = await User.findOne({ employeeCode: v });
+                                if (user) break;
+                            }
+                        }
                         
                         if (!user) {
-                            results.unmatchedCodes.push({
-                                code: record.employeeCode,
-                                name: record.name,
-                                file: file.originalname
-                            });
+                            const alreadyListed = results.unmatchedCodes.some(
+                                u => u.code === record.employeeCode && u.file === file.originalname
+                            );
+                            if (!alreadyListed) {
+                                results.unmatchedCodes.push({
+                                    code: record.employeeCode,
+                                    name: record.name,
+                                    file: file.originalname
+                                });
+                            }
                             fileResults.skipped++;
                             results.failedRecords++;
                             continue;
@@ -391,9 +410,9 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                         });
                         
                         if (existingRecord) {
-                            // Update existing record
-                            existingRecord.clockIn = record.clockIn;
-                            existingRecord.clockOut = record.clockOut;
+                            // Update existing record (clockIn/clockOut can be null for absent)
+                            existingRecord.clockIn = record.clockIn || '';
+                            existingRecord.clockOut = record.clockOut || '';
                             existingRecord.status = status;
                             existingRecord.minutesLate = minutesLate;
                             existingRecord.minutesOvertime = minutesOvertime;
@@ -412,8 +431,8 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                                 employeeCode: record.employeeCode,
                                 user: user._id,
                                 date: record.date,
-                                clockIn: record.clockIn,
-                                clockOut: record.clockOut,
+                                clockIn: record.clockIn || '',
+                                clockOut: record.clockOut || '',
                                 status: status,
                                 location: file.originalname, // Use filename as location identifier
                                 minutesLate: minutesLate,

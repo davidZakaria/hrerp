@@ -889,14 +889,14 @@ const AttendanceManagement = () => {
                                       {record.missedClockIn ? (
                                         <span style={{ color: '#f87171', fontWeight: 'bold' }}>❌ MISSED</span>
                                       ) : (
-                                        <span className="clock-time" style={{ fontFamily: "'Courier New', monospace", color: '#f1f5f9', fontWeight: '700', fontSize: '0.95rem' }}>{record.clockIn || '-'}</span>
+                                        <span className="clock-time" style={{ fontFamily: "'Courier New', monospace", color: '#f1f5f9', fontWeight: '700', fontSize: '0.95rem' }}>{record.clockIn || <span style={{ color: '#ef4444', fontStyle: 'italic' }}>Missing</span>}</span>
                                       )}
                                     </td>
                                     <td style={{ padding: '10px', textAlign: 'center' }}>
                                       {record.missedClockOut ? (
                                         <span style={{ color: '#fb923c', fontWeight: 'bold' }}>⚠️ MISSED</span>
                                       ) : (
-                                        <span className="clock-time" style={{ fontFamily: "'Courier New', monospace", color: '#f1f5f9', fontWeight: '700', fontSize: '0.95rem' }}>{record.clockOut || '-'}</span>
+                                        <span className="clock-time" style={{ fontFamily: "'Courier New', monospace", color: '#f1f5f9', fontWeight: '700', fontSize: '0.95rem' }}>{record.clockOut || <span style={{ color: '#ef4444', fontStyle: 'italic' }}>Missing</span>}</span>
                                       )}
                                     </td>
                                     <td style={{ padding: '10px', textAlign: 'center' }}>{getStatusBadge(record.status)}</td>
@@ -1108,14 +1108,14 @@ const AttendanceManagement = () => {
                         {record.missedClockIn ? (
                           <span style={{ color: '#F44336', fontWeight: 'bold' }}>❌ MISSED</span>
                         ) : (
-                          <span style={{ color: '#000000' }}>{record.clockIn}</span>
+                          <span style={{ color: record.clockIn ? '#000000' : '#ef4444', fontStyle: record.clockIn ? 'normal' : 'italic' }}>{record.clockIn || 'Missing'}</span>
                         )}
                       </td>
                       <td style={{ padding: '10px', fontSize: '0.9rem', fontWeight: '500' }}>
                         {record.missedClockOut ? (
                           <span style={{ color: '#FF9800', fontWeight: 'bold' }}>⚠️ MISSED</span>
                         ) : (
-                          <span style={{ color: '#000000' }}>{record.clockOut || '-'}</span>
+                          <span style={{ color: record.clockOut ? '#000000' : '#ef4444', fontStyle: record.clockOut ? 'normal' : 'italic' }}>{record.clockOut || 'Missing'}</span>
                         )}
                       </td>
                       <td style={{ padding: '10px' }}>{getStatusBadge(record.status)}</td>

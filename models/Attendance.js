@@ -18,8 +18,9 @@ const attendanceSchema = new mongoose.Schema({
         index: true
     },
     clockIn: {
-        type: String, // Store as "HH:MM" format
-        required: true
+        type: String, // Store as "HH:MM" format; empty/null when absent
+        required: false,
+        default: ''
     },
     clockOut: {
         type: String, // Store as "HH:MM" format

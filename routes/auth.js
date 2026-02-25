@@ -90,25 +90,39 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        // Find user by email
-        let user = await User.findOne({ email });
+        // Normalize email (case-insensitive - matches registration behavior)
+        const emailNormalized = (email || '').toLowerCase().trim();
+        if (!emailNormalized || !password) {
+            return res.status(400).json({ msg: 'Email and password are required' });
+        }
+
+        // Find user by email - case-insensitive (some legacy users may have mixed-case in DB)
+        const emailRegex = new RegExp(`^${emailNormalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+        let user = await User.findOne({ email: { $regex: emailRegex } });
         if (!user) {
+            console.warn('Login failed: user not found', { domain: (emailNormalized.split('@')[1] || '').slice(0, 20) });
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
         // Validate password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            console.warn('Login failed: invalid password', { userId: user.id });
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
-        // Check if user is active
-        if (user.status !== 'active') {
+        // Check if user is active (super_admin can always log in for recovery)
+        if (user.role !== 'super_admin' && user.status !== 'active') {
             if (user.status === 'pending') {
                 return res.status(403).json({ msg: 'Your account is pending approval by an administrator. Please wait for activation.' });
             } else {
                 return res.status(403).json({ msg: 'Account is not active. Please contact administrator.' });
             }
+        }
+        
+        // If super_admin was inactive, reactivate on login (recovery)
+        if (user.role === 'super_admin' && user.status !== 'active') {
+            User.updateOne({ _id: user._id }, { status: 'active' }).exec();
         }
 
         // Update last login (non-blocking - don't wait for it)
@@ -173,7 +187,8 @@ router.post('/login', async (req, res) => {
         );
     } catch (err) {
         console.error('Login error:', err.message);
-        res.status(500).send('Server error');
+        console.error('Login stack:', err.stack);
+        return res.status(500).json({ msg: 'Server error. Please try again later.' });
     }
 });
 

@@ -234,23 +234,24 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Stricter rate limiting for auth endpoints
+// Note: In production behind reverse proxy (Nginx), many users may share one client IP
+// (corporate proxy, NAT). 30 attempts per 15 min allows for typos while still blocking brute force.
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.NODE_ENV === 'production' ? 10 : 50, // More generous for development
+    max: process.env.NODE_ENV === 'production' ? 30 : 50,
     message: {
+        msg: 'Too many login attempts. Please try again in 15 minutes.',
         error: 'Too many login attempts, please try again later.',
         retryAfter: '15 minutes'
     },
+    standardHeaders: true,
+    legacyHeaders: false,
     skipSuccessfulRequests: true,
     skip: (req) => {
-        // Skip rate limiting for preflight requests
         if (req.method === 'OPTIONS') return true;
-        
-        // In development, be more lenient with auth rate limiting
         if (process.env.NODE_ENV !== 'production' && (req.ip === '::1' || req.ip === '127.0.0.1')) {
-            return true; // Skip auth rate limiting for localhost in development
+            return true;
         }
-        
         return false;
     }
 });

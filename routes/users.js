@@ -277,6 +277,11 @@ router.put('/:userId/status', auth, validateObjectId('userId'), async (req, res)
       return res.status(404).json({ msg: 'User not found' });
     }
 
+    // Super admin cannot be deactivated
+    if (user.role === 'super_admin' && status !== 'active') {
+      return res.status(400).json({ msg: 'Super admin account cannot be deactivated' });
+    }
+
     user.status = status;
     await user.save();
 
@@ -387,9 +392,11 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
       user.employeeCode = employeeCode || undefined;
     }
     
-    // Update status if provided
+    // Update status if provided (never deactivate super_admin)
     if (status && ['active', 'inactive', 'pending'].includes(status)) {
-      user.status = status;
+      if (user.role !== 'super_admin' || status === 'active') {
+        user.status = status;
+      }
     }
     
     // Update password if provided (admin can reset user password)
@@ -520,7 +527,12 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     user.department = department;
     user.role = role;
     user.vacationDaysLeft = vacationDaysLeft;
-    user.status = status;
+    // Never deactivate super_admin
+    if (user.role !== 'super_admin' || status === 'active') {
+      user.status = status;
+    } else if (user.role === 'super_admin') {
+      user.status = 'active'; // Force active for super_admin
+    }
     
     // Update employeeCode (biometric code)
     if (employeeCode !== undefined) {

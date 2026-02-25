@@ -416,15 +416,19 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     const oldVacationDays = user.vacationDaysLeft;
     if (vacationDaysLeft !== undefined) user.vacationDaysLeft = vacationDaysLeft;
 
-    // Managed departments - required when role is manager
-    if (role !== undefined) {
-      if (role === 'manager') {
-        user.managedDepartments = Array.isArray(managedDepartments) && managedDepartments.length > 0
-          ? managedDepartments
-          : (user.department ? [user.department] : []);
-      } else {
-        user.managedDepartments = [];
-      }
+    // Managed departments - always update when role is manager (handles department assignment changes)
+    const targetRole = role !== undefined ? role : user.role;
+    if (targetRole === 'manager') {
+      const sanitizedDepts = Array.isArray(managedDepartments)
+        ? managedDepartments.filter(d => typeof d === 'string' && d.trim())
+        : [];
+      const newManagedDepts = sanitizedDepts.length > 0 ? sanitizedDepts : [(department || user.department)].filter(Boolean);
+      const oldDepts = JSON.stringify((user.managedDepartments || []).sort());
+      const newDepts = JSON.stringify(newManagedDepts.sort());
+      if (oldDepts !== newDepts) modifications.push({ field: 'managedDepartments', oldValue: user.managedDepartments, newValue: newManagedDepts });
+      user.managedDepartments = newManagedDepts;
+    } else {
+      user.managedDepartments = [];
     }
 
     // Never deactivate super_admin
@@ -530,10 +534,15 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     user.email = email;
     user.department = department;
     user.role = role;
-    // Managed departments: when role is manager, use provided array or fallback to [department]
-    user.managedDepartments = role === 'manager'
-      ? (Array.isArray(managedDepartments) && managedDepartments.length > 0 ? managedDepartments : [department])
-      : [];
+    // Managed departments: when role is manager, sanitize and use provided array or fallback to [department]
+    if (role === 'manager') {
+      const sanitized = Array.isArray(managedDepartments)
+        ? managedDepartments.filter(d => typeof d === 'string' && d.trim())
+        : [];
+      user.managedDepartments = sanitized.length > 0 ? sanitized : (department ? [department] : []);
+    } else {
+      user.managedDepartments = [];
+    }
     
     // Update employeeCode (biometric code)
     if (employeeCode !== undefined) {

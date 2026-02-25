@@ -221,6 +221,11 @@ class ErrorBoundary extends React.Component {
             <p className="error-subtitle">
               Something went wrong with the application. Don't worry, our team has been notified.
             </p>
+            {this.state.error?.message?.includes('chunk') && (
+              <p className="error-subtitle" style={{ backgroundColor: 'rgba(76, 175, 80, 0.2)', padding: '1rem', borderRadius: '8px', marginTop: '0.5rem' }}>
+                💡 <strong>After a new deployment:</strong> Try a hard refresh (Ctrl+Shift+R or Cmd+Shift+R) to clear cached files.
+              </p>
+            )}
 
             {this.state.error && (
               <div className="error-message">

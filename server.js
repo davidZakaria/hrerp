@@ -58,8 +58,9 @@ const startServer = async () => {
     await connectDB();
     
     // Start the server only after database connection is established
+    // Bind to 0.0.0.0 so emulator (10.0.2.2) and LAN devices can connect
     const PORT = process.env.PORT || 5001;
-    const server = app.listen(PORT, () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`
 🚀 HR-ERP Server running on port ${PORT}
 📅 Environment: ${process.env.NODE_ENV || 'development'}
@@ -129,12 +130,17 @@ const corsOptions = {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
         
-        // Default development origins
+        // Default development origins (10.0.2.2 = host from Android emulator)
         const devOrigins = [
             'http://localhost:3000',
             'http://127.0.0.1:3000',
             'http://localhost:5000',
-            'http://127.0.0.1:5000'
+            'http://127.0.0.1:5001',
+            'http://127.0.0.1:5000',
+            'http://10.0.2.2:3000',
+            'http://10.0.2.2:5001',
+            'capacitor://localhost',
+            'http://localhost'
         ];
         
         // Production origins from environment variable (comma-separated)
@@ -182,23 +188,29 @@ app.use(cors(corsOptions));
 // Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
 
-// Security middleware
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'"],
-            imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'", "http://localhost:3000", "http://localhost:5000", "ws://localhost:3000"],
-            fontSrc: ["'self'"],
-            objectSrc: ["'none'"],
-            mediaSrc: ["'self'"],
-            frameSrc: ["'none'"],
+// Security middleware (relax CSP in development for emulator/device access)
+const helmetOptions = process.env.NODE_ENV === 'production'
+    ? {
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                scriptSrc: ["'self'"],
+                imgSrc: ["'self'", "data:", "https:"],
+                connectSrc: ["'self'", "http://localhost:3000", "http://localhost:5000", "ws://localhost:3000"],
+                fontSrc: ["'self'"],
+                objectSrc: ["'none'"],
+                mediaSrc: ["'self'"],
+                frameSrc: ["'none'"],
+            },
         },
-    },
-    crossOriginEmbedderPolicy: false
-}));
+        crossOriginEmbedderPolicy: false
+    }
+    : {
+        contentSecurityPolicy: false, // Disable in dev so emulator (10.0.2.2) can connect
+        crossOriginEmbedderPolicy: false
+    };
+app.use(helmet(helmetOptions));
 
 // Compression middleware for better performance
 app.use(compression());

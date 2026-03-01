@@ -30,6 +30,7 @@
     "build": "react-scripts build",
     "build:mobile": "npm run build && npx cap sync",
     "android": "npx cap open android",
+    "android:dev": "set CAPACITOR_DEV=1&& npx cap sync android",
     "ios": "npx cap open ios",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

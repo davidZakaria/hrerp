@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package com.newjersey.hrerp;
 
 import static org.junit.Assert.*;
 

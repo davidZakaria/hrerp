@@ -1,15 +1,17 @@
 /**
  * API Configuration
  * Centralizes the API URL configuration for the application.
- * Uses environment variables for flexibility across different environments.
- * In Capacitor (mobile) builds, defaults to production API when REACT_APP_API_URL is not set.
+ * Uses runtime detection: browser -> localhost:5001, Capacitor (emulator) -> 10.0.2.2:5001.
+ * Set REACT_APP_API_URL for production builds (e.g. https://hr-njd.com).
  */
 
 const getDefaultApiUrl = () => {
   if (typeof window !== 'undefined' && window.Capacitor) {
-    return 'https://hr-njd.com';
+    return process.env.NODE_ENV === 'production'
+      ? 'https://hr-njd.com'
+      : 'http://10.0.2.2:5001';
   }
-  return 'http://localhost:5000';
+  return 'http://localhost:5001';
 };
 
 const API_URL = process.env.REACT_APP_API_URL || getDefaultApiUrl();

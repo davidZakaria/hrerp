@@ -44,6 +44,11 @@ const ManagerDashboard = ({ onLogout }) => {
   const [teamFlags, setTeamFlags] = useState([]);
   const [flagSubmitting, setFlagSubmitting] = useState(false);
 
+  // Form edit modal state (for managers with canEditDepartmentForms)
+  const [showEditFormModal, setShowEditFormModal] = useState(false);
+  const [formEditData, setFormEditData] = useState({});
+  const [formEditSubmitting, setFormEditSubmitting] = useState(false);
+
   useEffect(() => {
     fetchUserData();
     fetchPendingForms();
@@ -78,35 +83,22 @@ const ManagerDashboard = ({ onLogout }) => {
 
   const fetchUserData = async () => {
     try {
-      // First, get basic user info from localStorage
-      const userName = localStorage.getItem('userName');
-      const managedDepartments = JSON.parse(localStorage.getItem('managedDepartments') || '[]');
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/auth/me`, {
+        headers: { 'x-auth-token': token }
+      });
       
-      if (userName) {
-        setUser({
-          name: userName,
-          managedDepartments: managedDepartments
-        });
-      } else {
-        // If not in localStorage, fetch from API
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`${API_URL}/api/auth/me`, {
-          headers: { 'x-auth-token': token }
-        });
-        
-        if (response.data) {
-          setUser(response.data);
-          // Update localStorage for future use
-          localStorage.setItem('userName', response.data.name);
-          localStorage.setItem('managedDepartments', JSON.stringify(response.data.managedDepartments || []));
-        }
+      if (response.data) {
+        setUser(response.data);
+        localStorage.setItem('userName', response.data.name);
+        localStorage.setItem('managedDepartments', JSON.stringify(response.data.managedDepartments || []));
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
-      // Fallback to whatever we can get from localStorage
       setUser({
         name: localStorage.getItem('userName') || 'Manager',
-        managedDepartments: JSON.parse(localStorage.getItem('managedDepartments') || '[]')
+        managedDepartments: JSON.parse(localStorage.getItem('managedDepartments') || '[]'),
+        permissions: {}
       });
     }
   };
@@ -396,6 +388,28 @@ const ManagerDashboard = ({ onLogout }) => {
     setSelectedForm(form);
     setActionType(action);
     setComment('');
+    if (user?.permissions?.canEditDepartmentForms) {
+      setFormEditData({
+        _id: form._id,
+        type: form.type,
+        startDate: form.startDate?.toString().slice(0, 10) || '',
+        endDate: form.endDate?.toString().slice(0, 10) || '',
+        excuseDate: form.excuseDate?.toString().slice(0, 10) || '',
+        excuseType: form.excuseType || 'paid',
+        sickLeaveStartDate: form.sickLeaveStartDate?.toString().slice(0, 10) || '',
+        sickLeaveEndDate: form.sickLeaveEndDate?.toString().slice(0, 10) || '',
+        wfhDate: form.wfhDate?.toString().slice(0, 10) || '',
+        wfhWorkingOn: form.wfhWorkingOn || form.wfhDescription || '',
+        extraHoursDate: form.extraHoursDate?.toString().slice(0, 10) || '',
+        extraHoursWorked: form.extraHoursWorked || 0,
+        extraHoursDescription: form.extraHoursDescription || '',
+        missionStartDate: form.missionStartDate?.toString().slice(0, 10) || '',
+        missionEndDate: form.missionEndDate?.toString().slice(0, 10) || '',
+        missionDestination: form.missionDestination || '',
+        reason: form.reason || '',
+        managerComment: form.managerComment || ''
+      });
+    }
     setShowCommentModal(true);
   };
 
@@ -434,10 +448,27 @@ const ManagerDashboard = ({ onLogout }) => {
         hasComment: !!comment.trim()
       });
 
-      const response = await axios.put(`${API_URL}/api/forms/manager/${selectedForm._id}`, {
-        action: actionType,
-        managerComment: comment.trim()
-      }, {
+      const payload = { action: actionType, managerComment: comment.trim() };
+      if (user?.permissions?.canEditDepartmentForms && Object.keys(formEditData).length > 0) {
+        Object.assign(payload, {
+          startDate: formEditData.startDate || undefined,
+          endDate: formEditData.endDate || undefined,
+          reason: formEditData.reason || undefined,
+          excuseDate: formEditData.excuseDate || undefined,
+          excuseType: formEditData.excuseType || undefined,
+          sickLeaveStartDate: formEditData.sickLeaveStartDate || undefined,
+          sickLeaveEndDate: formEditData.sickLeaveEndDate || undefined,
+          wfhDate: formEditData.wfhDate || undefined,
+          wfhWorkingOn: formEditData.wfhWorkingOn || undefined,
+          extraHoursDate: formEditData.extraHoursDate || undefined,
+          extraHoursWorked: formEditData.extraHoursWorked,
+          extraHoursDescription: formEditData.extraHoursDescription || undefined,
+          missionStartDate: formEditData.missionStartDate || undefined,
+          missionEndDate: formEditData.missionEndDate || undefined,
+          missionDestination: formEditData.missionDestination || undefined
+        });
+      }
+      const response = await axios.put(`${API_URL}/api/forms/manager/${selectedForm._id}`, payload, {
         headers: { 'x-auth-token': token },
         timeout: 30000 // 30 second timeout
       });
@@ -527,6 +558,60 @@ const ManagerDashboard = ({ onLogout }) => {
         updated.delete(selectedForm._id);
         return updated;
       });
+    }
+  };
+
+  const openEditFormModal = (form) => {
+    setFormEditData({
+      _id: form._id,
+      type: form.type,
+      startDate: form.startDate?.toString().slice(0, 10) || '',
+      endDate: form.endDate?.toString().slice(0, 10) || '',
+      excuseDate: form.excuseDate?.toString().slice(0, 10) || '',
+      excuseType: form.excuseType || 'paid',
+      sickLeaveStartDate: form.sickLeaveStartDate?.toString().slice(0, 10) || '',
+      sickLeaveEndDate: form.sickLeaveEndDate?.toString().slice(0, 10) || '',
+      wfhDate: form.wfhDate?.toString().slice(0, 10) || '',
+      wfhWorkingOn: form.wfhWorkingOn || form.wfhDescription || '',
+      extraHoursDate: form.extraHoursDate?.toString().slice(0, 10) || '',
+      extraHoursWorked: form.extraHoursWorked || 0,
+      extraHoursDescription: form.extraHoursDescription || '',
+      missionStartDate: form.missionStartDate?.toString().slice(0, 10) || '',
+      missionEndDate: form.missionEndDate?.toString().slice(0, 10) || '',
+      missionDestination: form.missionDestination || '',
+      reason: form.reason || '',
+      managerComment: form.managerComment || ''
+    });
+    setShowEditFormModal(true);
+  };
+
+  const closeEditFormModal = () => {
+    setShowEditFormModal(false);
+    setFormEditData({});
+  };
+
+  const handleFormEditSubmit = async () => {
+    if (!formEditData._id) return;
+    setFormEditSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const payload = { ...formEditData };
+      delete payload._id;
+      delete payload.type;
+      const res = await axios.put(`${API_URL}/api/forms/manager/${formEditData._id}/edit`, payload, {
+        headers: { 'x-auth-token': token }
+      });
+      if (res.data) {
+        setMessage('Form updated successfully');
+        closeEditFormModal();
+        fetchPendingForms();
+        fetchTeamForms();
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (err) {
+      setMessage(err.response?.data?.msg || 'Failed to update form');
+    } finally {
+      setFormEditSubmitting(false);
     }
   };
 
@@ -974,6 +1059,13 @@ const ManagerDashboard = ({ onLogout }) => {
                       </div>
                     )}
                   </div>
+                  {user?.permissions?.canEditDepartmentForms && (
+                    <div style={{ marginTop: '1rem' }}>
+                      <button onClick={() => openEditFormModal(form)} className="btn-manager" style={{ padding: '6px 12px', fontSize: '0.9rem' }}>
+                        ✏️ {t('edit') || 'Edit'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -1137,6 +1229,16 @@ const ManagerDashboard = ({ onLogout }) => {
                   <p><strong>{t('submitted')}:</strong> {formatDate(form.createdAt)}</p>
                 </div>
                 <div className="request-actions">
+                  {user?.permissions?.canEditDepartmentForms && (
+                    <button 
+                      onClick={() => openEditFormModal(form)}
+                      className="btn-manager"
+                      title={t('edit') || 'Edit form'}
+                      style={{ marginRight: '8px' }}
+                    >
+                      ✏️ {t('edit') || 'Edit'}
+                    </button>
+                  )}
                   <button 
                     onClick={() => openCommentModal(form, 'approve')}
                     className="approve-btn"
@@ -1226,6 +1328,99 @@ const ManagerDashboard = ({ onLogout }) => {
                   
                   <p><strong>{t('reason')}:</strong> {selectedForm.reason}</p>
                 </div>
+
+                {user?.permissions?.canEditDepartmentForms && Object.keys(formEditData).length > 0 && (
+                  <div className="edit-before-submit-section" style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(102, 126, 234, 0.1)', borderRadius: '8px', border: '1px solid rgba(102, 126, 234, 0.3)' }}>
+                    <strong style={{ display: 'block', marginBottom: '0.75rem', color: '#667eea' }}>✏️ {t('edit') || 'Edit'} form before {actionType === 'approve' ? (t('approve') || 'approving') : (t('reject') || 'rejecting')}</strong>
+                    <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                      <label className="form-label-elegant">{t('reason')}</label>
+                      <textarea value={formEditData.reason || ''} onChange={(e) => setFormEditData({ ...formEditData, reason: e.target.value })} rows={2} className="form-input-elegant" style={{ width: '100%' }} />
+                    </div>
+                    {formEditData.type === 'vacation' && (
+                      <>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('forms.startDate')}</label>
+                          <input type="date" value={formEditData.startDate || ''} onChange={(e) => setFormEditData({ ...formEditData, startDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        </div>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('forms.endDate')}</label>
+                          <input type="date" value={formEditData.endDate || ''} onChange={(e) => setFormEditData({ ...formEditData, endDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        </div>
+                      </>
+                    )}
+                    {formEditData.type === 'excuse' && (
+                      <>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('excuseDate')}</label>
+                          <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        </div>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}</label>
+                          <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant" style={{ width: '100%' }}>
+                            <option value="paid">Paid</option>
+                            <option value="unpaid">Unpaid</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
+                    {formEditData.type === 'sick_leave' && (
+                      <>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('forms.startDate')}</label>
+                          <input type="date" value={formEditData.sickLeaveStartDate || ''} onChange={(e) => setFormEditData({ ...formEditData, sickLeaveStartDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        </div>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('forms.endDate')}</label>
+                          <input type="date" value={formEditData.sickLeaveEndDate || ''} onChange={(e) => setFormEditData({ ...formEditData, sickLeaveEndDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        </div>
+                      </>
+                    )}
+                    {formEditData.type === 'wfh' && (
+                      <>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('forms.date')}</label>
+                          <input type="date" value={formEditData.wfhDate || ''} onChange={(e) => setFormEditData({ ...formEditData, wfhDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        </div>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('forms.workingOn')}</label>
+                          <input type="text" value={formEditData.wfhWorkingOn || ''} onChange={(e) => setFormEditData({ ...formEditData, wfhWorkingOn: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        </div>
+                      </>
+                    )}
+                    {formEditData.type === 'extra_hours' && (
+                      <>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('forms.date')}</label>
+                          <input type="date" value={formEditData.extraHoursDate || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        </div>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('forms.extraHours')}</label>
+                          <input type="number" value={formEditData.extraHoursWorked ?? ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursWorked: Number(e.target.value) })} className="form-input-elegant" style={{ width: '100%' }} min="0" step="0.5" />
+                        </div>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('forms.workDone')}</label>
+                          <input type="text" value={formEditData.extraHoursDescription || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDescription: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        </div>
+                      </>
+                    )}
+                    {formEditData.type === 'mission' && (
+                      <>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('forms.startDate')}</label>
+                          <input type="date" value={formEditData.missionStartDate || ''} onChange={(e) => setFormEditData({ ...formEditData, missionStartDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        </div>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('forms.endDate')}</label>
+                          <input type="date" value={formEditData.missionEndDate || ''} onChange={(e) => setFormEditData({ ...formEditData, missionEndDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        </div>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('forms.missionDestination')}</label>
+                          <input type="text" value={formEditData.missionDestination || ''} onChange={(e) => setFormEditData({ ...formEditData, missionDestination: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
                 
                 <div className="comment-section">
                   <label htmlFor="managerComment">
@@ -1265,6 +1460,122 @@ const ManagerDashboard = ({ onLogout }) => {
               >
                 {submitting ? t('processing') : 
                  actionType === 'approve' ? t('approveRequest') : t('rejectRequest')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Form Modal (for managers with canEditDepartmentForms) */}
+      {showEditFormModal && Object.keys(formEditData).length > 0 && (
+        <div className="modal-overlay" onClick={closeEditFormModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3>✏️ {t('edit') || 'Edit'} Form</h3>
+              <button className="close-btn" onClick={closeEditFormModal}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                <label className="form-label-elegant">{t('reason')}</label>
+                <textarea
+                  value={formEditData.reason || ''}
+                  onChange={(e) => setFormEditData({ ...formEditData, reason: e.target.value })}
+                  rows={3}
+                  className="form-input-elegant"
+                />
+              </div>
+              {formEditData.type === 'vacation' && (
+                <>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('forms.startDate')}</label>
+                    <input type="date" value={formEditData.startDate || ''} onChange={(e) => setFormEditData({ ...formEditData, startDate: e.target.value })} className="form-input-elegant" />
+                  </div>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('forms.endDate')}</label>
+                    <input type="date" value={formEditData.endDate || ''} onChange={(e) => setFormEditData({ ...formEditData, endDate: e.target.value })} className="form-input-elegant" />
+                  </div>
+                </>
+              )}
+              {formEditData.type === 'excuse' && (
+                <>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('excuseDate')}</label>
+                    <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" />
+                  </div>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}</label>
+                    <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant">
+                      <option value="paid">Paid</option>
+                      <option value="unpaid">Unpaid</option>
+                    </select>
+                  </div>
+                </>
+              )}
+              {formEditData.type === 'sick_leave' && (
+                <>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('forms.startDate')}</label>
+                    <input type="date" value={formEditData.sickLeaveStartDate || ''} onChange={(e) => setFormEditData({ ...formEditData, sickLeaveStartDate: e.target.value })} className="form-input-elegant" />
+                  </div>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('forms.endDate')}</label>
+                    <input type="date" value={formEditData.sickLeaveEndDate || ''} onChange={(e) => setFormEditData({ ...formEditData, sickLeaveEndDate: e.target.value })} className="form-input-elegant" />
+                  </div>
+                </>
+              )}
+              {formEditData.type === 'wfh' && (
+                <>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('forms.date')}</label>
+                    <input type="date" value={formEditData.wfhDate || ''} onChange={(e) => setFormEditData({ ...formEditData, wfhDate: e.target.value })} className="form-input-elegant" />
+                  </div>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('forms.workingOn')}</label>
+                    <input type="text" value={formEditData.wfhWorkingOn || ''} onChange={(e) => setFormEditData({ ...formEditData, wfhWorkingOn: e.target.value })} className="form-input-elegant" />
+                  </div>
+                </>
+              )}
+              {formEditData.type === 'extra_hours' && (
+                <>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('forms.date')}</label>
+                    <input type="date" value={formEditData.extraHoursDate || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDate: e.target.value })} className="form-input-elegant" />
+                  </div>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('forms.extraHours')}</label>
+                    <input type="number" value={formEditData.extraHoursWorked || 0} onChange={(e) => setFormEditData({ ...formEditData, extraHoursWorked: Number(e.target.value) })} className="form-input-elegant" min="0" step="0.5" />
+                  </div>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('forms.workDone')}</label>
+                    <input type="text" value={formEditData.extraHoursDescription || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDescription: e.target.value })} className="form-input-elegant" />
+                  </div>
+                </>
+              )}
+              {formEditData.type === 'mission' && (
+                <>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('forms.startDate')}</label>
+                    <input type="date" value={formEditData.missionStartDate || ''} onChange={(e) => setFormEditData({ ...formEditData, missionStartDate: e.target.value })} className="form-input-elegant" />
+                  </div>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('forms.endDate')}</label>
+                    <input type="date" value={formEditData.missionEndDate || ''} onChange={(e) => setFormEditData({ ...formEditData, missionEndDate: e.target.value })} className="form-input-elegant" />
+                  </div>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('forms.missionDestination')}</label>
+                    <input type="text" value={formEditData.missionDestination || ''} onChange={(e) => setFormEditData({ ...formEditData, missionDestination: e.target.value })} className="form-input-elegant" />
+                  </div>
+                </>
+              )}
+              <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                <label className="form-label-elegant">{t('managerComment') || 'Manager Comment'}</label>
+                <textarea value={formEditData.managerComment || ''} onChange={(e) => setFormEditData({ ...formEditData, managerComment: e.target.value })} rows={2} className="form-input-elegant" placeholder="Optional comment" />
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={closeEditFormModal} disabled={formEditSubmitting}>{t('cancel')}</button>
+              <button className="approve-btn" onClick={handleFormEditSubmit} disabled={formEditSubmitting}>
+                {formEditSubmitting ? t('processing') : (t('save') || 'Save')}
               </button>
             </div>
           </div>

@@ -373,7 +373,8 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
       modificationReason,
       password,
       employeeCode,
-      managedDepartments
+      managedDepartments,
+      permissions
     } = req.body;
 
     const user = await User.findById(req.params.userId);
@@ -435,6 +436,18 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
       user.managedDepartments = newManagedDepts;
     } else {
       user.managedDepartments = [];
+    }
+
+    // Permissions (for managers) - canEditDepartmentForms allows editing form content
+    if (targetRole === 'manager' && permissions && typeof permissions.canEditDepartmentForms === 'boolean') {
+      if (!user.permissions) user.permissions = {};
+      const oldVal = user.permissions.canEditDepartmentForms;
+      user.permissions.canEditDepartmentForms = permissions.canEditDepartmentForms;
+      if (oldVal !== permissions.canEditDepartmentForms) {
+        modifications.push({ field: 'permissions.canEditDepartmentForms', oldValue: oldVal, newValue: permissions.canEditDepartmentForms });
+      }
+    } else if (targetRole !== 'manager' && user.permissions?.canEditDepartmentForms) {
+      user.permissions.canEditDepartmentForms = false;
     }
 
     // Never deactivate super_admin

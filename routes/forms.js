@@ -572,7 +572,7 @@ router.put('/manager/:id', auth, async (req, res) => {
             return res.status(403).json({ msg: 'No departments assigned to manage' });
         }
 
-        const { action, managerComment } = req.body;
+        const { action, managerComment, startDate, endDate, reason, excuseDate, excuseType, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, extraHoursDescription, missionStartDate, missionEndDate, missionDestination } = req.body;
         
         // Validate action parameter
         if (!action || !['approve', 'reject'].includes(action)) {
@@ -604,6 +604,25 @@ router.put('/manager/:id', auth, async (req, res) => {
 
         if (!isTeamMember) {
             return res.status(403).json({ msg: 'Not authorized - User is not in your managed departments' });
+        }
+
+        // Apply form edits before approval/rejection (when manager has canEditDepartmentForms)
+        if (manager.permissions?.canEditDepartmentForms) {
+            if (startDate) form.startDate = startDate;
+            if (endDate) form.endDate = endDate;
+            if (reason) form.reason = reason;
+            if (excuseDate) form.excuseDate = excuseDate;
+            if (excuseType && ['paid', 'unpaid'].includes(excuseType)) form.excuseType = excuseType;
+            if (sickLeaveStartDate) form.sickLeaveStartDate = sickLeaveStartDate;
+            if (sickLeaveEndDate) form.sickLeaveEndDate = sickLeaveEndDate;
+            if (wfhDate) form.wfhDate = wfhDate;
+            if (wfhWorkingOn) form.wfhWorkingOn = wfhWorkingOn;
+            if (extraHoursDate) form.extraHoursDate = extraHoursDate;
+            if (extraHoursWorked !== undefined) form.extraHoursWorked = Number(extraHoursWorked);
+            if (extraHoursDescription) form.extraHoursDescription = extraHoursDescription;
+            if (missionStartDate) form.missionStartDate = missionStartDate;
+            if (missionEndDate) form.missionEndDate = missionEndDate;
+            if (missionDestination) form.missionDestination = missionDestination;
         }
 
         // Only allow action on pending forms
@@ -730,6 +749,74 @@ router.put('/manager/:id', auth, async (req, res) => {
             msg: 'Server error while processing form action',
             error: process.env.NODE_ENV === 'development' ? err.message : undefined
         });
+    }
+});
+
+// Manager edit form (requires canEditDepartmentForms permission)
+router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) => {
+    try {
+        const manager = await User.findById(req.user.id);
+        if (!manager || manager.role !== 'manager') {
+            return res.status(403).json({ msg: 'Not authorized - Manager role required' });
+        }
+        if (!manager.permissions?.canEditDepartmentForms) {
+            return res.status(403).json({ msg: 'You do not have permission to edit department forms. Contact super admin to enable this function.' });
+        }
+        if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
+            return res.status(403).json({ msg: 'No departments assigned to manage' });
+        }
+
+        const form = await Form.findById(req.params.id).populate('user');
+        if (!form) {
+            return res.status(404).json({ msg: 'Form not found' });
+        }
+
+        const isTeamMember = await User.findOne({
+            _id: form.user._id,
+            department: { $in: manager.managedDepartments },
+            role: 'employee',
+            status: 'active'
+        });
+        if (!isTeamMember) {
+            return res.status(403).json({ msg: 'Not authorized - Form is not from your managed departments' });
+        }
+
+        const { startDate, endDate, reason, excuseDate, excuseType, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, managerComment } = req.body;
+
+        if (startDate) form.startDate = startDate;
+        if (endDate) form.endDate = endDate;
+        if (reason) form.reason = reason;
+        if (excuseDate) form.excuseDate = excuseDate;
+        if (excuseType && ['paid', 'unpaid'].includes(excuseType)) form.excuseType = excuseType;
+        if (sickLeaveStartDate) form.sickLeaveStartDate = sickLeaveStartDate;
+        if (sickLeaveEndDate) form.sickLeaveEndDate = sickLeaveEndDate;
+        if (wfhDate) form.wfhDate = wfhDate;
+        if (wfhWorkingOn) form.wfhWorkingOn = wfhWorkingOn;
+        if (extraHoursDate) form.extraHoursDate = extraHoursDate;
+        if (extraHoursWorked !== undefined) form.extraHoursWorked = Number(extraHoursWorked);
+        if (extraHoursDescription) form.extraHoursDescription = extraHoursDescription;
+        if (missionStartDate) form.missionStartDate = missionStartDate;
+        if (missionEndDate) form.missionEndDate = missionEndDate;
+        if (missionDestination) form.missionDestination = missionDestination;
+        if (managerComment !== undefined) form.managerComment = managerComment;
+
+        form.modificationHistory = form.modificationHistory || [];
+        form.modificationHistory.push({
+            modifiedBy: manager._id,
+            modifiedAt: Date.now(),
+            reason: 'Edited by manager (department form edit permission)',
+            changes: { before: {}, after: req.body }
+        });
+        form.updatedAt = Date.now();
+        await form.save();
+
+        cache.delete(`forms-${form.user._id}`);
+        cache.delete('forms-admin');
+
+        res.json({ msg: 'Form updated successfully', form });
+    } catch (err) {
+        console.error('Manager form edit error:', err.message);
+        res.status(500).json({ msg: err.message || 'Server error' });
     }
 });
 

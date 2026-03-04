@@ -26,6 +26,9 @@ const userSchema = new mongoose.Schema({
     managedDepartments: [{
         type: String
     }],
+    permissions: {
+        canEditDepartmentForms: { type: Boolean, default: false }
+    },
     employeeCode: {
         type: String,
         required: false, // Not required for existing users, but will be for new registrations
@@ -146,7 +149,8 @@ userSchema.methods.getPermissions = function() {
     canViewAuditLogs: this.role === 'super_admin',
     canCreateUsers: ['super_admin', 'admin'].includes(this.role),
     canDeleteUsers: this.role === 'super_admin',
-    canResetPasswords: ['super_admin', 'admin'].includes(this.role)
+    canResetPasswords: ['super_admin', 'admin'].includes(this.role),
+    canEditDepartmentForms: this.role === 'manager' && (this.permissions?.canEditDepartmentForms === true)
   };
   
   return permissions;
@@ -188,9 +192,10 @@ userSchema.pre('save', function(next) {
     this.managedDepartments = [this.department];
   }
   
-  // Clear managed departments for non-managers
+  // Clear managed departments and form-edit permission for non-managers
   if (this.role !== 'manager') {
     this.managedDepartments = [];
+    if (this.permissions) this.permissions.canEditDepartmentForms = false;
   }
   
   next();

@@ -41,7 +41,8 @@ const SuperAdminDashboard = () => {
     status: '',
     managedDepartments: [],
     password: '',
-    employeeCode: ''
+    employeeCode: '',
+    permissions: { canEditDepartmentForms: false }
   });
 
   // Super admin personal form submission
@@ -725,7 +726,8 @@ const SuperAdminDashboard = () => {
       status: user.status,
       managedDepartments: user.managedDepartments || [],
       password: '', // Empty - only fill if admin wants to change password
-      employeeCode: user.employeeCode || ''
+      employeeCode: user.employeeCode || '',
+      permissions: { canEditDepartmentForms: user.permissions?.canEditDepartmentForms || false }
     });
   };
 
@@ -796,7 +798,8 @@ const SuperAdminDashboard = () => {
         body: JSON.stringify({
           ...userEdit,
           modificationReason: modificationReason,
-          managedDepartments: userEdit.role === 'manager' ? userEdit.managedDepartments : []
+          managedDepartments: userEdit.role === 'manager' ? userEdit.managedDepartments : [],
+          permissions: userEdit.role === 'manager' ? userEdit.permissions : undefined
         })
       });
       const data = await res.json();
@@ -1694,6 +1697,24 @@ const SuperAdminDashboard = () => {
                                 <span className="department-name">{dept}</span>
                               </div>
                             ))}
+                          </div>
+                          <div className="form-group-elegant" style={{ marginTop: '1rem' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={userEdit.permissions?.canEditDepartmentForms || false}
+                                onChange={(e) => setUserEdit({
+                                  ...userEdit,
+                                  permissions: { ...userEdit.permissions, canEditDepartmentForms: e.target.checked }
+                                })}
+                              />
+                              <span className="form-label-elegant" style={{ marginBottom: 0 }}>
+                                Can edit submitted forms from their departments
+                              </span>
+                            </label>
+                            <small style={{ display: 'block', marginTop: '0.25rem', opacity: 0.8 }}>
+                              When enabled, this manager can modify form content (dates, reason, etc.) for forms submitted by employees in their managed departments.
+                            </small>
                           </div>
                         </div>
                       )}

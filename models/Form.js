@@ -147,6 +147,8 @@ const formSchema = new mongoose.Schema({
             return this.type === 'mission';
         }
     },
+    missionFromTime: { type: String }, // e.g. "09:00"
+    missionToTime: { type: String },   // e.g. "17:00"
     createdAt: {
         type: Date,
         default: Date.now

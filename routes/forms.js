@@ -127,7 +127,9 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             extraHoursDescription,
             missionStartDate,
             missionEndDate,
-            missionDestination
+            missionDestination,
+            missionFromTime,
+            missionToTime
         } = req.body;
 
         // Enhanced validation
@@ -296,7 +298,9 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             ...(type === 'mission' && {
                 missionStartDate: new Date(missionStartDate),
                 missionEndDate: new Date(missionEndDate),
-                missionDestination: missionDestination?.trim()
+                missionDestination: missionDestination?.trim(),
+                missionFromTime: missionFromTime?.trim() || undefined,
+                missionToTime: missionToTime?.trim() || undefined
             })
         };
 
@@ -572,7 +576,7 @@ router.put('/manager/:id', auth, async (req, res) => {
             return res.status(403).json({ msg: 'No departments assigned to manage' });
         }
 
-        const { action, managerComment, startDate, endDate, reason, excuseDate, excuseType, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, extraHoursDescription, missionStartDate, missionEndDate, missionDestination } = req.body;
+        const { action, managerComment, startDate, endDate, reason, excuseDate, excuseType, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime } = req.body;
         
         // Validate action parameter
         if (!action || !['approve', 'reject'].includes(action)) {
@@ -623,6 +627,8 @@ router.put('/manager/:id', auth, async (req, res) => {
             if (missionStartDate) form.missionStartDate = missionStartDate;
             if (missionEndDate) form.missionEndDate = missionEndDate;
             if (missionDestination) form.missionDestination = missionDestination;
+            if (missionFromTime !== undefined) form.missionFromTime = missionFromTime?.trim() || undefined;
+            if (missionToTime !== undefined) form.missionToTime = missionToTime?.trim() || undefined;
         }
 
         // Only allow action on pending forms
@@ -781,7 +787,7 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
             return res.status(403).json({ msg: 'Not authorized - Form is not from your managed departments' });
         }
 
-        const { startDate, endDate, reason, excuseDate, excuseType, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, managerComment } = req.body;
+        const { startDate, endDate, reason, excuseDate, excuseType, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime, managerComment } = req.body;
 
         if (startDate) form.startDate = startDate;
         if (endDate) form.endDate = endDate;
@@ -798,6 +804,8 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
         if (missionStartDate) form.missionStartDate = missionStartDate;
         if (missionEndDate) form.missionEndDate = missionEndDate;
         if (missionDestination) form.missionDestination = missionDestination;
+        if (missionFromTime !== undefined) form.missionFromTime = missionFromTime?.trim() || undefined;
+        if (missionToTime !== undefined) form.missionToTime = missionToTime?.trim() || undefined;
         if (managerComment !== undefined) form.managerComment = managerComment;
 
         form.modificationHistory = form.modificationHistory || [];

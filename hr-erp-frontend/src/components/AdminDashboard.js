@@ -1995,7 +1995,7 @@ const AdminDashboard = () => {
                           ) : form.type === 'extra_hours' ? (
                             <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
                           ) : form.type === 'mission' ? (
-                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)} • ${form.missionDestination || 'N/A'}`
+                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` • ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} • ${form.missionDestination || 'N/A'}`
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -2138,7 +2138,7 @@ const AdminDashboard = () => {
                           ) : form.type === 'extra_hours' ? (
                             <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
                           ) : form.type === 'mission' ? (
-                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)} • ${form.missionDestination || 'N/A'}`
+                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` • ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} • ${form.missionDestination || 'N/A'}`
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -2329,7 +2329,7 @@ const AdminDashboard = () => {
                           ) : form.type === 'extra_hours' ? (
                             <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
                           ) : form.type === 'mission' ? (
-                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)} • ${form.missionDestination || 'N/A'}`
+                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` • ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} • ${form.missionDestination || 'N/A'}`
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}

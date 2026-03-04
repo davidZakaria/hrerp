@@ -40,7 +40,9 @@ const FormSubmission = ({ onFormSubmitted }) => {
     extraHoursDescription: '',
     missionStartDate: '',
     missionEndDate: '',
-    missionDestination: ''
+    missionDestination: '',
+    missionFromTime: '',
+    missionToTime: ''
   });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -183,6 +185,8 @@ const FormSubmission = ({ onFormSubmitted }) => {
         missionStartDate: form.missionStartDate,
         missionEndDate: form.missionEndDate,
         missionDestination: form.missionDestination.trim(),
+        missionFromTime: form.missionFromTime?.trim() || undefined,
+        missionToTime: form.missionToTime?.trim() || undefined,
         reason: form.reason
       };
     }
@@ -228,7 +232,9 @@ const FormSubmission = ({ onFormSubmitted }) => {
           extraHoursDescription: '',
           missionStartDate: '',
           missionEndDate: '',
-          missionDestination: ''
+          missionDestination: '',
+          missionFromTime: '',
+          missionToTime: ''
         });
         fetchExcuseRequests(); // Refresh excuse requests after submission
         if (onFormSubmitted) onFormSubmitted();
@@ -905,6 +911,39 @@ const FormSubmission = ({ onFormSubmitted }) => {
               />
               <small className="input-helper">{t('forms.enterMissionDestination')}</small>
             </div>
+
+            <div className="grid-2">
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">
+                  <span className="label-icon">🕐</span>
+                  {t('forms.missionFromTime') || 'Time From'}
+                </label>
+                <input 
+                  name="missionFromTime" 
+                  type="time" 
+                  value={form.missionFromTime} 
+                  onChange={handleChange} 
+                  className="form-input-elegant"
+                  title={t('forms.missionFromTimeHelp') || 'Start time of mission'}
+                />
+                <small className="input-helper">{t('forms.missionFromTimeHelp') || 'e.g. 09:00'}</small>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">
+                  <span className="label-icon">🕔</span>
+                  {t('forms.missionToTime') || 'Time To'}
+                </label>
+                <input 
+                  name="missionToTime" 
+                  type="time" 
+                  value={form.missionToTime} 
+                  onChange={handleChange} 
+                  className="form-input-elegant"
+                  title={t('forms.missionToTimeHelp') || 'End time of mission'}
+                />
+                <small className="input-helper">{t('forms.missionToTimeHelp') || 'e.g. 17:00'}</small>
+              </div>
+            </div>
             
             {form.missionStartDate && form.missionEndDate && form.missionDestination && (
               <div className="mission-summary" style={{ marginTop: '1rem' }}>
@@ -922,6 +961,11 @@ const FormSubmission = ({ onFormSubmitted }) => {
                     <div style={{ marginBottom: '0.25rem' }}>
                       <strong>{t('forms.to')}:</strong> {new Date(form.missionEndDate).toLocaleDateString(t('common.locale'), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </div>
+                    {(form.missionFromTime || form.missionToTime) && (
+                      <div style={{ marginBottom: '0.25rem' }}>
+                        <strong>{t('forms.time') || 'Time'}:</strong> {form.missionFromTime || '--'} {t('forms.to')} {form.missionToTime || '--'}
+                      </div>
+                    )}
                     <div>
                       <strong>{t('forms.missionDestination')}:</strong> {form.missionDestination}
                     </div>

@@ -406,6 +406,8 @@ const ManagerDashboard = ({ onLogout }) => {
         missionStartDate: form.missionStartDate?.toString().slice(0, 10) || '',
         missionEndDate: form.missionEndDate?.toString().slice(0, 10) || '',
         missionDestination: form.missionDestination || '',
+        missionFromTime: form.missionFromTime || '',
+        missionToTime: form.missionToTime || '',
         reason: form.reason || '',
         managerComment: form.managerComment || ''
       });
@@ -465,7 +467,9 @@ const ManagerDashboard = ({ onLogout }) => {
           extraHoursDescription: formEditData.extraHoursDescription || undefined,
           missionStartDate: formEditData.missionStartDate || undefined,
           missionEndDate: formEditData.missionEndDate || undefined,
-          missionDestination: formEditData.missionDestination || undefined
+          missionDestination: formEditData.missionDestination || undefined,
+          missionFromTime: formEditData.missionFromTime || undefined,
+          missionToTime: formEditData.missionToTime || undefined
         });
       }
       const response = await axios.put(`${API_URL}/api/forms/manager/${selectedForm._id}`, payload, {
@@ -1221,6 +1225,9 @@ const ManagerDashboard = ({ onLogout }) => {
                     <>
                       <p><strong>{t('forms.startDate')}:</strong> {formatDate(form.missionStartDate)}</p>
                       <p><strong>{t('forms.endDate')}:</strong> {formatDate(form.missionEndDate)}</p>
+                      {(form.missionFromTime || form.missionToTime) && (
+                        <p><strong>{t('forms.time') || 'Time'}:</strong> {form.missionFromTime || '--'} {t('forms.to')} {form.missionToTime || '--'}</p>
+                      )}
                       <p><strong>{t('forms.missionDestination')}:</strong> 📍 {form.missionDestination}</p>
                     </>
                   )}
@@ -1417,6 +1424,16 @@ const ManagerDashboard = ({ onLogout }) => {
                           <label className="form-label-elegant">{t('forms.missionDestination')}</label>
                           <input type="text" value={formEditData.missionDestination || ''} onChange={(e) => setFormEditData({ ...formEditData, missionDestination: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
                         </div>
+                        <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                          <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                            <label className="form-label-elegant">{t('forms.missionFromTime') || 'Time From'}</label>
+                            <input type="time" value={formEditData.missionFromTime || ''} onChange={(e) => setFormEditData({ ...formEditData, missionFromTime: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                          </div>
+                          <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                            <label className="form-label-elegant">{t('forms.missionToTime') || 'Time To'}</label>
+                            <input type="time" value={formEditData.missionToTime || ''} onChange={(e) => setFormEditData({ ...formEditData, missionToTime: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                          </div>
+                        </div>
                       </>
                     )}
                   </div>
@@ -1564,6 +1581,16 @@ const ManagerDashboard = ({ onLogout }) => {
                   <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
                     <label className="form-label-elegant">{t('forms.missionDestination')}</label>
                     <input type="text" value={formEditData.missionDestination || ''} onChange={(e) => setFormEditData({ ...formEditData, missionDestination: e.target.value })} className="form-input-elegant" />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div className="form-group-elegant">
+                      <label className="form-label-elegant">{t('forms.missionFromTime') || 'Time From'}</label>
+                      <input type="time" value={formEditData.missionFromTime || ''} onChange={(e) => setFormEditData({ ...formEditData, missionFromTime: e.target.value })} className="form-input-elegant" />
+                    </div>
+                    <div className="form-group-elegant">
+                      <label className="form-label-elegant">{t('forms.missionToTime') || 'Time To'}</label>
+                      <input type="time" value={formEditData.missionToTime || ''} onChange={(e) => setFormEditData({ ...formEditData, missionToTime: e.target.value })} className="form-input-elegant" />
+                    </div>
                   </div>
                 </>
               )}

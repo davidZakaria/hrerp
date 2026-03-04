@@ -483,6 +483,12 @@ const EmployeeDashboard = () => {
                             <span className="form-label-elegant">{t('forms.endDate')}:</span>
                             <span className="text-elegant">{new Date(form.missionEndDate).toLocaleDateString()}</span>
                           </div>
+                          {(form.missionFromTime || form.missionToTime) && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                              <span className="form-label-elegant">{t('forms.time') || 'Time'}:</span>
+                              <span className="text-elegant">{form.missionFromTime || '--'} {t('forms.to')} {form.missionToTime || '--'}</span>
+                            </div>
+                          )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                             <span className="form-label-elegant">{t('forms.missionDestination')}:</span>
                             <span className="text-elegant">📍 {form.missionDestination}</span>

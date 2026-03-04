@@ -1921,12 +1921,18 @@ const SuperAdminDashboard = () => {
                                 <div className="info-item">
                                   <span className="info-label">Dates:</span>
                                   <span className="info-value">
-                                    {form.missionStartDate && form.missionEndDate ? 
-                                      `${new Date(form.missionStartDate).toLocaleDateString()} - ${new Date(form.missionEndDate).toLocaleDateString()}` : 
+                                    {form.missionStartDate && form.missionEndDate ?
+                                      `${new Date(form.missionStartDate).toLocaleDateString()} - ${new Date(form.missionEndDate).toLocaleDateString()}` :
                                       'N/A'
                                     }
                                   </span>
                                 </div>
+                                {(form.missionFromTime || form.missionToTime) && (
+                                  <div className="info-item">
+                                    <span className="info-label">Time:</span>
+                                    <span className="info-value">{form.missionFromTime || '--'} to {form.missionToTime || '--'}</span>
+                                  </div>
+                                )}
                                 <div className="info-item">
                                   <span className="info-label">Destination:</span>
                                   <span className="info-value">📍 {form.missionDestination || 'N/A'}</span>

@@ -33,8 +33,13 @@ const attendanceSchema = new mongoose.Schema({
         default: 'present'
     },
     location: {
-        type: String, // Which of the 6 locations
+        type: String, // Filename for manual upload; device SN or 'zkteco' for ZKTeco push
         required: false
+    },
+    source: {
+        type: String,
+        enum: ['manual', 'zkteco'],
+        default: 'manual'
     },
     minutesLate: {
         type: Number,

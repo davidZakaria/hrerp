@@ -16,6 +16,7 @@ const AttendanceManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [approvedForms, setApprovedForms] = useState([]);
   const [activeView, setActiveView] = useState('summary'); // 'summary' or 'detailed'
+  const [zktecoEnabled, setZktecoEnabled] = useState(false);
 
   function getCurrentMonth() {
     const now = new Date();
@@ -26,7 +27,23 @@ const AttendanceManagement = () => {
 
   useEffect(() => {
     fetchAvailableMonths();
+    fetchZktecoStatus();
   }, []);
+
+  const fetchZktecoStatus = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/attendance/zkteco-status`, {
+        headers: { 'x-auth-token': token }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setZktecoEnabled(data.zktecoEnabled);
+      }
+    } catch (err) {
+      console.error('Error fetching ZKTeco status:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedMonth) {
@@ -275,11 +292,26 @@ const AttendanceManagement = () => {
       `}</style>
       <h2 className="text-gradient" style={{ marginBottom: '2rem' }}>Attendance Management</h2>
 
+      {/* ZKTeco status banner */}
+      {zktecoEnabled && (
+        <div style={{
+          marginBottom: '1.5rem',
+          padding: '1rem 1.25rem',
+          background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.15) 0%, rgba(33, 150, 243, 0.05) 100%)',
+          border: '1px solid rgba(33, 150, 243, 0.3)',
+          borderRadius: '12px',
+          color: '#1565C0',
+          fontSize: '0.95rem'
+        }}>
+          <strong>ZKTeco real-time sync:</strong> Devices push attendance automatically. Manual upload remains available as fallback.
+        </div>
+      )}
+
       {/* Upload Section */}
       <div className="elegant-card" style={{ marginBottom: '2rem' }}>
         <h3 style={{ marginBottom: '1rem', color: '#333' }}>Upload Attendance Files</h3>
         <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-          Upload XLS/XLSX files from biometric devices (up to 10 files at once)
+          Upload XLS/XLSX files manually, or use ZKTeco real-time push (configure device to point to this server). Up to 10 files at once.
         </p>
 
         <div style={{ marginBottom: '1.5rem' }}>

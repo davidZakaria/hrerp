@@ -2467,9 +2467,9 @@ const AdminDashboard = () => {
                   value={newUser.employeeCode}
                   onChange={(e) => setNewUser({...newUser, employeeCode: e.target.value})}
                   className="form-input-elegant"
-                  placeholder="Enter biometric/fingerprint device code"
+                  placeholder="Enter ZKTeco device code (AC-No)"
                 />
-                <small style={{color: '#888', fontSize: '0.8rem'}}>This code must match the employee's ID in the biometric attendance system</small>
+                <small style={{color: '#888', fontSize: '0.8rem'}}>Must match the ZKTeco device ID (AC-No). Required for real-time attendance sync.</small>
               </div>
               <div className="form-group-elegant">
                 <label className="form-label-elegant">Department</label>
@@ -2581,9 +2581,9 @@ const AdminDashboard = () => {
                   value={editUserData.employeeCode}
                   onChange={(e) => setEditUserData({...editUserData, employeeCode: e.target.value})}
                   className="form-input-elegant"
-                  placeholder="Enter biometric/fingerprint device code"
+                  placeholder="Enter ZKTeco device code (AC-No)"
                 />
-                <small style={{color: '#888', fontSize: '0.8rem'}}>This code must match the employee's ID in the biometric attendance system</small>
+                <small style={{color: '#888', fontSize: '0.8rem'}}>Must match the ZKTeco device ID (AC-No). Required for real-time attendance sync.</small>
               </div>
               <div className="form-group-elegant">
                 <label className="form-label-elegant">Department</label>

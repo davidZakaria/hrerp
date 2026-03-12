@@ -198,6 +198,24 @@ async function crossReferenceWithForms(date, userId) {
 }
 
 /**
+ * GET /api/attendance/zkteco-status
+ * Returns whether ZKTeco real-time push is enabled (for frontend banner)
+ * Admin only
+ */
+router.get('/zkteco-status', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+            return res.status(403).json({ msg: 'Access denied. Admin only.' });
+        }
+        res.json({ zktecoEnabled: process.env.ZKTECO_ENABLED !== 'false' });
+    } catch (err) {
+        console.error('Error getting zkteco status:', err);
+        res.status(500).json({ msg: 'Server error' });
+    }
+});
+
+/**
  * POST /api/attendance/upload
  * Upload multiple XLS files with attendance data
  * Admin only
@@ -424,6 +442,7 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                             existingRecord.relatedForm = relatedForm;
                             existingRecord.uploadedBy = admin._id;
                             existingRecord.uploadedAt = new Date();
+                            existingRecord.source = 'manual';
                             await existingRecord.save();
                         } else {
                             // Create new record
@@ -435,6 +454,7 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                                 clockOut: record.clockOut || '',
                                 status: status,
                                 location: file.originalname, // Use filename as location identifier
+                                source: 'manual',
                                 minutesLate: minutesLate,
                                 minutesOvertime: minutesOvertime,
                                 missedClockIn: missedClockIn,

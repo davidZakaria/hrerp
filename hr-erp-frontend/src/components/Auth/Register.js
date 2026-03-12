@@ -190,14 +190,14 @@ const Register = ({ onBack, onRegisterSuccess }) => {
             <input
               name="employeeCode"
               type="text"
-              placeholder="Enter your biometric device code"
+              placeholder="Enter your ZKTeco device code (AC-No)"
               value={form.employeeCode}
               onChange={handleChange}
               className="form-input-elegant focus-elegant"
               required
             />
             <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block', textAlign: 'left' }}>
-              This code must match your biometric attendance device code
+              Must match your ID in the ZKTeco fingerprint device
             </small>
           </div>
 

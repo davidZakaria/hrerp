@@ -229,6 +229,9 @@ const limiter = rateLimit({
         // Skip rate limiting for preflight requests
         if (req.method === 'OPTIONS') return true;
         
+        // Skip rate limiting for ZKTeco device endpoints
+        if (req.path.startsWith('/iclock')) return true;
+        
         // Skip rate limiting for health check and metrics endpoints
         if (req.path === '/api/health' || req.path === '/api/metrics') return true;
         
@@ -268,6 +271,9 @@ const authLimiter = rateLimit({
     }
 });
 app.use('/api/auth/login', authLimiter);
+
+// ZKTeco ADMS - device sends text/plain, must parse before json
+app.use('/iclock', express.text({ type: '*/*' }), require('./routes/zkteco'));
 
 // Body parsing middleware with size limits
 app.use(express.json({ 

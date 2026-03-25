@@ -295,7 +295,7 @@ app.use((req, res, next) => {
         const duration = Date.now() - start;
         const logData = {
             method: req.method,
-            url: req.url,
+            url: req.originalUrl || req.url,
             status: res.statusCode,
             duration: `${duration}ms`,
             ip: req.ip,

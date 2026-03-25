@@ -717,6 +717,12 @@ const SuperAdminDashboard = () => {
 
   const handleUserSelect = (user) => {
     setSelectedUser(user);
+    const existingManaged =
+      Array.isArray(user.managedDepartments) && user.managedDepartments.length > 0
+        ? [...user.managedDepartments]
+        : user.role === 'manager' && user.department
+          ? [user.department]
+          : [];
     setUserEdit({
       name: user.name,
       email: user.email,
@@ -724,7 +730,7 @@ const SuperAdminDashboard = () => {
       role: user.role,
       vacationDaysLeft: user.vacationDaysLeft,
       status: user.status,
-      managedDepartments: user.managedDepartments || [],
+      managedDepartments: existingManaged,
       password: '', // Empty - only fill if admin wants to change password
       employeeCode: user.employeeCode || '',
       permissions: { canEditDepartmentForms: user.permissions?.canEditDepartmentForms || false }
@@ -762,7 +768,12 @@ const SuperAdminDashboard = () => {
           email: passwordResetUser.email,
           department: passwordResetUser.department,
           role: passwordResetUser.role,
-          password: newPassword 
+          password: newPassword,
+          ...(passwordResetUser.role === 'manager' && {
+            managedDepartments: Array.isArray(passwordResetUser.managedDepartments)
+              ? passwordResetUser.managedDepartments
+              : []
+          })
         },
         { headers: { 'x-auth-token': token } }
       );
@@ -798,7 +809,8 @@ const SuperAdminDashboard = () => {
         body: JSON.stringify({
           ...userEdit,
           modificationReason: modificationReason,
-          managedDepartments: userEdit.role === 'manager' ? userEdit.managedDepartments : [],
+          managedDepartments:
+            userEdit.role === 'manager' ? (userEdit.managedDepartments ?? []) : [],
           permissions: userEdit.role === 'manager' ? userEdit.permissions : undefined
         })
       });
@@ -1630,7 +1642,21 @@ const SuperAdminDashboard = () => {
                         <label className="form-label-elegant">Role</label>
                         <select
                           value={userEdit.role}
-                          onChange={(e) => setUserEdit({...userEdit, role: e.target.value})}
+                          onChange={(e) => {
+                            const newRole = e.target.value;
+                            setUserEdit((prev) => ({
+                              ...prev,
+                              role: newRole,
+                              managedDepartments:
+                                newRole === 'manager'
+                                  ? prev.managedDepartments?.length
+                                    ? [...prev.managedDepartments]
+                                    : prev.department
+                                      ? [prev.department]
+                                      : []
+                                  : []
+                            }));
+                          }}
                           className="form-input-elegant"
                         >
                           <option value="employee">Employee</option>

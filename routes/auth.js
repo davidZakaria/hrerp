@@ -307,9 +307,13 @@ router.post('/reset-password/:token', async (req, res) => {
             ? decodeURIComponent(raw).replace(/\s+/g, '').trim()
             : '';
     const { password } = req.body;
+    const tokenHelp =
+        'Request a new link from the login page (Forgot password). Each new request replaces any previous link.';
 
     if (!token) {
-        return res.status(400).json({ msg: 'Invalid or expired token.' });
+        return res.status(400).json({
+            msg: `This reset link is missing or damaged. ${tokenHelp}`
+        });
     }
     if (!password || String(password).trim().length < 6) {
         return res.status(400).json({ msg: 'Password must be at least 6 characters.' });
@@ -321,7 +325,15 @@ router.post('/reset-password/:token', async (req, res) => {
             resetPasswordExpires: { $gt: Date.now() }
         });
         if (!user) {
-            return res.status(400).json({ msg: 'Invalid or expired token.' });
+            const holder = await User.findOne({ resetPasswordToken: token }).select('resetPasswordExpires');
+            if (holder?.resetPasswordExpires) {
+                console.warn('[auth] Password reset: token found but expired (user must request a new email).');
+            } else {
+                console.warn('[auth] Password reset: no user has this token (link already used, replaced, or invalid).');
+            }
+            return res.status(400).json({
+                msg: `This reset link is no longer valid. ${tokenHelp}`
+            });
         }
         // Hash new password
         const salt = await bcrypt.genSalt(10);

@@ -380,10 +380,14 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
+    const oldRoleBeforeUpdate = user.role;
+    const previousManagedDepartments = Array.isArray(user.managedDepartments)
+      ? [...user.managedDepartments]
+      : [];
 
     // Validate role
     const validRoles = ['employee', 'manager', 'admin', 'super_admin'];
-    if (role && !validRoles.includes(role)) {
+    if (role !== undefined && role && !validRoles.includes(role)) {
       return res.status(400).json({ msg: 'Invalid role. Must be employee, manager, admin, or super_admin.' });
     }
 
@@ -422,17 +426,42 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     const oldVacationDays = user.vacationDaysLeft;
     if (vacationDaysLeft !== undefined) user.vacationDaysLeft = vacationDaysLeft;
 
-    // Managed departments - always update when role is manager (handles department assignment changes)
-    const targetRole = role !== undefined ? role : user.role;
+    const targetRole = user.role;
+    // Managers: only replace managedDepartments when the client sends the field; otherwise keep DB value.
+    // (JSON omits undefined — partial updates must not wipe lists.) Promoting to manager without a list seeds from home department.
     if (targetRole === 'manager') {
-      const sanitizedDepts = Array.isArray(managedDepartments)
-        ? managedDepartments.filter(d => typeof d === 'string' && d.trim())
-        : [];
-      const newManagedDepts = sanitizedDepts.length > 0 ? sanitizedDepts : [(department || user.department)].filter(Boolean);
-      const oldDepts = JSON.stringify((user.managedDepartments || []).sort());
-      const newDepts = JSON.stringify(newManagedDepts.sort());
-      if (oldDepts !== newDepts) modifications.push({ field: 'managedDepartments', oldValue: user.managedDepartments, newValue: newManagedDepts });
-      user.managedDepartments = newManagedDepts;
+      if (managedDepartments !== undefined) {
+        const sanitizedDepts = Array.isArray(managedDepartments)
+          ? managedDepartments.filter(d => typeof d === 'string' && d.trim())
+          : [];
+        const effectiveHome = ((department !== undefined ? department : user.department) || '').trim();
+        let newManagedDepts;
+        if (sanitizedDepts.length > 0) {
+          newManagedDepts = sanitizedDepts;
+        } else if (effectiveHome) {
+          newManagedDepts = [effectiveHome];
+        } else if (previousManagedDepartments.length > 0) {
+          newManagedDepts = [...previousManagedDepartments];
+        } else {
+          newManagedDepts = [];
+        }
+        const oldDepts = JSON.stringify(previousManagedDepartments.map(String).sort());
+        const newDepts = JSON.stringify(newManagedDepts.map(String).sort());
+        if (oldDepts !== newDepts) {
+          modifications.push({ field: 'managedDepartments', oldValue: previousManagedDepartments, newValue: newManagedDepts });
+        }
+        user.managedDepartments = newManagedDepts;
+      } else if (oldRoleBeforeUpdate !== 'manager') {
+        const home = (department !== undefined ? department : user.department);
+        const homeStr = (home && String(home).trim()) || '';
+        const newManagedDepts = homeStr ? [homeStr] : [];
+        const oldDepts = JSON.stringify(previousManagedDepartments.map(String).sort());
+        const newDepts = JSON.stringify(newManagedDepts.map(String).sort());
+        if (oldDepts !== newDepts) {
+          modifications.push({ field: 'managedDepartments', oldValue: previousManagedDepartments, newValue: newManagedDepts });
+        }
+        user.managedDepartments = newManagedDepts;
+      }
     } else {
       user.managedDepartments = [];
     }
@@ -519,6 +548,9 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
+    const previousManagedDepartments = Array.isArray(user.managedDepartments)
+      ? [...user.managedDepartments]
+      : [];
 
     // Validate role if provided
     const validRoles = ['employee', 'manager', 'admin', 'super_admin'];
@@ -532,7 +564,7 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     }
 
     // Check if email is already taken by another user
-    if (email !== user.email) {
+    if (email !== undefined && email !== user.email) {
       const existingUser = await User.findOne({ email });
       if (existingUser) {
         return res.status(400).json({ msg: 'Email already in use by another user' });
@@ -540,25 +572,37 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     }
 
     // Check if employeeCode is already taken by another user
-    if (employeeCode && employeeCode !== user.employeeCode) {
+    if (employeeCode !== undefined && employeeCode && employeeCode !== user.employeeCode) {
       const existingCode = await User.findOne({ employeeCode, _id: { $ne: user._id } });
       if (existingCode) {
         return res.status(400).json({ msg: 'Biometric code already in use by another user' });
       }
     }
 
-    // Update user fields
-    user.name = name;
-    user.email = email;
-    user.department = department;
-    user.role = role;
-    // Managed departments: when role is manager, sanitize and use provided array or fallback to [department]
-    if (role === 'manager') {
-      const sanitized = Array.isArray(managedDepartments)
-        ? managedDepartments.filter(d => typeof d === 'string' && d.trim())
-        : [];
-      user.managedDepartments = sanitized.length > 0 ? sanitized : (department ? [department] : []);
-    } else {
+    // Only patch fields that are present — partial updates (e.g. password reset) must not wipe other data
+    if (name !== undefined) user.name = name;
+    if (email !== undefined) user.email = email;
+    if (department !== undefined) user.department = department;
+    if (role !== undefined) user.role = role;
+
+    const targetRole = user.role;
+    if (targetRole === 'manager') {
+      if (managedDepartments !== undefined) {
+        const sanitized = Array.isArray(managedDepartments)
+          ? managedDepartments.filter(d => typeof d === 'string' && d.trim())
+          : [];
+        const home = (user.department && String(user.department).trim()) || '';
+        if (sanitized.length > 0) {
+          user.managedDepartments = sanitized;
+        } else if (home) {
+          user.managedDepartments = [home];
+        } else if (previousManagedDepartments.length > 0) {
+          user.managedDepartments = [...previousManagedDepartments];
+        } else {
+          user.managedDepartments = [];
+        }
+      }
+    } else if (role !== undefined) {
       user.managedDepartments = [];
     }
     

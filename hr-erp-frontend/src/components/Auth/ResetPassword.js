@@ -1,20 +1,25 @@
 import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import logo from '../../assets/njd-logo.png';
 import API_URL from '../../config/api';
 
 const ResetPassword = () => {
+  const { token: tokenParam } = useParams();
+  const token = (tokenParam || '').replace(/\s+/g, '').trim();
+
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Get token from URL
-  const token = window.location.pathname.split('/').pop();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
+    if (!token) {
+      setMessage('Invalid reset link. Request a new password reset from the login page.');
+      return;
+    }
     if (password.length < 6) {
       setMessage('Password must be at least 6 characters.');
       return;
@@ -25,7 +30,7 @@ const ResetPassword = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/auth/reset-password/${token}`, {
+      const res = await fetch(`${API_URL}/api/auth/reset-password/${encodeURIComponent(token)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })

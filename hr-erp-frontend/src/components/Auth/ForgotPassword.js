@@ -18,7 +18,7 @@ const ForgotPassword = ({ onBack }) => {
       const res = await fetch(`${API_URL}/api/auth/reset-password-request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email: email.trim().toLowerCase() })
       });
       
       const data = await res.json();

@@ -11,7 +11,6 @@ const Evaluation = require('../models/Evaluation');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const config = require('config');
 const { createAuditLog } = require('./audit');
 const Audit = require('../models/Audit');
 const { validateObjectId } = require('../middleware/validateObjectId');
@@ -783,9 +782,13 @@ router.post('/create-super-admin', async (req, res) => {
             }
         };
 
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+            return res.status(500).json({ msg: 'Server configuration error' });
+        }
         jwt.sign(
             payload,
-            config.get('jwtSecret'),
+            jwtSecret,
             { expiresIn: 360000 },
             (err, token) => {
                 if (err) throw err;

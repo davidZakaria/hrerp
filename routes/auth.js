@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const config = require('config');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 const crypto = require('crypto');
@@ -11,6 +10,11 @@ const { createAuditLog } = require('./audit');
 
 // Allowed company email domains
 const ALLOWED_EMAIL_DOMAINS = ['@newjerseyegypt.com', '@gycegypt.com'];
+
+/** Case-insensitive email match (same idea as login) for legacy mixed-case addresses in DB */
+function emailInsensitiveRegex(normalizedLowerEmail) {
+    return new RegExp(`^${normalizedLowerEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+}
 
 // Register User (Employee Registration)
 router.post('/register', async (req, res) => {
@@ -97,8 +101,7 @@ router.post('/login', async (req, res) => {
         }
 
         // Find user by email - case-insensitive (some legacy users may have mixed-case in DB)
-        const emailRegex = new RegExp(`^${emailNormalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-        let user = await User.findOne({ email: { $regex: emailRegex } });
+        let user = await User.findOne({ email: { $regex: emailInsensitiveRegex(emailNormalized) } });
         if (!user) {
             console.warn('Login failed: user not found', { domain: (emailNormalized.split('@')[1] || '').slice(0, 20) });
             return res.status(400).json({ msg: 'Invalid credentials' });
@@ -207,14 +210,14 @@ router.get('/me', auth, async (req, res) => {
 
 // Request password reset
 router.post('/reset-password-request', async (req, res) => {
-    const { email } = req.body;
+    const emailNormalized = (req.body.email || '').toLowerCase().trim();
     
-    if (!email) {
+    if (!emailNormalized) {
         return res.status(400).json({ msg: 'Email is required.' });
     }
     
     try {
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email: { $regex: emailInsensitiveRegex(emailNormalized) } });
         if (!user) {
             // For security, we don't reveal if email exists or not
             return res.json({ msg: 'If an account with that email exists, a password reset link has been sent.' });
@@ -231,7 +234,7 @@ router.post('/reset-password-request', async (req, res) => {
         // Generate token
         const token = crypto.randomBytes(32).toString('hex');
         user.resetPasswordToken = token;
-        user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+        user.resetPasswordExpires = Date.now() + 86400000; // 24 hours (email delays + timezone)
         await user.save();
 
         // Send email
@@ -263,7 +266,7 @@ router.post('/reset-password-request', async (req, res) => {
                         </div>
                         <p>Or copy and paste this link into your browser:</p>
                         <p style="word-break: break-all; color: #666;">${resetUrl}</p>
-                        <p><strong>This link is valid for 1 hour only.</strong></p>
+                        <p><strong>This link is valid for 24 hours only.</strong></p>
                         <p>If you didn't request this password reset, please ignore this email.</p>
                         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
                         <p style="color: #666; font-size: 12px;">
@@ -274,7 +277,7 @@ router.post('/reset-password-request', async (req, res) => {
             };
             
             await transporter.sendMail(mailOptions);
-            console.log(`Password reset email sent to: ${email}`);
+            console.log(`Password reset email sent to: ${user.email}`);
             res.json({ msg: 'If an account with that email exists, a password reset link has been sent.' });
             
         } catch (emailError) {
@@ -298,8 +301,20 @@ router.post('/reset-password-request', async (req, res) => {
 
 // Reset password
 router.post('/reset-password/:token', async (req, res) => {
-    const { token } = req.params;
+    const raw = req.params.token;
+    const token =
+        typeof raw === 'string'
+            ? decodeURIComponent(raw).replace(/\s+/g, '').trim()
+            : '';
     const { password } = req.body;
+
+    if (!token) {
+        return res.status(400).json({ msg: 'Invalid or expired token.' });
+    }
+    if (!password || String(password).trim().length < 6) {
+        return res.status(400).json({ msg: 'Password must be at least 6 characters.' });
+    }
+
     try {
         const user = await User.findOne({
             resetPasswordToken: token,

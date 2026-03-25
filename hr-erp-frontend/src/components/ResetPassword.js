@@ -33,9 +33,16 @@ const ResetPassword = () => {
         }
 
         try {
-            const response = await axios.post(`${API_URL}/api/auth/reset-password/${token}`, {
-                password
-            });
+            const safeToken = (token || '').replace(/\s+/g, '').trim();
+            if (!safeToken) {
+                setError('Invalid reset link. Request a new password reset from the login page.');
+                setLoading(false);
+                return;
+            }
+            const response = await axios.post(
+                `${API_URL}/api/auth/reset-password/${encodeURIComponent(safeToken)}`,
+                { password }
+            );
 
             setSuccess(true);
             setLoading(false);

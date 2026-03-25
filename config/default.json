@@ -1,4 +1,0 @@
-{
-    "mongoURI": "USE_MONGODB_URI_ENV_VARIABLE",
-    "jwtSecret": "USE_JWT_SECRET_ENV_VARIABLE"
-} 

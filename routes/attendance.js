@@ -661,13 +661,19 @@ router.get('/team-report/:month', auth, async (req, res) => {
         if (!manager || manager.role !== 'manager') {
             return res.status(403).json({ msg: 'Access denied. Manager only.' });
         }
-        if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
-            return res.status(403).json({ msg: 'No managed departments assigned.' });
-        }
 
         const { month } = req.params;
         if (!/^\d{4}-\d{2}$/.test(month)) {
             return res.status(400).json({ msg: 'Invalid month format. Use YYYY-MM' });
+        }
+
+        if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
+            return res.json({
+                month,
+                totalEmployees: 0,
+                overtimeSummary: { totalOvertimeMinutes: 0, totalOvertimeHours: 0, employeesWithOvertime: [] },
+                report: []
+            });
         }
 
         // Get ALL team members (employees in managed departments) with full details

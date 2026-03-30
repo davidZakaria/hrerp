@@ -479,26 +479,68 @@ const ManagerDashboard = ({ onLogout }) => {
       
       // Check if response is successful
       if (response.status === 200) {
-        const newStatus = actionType === 'approve' ? 'manager_approved' : 'manager_rejected';
-        
+        const serverForm = response.data?.form;
+        const fallbackStatus =
+          actionType === 'approve'
+            ? selectedForm.type === 'excuse'
+              ? 'approved'
+              : 'manager_approved'
+            : 'manager_rejected';
+
+        const applyLocalEdits = (base) => {
+          if (!user?.permissions?.canEditDepartmentForms || Object.keys(formEditData).length === 0) {
+            return { ...base };
+          }
+          return {
+            ...base,
+            startDate: formEditData.startDate || base.startDate,
+            endDate: formEditData.endDate || base.endDate,
+            reason: formEditData.reason !== undefined ? formEditData.reason : base.reason,
+            excuseDate: formEditData.excuseDate || base.excuseDate,
+            excuseType: formEditData.excuseType || base.excuseType,
+            sickLeaveStartDate: formEditData.sickLeaveStartDate || base.sickLeaveStartDate,
+            sickLeaveEndDate: formEditData.sickLeaveEndDate || base.sickLeaveEndDate,
+            wfhDate: formEditData.wfhDate || base.wfhDate,
+            wfhWorkingOn: formEditData.wfhWorkingOn || base.wfhWorkingOn,
+            extraHoursDate: formEditData.extraHoursDate || base.extraHoursDate,
+            extraHoursWorked: formEditData.extraHoursWorked !== undefined ? formEditData.extraHoursWorked : base.extraHoursWorked,
+            extraHoursDescription: formEditData.extraHoursDescription || base.extraHoursDescription,
+            missionStartDate: formEditData.missionStartDate || base.missionStartDate,
+            missionEndDate: formEditData.missionEndDate || base.missionEndDate,
+            missionDestination: formEditData.missionDestination || base.missionDestination,
+            missionFromTime: formEditData.missionFromTime || base.missionFromTime,
+            missionToTime: formEditData.missionToTime || base.missionToTime
+          };
+        };
+
+        const sameId = (a, b) => String(a) === String(b);
+
         // OPTIMISTIC UPDATE: Immediately remove from pending list
-        setPendingForms(prev => prev.filter(form => form._id !== selectedForm._id));
-        
-        // Update team forms if viewing them
-        setTeamForms(prev => 
-          prev.map(form => 
-            form._id === selectedForm._id 
-              ? { 
-                  ...form, 
-                  status: newStatus,
-                  managerApprovedBy: user,
-                  managerApprovedAt: new Date().toISOString(),
-                  managerComment: comment.trim()
-                } 
-              : form
-          )
+        setPendingForms(prev => prev.filter(form => !sameId(form._id, selectedForm._id)));
+
+        // Update team forms with server truth (excuseType, dates, etc.) or merged local edits
+        setTeamForms(prev =>
+          prev.map(form => {
+            if (!sameId(form._id, selectedForm._id)) return form;
+            if (serverForm) {
+              return {
+                ...form,
+                ...serverForm,
+                user: serverForm.user || form.user,
+                managerApprovedBy: serverForm.managerApprovedBy != null ? serverForm.managerApprovedBy : form.managerApprovedBy
+              };
+            }
+            const withEdits = applyLocalEdits(form);
+            return {
+              ...withEdits,
+              status: fallbackStatus,
+              managerApprovedBy: user,
+              managerApprovedAt: new Date().toISOString(),
+              managerComment: comment.trim() || ''
+            };
+          })
         );
-        
+
         setMessage(`✅ Request ${actionType}d successfully!`);
         closeCommentModal();
         
@@ -583,6 +625,8 @@ const ManagerDashboard = ({ onLogout }) => {
       missionStartDate: form.missionStartDate?.toString().slice(0, 10) || '',
       missionEndDate: form.missionEndDate?.toString().slice(0, 10) || '',
       missionDestination: form.missionDestination || '',
+      missionFromTime: form.missionFromTime || '',
+      missionToTime: form.missionToTime || '',
       reason: form.reason || '',
       managerComment: form.managerComment || ''
     });
@@ -605,11 +649,27 @@ const ManagerDashboard = ({ onLogout }) => {
       const res = await axios.put(`${API_URL}/api/forms/manager/${formEditData._id}/edit`, payload, {
         headers: { 'x-auth-token': token }
       });
+      const updatedForm = res.data?.form;
+      const formId = formEditData._id;
+      const sameId = (a, b) => String(a) === String(b);
+
+      if (updatedForm) {
+        setPendingForms(prev =>
+          prev.map(f =>
+            sameId(f._id, formId) ? { ...f, ...updatedForm, user: updatedForm.user || f.user } : f
+          )
+        );
+        setTeamForms(prev =>
+          prev.map(f =>
+            sameId(f._id, formId) ? { ...f, ...updatedForm, user: updatedForm.user || f.user } : f
+          )
+        );
+      }
+
       if (res.data) {
         setMessage('Form updated successfully');
         closeEditFormModal();
-        fetchPendingForms();
-        fetchTeamForms();
+        await Promise.all([fetchPendingForms(), fetchTeamForms()]);
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (err) {

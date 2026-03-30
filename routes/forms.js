@@ -728,6 +728,8 @@ router.put('/manager/:id', auth, async (req, res) => {
         form.updatedAt = Date.now();
         await form.save();
 
+        await form.populate('managerApprovedBy', 'name');
+
         // Clear relevant caches after form action
         cache.delete(`forms-${form.user._id}`);
         cache.delete('forms-admin');
@@ -817,6 +819,8 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
         });
         form.updatedAt = Date.now();
         await form.save();
+
+        await form.populate('managerApprovedBy', 'name');
 
         cache.delete(`forms-${form.user._id}`);
         cache.delete('forms-admin');

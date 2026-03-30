@@ -252,15 +252,36 @@ router.get('/cdata', (req, res) => {
 
 // POST /iclock/cdata - Data ingestion
 router.post('/cdata', (req, res) => {
-    const table = req.query.table;
-    const deviceSN = req.query.SN || '';
+    const body = typeof req.body === 'string' ? req.body : (req.body != null ? String(req.body) : '');
+    const tableRaw = req.query.table ?? req.query.Table;
+    const table = String(tableRaw || '').trim().toUpperCase();
+    const deviceSN = req.query.SN || req.query.sn || '';
 
-    if (table !== 'ATTLOG') {
-        console.log(`[ZKTeco] POST cdata table=${table || '(empty)'} - not ATTLOG, skipping. IP=${req.ip}`);
+    const bodyLen = Buffer.byteLength(body, 'utf8');
+    const preview = body.slice(0, 160).replace(/\r/g, '\\r').replace(/\n/g, '\\n');
+    console.log(
+        `[ZKTeco] POST cdata IP=${req.ip} SN=${deviceSN || '(empty)'} table=${tableRaw ?? '(empty)'} ` +
+        `normalized=${table || '(empty)'} ctype=${req.get('content-type') || '(none)'} bodyLen=${bodyLen} preview="${preview}"`
+    );
+
+    // Some firmware omits ?table=ATTLOG but still sends ATTLOG lines
+    const looksLikeAttlog = /^\s*\d+\s+\d{4}-\d{1,2}-\d{1,2}/m.test(body);
+    let ingestAsAttlog = table === 'ATTLOG';
+    if (!ingestAsAttlog && !table && looksLikeAttlog) {
+        console.warn('[ZKTeco] Missing table= query param; body looks like ATTLOG — processing as ATTLOG');
+        ingestAsAttlog = true;
+    }
+
+    if (!ingestAsAttlog) {
+        if (looksLikeAttlog) {
+            console.warn(
+                `[ZKTeco] POST has ATTLOG-shaped body but table="${tableRaw}" — set device to ATTLOG or fix server URL query string.`
+            );
+        }
+        console.log(`[ZKTeco] POST cdata — not ingesting (table is not ATTLOG). IP=${req.ip}`);
         return res.type('text/plain').send('OK');
     }
 
-    const body = req.body || '';
     const punches = parseAttlogBody(body);
     console.log(`[ZKTeco] Data push from device SN=${deviceSN || '(empty)'} IP=${req.ip} - ${punches.length} punch(es) at ${new Date().toISOString()}`);
 

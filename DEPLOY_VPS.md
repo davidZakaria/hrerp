@@ -55,6 +55,8 @@ sudo ufw reload
 sudo ufw status
 ```
 
+Device-specific steps and **K40 Pro** notes: see **[ZKTECO_SETUP.md](ZKTECO_SETUP.md)** (intro, §2, and §9).
+
 ## Verify ZKTeco Connectivity
 
 After deploy, watch logs for device pings:

@@ -272,8 +272,8 @@ const authLimiter = rateLimit({
 });
 app.use('/api/auth/login', authLimiter);
 
-// ZKTeco ADMS - device sends text/plain, must parse before json
-app.use('/iclock', express.text({ type: '*/*' }), require('./routes/zkteco'));
+// ZKTeco ADMS - raw UTF-8 body (devices often omit/vary Content-Type; express.text skipped empty bodies)
+app.use('/iclock', require('./middleware/zktecoRawBody'), require('./routes/zkteco'));
 
 // Body parsing middleware with size limits
 app.use(express.json({ 

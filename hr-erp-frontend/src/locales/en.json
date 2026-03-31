@@ -109,7 +109,21 @@
     "canSubmitPaidExcuse": "You can submit paid excuse requests",
     "submitUnpaidInstead": "Submit unpaid excuse requests instead",
     "resetsMonthly": "Resets on the 25th of each month",
-    "nextReset": "Next reset"
+    "nextReset": "Next reset",
+    "nav": {
+      "employeeTitle": "Your workspace",
+      "employeeDesc": "Submit requests, preview forms, and track attendance.",
+      "managerTitle": "Team & personal",
+      "managerDesc": "Approve team requests, review forms, and manage your own time off.",
+      "adminTitle": "Administration",
+      "adminDesc": "Users, forms, ATS, and attendance across the organization.",
+      "superAdminTitle": "Platform control",
+      "superAdminDesc": "Users, forms, audit logs, backups, and system-wide attendance.",
+      "badgeEmployee": "Employee",
+      "badgeManager": "Manager",
+      "badgeAdmin": "Admin",
+      "badgeSuperAdmin": "Super Admin"
+    }
   },
   "forms": {
     "vacation": "Vacation",

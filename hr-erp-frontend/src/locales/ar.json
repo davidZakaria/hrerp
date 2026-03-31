@@ -109,7 +109,21 @@
     "canSubmitPaidExcuse": "يمكنك تقديم طلبات استئذان مدفوعة",
     "submitUnpaidInstead": "قدم طلبات استئذان غير مدفوعة بدلاً من ذلك",
     "resetsMonthly": "يتم التجديد في الـ 25 من كل شهر",
-    "nextReset": "التجديد القادم"
+    "nextReset": "التجديد القادم",
+    "nav": {
+      "employeeTitle": "مساحة عملك",
+      "employeeDesc": "تقديم الطلبات، معاينة النماذج، ومتابعة الحضور.",
+      "managerTitle": "الفريق والشخصي",
+      "managerDesc": "الموافقة على طلبات الفريق، مراجعة النماذج، وإدارة إجازاتك.",
+      "adminTitle": "الإدارة",
+      "adminDesc": "المستخدمون، النماذج، ATS، والحضور على مستوى المؤسسة.",
+      "superAdminTitle": "تحكم المنصة",
+      "superAdminDesc": "المستخدمون، النماذج، سجلات التدقيق، النسخ الاحتياطي، والحضور.",
+      "badgeEmployee": "موظف",
+      "badgeManager": "مدير",
+      "badgeAdmin": "مدير عام",
+      "badgeSuperAdmin": "مدير أعلى"
+    }
   },
   "forms": {
     "vacation": "إجازة",

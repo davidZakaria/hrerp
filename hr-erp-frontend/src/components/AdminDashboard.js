@@ -904,6 +904,10 @@ const AdminDashboard = () => {
 
       <DashboardSectionNav
         variant="light"
+        role="admin"
+        title={t('dashboard.nav.adminTitle')}
+        description={t('dashboard.nav.adminDesc')}
+        badgeLabel={t('dashboard.nav.badgeAdmin')}
         activeId={activeTab}
         sections={[
           { id: 'overview', label: 'Overview', icon: '📊', onSelect: () => setActiveTab('overview') },

@@ -296,6 +296,10 @@ const EmployeeDashboard = () => {
       <div className="main-content">
         <DashboardSectionNav
           variant="light"
+          role="employee"
+          title={t('dashboard.nav.employeeTitle')}
+          description={t('dashboard.nav.employeeDesc')}
+          badgeLabel={t('dashboard.nav.badgeEmployee')}
           activeId={employeeNavActiveId}
           sections={[
             { id: 'overview', label: t('dashboard.overview', 'Overview'), icon: '🏠', onSelect: goOverview },

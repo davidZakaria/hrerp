@@ -1135,6 +1135,10 @@ const SuperAdminDashboard = () => {
         <div className="elegant-card">
           <DashboardSectionNav
             variant="light"
+            role="super_admin"
+            title={t('dashboard.nav.superAdminTitle')}
+            description={t('dashboard.nav.superAdminDesc')}
+            badgeLabel={t('dashboard.nav.badgeSuperAdmin')}
             activeId={activeTab}
             sections={[
               { id: 'users', label: 'User Management', icon: '👥', onSelect: () => setActiveTab('users') },

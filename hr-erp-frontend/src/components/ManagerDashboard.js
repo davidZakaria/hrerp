@@ -780,6 +780,10 @@ const ManagerDashboard = ({ onLogout }) => {
       )}
 
       <DashboardSectionNav
+        role="manager"
+        title={t('dashboard.nav.managerTitle')}
+        description={t('dashboard.nav.managerDesc')}
+        badgeLabel={t('dashboard.nav.badgeManager')}
         activeId={managerNavActiveId}
         subtitle={`${pendingForms.length} ${t('managerDashboard.pendingTeamRequests')}`}
         sections={[

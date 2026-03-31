@@ -1,88 +1,133 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
+
+const ROLE_BADGE = {
+  employee: 'Employee',
+  manager: 'Manager',
+  admin: 'Admin',
+  super_admin: 'Super Admin'
+};
 
 /**
  * Horizontal section navigator for role dashboards (tabs / pills).
  * @param {{ id: string, label: string, icon?: string, onSelect: () => void }[]} sections
  * @param {string} activeId
  * @param {string} [subtitle]
+ * @param {'dark'|'light'} [variant]
+ * @param {'employee'|'manager'|'admin'|'super_admin'} [role]
+ * @param {string} [title] — desktop header (i18n from parent)
+ * @param {string} [description] — desktop subline
+ * @param {string} [badgeLabel] — override badge text
  */
-const DashboardSectionNav = ({ sections, activeId, subtitle, variant = 'dark' }) => {
-  if (!sections || sections.length === 0) return null;
+const DashboardSectionNav = ({
+  sections,
+  activeId,
+  subtitle,
+  variant = 'dark',
+  role = 'employee',
+  title,
+  description,
+  badgeLabel
+}) => {
+  const btnRefs = useRef([]);
 
   const light = variant === 'light';
+  const shellClass = [
+    'dashboard-nav-shell',
+    `dashboard-nav-shell--role-${role}`,
+    light ? 'dashboard-nav-shell--light' : 'dashboard-nav-shell--dark'
+  ].join(' ');
+
+  const showHeader = Boolean(title || description || badgeLabel);
+  const badge = badgeLabel || ROLE_BADGE[role] || ROLE_BADGE.employee;
+
+  const focusIndex = useCallback(
+    (idx) => {
+      const el = btnRefs.current[idx];
+      if (el) el.focus();
+    },
+    []
+  );
+
+  useEffect(() => {
+    btnRefs.current = btnRefs.current.slice(0, sections?.length || 0);
+  }, [sections?.length]);
+
+  const onKeyDown = useCallback(
+    (e, index) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      const rtl = typeof document !== 'undefined' && document.documentElement.getAttribute('dir') === 'rtl';
+      const next =
+        e.key === (rtl ? 'ArrowLeft' : 'ArrowRight')
+          ? Math.min(index + 1, sections.length - 1)
+          : Math.max(index - 1, 0);
+      if (next !== index) {
+        e.preventDefault();
+        focusIndex(next);
+      }
+    },
+    [sections.length, focusIndex]
+  );
+
+  if (!sections || sections.length === 0) return null;
 
   return (
-    <nav
-      className="dashboard-section-nav"
-      aria-label="Dashboard sections"
-      style={{
-        display: 'flex',
-        flexWrap: 'nowrap',
-        gap: '8px',
-        overflowX: 'auto',
-        padding: '12px 16px',
-        marginBottom: '12px',
-        background: light ? 'rgba(102, 126, 234, 0.06)' : 'rgba(255,255,255,0.08)',
-        borderRadius: '12px',
-        border: light ? '1px solid rgba(102, 126, 234, 0.2)' : '1px solid rgba(255,255,255,0.12)',
-        WebkitOverflowScrolling: 'touch',
-        position: 'sticky',
-        top: 0,
-        zIndex: 20,
-        backdropFilter: 'blur(8px)'
-      }}
-    >
-      {sections.map((s) => {
-        const active = s.id === activeId;
-        return (
-          <button
-            key={s.id}
-            type="button"
-            onClick={s.onSelect}
-            className={`dashboard-section-nav-btn${active ? ' active' : ''}`}
-            style={{
-              flex: '0 0 auto',
-              padding: '10px 16px',
-              borderRadius: '999px',
-              border: light
-                ? active
-                  ? '2px solid #667eea'
-                  : '1px solid rgba(0,0,0,0.12)'
-                : active
-                  ? '2px solid rgba(255,255,255,0.95)'
-                  : '1px solid rgba(255,255,255,0.25)',
-              background: light
-                ? active
-                  ? 'linear-gradient(135deg, #667eea, #764ba2)'
-                  : '#fff'
-                : active
-                  ? 'linear-gradient(135deg, rgba(102,126,234,0.95), rgba(118,75,162,0.95))'
-                  : 'rgba(255,255,255,0.06)',
-              color: light ? (active ? '#fff' : '#333') : '#fff',
-              fontWeight: active ? 600 : 500,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            {s.icon ? `${s.icon} ` : ''}
-            {s.label}
-          </button>
-        );
-      })}
-      {subtitle ? (
-        <span
-          style={{
-            alignSelf: 'center',
-            marginLeft: 'auto',
-            fontSize: '0.8rem',
-            color: light ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.65)',
-            whiteSpace: 'nowrap',
-            paddingLeft: '8px'
-          }}
-        >
-          {subtitle}
-        </span>
+    <nav className={shellClass} aria-label="Dashboard sections">
+      {showHeader ? (
+        <div className="dashboard-nav-header has-bottom-rule">
+          <div className="dashboard-nav-header-main">
+            <span className="dashboard-nav-badge">{badge}</span>
+            {title || description ? (
+              <div className="dashboard-nav-headings">
+                {title ? <span className="dashboard-nav-title">{title}</span> : null}
+                {description ? <span className="dashboard-nav-desc">{description}</span> : null}
+              </div>
+            ) : null}
+          </div>
+          {subtitle ? (
+            <div className="dashboard-nav-header-aside">
+              <span className="dashboard-nav-subtitle">{subtitle}</span>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="dashboard-nav-track-wrap">
+        <div className="dashboard-nav-track" role="tablist" aria-orientation="horizontal">
+          {sections.map((s, index) => {
+            const active = s.id === activeId;
+            return (
+              <button
+                key={s.id}
+                ref={(el) => {
+                  btnRefs.current[index] = el;
+                }}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                id={`dashboard-nav-${s.id}`}
+                tabIndex={active ? 0 : -1}
+                onClick={s.onSelect}
+                onKeyDown={(e) => onKeyDown(e, index)}
+                className={`dashboard-section-nav-btn${active ? ' active' : ''}`}
+              >
+                {s.icon ? `${s.icon} ` : ''}
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {subtitle && showHeader ? (
+        <div className="dashboard-nav-footer-mobile is-visible with-header">
+          <span className="dashboard-nav-subtitle">{subtitle}</span>
+        </div>
+      ) : null}
+
+      {subtitle && !showHeader ? (
+        <div className="dashboard-nav-footer-mobile is-visible">
+          <span className="dashboard-nav-subtitle">{subtitle}</span>
+        </div>
       ) : null}
     </nav>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DashboardSectionNav from './layout/DashboardSectionNav';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
@@ -7,6 +8,7 @@ import ATSDashboard from './ATS/ATSDashboard';
 import ManagerTeamAttendance from './ManagerTeamAttendance';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
+import { normalizeExcuseType, isPaidExcuse } from '../utils/excuseType';
 
 const ManagerDashboard = ({ onLogout }) => {
   const { t } = useTranslation();
@@ -25,7 +27,7 @@ const ManagerDashboard = ({ onLogout }) => {
   const [myForms, setMyForms] = useState([]);
   const [teamForms, setTeamForms] = useState([]);
   const [vacationDaysLeft, setVacationDaysLeft] = useState(null);
-  const [excuseHoursLeft, setExcuseHoursLeft] = useState(null);
+  const [excuseRequestsLeft, setExcuseRequestsLeft] = useState(null);
   
   // Comment modal state
   const [showCommentModal, setShowCommentModal] = useState(false);
@@ -44,10 +46,17 @@ const ManagerDashboard = ({ onLogout }) => {
   const [teamFlags, setTeamFlags] = useState([]);
   const [flagSubmitting, setFlagSubmitting] = useState(false);
 
-  // Form edit modal state (for managers with canEditDepartmentForms)
   const [showEditFormModal, setShowEditFormModal] = useState(false);
   const [formEditData, setFormEditData] = useState({});
+  const [formEditSnapshot, setFormEditSnapshot] = useState(null);
   const [formEditSubmitting, setFormEditSubmitting] = useState(false);
+
+  const fieldDirty = (key) => {
+    if (!formEditSnapshot) return false;
+    const a = formEditData[key];
+    const b = formEditSnapshot[key];
+    return String(a ?? '') !== String(b ?? '');
+  };
 
   useEffect(() => {
     fetchUserData();
@@ -126,7 +135,7 @@ const ManagerDashboard = ({ onLogout }) => {
       });
       const data = await res.json();
       if (res.ok) {
-        setExcuseHoursLeft(data.excuseHoursLeft);
+        setExcuseRequestsLeft(data.excuseRequestsLeft ?? data.excuseHoursLeft ?? 0);
       }
     } catch (err) {
       // ignore
@@ -388,30 +397,33 @@ const ManagerDashboard = ({ onLogout }) => {
     setSelectedForm(form);
     setActionType(action);
     setComment('');
-    if (user?.permissions?.canEditDepartmentForms) {
-      setFormEditData({
-        _id: form._id,
-        type: form.type,
-        startDate: form.startDate?.toString().slice(0, 10) || '',
-        endDate: form.endDate?.toString().slice(0, 10) || '',
-        excuseDate: form.excuseDate?.toString().slice(0, 10) || '',
-        excuseType: form.excuseType || 'paid',
-        sickLeaveStartDate: form.sickLeaveStartDate?.toString().slice(0, 10) || '',
-        sickLeaveEndDate: form.sickLeaveEndDate?.toString().slice(0, 10) || '',
-        wfhDate: form.wfhDate?.toString().slice(0, 10) || '',
-        wfhWorkingOn: form.wfhWorkingOn || form.wfhDescription || '',
-        extraHoursDate: form.extraHoursDate?.toString().slice(0, 10) || '',
-        extraHoursWorked: form.extraHoursWorked || 0,
-        extraHoursDescription: form.extraHoursDescription || '',
-        missionStartDate: form.missionStartDate?.toString().slice(0, 10) || '',
-        missionEndDate: form.missionEndDate?.toString().slice(0, 10) || '',
-        missionDestination: form.missionDestination || '',
-        missionFromTime: form.missionFromTime || '',
-        missionToTime: form.missionToTime || '',
-        reason: form.reason || '',
-        managerComment: form.managerComment || ''
-      });
-    }
+    const et = normalizeExcuseType({ ...form, type: form.type });
+    const nextEdit = {
+      _id: form._id,
+      type: form.type,
+      startDate: form.startDate?.toString().slice(0, 10) || '',
+      endDate: form.endDate?.toString().slice(0, 10) || '',
+      excuseDate: form.excuseDate?.toString().slice(0, 10) || '',
+      excuseType: et || 'paid',
+      fromHour: form.fromHour || '',
+      toHour: form.toHour || '',
+      sickLeaveStartDate: form.sickLeaveStartDate?.toString().slice(0, 10) || '',
+      sickLeaveEndDate: form.sickLeaveEndDate?.toString().slice(0, 10) || '',
+      wfhDate: form.wfhDate?.toString().slice(0, 10) || '',
+      wfhWorkingOn: form.wfhWorkingOn || form.wfhDescription || '',
+      extraHoursDate: form.extraHoursDate?.toString().slice(0, 10) || '',
+      extraHoursWorked: form.extraHoursWorked || 0,
+      extraHoursDescription: form.extraHoursDescription || '',
+      missionStartDate: form.missionStartDate?.toString().slice(0, 10) || '',
+      missionEndDate: form.missionEndDate?.toString().slice(0, 10) || '',
+      missionDestination: form.missionDestination || '',
+      missionFromTime: form.missionFromTime || '',
+      missionToTime: form.missionToTime || '',
+      reason: form.reason || '',
+      managerComment: form.managerComment || ''
+    };
+    setFormEditData(nextEdit);
+    setFormEditSnapshot({ ...nextEdit });
     setShowCommentModal(true);
   };
 
@@ -421,6 +433,7 @@ const ManagerDashboard = ({ onLogout }) => {
     setActionType('');
     setComment('');
     setSubmitting(false);
+    setFormEditSnapshot(null);
   };
 
   const handleFormAction = async () => {
@@ -451,13 +464,15 @@ const ManagerDashboard = ({ onLogout }) => {
       });
 
       const payload = { action: actionType, managerComment: comment.trim() };
-      if (user?.permissions?.canEditDepartmentForms && Object.keys(formEditData).length > 0) {
+      if (formEditData && formEditData._id) {
         Object.assign(payload, {
           startDate: formEditData.startDate || undefined,
           endDate: formEditData.endDate || undefined,
           reason: formEditData.reason || undefined,
           excuseDate: formEditData.excuseDate || undefined,
           excuseType: formEditData.excuseType || undefined,
+          fromHour: formEditData.fromHour || undefined,
+          toHour: formEditData.toHour || undefined,
           sickLeaveStartDate: formEditData.sickLeaveStartDate || undefined,
           sickLeaveEndDate: formEditData.sickLeaveEndDate || undefined,
           wfhDate: formEditData.wfhDate || undefined,
@@ -488,7 +503,7 @@ const ManagerDashboard = ({ onLogout }) => {
             : 'manager_rejected';
 
         const applyLocalEdits = (base) => {
-          if (!user?.permissions?.canEditDepartmentForms || Object.keys(formEditData).length === 0) {
+          if (!formEditData || !formEditData._id) {
             return { ...base };
           }
           return {
@@ -498,6 +513,8 @@ const ManagerDashboard = ({ onLogout }) => {
             reason: formEditData.reason !== undefined ? formEditData.reason : base.reason,
             excuseDate: formEditData.excuseDate || base.excuseDate,
             excuseType: formEditData.excuseType || base.excuseType,
+            fromHour: formEditData.fromHour !== undefined ? formEditData.fromHour : base.fromHour,
+            toHour: formEditData.toHour !== undefined ? formEditData.toHour : base.toHour,
             sickLeaveStartDate: formEditData.sickLeaveStartDate || base.sickLeaveStartDate,
             sickLeaveEndDate: formEditData.sickLeaveEndDate || base.sickLeaveEndDate,
             wfhDate: formEditData.wfhDate || base.wfhDate,
@@ -608,13 +625,16 @@ const ManagerDashboard = ({ onLogout }) => {
   };
 
   const openEditFormModal = (form) => {
-    setFormEditData({
+    const et = normalizeExcuseType({ ...form, type: form.type });
+    const nextEdit = {
       _id: form._id,
       type: form.type,
       startDate: form.startDate?.toString().slice(0, 10) || '',
       endDate: form.endDate?.toString().slice(0, 10) || '',
       excuseDate: form.excuseDate?.toString().slice(0, 10) || '',
-      excuseType: form.excuseType || 'paid',
+      excuseType: et || 'paid',
+      fromHour: form.fromHour || '',
+      toHour: form.toHour || '',
       sickLeaveStartDate: form.sickLeaveStartDate?.toString().slice(0, 10) || '',
       sickLeaveEndDate: form.sickLeaveEndDate?.toString().slice(0, 10) || '',
       wfhDate: form.wfhDate?.toString().slice(0, 10) || '',
@@ -629,13 +649,16 @@ const ManagerDashboard = ({ onLogout }) => {
       missionToTime: form.missionToTime || '',
       reason: form.reason || '',
       managerComment: form.managerComment || ''
-    });
+    };
+    setFormEditData(nextEdit);
+    setFormEditSnapshot({ ...nextEdit });
     setShowEditFormModal(true);
   };
 
   const closeEditFormModal = () => {
     setShowEditFormModal(false);
     setFormEditData({});
+    setFormEditSnapshot(null);
   };
 
   const handleFormEditSubmit = async () => {
@@ -690,6 +713,16 @@ const ManagerDashboard = ({ onLogout }) => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     return diffDays;
   };
+
+  const managerNavActiveId = showATS
+    ? 'ats'
+    : showForm
+      ? 'submit'
+      : showMyForms
+        ? 'myForms'
+        : showTeamForms
+          ? 'teamForms'
+          : 'teamAttendance';
 
   if (loading || !user) {
     return (
@@ -746,6 +779,18 @@ const ManagerDashboard = ({ onLogout }) => {
         </div>
       )}
 
+      <DashboardSectionNav
+        activeId={managerNavActiveId}
+        subtitle={`${pendingForms.length} ${t('managerDashboard.pendingTeamRequests')}`}
+        sections={[
+          { id: 'teamAttendance', label: t('managerDashboard.teamAttendance', 'Team Attendance'), icon: '📊', onSelect: handleShowTeamAttendance },
+          { id: 'submit', label: t('managerDashboard.submitMyForm'), icon: '📝', onSelect: handleShowForm },
+          { id: 'myForms', label: t('managerDashboard.viewMyForms'), icon: '📋', onSelect: handleShowMyForms },
+          { id: 'teamForms', label: t('managerDashboard.myTeamMembersForms'), icon: '👥', onSelect: handleShowTeamForms },
+          { id: 'ats', label: t('managerDashboard.atsSystem', 'ATS'), icon: '🎯', onSelect: handleShowATS }
+        ]}
+      />
+
       {/* Stats */}
       <div className="stats-section">
         <div 
@@ -795,7 +840,7 @@ const ManagerDashboard = ({ onLogout }) => {
           </div>
           <div className="stat-card manager-stat-card">
             <div className="stat-icon">⏰</div>
-            <h3>{excuseHoursLeft !== null ? excuseHoursLeft : '...'}</h3>
+            <h3>{excuseRequestsLeft !== null ? excuseRequestsLeft : '...'}</h3>
             <p>{t('managerDashboard.excuseHoursLeft')}</p>
             <small>{t('managerDashboard.yourMonthlyAllowanceRemaining')}</small>
           </div>
@@ -900,7 +945,7 @@ const ManagerDashboard = ({ onLogout }) => {
                     
                     {form.type === 'excuse' && (
                       <>
-                        <p><strong>Excuse Type:</strong> <span style={{ color: form.excuseType === 'paid' ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{form.excuseType === 'paid' ? '💰 Paid' : '📝 Unpaid'}</span></p>
+                        <p><strong>Excuse Type:</strong> <span style={{ color: isPaidExcuse(form) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{isPaidExcuse(form) ? '💰 Paid' : '📝 Unpaid'}</span></p>
                         <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
                         <p><strong>{t('time')}:</strong> {form.fromHour} - {form.toHour}</p>
                         <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
@@ -1035,7 +1080,7 @@ const ManagerDashboard = ({ onLogout }) => {
                     
                     {form.type === 'excuse' && (
                       <>
-                        <p><strong>Excuse Type:</strong> <span style={{ color: form.excuseType === 'paid' ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{form.excuseType === 'paid' ? '💰 Paid' : '📝 Unpaid'}</span></p>
+                        <p><strong>Excuse Type:</strong> <span style={{ color: isPaidExcuse(form) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{isPaidExcuse(form) ? '💰 Paid' : '📝 Unpaid'}</span></p>
                         <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
                         <p><strong>{t('time')}:</strong> {form.fromHour} - {form.toHour}</p>
                         <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
@@ -1123,13 +1168,11 @@ const ManagerDashboard = ({ onLogout }) => {
                       </div>
                     )}
                   </div>
-                  {user?.permissions?.canEditDepartmentForms && (
-                    <div style={{ marginTop: '1rem' }}>
-                      <button onClick={() => openEditFormModal(form)} className="btn-manager" style={{ padding: '6px 12px', fontSize: '0.9rem' }}>
-                        ✏️ {t('edit') || 'Edit'}
-                      </button>
-                    </div>
-                  )}
+                  <div style={{ marginTop: '1rem' }}>
+                    <button onClick={() => openEditFormModal(form)} className="btn-manager" style={{ padding: '6px 12px', fontSize: '0.9rem' }}>
+                      ✏️ {t('edit') || 'Edit'}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1251,7 +1294,7 @@ const ManagerDashboard = ({ onLogout }) => {
                   
                   {form.type === 'excuse' && (
                     <>
-                      <p><strong>Excuse Type:</strong> <span style={{ color: form.excuseType === 'paid' ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{form.excuseType === 'paid' ? '💰 Paid' : '📝 Unpaid'}</span></p>
+                      <p><strong>Excuse Type:</strong> <span style={{ color: isPaidExcuse(form) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{isPaidExcuse(form) ? '💰 Paid' : '📝 Unpaid'}</span></p>
                       <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
                       <p><strong>{t('timePeriod')}:</strong> {form.fromHour} - {form.toHour}</p>
                       <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
@@ -1296,16 +1339,14 @@ const ManagerDashboard = ({ onLogout }) => {
                   <p><strong>{t('submitted')}:</strong> {formatDate(form.createdAt)}</p>
                 </div>
                 <div className="request-actions">
-                  {user?.permissions?.canEditDepartmentForms && (
-                    <button 
-                      onClick={() => openEditFormModal(form)}
-                      className="btn-manager"
-                      title={t('edit') || 'Edit form'}
-                      style={{ marginRight: '8px' }}
-                    >
-                      ✏️ {t('edit') || 'Edit'}
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => openEditFormModal(form)}
+                    className="btn-manager"
+                    title={t('edit') || 'Edit form'}
+                    style={{ marginRight: '8px' }}
+                  >
+                    ✏️ {t('edit') || 'Edit'}
+                  </button>
                   <button 
                     onClick={() => openCommentModal(form, 'approve')}
                     className="approve-btn"
@@ -1364,6 +1405,11 @@ const ManagerDashboard = ({ onLogout }) => {
                   
                   {selectedForm.type === 'excuse' && (
                     <>
+                      <p><strong>{t('excuseType') || 'Excuse Type'}:</strong>{' '}
+                        <span style={{ color: isPaidExcuse(selectedForm) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>
+                          {isPaidExcuse(selectedForm) ? '💰 Paid' : '📝 Unpaid'}
+                        </span>
+                      </p>
                       <p><strong>{t('excuseDate')}:</strong> {formatDate(selectedForm.excuseDate)}</p>
                       <p><strong>{t('timePeriod')}:</strong> {selectedForm.fromHour} - {selectedForm.toHour}</p>
                       <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${selectedForm.toHour}`) - new Date(`2000-01-01T${selectedForm.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
@@ -1396,12 +1442,12 @@ const ManagerDashboard = ({ onLogout }) => {
                   <p><strong>{t('reason')}:</strong> {selectedForm.reason}</p>
                 </div>
 
-                {user?.permissions?.canEditDepartmentForms && Object.keys(formEditData).length > 0 && (
+                {formEditData && formEditData._id && (
                   <div className="edit-before-submit-section" style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(102, 126, 234, 0.1)', borderRadius: '8px', border: '1px solid rgba(102, 126, 234, 0.3)' }}>
                     <strong style={{ display: 'block', marginBottom: '0.75rem', color: '#667eea' }}>✏️ {t('edit') || 'Edit'} form before {actionType === 'approve' ? (t('approve') || 'approving') : (t('reject') || 'rejecting')}</strong>
                     <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                      <label className="form-label-elegant">{t('reason')}</label>
-                      <textarea value={formEditData.reason || ''} onChange={(e) => setFormEditData({ ...formEditData, reason: e.target.value })} rows={2} className="form-input-elegant" style={{ width: '100%' }} />
+                      <label className="form-label-elegant">{t('reason')}{fieldDirty('reason') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                      <textarea value={formEditData.reason || ''} onChange={(e) => setFormEditData({ ...formEditData, reason: e.target.value })} rows={2} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('reason') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
                     </div>
                     {formEditData.type === 'vacation' && (
                       <>
@@ -1418,12 +1464,19 @@ const ManagerDashboard = ({ onLogout }) => {
                     {formEditData.type === 'excuse' && (
                       <>
                         <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('excuseDate')}</label>
-                          <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                          <label className="form-label-elegant">{t('excuseDate')}{fieldDirty('excuseDate') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                          <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('excuseDate') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
                         </div>
                         <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}</label>
-                          <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant" style={{ width: '100%' }}>
+                          <label className="form-label-elegant">{t('timePeriod') || 'Time'}{fieldDirty('fromHour') || fieldDirty('toHour') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <input type="time" value={formEditData.fromHour || ''} onChange={(e) => setFormEditData({ ...formEditData, fromHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('fromHour') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
+                            <input type="time" value={formEditData.toHour || ''} onChange={(e) => setFormEditData({ ...formEditData, toHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('toHour') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
+                          </div>
+                        </div>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}{fieldDirty('excuseType') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                          <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('excuseType') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }}>
                             <option value="paid">Paid</option>
                             <option value="unpaid">Unpaid</option>
                           </select>
@@ -1576,12 +1629,19 @@ const ManagerDashboard = ({ onLogout }) => {
               {formEditData.type === 'excuse' && (
                 <>
                   <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('excuseDate')}</label>
-                    <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" />
+                    <label className="form-label-elegant">{t('excuseDate')}{fieldDirty('excuseDate') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                    <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" style={{ boxShadow: fieldDirty('excuseDate') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
                   </div>
                   <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}</label>
-                    <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant">
+                    <label className="form-label-elegant">{t('timePeriod') || 'Time'}{fieldDirty('fromHour') || fieldDirty('toHour') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <input type="time" value={formEditData.fromHour || ''} onChange={(e) => setFormEditData({ ...formEditData, fromHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('fromHour') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
+                      <input type="time" value={formEditData.toHour || ''} onChange={(e) => setFormEditData({ ...formEditData, toHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('toHour') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
+                    </div>
+                  </div>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}{fieldDirty('excuseType') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                    <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant" style={{ boxShadow: fieldDirty('excuseType') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }}>
                       <option value="paid">Paid</option>
                       <option value="unpaid">Unpaid</option>
                     </select>

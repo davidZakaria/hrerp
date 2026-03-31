@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import DashboardSectionNav from './layout/DashboardSectionNav';
 import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
 import LogoutButton from './LogoutButton';
@@ -18,6 +19,7 @@ const EmployeeDashboard = () => {
   const [nextResetDate, setNextResetDate] = useState(null);
   const [user, setUser] = useState(null);
   const [myFlags, setMyFlags] = useState([]);
+  const attendanceRef = useRef(null);
 
   const fetchUserData = async () => {
     const token = localStorage.getItem('token');
@@ -124,6 +126,15 @@ const EmployeeDashboard = () => {
     fetchExcuseRequests();
   };
 
+  const goOverview = () => {
+    setShowForm(false);
+    setShowPreview(false);
+  };
+
+  const scrollToAttendance = () => {
+    attendanceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const handleFormSubmitted = () => {
     fetchVacationDays();
     fetchExcuseRequests();
@@ -146,6 +157,8 @@ const EmployeeDashboard = () => {
     
     return <span className={`badge-elegant ${badgeClass}`}>{statusText}</span>;
   };
+
+  const employeeNavActiveId = showForm ? 'submit' : showPreview ? 'preview' : 'overview';
 
   return (
     <div className="dashboard-container fade-in">
@@ -281,6 +294,17 @@ const EmployeeDashboard = () => {
 
       {/* Main Content */}
       <div className="main-content">
+        <DashboardSectionNav
+          variant="light"
+          activeId={employeeNavActiveId}
+          sections={[
+            { id: 'overview', label: t('dashboard.overview', 'Overview'), icon: '🏠', onSelect: goOverview },
+            { id: 'preview', label: t('dashboard.previewForms'), icon: '📋', onSelect: handlePreview },
+            { id: 'submit', label: t('dashboard.submitNewForm'), icon: '📝', onSelect: handleShowForm },
+            { id: 'attendance', label: t('dashboard.attendance', 'Attendance'), icon: '📊', onSelect: scrollToAttendance }
+          ]}
+        />
+
         {/* Vacation Days Card */}
         <div className="elegant-card hover-lift" style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
@@ -606,7 +630,9 @@ const EmployeeDashboard = () => {
         )}
 
         {/* Employee Attendance Section */}
-        <EmployeeAttendance />
+        <div ref={attendanceRef}>
+          <EmployeeAttendance />
+        </div>
       </div>
     </div>
   );

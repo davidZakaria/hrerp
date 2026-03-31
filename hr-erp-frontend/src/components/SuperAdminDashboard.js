@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import AttendanceManagement from './AttendanceManagement';
 import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
+import DashboardSectionNav from './layout/DashboardSectionNav';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -79,6 +80,7 @@ const SuperAdminDashboard = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+  const [departmentsDirty, setDepartmentsDirty] = useState(false);
 
   // Available departments
   const availableDepartments = [
@@ -735,6 +737,7 @@ const SuperAdminDashboard = () => {
       employeeCode: user.employeeCode || '',
       permissions: { canEditDepartmentForms: user.permissions?.canEditDepartmentForms || false }
     });
+    setDepartmentsDirty(false);
   };
 
   // Open password reset modal
@@ -768,12 +771,7 @@ const SuperAdminDashboard = () => {
           email: passwordResetUser.email,
           department: passwordResetUser.department,
           role: passwordResetUser.role,
-          password: newPassword,
-          ...(passwordResetUser.role === 'manager' && {
-            managedDepartments: Array.isArray(passwordResetUser.managedDepartments)
-              ? passwordResetUser.managedDepartments
-              : []
-          })
+          password: newPassword
         },
         { headers: { 'x-auth-token': token } }
       );
@@ -807,11 +805,21 @@ const SuperAdminDashboard = () => {
           'x-auth-token': token
         },
         body: JSON.stringify({
-          ...userEdit,
-          modificationReason: modificationReason,
-          managedDepartments:
-            userEdit.role === 'manager' ? (userEdit.managedDepartments ?? []) : [],
-          permissions: userEdit.role === 'manager' ? userEdit.permissions : undefined
+          name: userEdit.name,
+          email: userEdit.email,
+          department: userEdit.department,
+          role: userEdit.role,
+          vacationDaysLeft: userEdit.vacationDaysLeft,
+          status: userEdit.status,
+          employeeCode: userEdit.employeeCode,
+          password: userEdit.password || undefined,
+          modificationReason,
+          ...(userEdit.role === 'manager' && departmentsDirty && {
+            managedDepartments: Array.isArray(userEdit.managedDepartments)
+              ? userEdit.managedDepartments.filter((d) => typeof d === 'string' && d.trim())
+              : []
+          }),
+          ...(userEdit.role === 'manager' && { permissions: userEdit.permissions })
         })
       });
       const data = await res.json();
@@ -889,6 +897,7 @@ const SuperAdminDashboard = () => {
   // Handle department selection for managers (edit user)
   const handleEditDepartmentChange = (department) => {
     const currentDepts = userEdit.managedDepartments || [];
+    setDepartmentsDirty(true);
     if (currentDepts.includes(department)) {
       setUserEdit({
         ...userEdit,
@@ -1124,39 +1133,17 @@ const SuperAdminDashboard = () => {
         </div>
 
         <div className="elegant-card">
-          <div className="action-buttons" style={{ marginBottom: '2rem' }}>
-            <button 
-              className={`btn-elegant ${activeTab === 'users' ? 'btn-success' : ''}`}
-              onClick={() => setActiveTab('users')}
-            >
-              User Management
-            </button>
-            <button 
-              className={`btn-elegant ${activeTab === 'forms' ? 'btn-success' : ''}`}
-              onClick={() => setActiveTab('forms')}
-            >
-              Form Management
-            </button>
-            <button 
-              className={`btn-elegant ${activeTab === 'logs' ? 'btn-success' : ''}`}
-              onClick={() => setActiveTab('logs')}
-            >
-              Audit Logs
-            </button>
-            <button 
-              className={`btn-elegant ${activeTab === 'attendance' ? 'btn-success' : ''}`}
-              onClick={() => setActiveTab('attendance')}
-            >
-              Attendance
-            </button>
-            <button 
-              className={`btn-elegant ${activeTab === 'backup' ? 'btn-success' : ''}`}
-              onClick={() => setActiveTab('backup')}
-              style={{ background: activeTab === 'backup' ? undefined : 'linear-gradient(135deg, #2196F3, #1976D2)' }}
-            >
-              Backup & Restore
-            </button>
-          </div>
+          <DashboardSectionNav
+            variant="light"
+            activeId={activeTab}
+            sections={[
+              { id: 'users', label: 'User Management', icon: '👥', onSelect: () => setActiveTab('users') },
+              { id: 'forms', label: 'Form Management', icon: '📋', onSelect: () => setActiveTab('forms') },
+              { id: 'logs', label: 'Audit Logs', icon: '📜', onSelect: () => setActiveTab('logs') },
+              { id: 'attendance', label: 'Attendance', icon: '📊', onSelect: () => setActiveTab('attendance') },
+              { id: 'backup', label: 'Backup & Restore', icon: '💾', onSelect: () => setActiveTab('backup') }
+            ]}
+          />
 
           <div style={{ marginBottom: '2rem' }}>
             <input

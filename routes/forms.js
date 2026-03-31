@@ -7,6 +7,11 @@ const path = require('path');
 const fs = require('fs');
 const { createAuditLog } = require('./audit');
 const { shouldResetExcuseRequests, getNextResetDate } = require('../utils/excuseResetHelper');
+const {
+    normalizeExcuseType,
+    getExcuseDurationHours,
+    isPaidExcuseExactlyTwoHours
+} = require('../utils/excuseType');
 
 // Middleware to verify JWT token
 const auth = require('../middleware/auth');
@@ -195,16 +200,24 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             if (!excuseDate || !fromHour || !toHour || !excuseType) {
                 return res.status(400).json({ msg: 'Date, from hour, to hour, and excuse type are required for excuse requests' });
             }
+
+            const normalizedExcuseType = normalizeExcuseType({
+                type: 'excuse',
+                excuseType,
+                fromHour,
+                toHour
+            });
             
             // Get full user data including excuse requests
             const fullUser = await User.findById(req.user.id);
             
             // Calculate hours requested
-            const fromTime = new Date(`2000-01-01T${fromHour}`);
-            const toTime = new Date(`2000-01-01T${toHour}`);
-            const hoursRequested = (toTime - fromTime) / (1000 * 60 * 60);
+            const hoursRequested = getExcuseDurationHours(fromHour, toHour);
+            if (hoursRequested === null || Number.isNaN(hoursRequested)) {
+                return res.status(400).json({ msg: 'Invalid from/to time for excuse request' });
+            }
             
-            if (excuseType === 'paid') {
+            if (normalizedExcuseType === 'paid') {
                 // For paid excuses: must be exactly 2 hours
                 if (hoursRequested !== 2) {
                     return res.status(400).json({ 
@@ -225,7 +238,7 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
                         msg: 'You have exhausted your 2 paid excuse requests for this month.' 
                     });
                 }
-            } else if (excuseType === 'unpaid') {
+            } else if (normalizedExcuseType === 'unpaid') {
                 // For unpaid excuses: check if user has at least 0.5 vacation days
                 if (fullUser.vacationDaysLeft < 0.5) {
                     return res.status(400).json({ 
@@ -274,7 +287,12 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             }),
             ...(type === 'excuse' && {
                 excuseDate: new Date(excuseDate),
-                excuseType,
+                excuseType: normalizeExcuseType({
+                    type: 'excuse',
+                    excuseType,
+                    fromHour,
+                    toHour
+                }),
                 fromHour,
                 toHour
             }),
@@ -454,7 +472,11 @@ router.get('/manager/pending', auth, async (req, res) => {
             { $sort: { createdAt: -1 } }
         ];
 
-        const forms = await Form.aggregate(pipeline);
+        let forms = await Form.aggregate(pipeline);
+        forms = forms.map((f) => {
+            if (f.type !== 'excuse') return f;
+            return { ...f, excuseType: normalizeExcuseType(f) };
+        });
 
         res.json(forms);
     } catch (err) {
@@ -558,7 +580,15 @@ router.get('/manager/team-forms', auth, async (req, res) => {
         .populate('adminApprovedBy', 'name')
         .sort({ createdAt: -1 });
 
-        res.json(forms);
+        const formsOut = forms.map((f) => {
+            const o = typeof f.toObject === 'function' ? f.toObject() : f;
+            if (o.type === 'excuse') {
+                o.excuseType = normalizeExcuseType(o);
+            }
+            return o;
+        });
+
+        res.json(formsOut);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server error');
@@ -588,7 +618,7 @@ router.put('/manager/:id', auth, async (req, res) => {
             return res.status(403).json({ msg: 'No departments assigned to manage' });
         }
 
-        const { action, managerComment, startDate, endDate, reason, excuseDate, excuseType, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime } = req.body;
+        const { action, managerComment, startDate, endDate, reason, excuseDate, excuseType, fromHour, toHour, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime } = req.body;
         
         // Validate action parameter
         if (!action || !['approve', 'reject'].includes(action)) {
@@ -622,25 +652,29 @@ router.put('/manager/:id', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Not authorized - User is not in your managed departments' });
         }
 
-        // Apply form edits before approval/rejection (when manager has canEditDepartmentForms)
-        if (manager.permissions?.canEditDepartmentForms) {
-            if (startDate) form.startDate = startDate;
-            if (endDate) form.endDate = endDate;
-            if (reason) form.reason = reason;
-            if (excuseDate) form.excuseDate = excuseDate;
-            if (excuseType && ['paid', 'unpaid'].includes(excuseType)) form.excuseType = excuseType;
-            if (sickLeaveStartDate) form.sickLeaveStartDate = sickLeaveStartDate;
-            if (sickLeaveEndDate) form.sickLeaveEndDate = sickLeaveEndDate;
-            if (wfhDate) form.wfhDate = wfhDate;
-            if (wfhWorkingOn) form.wfhWorkingOn = wfhWorkingOn;
-            if (extraHoursDate) form.extraHoursDate = extraHoursDate;
-            if (extraHoursWorked !== undefined) form.extraHoursWorked = Number(extraHoursWorked);
-            if (extraHoursDescription) form.extraHoursDescription = extraHoursDescription;
-            if (missionStartDate) form.missionStartDate = missionStartDate;
-            if (missionEndDate) form.missionEndDate = missionEndDate;
-            if (missionDestination) form.missionDestination = missionDestination;
-            if (missionFromTime !== undefined) form.missionFromTime = missionFromTime?.trim() || undefined;
-            if (missionToTime !== undefined) form.missionToTime = missionToTime?.trim() || undefined;
+        // Apply form edits before approval/rejection (all managers with team scope)
+        if (startDate) form.startDate = startDate;
+        if (endDate) form.endDate = endDate;
+        if (reason) form.reason = reason;
+        if (excuseDate) form.excuseDate = excuseDate;
+        if (excuseType && ['paid', 'unpaid'].includes(excuseType)) form.excuseType = excuseType;
+        if (fromHour !== undefined) form.fromHour = fromHour ? String(fromHour).trim() : form.fromHour;
+        if (toHour !== undefined) form.toHour = toHour ? String(toHour).trim() : form.toHour;
+        if (sickLeaveStartDate) form.sickLeaveStartDate = sickLeaveStartDate;
+        if (sickLeaveEndDate) form.sickLeaveEndDate = sickLeaveEndDate;
+        if (wfhDate) form.wfhDate = wfhDate;
+        if (wfhWorkingOn) form.wfhWorkingOn = wfhWorkingOn;
+        if (extraHoursDate) form.extraHoursDate = extraHoursDate;
+        if (extraHoursWorked !== undefined) form.extraHoursWorked = Number(extraHoursWorked);
+        if (extraHoursDescription) form.extraHoursDescription = extraHoursDescription;
+        if (missionStartDate) form.missionStartDate = missionStartDate;
+        if (missionEndDate) form.missionEndDate = missionEndDate;
+        if (missionDestination) form.missionDestination = missionDestination;
+        if (missionFromTime !== undefined) form.missionFromTime = missionFromTime?.trim() || undefined;
+        if (missionToTime !== undefined) form.missionToTime = missionToTime?.trim() || undefined;
+
+        if (form.type === 'excuse') {
+            form.excuseType = normalizeExcuseType(form);
         }
 
         // Only allow action on pending forms
@@ -667,6 +701,13 @@ router.put('/manager/:id', auth, async (req, res) => {
         if (action === 'approve') {
             // For excuse forms, manager approval is final
             if (form.type === 'excuse') {
+                form.excuseType = normalizeExcuseType(form);
+                if (form.excuseType === 'paid' && !isPaidExcuseExactlyTwoHours(form)) {
+                    return res.status(400).json({
+                        msg: 'Cannot approve: paid excuse must be exactly 2 hours between from and to time.'
+                    });
+                }
+
                 const employee = await User.findById(form.user._id);
                 
                 // Log form details for debugging
@@ -772,15 +813,12 @@ router.put('/manager/:id', auth, async (req, res) => {
     }
 });
 
-// Manager edit form (requires canEditDepartmentForms permission)
+// Manager edit form (requires manager role; team scope)
 router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) => {
     try {
         const manager = await User.findById(req.user.id);
         if (!manager || manager.role !== 'manager') {
             return res.status(403).json({ msg: 'Not authorized - Manager role required' });
-        }
-        if (!manager.permissions?.canEditDepartmentForms) {
-            return res.status(403).json({ msg: 'You do not have permission to edit department forms. Contact super admin to enable this function.' });
         }
         if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
             return res.status(403).json({ msg: 'No departments assigned to manage' });
@@ -801,13 +839,38 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
             return res.status(403).json({ msg: 'Not authorized - Form is not from your managed departments' });
         }
 
-        const { startDate, endDate, reason, excuseDate, excuseType, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime, managerComment } = req.body;
+        const beforeSnapshot = {
+            startDate: form.startDate,
+            endDate: form.endDate,
+            reason: form.reason,
+            excuseDate: form.excuseDate,
+            excuseType: form.excuseType,
+            fromHour: form.fromHour,
+            toHour: form.toHour,
+            sickLeaveStartDate: form.sickLeaveStartDate,
+            sickLeaveEndDate: form.sickLeaveEndDate,
+            wfhDate: form.wfhDate,
+            wfhWorkingOn: form.wfhWorkingOn,
+            extraHoursDate: form.extraHoursDate,
+            extraHoursWorked: form.extraHoursWorked,
+            extraHoursDescription: form.extraHoursDescription,
+            missionStartDate: form.missionStartDate,
+            missionEndDate: form.missionEndDate,
+            missionDestination: form.missionDestination,
+            missionFromTime: form.missionFromTime,
+            missionToTime: form.missionToTime,
+            managerComment: form.managerComment
+        };
+
+        const { startDate, endDate, reason, excuseDate, excuseType, fromHour, toHour, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime, managerComment } = req.body;
 
         if (startDate) form.startDate = startDate;
         if (endDate) form.endDate = endDate;
         if (reason) form.reason = reason;
         if (excuseDate) form.excuseDate = excuseDate;
         if (excuseType && ['paid', 'unpaid'].includes(excuseType)) form.excuseType = excuseType;
+        if (fromHour !== undefined) form.fromHour = fromHour ? String(fromHour).trim() : form.fromHour;
+        if (toHour !== undefined) form.toHour = toHour ? String(toHour).trim() : form.toHour;
         if (sickLeaveStartDate) form.sickLeaveStartDate = sickLeaveStartDate;
         if (sickLeaveEndDate) form.sickLeaveEndDate = sickLeaveEndDate;
         if (wfhDate) form.wfhDate = wfhDate;
@@ -822,12 +885,44 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
         if (missionToTime !== undefined) form.missionToTime = missionToTime?.trim() || undefined;
         if (managerComment !== undefined) form.managerComment = managerComment;
 
+        if (form.type === 'excuse') {
+            form.excuseType = normalizeExcuseType(form);
+            if (form.excuseType === 'paid' && !isPaidExcuseExactlyTwoHours(form)) {
+                return res.status(400).json({
+                    msg: 'Paid excuse requests must be exactly 2 hours. Adjust times or change excuse type to Unpaid.'
+                });
+            }
+        }
+
+        const afterSnapshot = {
+            startDate: form.startDate,
+            endDate: form.endDate,
+            reason: form.reason,
+            excuseDate: form.excuseDate,
+            excuseType: form.excuseType,
+            fromHour: form.fromHour,
+            toHour: form.toHour,
+            sickLeaveStartDate: form.sickLeaveStartDate,
+            sickLeaveEndDate: form.sickLeaveEndDate,
+            wfhDate: form.wfhDate,
+            wfhWorkingOn: form.wfhWorkingOn,
+            extraHoursDate: form.extraHoursDate,
+            extraHoursWorked: form.extraHoursWorked,
+            extraHoursDescription: form.extraHoursDescription,
+            missionStartDate: form.missionStartDate,
+            missionEndDate: form.missionEndDate,
+            missionDestination: form.missionDestination,
+            missionFromTime: form.missionFromTime,
+            missionToTime: form.missionToTime,
+            managerComment: form.managerComment
+        };
+
         form.modificationHistory = form.modificationHistory || [];
         form.modificationHistory.push({
             modifiedBy: manager._id,
             modifiedAt: Date.now(),
-            reason: 'Edited by manager (department form edit permission)',
-            changes: { before: {}, after: req.body }
+            reason: 'Edited by manager',
+            changes: { before: beforeSnapshot, after: afterSnapshot }
         });
         form.updatedAt = Date.now();
         await form.save();

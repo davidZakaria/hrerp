@@ -9,6 +9,7 @@ import AttendanceManagement from './AttendanceManagement';
 import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
+import DashboardSectionNav from './layout/DashboardSectionNav';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -901,41 +902,17 @@ const AdminDashboard = () => {
         <LogoutButton />
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="elegant-card" style={{ marginBottom: '2rem' }}>
-        <div className="tab-navigation">
-          <button 
-            className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
-          >
-            📊 Overview
-          </button>
-          <button 
-            className={`tab-button ${activeTab === 'users' ? 'active' : ''}`}
-            onClick={() => setActiveTab('users')}
-          >
-            👥 User Management
-          </button>
-          <button 
-            className={`tab-button ${activeTab === 'forms' ? 'active' : ''}`}
-            onClick={() => setActiveTab('forms')}
-          >
-            📋 Forms Management
-          </button>
-          <button 
-            className={`tab-button ${activeTab === 'ats' ? 'active' : ''}`}
-            onClick={() => setActiveTab('ats')}
-          >
-            🎯 ATS System
-          </button>
-          <button 
-            className={`tab-button ${activeTab === 'attendance' ? 'active' : ''}`}
-            onClick={() => setActiveTab('attendance')}
-          >
-            📊 Attendance
-          </button>
-        </div>
-      </div>
+      <DashboardSectionNav
+        variant="light"
+        activeId={activeTab}
+        sections={[
+          { id: 'overview', label: 'Overview', icon: '📊', onSelect: () => setActiveTab('overview') },
+          { id: 'users', label: t('userManagement') || 'User Management', icon: '👥', onSelect: () => setActiveTab('users') },
+          { id: 'forms', label: t('formsManagement') || 'Forms Management', icon: '📋', onSelect: () => setActiveTab('forms') },
+          { id: 'ats', label: 'ATS System', icon: '🎯', onSelect: () => setActiveTab('ats') },
+          { id: 'attendance', label: t('attendance') || 'Attendance', icon: '📈', onSelect: () => setActiveTab('attendance') }
+        ]}
+      />
 
       {/* Main Content */}
       <div className="main-content">

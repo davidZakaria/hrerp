@@ -1,5 +1,41 @@
 /* Role-aware dashboard section navigation — desktop-first polish */
 
+/*
+ * Sticky + stacking: .app-header uses z-index ~100. Nav at top:0 + z-index 20 sat UNDER the header (invisible).
+ * Offset sticky top below the header. Manager uses flush top (no app-header band).
+ */
+:root {
+  --dashboard-nav-sticky-top: 5.25rem;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --dashboard-nav-sticky-top: 6rem;
+  }
+}
+
+.dashboard-container .main-content,
+.manager-dashboard {
+  overflow-x: visible;
+  overflow-y: visible;
+}
+
+/* Wrapper keeps layout when inner nav is position:fixed (JS dock) */
+.dashboard-nav-sticky-wrapper {
+  width: 100%;
+  position: relative;
+  z-index: 90;
+}
+
+.dashboard-nav-dock-spacer {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+/*
+ * Default: in document flow (sticky is unreliable — flex/overflow ancestors break it).
+ * When scrolled, JS adds .dashboard-nav-shell--fixed-dock (position:fixed).
+ */
 .dashboard-nav-shell {
   --nav-accent: #6366f1;
   --nav-accent-soft: rgba(99, 102, 241, 0.12);
@@ -14,9 +50,8 @@
   --nav-btn-active-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --nav-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
 
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  position: relative;
+  z-index: 1;
   margin-bottom: 12px;
   border-radius: 14px;
   overflow: hidden;
@@ -41,6 +76,18 @@
   .dashboard-nav-shell {
     transition: none;
   }
+}
+
+/* Pinned to viewport while scrolling (see DashboardSectionNav.js) */
+.dashboard-nav-shell.dashboard-nav-shell--fixed-dock {
+  position: fixed !important;
+  left: max(12px, env(safe-area-inset-left, 0px)) !important;
+  right: max(12px, env(safe-area-inset-right, 0px)) !important;
+  width: auto !important;
+  max-width: 1240px !important;
+  margin: 0 auto !important;
+  z-index: 950 !important;
+  box-sizing: border-box !important;
 }
 
 .dashboard-nav-shell--role-employee {
@@ -265,14 +312,14 @@
   }
 }
 
-/* Section anchors — offset for sticky nav when using scrollIntoView / smooth scroll */
+/* Section anchors — offset for fixed dock bar + header when using smooth scroll */
 .dashboard-section-anchor {
-  scroll-margin-top: 96px;
+  scroll-margin-top: 120px;
 }
 
 @media (max-width: 1023px) {
   .dashboard-section-anchor {
-    scroll-margin-top: 88px;
+    scroll-margin-top: 112px;
   }
 }
 

@@ -2,7 +2,8 @@
  * Smooth scroll with offset for sticky headers/nav.
  * Respects prefers-reduced-motion.
  */
-export const DEFAULT_SCROLL_OFFSET = 96;
+/** Space for app header + fixed section nav dock (see dashboardNav.css / DashboardSectionNav) */
+export const DEFAULT_SCROLL_OFFSET = 120;
 
 export function prefersReducedMotion() {
   if (typeof window === 'undefined' || !window.matchMedia) return false;

@@ -802,6 +802,7 @@ const ManagerDashboard = ({ onLogout }) => {
       )}
 
       <DashboardSectionNav
+        stickyBelowAppHeader={false}
         role="manager"
         title={t('dashboard.nav.managerTitle')}
         description={t('dashboard.nav.managerDesc')}

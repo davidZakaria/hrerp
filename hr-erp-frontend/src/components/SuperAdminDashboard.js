@@ -1143,23 +1143,23 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
 
-        <div ref={superAdminPanelRef} className="elegant-card dashboard-section-anchor">
-          <DashboardSectionNav
-            variant="light"
-            role="super_admin"
-            title={t('dashboard.nav.superAdminTitle')}
-            description={t('dashboard.nav.superAdminDesc')}
-            badgeLabel={t('dashboard.nav.badgeSuperAdmin')}
-            activeId={activeTab}
-            sections={[
-              { id: 'users', label: 'User Management', icon: '👥', onSelect: () => setActiveTab('users') },
-              { id: 'forms', label: 'Form Management', icon: '📋', onSelect: () => setActiveTab('forms') },
-              { id: 'logs', label: 'Audit Logs', icon: '📜', onSelect: () => setActiveTab('logs') },
-              { id: 'attendance', label: 'Attendance', icon: '📊', onSelect: () => setActiveTab('attendance') },
-              { id: 'backup', label: 'Backup & Restore', icon: '💾', onSelect: () => setActiveTab('backup') }
-            ]}
-          />
+        <DashboardSectionNav
+          variant="light"
+          role="super_admin"
+          title={t('dashboard.nav.superAdminTitle')}
+          description={t('dashboard.nav.superAdminDesc')}
+          badgeLabel={t('dashboard.nav.badgeSuperAdmin')}
+          activeId={activeTab}
+          sections={[
+            { id: 'users', label: 'User Management', icon: '👥', onSelect: () => setActiveTab('users') },
+            { id: 'forms', label: 'Form Management', icon: '📋', onSelect: () => setActiveTab('forms') },
+            { id: 'logs', label: 'Audit Logs', icon: '📜', onSelect: () => setActiveTab('logs') },
+            { id: 'attendance', label: 'Attendance', icon: '📊', onSelect: () => setActiveTab('attendance') },
+            { id: 'backup', label: 'Backup & Restore', icon: '💾', onSelect: () => setActiveTab('backup') }
+          ]}
+        />
 
+        <div ref={superAdminPanelRef} className="elegant-card dashboard-section-anchor">
           <div style={{ marginBottom: '2rem' }}>
             <input
               type="text"

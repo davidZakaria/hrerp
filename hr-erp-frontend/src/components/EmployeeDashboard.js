@@ -6,6 +6,7 @@ import LogoutButton from './LogoutButton';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import EmployeeAttendance from './EmployeeAttendance';
 import API_URL from '../config/api';
+import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
 
 const EmployeeDashboard = () => {
   const { t } = useTranslation();
@@ -19,7 +20,11 @@ const EmployeeDashboard = () => {
   const [nextResetDate, setNextResetDate] = useState(null);
   const [user, setUser] = useState(null);
   const [myFlags, setMyFlags] = useState([]);
+  const overviewRef = useRef(null);
+  const previewRef = useRef(null);
+  const submitRef = useRef(null);
   const attendanceRef = useRef(null);
+  const [scrollSpySection, setScrollSpySection] = useState('overview');
 
   const fetchUserData = async () => {
     const token = localStorage.getItem('token');
@@ -91,6 +96,25 @@ const EmployeeDashboard = () => {
     fetchMyFlags();
   }, []);
 
+  useEffect(() => {
+    if (showForm || showPreview) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const intersecting = entries.filter((e) => e.isIntersecting);
+        if (intersecting.length === 0) return;
+        intersecting.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        const id = intersecting[0].target.getAttribute('data-nav-section');
+        if (id === 'overview' || id === 'attendance') setScrollSpySection(id);
+      },
+      { threshold: [0, 0.1, 0.25, 0.45], rootMargin: '-88px 0px -35% 0px' }
+    );
+    const o = overviewRef.current;
+    const a = attendanceRef.current;
+    if (o) obs.observe(o);
+    if (a) obs.observe(a);
+    return () => obs.disconnect();
+  }, [showForm, showPreview]);
+
   const fetchForms = async () => {
     setLoading(true);
     setError('');
@@ -117,6 +141,7 @@ const EmployeeDashboard = () => {
     fetchForms();
     fetchVacationDays();
     fetchExcuseRequests();
+    setTimeout(() => smoothScrollToElement(previewRef.current, DEFAULT_SCROLL_OFFSET), 80);
   };
 
   const handleShowForm = () => {
@@ -124,15 +149,17 @@ const EmployeeDashboard = () => {
     setShowPreview(false);
     fetchVacationDays();
     fetchExcuseRequests();
+    setTimeout(() => smoothScrollToElement(submitRef.current, DEFAULT_SCROLL_OFFSET), 80);
   };
 
   const goOverview = () => {
     setShowForm(false);
     setShowPreview(false);
+    setTimeout(() => smoothScrollToElement(overviewRef.current, DEFAULT_SCROLL_OFFSET), 50);
   };
 
   const scrollToAttendance = () => {
-    attendanceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    smoothScrollToElement(attendanceRef.current, DEFAULT_SCROLL_OFFSET);
   };
 
   const handleFormSubmitted = () => {
@@ -158,7 +185,7 @@ const EmployeeDashboard = () => {
     return <span className={`badge-elegant ${badgeClass}`}>{statusText}</span>;
   };
 
-  const employeeNavActiveId = showForm ? 'submit' : showPreview ? 'preview' : 'overview';
+  const employeeNavActiveId = showForm ? 'submit' : showPreview ? 'preview' : scrollSpySection;
 
   return (
     <div className="dashboard-container fade-in">
@@ -309,6 +336,11 @@ const EmployeeDashboard = () => {
           ]}
         />
 
+        <div
+          ref={overviewRef}
+          className="dashboard-section-anchor"
+          data-nav-section="overview"
+        >
         {/* Vacation Days Card */}
         <div className="elegant-card hover-lift" style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
@@ -359,16 +391,28 @@ const EmployeeDashboard = () => {
             {t('dashboard.submitNewForm')}
           </button>
         </div>
+        </div>
 
         {/* Form Submission */}
         {showForm && (
-          <div className="elegant-card slide-in-left">
-            <FormSubmission onFormSubmitted={handleFormSubmitted} />
+          <div
+            ref={submitRef}
+            className="dashboard-section-anchor"
+            data-nav-section="submit"
+          >
+            <div className="elegant-card slide-in-left">
+              <FormSubmission onFormSubmitted={handleFormSubmitted} />
+            </div>
           </div>
         )}
         
         {/* Forms Preview */}
         {showPreview && (
+          <div
+            ref={previewRef}
+            className="dashboard-section-anchor"
+            data-nav-section="preview"
+          >
           <div className="elegant-card slide-in-right">
             <h2 className="section-title" style={{ fontSize: '1.8rem', marginBottom: '1.5rem' }}>
               {t('dashboard.yourSubmittedForms')}
@@ -631,10 +675,15 @@ const EmployeeDashboard = () => {
               </div>
             )}
           </div>
+          </div>
         )}
 
         {/* Employee Attendance Section */}
-        <div ref={attendanceRef}>
+        <div
+          ref={attendanceRef}
+          className="dashboard-section-anchor"
+          data-nav-section="attendance"
+        >
           <EmployeeAttendance />
         </div>
       </div>

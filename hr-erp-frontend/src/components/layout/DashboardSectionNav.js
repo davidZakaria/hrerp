@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const ROLE_BADGE = {
   employee: 'Employee',
@@ -14,9 +14,10 @@ const ROLE_BADGE = {
  * @param {string} [subtitle]
  * @param {'dark'|'light'} [variant]
  * @param {'employee'|'manager'|'admin'|'super_admin'} [role]
- * @param {string} [title] — desktop header (i18n from parent)
- * @param {string} [description] — desktop subline
- * @param {string} [badgeLabel] — override badge text
+ * @param {string} [title]
+ * @param {string} [description]
+ * @param {string} [badgeLabel]
+ * @param {boolean} [showScrollIndicator] — animated underline under active pill
  */
 const DashboardSectionNav = ({
   sections,
@@ -26,9 +27,13 @@ const DashboardSectionNav = ({
   role = 'employee',
   title,
   description,
-  badgeLabel
+  badgeLabel,
+  showScrollIndicator = true
 }) => {
   const btnRefs = useRef([]);
+  const shellRef = useRef(null);
+  const trackRef = useRef(null);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
 
   const light = variant === 'light';
   const shellClass = [
@@ -40,17 +45,54 @@ const DashboardSectionNav = ({
   const showHeader = Boolean(title || description || badgeLabel);
   const badge = badgeLabel || ROLE_BADGE[role] || ROLE_BADGE.employee;
 
-  const focusIndex = useCallback(
-    (idx) => {
-      const el = btnRefs.current[idx];
-      if (el) el.focus();
-    },
-    []
-  );
+  const focusIndex = useCallback((idx) => {
+    const el = btnRefs.current[idx];
+    if (el) el.focus();
+  }, []);
 
   useEffect(() => {
     btnRefs.current = btnRefs.current.slice(0, sections?.length || 0);
   }, [sections?.length]);
+
+  const updateIndicator = useCallback(() => {
+    if (!showScrollIndicator || !sections?.length) return;
+    const track = trackRef.current;
+    const idx = sections.findIndex((s) => s.id === activeId);
+    const btn = btnRefs.current[idx];
+    if (!track || !btn) return;
+    setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+  }, [activeId, sections, showScrollIndicator]);
+
+  useLayoutEffect(() => {
+    updateIndicator();
+  }, [updateIndicator]);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || !showScrollIndicator) return;
+    const onScroll = () => updateIndicator();
+    track.addEventListener('scroll', onScroll, { passive: true });
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateIndicator) : null;
+    ro?.observe(track);
+    window.addEventListener('resize', updateIndicator);
+    return () => {
+      track.removeEventListener('scroll', onScroll);
+      ro?.disconnect();
+      window.removeEventListener('resize', updateIndicator);
+    };
+  }, [updateIndicator, showScrollIndicator]);
+
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!shell) return;
+    const onScroll = () => {
+      const y = window.scrollY;
+      shell.classList.toggle('dashboard-nav-shell--scrolled', y > 8);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const onKeyDown = useCallback(
     (e, index) => {
@@ -71,7 +113,7 @@ const DashboardSectionNav = ({
   if (!sections || sections.length === 0) return null;
 
   return (
-    <nav className={shellClass} aria-label="Dashboard sections">
+    <nav ref={shellRef} className={shellClass} aria-label="Dashboard sections">
       {showHeader ? (
         <div className="dashboard-nav-header has-bottom-rule">
           <div className="dashboard-nav-header-main">
@@ -92,7 +134,23 @@ const DashboardSectionNav = ({
       ) : null}
 
       <div className="dashboard-nav-track-wrap">
-        <div className="dashboard-nav-track" role="tablist" aria-orientation="horizontal">
+        <div
+          ref={trackRef}
+          className="dashboard-nav-track"
+          role="tablist"
+          aria-orientation="horizontal"
+        >
+          {showScrollIndicator ? (
+            <span
+              className="dashboard-nav-indicator"
+              style={{
+                transform: `translateX(${indicator.left}px)`,
+                width: indicator.width || 0,
+                opacity: indicator.width ? 1 : 0
+              }}
+              aria-hidden
+            />
+          ) : null}
           {sections.map((s, index) => {
             const active = s.id === activeId;
             return (

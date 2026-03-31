@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import LogoutButton from './LogoutButton';
 import { useTranslation } from 'react-i18next';
@@ -6,9 +6,12 @@ import AttendanceManagement from './AttendanceManagement';
 import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 import DashboardSectionNav from './layout/DashboardSectionNav';
+import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
+  const superAdminPanelRef = useRef(null);
+  const skipTabScrollRef = useRef(true);
   const [users, setUsers] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
   const [forms, setForms] = useState([]);
@@ -1101,6 +1104,14 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  useEffect(() => {
+    if (skipTabScrollRef.current) {
+      skipTabScrollRef.current = false;
+      return;
+    }
+    smoothScrollToElement(superAdminPanelRef.current, DEFAULT_SCROLL_OFFSET);
+  }, [activeTab]);
+
   return (
     <div className="dashboard-container fade-in">
       <div className="app-header">
@@ -1132,7 +1143,7 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
 
-        <div className="elegant-card">
+        <div ref={superAdminPanelRef} className="elegant-card dashboard-section-anchor">
           <DashboardSectionNav
             variant="light"
             role="super_admin"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DashboardSectionNav from './layout/DashboardSectionNav';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +9,7 @@ import ManagerTeamAttendance from './ManagerTeamAttendance';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
 import { normalizeExcuseType, isPaidExcuse } from '../utils/excuseType';
+import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
 
 const ManagerDashboard = ({ onLogout }) => {
   const { t } = useTranslation();
@@ -50,6 +51,17 @@ const ManagerDashboard = ({ onLogout }) => {
   const [formEditData, setFormEditData] = useState({});
   const [formEditSnapshot, setFormEditSnapshot] = useState(null);
   const [formEditSubmitting, setFormEditSubmitting] = useState(false);
+
+  const teamAttendanceRef = useRef(null);
+  const managerFormRef = useRef(null);
+  const managerMyFormsRef = useRef(null);
+  const managerTeamFormsRef = useRef(null);
+  const managerAtsRef = useRef(null);
+  const pendingApprovalsRef = useRef(null);
+
+  const scrollToManagerSection = (ref) => {
+    setTimeout(() => smoothScrollToElement(ref?.current, DEFAULT_SCROLL_OFFSET), 60);
+  };
 
   const fieldDirty = (key) => {
     if (!formEditSnapshot) return false;
@@ -176,6 +188,7 @@ const ManagerDashboard = ({ onLogout }) => {
     setShowTeamAttendance(false);
     fetchVacationDays();
     fetchExcuseHours();
+    scrollToManagerSection(managerFormRef);
   };
 
   const handleShowMyForms = () => {
@@ -187,6 +200,7 @@ const ManagerDashboard = ({ onLogout }) => {
     fetchMyForms();
     fetchVacationDays();
     fetchExcuseHours();
+    scrollToManagerSection(managerMyFormsRef);
   };
 
   const handleShowTeamForms = () => {
@@ -196,6 +210,7 @@ const ManagerDashboard = ({ onLogout }) => {
     setShowATS(false);
     setShowTeamAttendance(false);
     fetchTeamForms();
+    scrollToManagerSection(managerTeamFormsRef);
   };
 
   const handleShowATS = () => {
@@ -204,6 +219,7 @@ const ManagerDashboard = ({ onLogout }) => {
     setShowMyForms(false);
     setShowTeamForms(false);
     setShowTeamAttendance(false);
+    scrollToManagerSection(managerAtsRef);
   };
 
   const handleShowTeamAttendance = () => {
@@ -212,6 +228,12 @@ const ManagerDashboard = ({ onLogout }) => {
     setShowForm(false);
     setShowMyForms(false);
     setShowTeamForms(false);
+    scrollToManagerSection(teamAttendanceRef);
+  };
+
+  const handleGoToTeamApprovals = () => {
+    fetchPendingForms();
+    setTimeout(() => smoothScrollToElement(pendingApprovalsRef.current, DEFAULT_SCROLL_OFFSET), 80);
   };
 
   const fetchTeamForms = async () => {
@@ -791,6 +813,7 @@ const ManagerDashboard = ({ onLogout }) => {
           { id: 'submit', label: t('managerDashboard.submitMyForm'), icon: '📝', onSelect: handleShowForm },
           { id: 'myForms', label: t('managerDashboard.viewMyForms'), icon: '📋', onSelect: handleShowMyForms },
           { id: 'teamForms', label: t('managerDashboard.myTeamMembersForms'), icon: '👥', onSelect: handleShowTeamForms },
+          { id: 'teamApprovals', label: t('managerDashboard.approveTeamForms'), icon: '✅', onSelect: handleGoToTeamApprovals },
           { id: 'ats', label: t('managerDashboard.atsSystem', 'ATS'), icon: '🎯', onSelect: handleShowATS }
         ]}
       />
@@ -815,7 +838,14 @@ const ManagerDashboard = ({ onLogout }) => {
           <p>{t('managerDashboard.myTeamMembers')}</p>
           <small>{t('managerDashboard.activeEmployeesInManagedDepartments')}</small>
         </div>
-        <div className="stat-card">
+        <div
+          className="stat-card stat-card-clickable pending-approvals-stat"
+          onClick={handleGoToTeamApprovals}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && handleGoToTeamApprovals()}
+          title={t('managerDashboard.approveTeamFormsHint')}
+        >
           <h3>{pendingForms.length}</h3>
           <p>{t('managerDashboard.pendingTeamRequests')}</p>
           <small>{t('managerDashboard.awaitingYourApproval')}</small>
@@ -849,64 +879,28 @@ const ManagerDashboard = ({ onLogout }) => {
             <small>{t('managerDashboard.yourMonthlyAllowanceRemaining')}</small>
           </div>
         </div>
-
-        {/* Action Buttons */}
-        <div className="action-buttons manager-actions">
-          <button 
-            className={`btn-manager team-attendance-btn ${showTeamAttendance ? 'active' : ''}`}
-            onClick={handleShowTeamAttendance}
-          >
-            <span className="btn-icon">📊</span>
-            {t('managerDashboard.teamAttendance', 'Team Attendance')}
-          </button>
-          <button 
-            className="btn-manager submit-btn"
-            onClick={handleShowForm}
-          >
-            <span className="btn-icon">📝</span>
-            {t('managerDashboard.submitMyForm')}
-          </button>
-          <button 
-            className="btn-manager view-btn"
-            onClick={handleShowMyForms}
-          >
-            <span className="btn-icon">📋</span>
-            {t('managerDashboard.viewMyForms')}
-          </button>
-          <button 
-            className="btn-manager team-forms-btn"
-            onClick={handleShowTeamForms}
-          >
-            <span className="btn-icon">👥</span>
-            {t('managerDashboard.myTeamMembersForms')}
-          </button>
-          <button 
-            className="btn-manager ats-btn"
-            onClick={handleShowATS}
-          >
-            <span className="btn-icon">🎯</span>
-            {t('managerDashboard.atsSystem', 'ATS System')}
-          </button>
-        </div>
       </div>
 
       {/* Team Attendance */}
       {showTeamAttendance && (
-        <div className="section manager-team-attendance-section">
+        <div
+          ref={teamAttendanceRef}
+          className="section manager-team-attendance-section dashboard-section-anchor"
+        >
           <ManagerTeamAttendance />
         </div>
       )}
 
       {/* ATS System */}
       {showATS && (
-        <div className="section manager-ats-section">
+        <div ref={managerAtsRef} className="section manager-ats-section dashboard-section-anchor">
           <ATSDashboard />
         </div>
       )}
 
       {/* Form Submission */}
       {showForm && (
-        <div className="section manager-form-section">
+        <div ref={managerFormRef} className="section manager-form-section dashboard-section-anchor">
           <div className="section-header">
             <h2>📝 {t('managerDashboard.submitNewPersonalForm')}</h2>
             <small className="section-subtitle">{t('managerDashboard.thisIsForYourOwnPersonalRequestsVacationSickLeaveEtc')}</small>
@@ -919,7 +913,7 @@ const ManagerDashboard = ({ onLogout }) => {
 
       {/* My Forms Preview */}
       {showMyForms && (
-        <div className="section manager-forms-view-section">
+        <div ref={managerMyFormsRef} className="section manager-forms-view-section dashboard-section-anchor">
           <div className="section-header">
             <h2>📋 {t('managerDashboard.mySubmittedForms')}</h2>
             <small className="section-subtitle">{t('managerDashboard.yourPersonalFormSubmissionsAndTheirStatus')}</small>
@@ -1052,7 +1046,7 @@ const ManagerDashboard = ({ onLogout }) => {
 
       {/* Team Members Forms */}
       {showTeamForms && (
-        <div className="section team-management-section">
+        <div ref={managerTeamFormsRef} className="section team-management-section dashboard-section-anchor">
           <div className="section-header">
             <h2>👥 {t('managerDashboard.myTeamMembersForms')}</h2>
             <small className="section-subtitle">{t('managerDashboard.allFormsSubmittedByYourTeamMembersFromManagedDepartments')}</small>
@@ -1250,7 +1244,7 @@ const ManagerDashboard = ({ onLogout }) => {
       </div>
 
       {/* Pending Requests */}
-      <div className="section team-requests-section">
+      <div ref={pendingApprovalsRef} className="section team-requests-section dashboard-section-anchor">
         <div className="section-header">
           <h2>⏳ {t('managerDashboard.pendingTeamRequests')} {refreshingPending ? `(${t('managerDashboard.refreshing')})` : ''}</h2>
           <small className="section-subtitle">
@@ -1914,6 +1908,17 @@ const ManagerDashboard = ({ onLogout }) => {
           border-color: rgba(6, 182, 212, 0.8);
           background: rgba(6, 182, 212, 0.2);
           box-shadow: 0 12px 40px rgba(6, 182, 212, 0.2);
+        }
+
+        .stat-card-clickable.pending-approvals-stat {
+          border: 2px solid rgba(255, 193, 7, 0.45);
+          background: rgba(255, 193, 7, 0.08);
+        }
+
+        .stat-card-clickable.pending-approvals-stat:hover {
+          border-color: rgba(255, 193, 7, 0.9);
+          background: rgba(255, 193, 7, 0.18);
+          box-shadow: 0 12px 40px rgba(255, 193, 7, 0.25);
         }
 
         .stat-card h3 {
@@ -2887,15 +2892,7 @@ const ManagerDashboard = ({ onLogout }) => {
           line-height: 1.4;
         }
 
-        /* Manager Buttons */
-        .manager-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 20px;
-          justify-content: center;
-          margin-top: 25px;
-        }
-
+        /* Manager Buttons — base style for inline actions (edit, refresh, etc.) */
         .btn-manager {
           padding: 14px 28px;
           border: none;
@@ -2909,55 +2906,6 @@ const ManagerDashboard = ({ onLogout }) => {
           align-items: center;
           gap: 8px;
           box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        .btn-manager.submit-btn {
-          background: linear-gradient(135deg, #4CAF50, #45a049);
-        }
-
-        .btn-manager.submit-btn:hover {
-          background: linear-gradient(135deg, #45a049, #3d8b40);
-          transform: translateY(-3px);
-          box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-        }
-
-        .btn-manager.view-btn {
-          background: linear-gradient(135deg, #4CAF50, #2E7D32);
-        }
-
-        .btn-manager.view-btn:hover {
-          background: linear-gradient(135deg, #2E7D32, #1B5E20);
-          transform: translateY(-3px);
-          box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
-        }
-
-        .btn-manager.team-forms-btn {
-          background: linear-gradient(135deg, #2196F3, #1976D2);
-        }
-
-        .btn-manager.team-forms-btn:hover {
-          background: linear-gradient(135deg, #1976D2, #1565C0);
-          transform: translateY(-3px);
-          box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
-        }
-
-        .btn-manager.team-attendance-btn {
-          background: linear-gradient(135deg, #06b6d4, #0891b2);
-        }
-
-        .btn-manager.team-attendance-btn:hover {
-          background: linear-gradient(135deg, #0891b2, #0e7490);
-          transform: translateY(-3px);
-          box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
-        }
-
-        .btn-manager.team-attendance-btn.active {
-          box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.5);
-          outline: 2px solid rgba(255, 255, 255, 0.5);
-        }
-
-        .btn-icon {
-          font-size: 1.1rem;
         }
 
         /* Manager Stats */
@@ -3292,29 +3240,8 @@ const ManagerDashboard = ({ onLogout }) => {
           cursor: not-allowed !important;
         }
 
-        /* ATS Button */
-        .btn-manager.ats-btn {
-          background: linear-gradient(135deg, #9c27b0, #7b1fa2) !important;
-        }
-
-        .btn-manager.ats-btn:hover {
-          background: linear-gradient(135deg, #7b1fa2, #6a1b9a) !important;
-          transform: translateY(-3px) !important;
-          box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4) !important;
-        }
-
         /* Responsive Design */
         @media (max-width: 768px) {
-          .manager-actions {
-            flex-direction: column;
-            align-items: center;
-          }
-
-          .btn-manager {
-            width: 100%;
-            max-width: 280px;
-          }
-
           .stats-section {
             grid-template-columns: 1fr;
           }

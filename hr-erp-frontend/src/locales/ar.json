@@ -402,6 +402,8 @@
     "myTeamMembers": "أعضاء فريقي",
     "activeEmployeesInManagedDepartments": "الموظفون النشطون في الأقسام المدارة",
     "pendingTeamRequests": "طلبات الفريق المعلقة",
+    "approveTeamForms": "موافقة على طلبات الفريق",
+    "approveTeamFormsHint": "الانتقال إلى الطلبات المعلقة من فريقك",
     "awaitingYourApproval": "في انتظار موافقتك",
     "underYourSupervision": "تحت إشرافك",
     "myPersonalFormsAndRequests": "طلباتي وطلبات الإجازة الشخصية",

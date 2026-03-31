@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import ATSDashboard from './ATS/ATSDashboard';
@@ -10,9 +10,12 @@ import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
 import DashboardSectionNav from './layout/DashboardSectionNav';
+import { smoothScrollToElement } from '../utils/smoothScroll';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
+  const mainContentRef = useRef(null);
+  const skipMainScrollRef = useRef(true);
   // Navigation state
   const [activeTab, setActiveTab] = useState('overview');
   
@@ -886,6 +889,14 @@ const AdminDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]); // Only depend on activeTab, not fetchForms
 
+  useEffect(() => {
+    if (skipMainScrollRef.current) {
+      skipMainScrollRef.current = false;
+      return;
+    }
+    smoothScrollToElement(mainContentRef.current, 72);
+  }, [activeTab]);
+
   if (usersLoading && activeTab === 'overview') {
     return (
       <div className="dashboard-container">
@@ -919,7 +930,7 @@ const AdminDashboard = () => {
       />
 
       {/* Main Content */}
-      <div className="main-content">
+      <div className="main-content dashboard-section-anchor" ref={mainContentRef}>
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="overview-section">

@@ -385,6 +385,8 @@
     "myTeamMembers": "My Team Members",
     "activeEmployeesInManagedDepartments": "Active employees in managed departments",
     "pendingTeamRequests": "Pending Team Requests",
+    "approveTeamForms": "Approve team forms",
+    "approveTeamFormsHint": "Jump to pending requests from your team",
     "awaitingYourApproval": "Awaiting your approval",
     "underYourSupervision": "Under your supervision",
     "myPersonalFormsAndRequests": "My Personal Forms & Requests",

@@ -500,6 +500,7 @@ const AttendanceManagement = () => {
           <div>
             {attendanceReport.kpi && (
               <div
+                className="attendance-kpi-grid"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
@@ -507,21 +508,21 @@ const AttendanceManagement = () => {
                   marginBottom: '1.5rem'
                 }}
               >
-                <div style={{ padding: '1rem', background: '#E8F5E9', borderRadius: '10px', border: '2px solid #4CAF50', textAlign: 'center' }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1B5E20' }}>{attendanceReport.kpi.totalPresent}</div>
-                  <div style={{ fontSize: '0.85rem', color: '#333', fontWeight: 600 }}>Total present (days)</div>
+                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#E8F5E9', borderRadius: '10px', border: '2px solid #4CAF50', textAlign: 'center' }}>
+                  <div className="kpi-value kpi-value--present" style={{ fontSize: '2rem', fontWeight: 'bold' }}>{attendanceReport.kpi.totalPresent}</div>
+                  <div className="kpi-label" style={{ fontSize: '0.85rem' }}>Total present (days)</div>
                 </div>
-                <div style={{ padding: '1rem', background: '#FFEBEE', borderRadius: '10px', border: '2px solid #F44336', textAlign: 'center' }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#B71C1C' }}>{attendanceReport.kpi.totalAbsences}</div>
-                  <div style={{ fontSize: '0.85rem', color: '#333', fontWeight: 600 }}>Total absences</div>
+                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#FFEBEE', borderRadius: '10px', border: '2px solid #F44336', textAlign: 'center' }}>
+                  <div className="kpi-value kpi-value--absences" style={{ fontSize: '2rem', fontWeight: 'bold' }}>{attendanceReport.kpi.totalAbsences}</div>
+                  <div className="kpi-label" style={{ fontSize: '0.85rem' }}>Total absences</div>
                 </div>
-                <div style={{ padding: '1rem', background: '#FFF3E0', borderRadius: '10px', border: '2px solid #FF9800', textAlign: 'center' }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#E65100' }}>{attendanceReport.kpi.totalLateHours}h</div>
-                  <div style={{ fontSize: '0.85rem', color: '#333', fontWeight: 600 }}>Total late hours</div>
+                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#FFF3E0', borderRadius: '10px', border: '2px solid #FF9800', textAlign: 'center' }}>
+                  <div className="kpi-value kpi-value--late" style={{ fontSize: '2rem', fontWeight: 'bold' }}>{attendanceReport.kpi.totalLateHours}h</div>
+                  <div className="kpi-label" style={{ fontSize: '0.85rem' }}>Total late hours</div>
                 </div>
-                <div style={{ padding: '1rem', background: '#F3E5F5', borderRadius: '10px', border: '2px solid #9C27B0', textAlign: 'center' }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#4A148C' }}>{attendanceReport.kpi.pendingMissedPunches}</div>
-                  <div style={{ fontSize: '0.85rem', color: '#333', fontWeight: 600 }}>Missed punch events</div>
+                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#F3E5F5', borderRadius: '10px', border: '2px solid #9C27B0', textAlign: 'center' }}>
+                  <div className="kpi-value kpi-value--missed" style={{ fontSize: '2rem', fontWeight: 'bold' }}>{attendanceReport.kpi.pendingMissedPunches}</div>
+                  <div className="kpi-label" style={{ fontSize: '0.85rem' }}>Missed punch events</div>
                 </div>
               </div>
             )}

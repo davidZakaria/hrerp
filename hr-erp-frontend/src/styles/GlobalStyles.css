@@ -2026,6 +2026,29 @@ form select:focus {
   color: rgba(255, 255, 255, 0.9);
 }
 
+/* Light pastel KPI cards (attendance dashboards): force readable dark text */
+.main-content .attendance-kpi-grid .attendance-kpi-card .kpi-label {
+  color: #111827 !important;
+  text-shadow: none !important;
+  font-weight: 600 !important;
+}
+.main-content .attendance-kpi-grid .attendance-kpi-card .kpi-value--present {
+  color: #14532d !important;
+  text-shadow: none !important;
+}
+.main-content .attendance-kpi-grid .attendance-kpi-card .kpi-value--absences {
+  color: #991b1b !important;
+  text-shadow: none !important;
+}
+.main-content .attendance-kpi-grid .attendance-kpi-card .kpi-value--late {
+  color: #9a3412 !important;
+  text-shadow: none !important;
+}
+.main-content .attendance-kpi-grid .attendance-kpi-card .kpi-value--missed {
+  color: #581c87 !important;
+  text-shadow: none !important;
+}
+
 .main-content strong {
   color: #ffffff !important;
   font-weight: 700;

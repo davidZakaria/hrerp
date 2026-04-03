@@ -1450,6 +1450,56 @@ router.get('/approved-by-month/:month', auth, async (req, res) => {
     }
 });
 
+// Admin: approved forms overlapping a custom date range (for attendance dashboards)
+router.get('/approved-by-range', auth, async (req, res) => {
+    try {
+        const admin = await User.findById(req.user.id).select('role').lean();
+        if (!admin || !['admin', 'super_admin'].includes(admin.role)) {
+            return res.status(403).json({ msg: 'Not authorized' });
+        }
+        const { parseDateRangeQuery } = require('../utils/attendanceDateRange');
+        const parsed = parseDateRangeQuery(req.query);
+        if (parsed.error) {
+            return res.status(400).json({ msg: parsed.error });
+        }
+        const { rangeStart, rangeEnd } = parsed;
+
+        const approvedStatuses = ['approved', 'manager_approved', 'manager_submitted'];
+
+        const forms = await Form.find({
+            status: { $in: approvedStatuses },
+            $or: [
+                {
+                    type: 'vacation',
+                    startDate: { $lte: rangeEnd },
+                    endDate: { $gte: rangeStart }
+                },
+                {
+                    type: 'sick_leave',
+                    sickLeaveStartDate: { $lte: rangeEnd },
+                    sickLeaveEndDate: { $gte: rangeStart }
+                },
+                {
+                    type: 'excuse',
+                    excuseDate: { $gte: rangeStart, $lte: rangeEnd }
+                }
+            ]
+        })
+            .populate('user', '_id name email department employeeCode')
+            .select('type status user startDate endDate excuseDate fromHour toHour sickLeaveStartDate sickLeaveEndDate reason')
+            .lean();
+
+        res.json({
+            startDate: rangeStart.toISOString(),
+            endDate: rangeEnd.toISOString(),
+            forms
+        });
+    } catch (err) {
+        console.error('Error fetching approved forms by range:', err.message);
+        res.status(500).send('Server error');
+    }
+});
+
 // Super Admin: Get all forms with full details
 router.get('/all', auth, async (req, res) => {
     try {

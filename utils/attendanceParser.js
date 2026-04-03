@@ -335,6 +335,20 @@ function calculateMinutesLate(clockIn, scheduledStart, gracePeriodMinutes = 10) 
 }
 
 /**
+ * Early exit: minutes before scheduled end (0 grace vs shift end).
+ */
+function calculateMinutesEarlyExit(clockOut, scheduledEnd) {
+    if (!clockOut || !scheduledEnd) return 0;
+    const clockOutParts = clockOut.split(':');
+    const scheduledParts = scheduledEnd.split(':');
+    if (clockOutParts.length !== 2 || scheduledParts.length !== 2) return 0;
+    const clockOutMinutes = parseInt(clockOutParts[0], 10) * 60 + parseInt(clockOutParts[1], 10);
+    const scheduledMinutes = parseInt(scheduledParts[0], 10) * 60 + parseInt(scheduledParts[1], 10);
+    const diff = scheduledMinutes - clockOutMinutes;
+    return diff > 0 ? diff : 0;
+}
+
+/**
  * Calculate overtime minutes (stayed after scheduled end time)
  * @param {String} clockOut - Actual clock-out time (HH:MM)
  * @param {String} scheduledEnd - Scheduled end time (HH:MM)
@@ -509,6 +523,7 @@ module.exports = {
     parseDate,
     parseTime,
     calculateMinutesLate,
+    calculateMinutesEarlyExit,
     calculateMinutesOvertime,
     calculateAttendanceStatus,
     getMonthString,

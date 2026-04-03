@@ -1,32 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import API_URL from '../config/api';
+import EmployeeAttendanceDetailModal from './EmployeeAttendanceDetailModal';
+
+function getDefaultDateRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return {
+    startDate: start.toISOString().slice(0, 10),
+    endDate: end.toISOString().slice(0, 10)
+  };
+}
 
 const AttendanceManagement = () => {
   const [uploadFiles, setUploadFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
+  const [rangeStart, setRangeStart] = useState(() => getDefaultDateRange().startDate);
+  const [rangeEnd, setRangeEnd] = useState(() => getDefaultDateRange().endDate);
   const [attendanceReport, setAttendanceReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showEmployeeDetail, setShowEmployeeDetail] = useState(false);
-  const [availableMonths, setAvailableMonths] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [approvedForms, setApprovedForms] = useState([]);
   const [activeView, setActiveView] = useState('summary'); // 'summary' or 'detailed'
   const [zktecoEnabled, setZktecoEnabled] = useState(false);
 
-  function getCurrentMonth() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`;
-  }
-
   useEffect(() => {
-    fetchAvailableMonths();
     fetchZktecoStatus();
   }, []);
 
@@ -46,56 +49,42 @@ const AttendanceManagement = () => {
   };
 
   useEffect(() => {
-    if (selectedMonth) {
-      fetchMonthlyReport();
+    if (rangeStart && rangeEnd) {
+      fetchAttendanceReport();
       fetchApprovedForms();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth]);
+  }, [rangeStart, rangeEnd]);
 
   const fetchApprovedForms = async () => {
     const token = localStorage.getItem('token');
     try {
-      // Fetch approved vacation, excuse, and sick leave forms for the month
-      const res = await fetch(`${API_URL}/api/forms/approved-by-month/${selectedMonth}`, {
+      const qs = new URLSearchParams({ startDate: rangeStart, endDate: rangeEnd }).toString();
+      const res = await fetch(`${API_URL}/api/forms/approved-by-range?${qs}`, {
         headers: { 'x-auth-token': token }
       });
       if (res.ok) {
         const data = await res.json();
-        setApprovedForms(data);
+        setApprovedForms(data.forms || data);
       }
     } catch (err) {
       console.error('Error fetching approved forms:', err);
     }
   };
 
-  const fetchAvailableMonths = async () => {
-    const token = localStorage.getItem('token');
-    try {
-      const res = await fetch(`${API_URL}/api/attendance/months`, {
-        headers: { 'x-auth-token': token }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setAvailableMonths(data.months);
-      }
-    } catch (err) {
-      console.error('Error fetching months:', err);
-    }
-  };
-
-  const fetchMonthlyReport = async () => {
+  const fetchAttendanceReport = async () => {
     setLoading(true);
     setError('');
     const token = localStorage.getItem('token');
-    
+
     try {
-      const res = await fetch(`${API_URL}/api/attendance/monthly-report/${selectedMonth}`, {
+      const qs = new URLSearchParams({ startDate: rangeStart, endDate: rangeEnd }).toString();
+      const res = await fetch(`${API_URL}/api/attendance/report?${qs}`, {
         headers: { 'x-auth-token': token }
       });
-      
+
       const data = await res.json();
-      
+
       if (res.ok) {
         setAttendanceReport(data);
       } else {
@@ -146,8 +135,7 @@ const AttendanceManagement = () => {
         setUploadResult(data.results);
         setUploadFiles([]);
         // Refresh the report
-        fetchMonthlyReport();
-        fetchAvailableMonths();
+        fetchAttendanceReport();
       } else {
         setError(data.msg || 'Upload failed');
       }
@@ -162,15 +150,16 @@ const AttendanceManagement = () => {
     setLoading(true);
     setError('');
     const token = localStorage.getItem('token');
-    
+    const qs = new URLSearchParams({ startDate: rangeStart, endDate: rangeEnd }).toString();
+
     try {
       const res = await fetch(
-        `${API_URL}/api/attendance/employee/${employee.user.id}/${selectedMonth}`,
+        `${API_URL}/api/attendance/employee/${employee.user.id}/detail?${qs}`,
         { headers: { 'x-auth-token': token } }
       );
-      
+
       const data = await res.json();
-      
+
       if (res.ok) {
         setSelectedEmployee(data);
         setShowEmployeeDetail(true);
@@ -182,6 +171,12 @@ const AttendanceManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const refetchEmployeeDetail = async () => {
+    if (!selectedEmployee?.user?.id) return;
+    await viewEmployeeDetails({ user: selectedEmployee.user });
+    fetchAttendanceReport();
   };
 
   const formatDate = (dateStr) => {
@@ -423,23 +418,43 @@ const AttendanceManagement = () => {
 
       {/* View Attendance Section */}
       <div className="elegant-card">
-        <h3 style={{ marginBottom: '1rem', color: '#333' }}>Monthly Attendance Report</h3>
+        <h3 style={{ marginBottom: '1rem', color: '#333' }}>Attendance report</h3>
         
         {/* Controls Row */}
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'flex-end' }}>
           <div>
-            <label className="form-label-elegant">Select Month:</label>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
+            <label className="form-label-elegant">Start date</label>
+            <input
+              type="date"
+              value={rangeStart}
+              onChange={(e) => setRangeStart(e.target.value)}
               className="form-input-elegant"
-              style={{ maxWidth: '200px' }}
+              style={{ maxWidth: '180px' }}
+            />
+          </div>
+          <div>
+            <label className="form-label-elegant">End date</label>
+            <input
+              type="date"
+              value={rangeEnd}
+              onChange={(e) => setRangeEnd(e.target.value)}
+              className="form-input-elegant"
+              style={{ maxWidth: '180px' }}
+            />
+          </div>
+          <div>
+            <button
+              type="button"
+              className="btn-elegant"
+              style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
+              onClick={() => {
+                const d = getDefaultDateRange();
+                setRangeStart(d.startDate);
+                setRangeEnd(d.endDate);
+              }}
             >
-              <option value={getCurrentMonth()}>Current Month</option>
-              {availableMonths.map(month => (
-                <option key={month} value={month}>{month}</option>
-              ))}
-            </select>
+              This month
+            </button>
           </div>
           
           {/* Search Filter */}
@@ -483,6 +498,33 @@ const AttendanceManagement = () => {
 
         {attendanceReport && !loading && (
           <div>
+            {attendanceReport.kpi && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                  gap: '1rem',
+                  marginBottom: '1.5rem'
+                }}
+              >
+                <div style={{ padding: '1rem', background: '#E8F5E9', borderRadius: '10px', border: '2px solid #4CAF50', textAlign: 'center' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1B5E20' }}>{attendanceReport.kpi.totalPresent}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#333', fontWeight: 600 }}>Total present (days)</div>
+                </div>
+                <div style={{ padding: '1rem', background: '#FFEBEE', borderRadius: '10px', border: '2px solid #F44336', textAlign: 'center' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#B71C1C' }}>{attendanceReport.kpi.totalAbsences}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#333', fontWeight: 600 }}>Total absences</div>
+                </div>
+                <div style={{ padding: '1rem', background: '#FFF3E0', borderRadius: '10px', border: '2px solid #FF9800', textAlign: 'center' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#E65100' }}>{attendanceReport.kpi.totalLateHours}h</div>
+                  <div style={{ fontSize: '0.85rem', color: '#333', fontWeight: 600 }}>Total late hours</div>
+                </div>
+                <div style={{ padding: '1rem', background: '#F3E5F5', borderRadius: '10px', border: '2px solid #9C27B0', textAlign: 'center' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#4A148C' }}>{attendanceReport.kpi.pendingMissedPunches}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#333', fontWeight: 600 }}>Missed punch events</div>
+                </div>
+              </div>
+            )}
             {/* Overtime Summary Panel */}
             {attendanceReport.overtimeSummary && attendanceReport.overtimeSummary.totalOvertimeMinutes > 0 && (
               <div style={{ 
@@ -509,7 +551,7 @@ const AttendanceManagement = () => {
                     fontWeight: '700',
                     textShadow: '0 2px 4px rgba(0,0,0,0.2)'
                   }}>
-                    ⏱️ Overtime Summary This Month
+                    ⏱️ Overtime summary (selected range)
                   </h4>
                 </div>
 
@@ -649,7 +691,7 @@ const AttendanceManagement = () => {
               </div>
               {approvedForms.length > 0 && (
                 <span style={{ background: '#E3F2FD', color: '#1565C0', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem' }}>
-                  📝 {approvedForms.length} Approved Leave/Excuse Forms This Month
+                  📝 {approvedForms.length} approved leave/excuse forms in range
                 </span>
               )}
             </div>
@@ -1003,195 +1045,13 @@ const AttendanceManagement = () => {
         )}
       </div>
 
-      {/* Employee Detail Modal */}
-      {showEmployeeDetail && selectedEmployee && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999
-          }}
-          onClick={() => setShowEmployeeDetail(false)}
-        >
-          <div 
-            className="attendance-modal-custom"
-            onClick={(e) => e.stopPropagation()} 
-            style={{ 
-              backgroundColor: '#f5f5f5',
-              borderRadius: '12px',
-              padding: '2rem',
-              maxWidth: '900px',
-              width: '90%',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
-            }}
-          >
-            <h3 style={{ 
-              marginBottom: '1.5rem', 
-              color: '#000000', 
-              fontWeight: 'bold',
-              fontSize: '1.5rem',
-              textAlign: 'center'
-            }}>
-              Attendance Details - {selectedEmployee.user.name}
-            </h3>
-
-            <div style={{ marginBottom: '1.5rem', background: '#ffffff', padding: '1.5rem', borderRadius: '8px', border: '1px solid #ddd' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-                <div style={{ fontSize: '0.95rem' }}>
-                  <strong style={{ color: '#000000', display: 'block', marginBottom: '0.25rem' }}>Employee Code:</strong> 
-                  <span style={{ color: '#000000', fontSize: '1rem' }}>{selectedEmployee.user.employeeCode || 'N/A'}</span>
-                </div>
-                <div style={{ fontSize: '0.95rem' }}>
-                  <strong style={{ color: '#000000', display: 'block', marginBottom: '0.25rem' }}>Department:</strong> 
-                  <span style={{ color: '#000000', fontSize: '1rem' }}>{selectedEmployee.user.department}</span>
-                </div>
-                <div style={{ fontSize: '0.95rem' }}>
-                  <strong style={{ color: '#000000', display: 'block', marginBottom: '0.25rem' }}>Work Schedule:</strong> 
-                  <span style={{ color: '#000000', fontSize: '1rem' }}>{
-                    selectedEmployee.user.workSchedule 
-                      ? `${selectedEmployee.user.workSchedule.startTime} - ${selectedEmployee.user.workSchedule.endTime}`
-                      : 'Not set'
-                  }</span>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h4 style={{ marginBottom: '1rem', color: '#000000', fontSize: '1.1rem', fontWeight: 'bold' }}>Summary Statistics</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
-                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #4CAF50', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
-                    {selectedEmployee.stats.present}
-                  </div>
-                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Present</div>
-                </div>
-                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #FF9800', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
-                    {selectedEmployee.stats.late}
-                  </div>
-                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Late</div>
-                </div>
-                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #F44336', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
-                    {selectedEmployee.stats.unexcusedAbsences}
-                  </div>
-                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Unexcused Absences</div>
-                </div>
-                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #2196F3', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
-                    {selectedEmployee.stats.excused}
-                  </div>
-                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Excused</div>
-                </div>
-                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #9C27B0', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
-                    {selectedEmployee.stats.onLeave}
-                  </div>
-                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>On Leave</div>
-                </div>
-                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #0277BD', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
-                    🏠 {selectedEmployee.stats.wfh || 0}
-                  </div>
-                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Work From Home</div>
-                </div>
-                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #FF5722', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
-                    {selectedEmployee.stats.totalFingerprintDeduction || 0}
-                  </div>
-                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Days Deducted</div>
-                </div>
-                <div style={{ padding: '1.5rem', background: '#ffffff', borderRadius: '8px', textAlign: 'center', border: '3px solid #8BC34A', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#000000' }}>
-                    {Math.round((selectedEmployee.stats.totalMinutesOvertime || 0) / 60 * 10) / 10}h
-                  </div>
-                  <div style={{ fontSize: '1rem', color: '#000000', fontWeight: 'bold', marginTop: '0.5rem' }}>Overtime</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ maxHeight: '400px', overflowY: 'auto', background: '#ffffff', padding: '1rem', borderRadius: '8px' }}>
-              <h4 style={{ marginBottom: '1rem', color: '#000000', fontSize: '1.1rem', fontWeight: 'bold' }}>Daily Attendance</h4>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#f0f0f0', borderBottom: '2px solid #ddd' }}>
-                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold', fontSize: '0.95rem' }}>Date</th>
-                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold', fontSize: '0.95rem' }}>Clock In</th>
-                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold', fontSize: '0.95rem' }}>Clock Out</th>
-                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold', fontSize: '0.95rem' }}>Status</th>
-                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold', fontSize: '0.95rem' }}>Late</th>
-                    <th style={{ padding: '12px', textAlign: 'left', color: '#000000', fontWeight: 'bold', fontSize: '0.95rem' }}>Overtime</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedEmployee.records.map((record, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid #eee', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9f9f9' }}>
-                      <td style={{ padding: '10px', color: '#000000', fontSize: '0.9rem' }}>{formatDate(record.date)}</td>
-                      <td style={{ padding: '10px', fontSize: '0.9rem', fontWeight: '500' }}>
-                        {record.missedClockIn ? (
-                          <span style={{ color: '#F44336', fontWeight: 'bold' }}>❌ MISSED</span>
-                        ) : (
-                          <span style={{ color: record.clockIn ? '#000000' : '#ef4444', fontStyle: record.clockIn ? 'normal' : 'italic' }}>{record.clockIn || 'Missing'}</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '10px', fontSize: '0.9rem', fontWeight: '500' }}>
-                        {record.missedClockOut ? (
-                          <span style={{ color: '#FF9800', fontWeight: 'bold' }}>⚠️ MISSED</span>
-                        ) : (
-                          <span style={{ color: record.clockOut ? '#000000' : '#ef4444', fontStyle: record.clockOut ? 'normal' : 'italic' }}>{record.clockOut || 'Missing'}</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '10px' }}>{getStatusBadge(record.status)}</td>
-                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>
-                        {record.minutesLate > 0 ? (
-                          <span style={{ color: '#F44336', fontWeight: 'bold' }}>{record.minutesLate} min</span>
-                        ) : (
-                          <span style={{ color: '#000000' }}>-</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>
-                        {record.minutesOvertime > 0 ? (
-                          <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>+{record.minutesOvertime} min</span>
-                        ) : (
-                          <span style={{ color: '#000000' }}>-</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
-              <button 
-                onClick={() => setShowEmployeeDetail(false)}
-                style={{
-                  padding: '0.75rem 2rem',
-                  backgroundColor: '#4a90e2',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EmployeeAttendanceDetailModal
+        open={showEmployeeDetail && !!selectedEmployee}
+        onClose={() => setShowEmployeeDetail(false)}
+        payload={selectedEmployee}
+        canFixPunch
+        onFixed={refetchEmployeeDetail}
+      />
     </div>
   );
 };

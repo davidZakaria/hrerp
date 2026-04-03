@@ -89,7 +89,19 @@ const attendanceSchema = new mongoose.Schema({
     uploadedAt: {
         type: Date,
         default: Date.now
-    }
+    },
+    adjustmentHistory: {
+        type: [{
+            at: { type: Date, default: Date.now },
+            by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+            reason: { type: String, required: true },
+            fieldsChanged: [{ type: String }],
+            previousValues: { type: mongoose.Schema.Types.Mixed }
+        }],
+        default: []
+    },
+    lastAdjustedAt: { type: Date },
+    lastAdjustedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, {
     timestamps: true
 });
@@ -141,6 +153,48 @@ attendanceSchema.statics.getUserStats = async function(userId, month) {
     
     stats.unexcusedAbsences = stats.absent - stats.excused;
     
+    return stats;
+};
+
+attendanceSchema.statics.getAttendanceInDateRange = function(userId, rangeStart, rangeEnd) {
+    return this.find({
+        user: userId,
+        date: { $gte: rangeStart, $lte: rangeEnd }
+    })
+        .populate('relatedForm', 'type status startDate endDate excuseDate')
+        .sort({ date: 1 });
+};
+
+attendanceSchema.statics.getAllInDateRange = function(rangeStart, rangeEnd) {
+    return this.find({
+        date: { $gte: rangeStart, $lte: rangeEnd }
+    })
+        .populate('user', 'name email employeeCode department workSchedule')
+        .populate('relatedForm', 'type status')
+        .sort({ date: 1 });
+};
+
+attendanceSchema.statics.getUserStatsInRange = async function(userId, rangeStart, rangeEnd) {
+    const records = await this.find({
+        user: userId,
+        date: { $gte: rangeStart, $lte: rangeEnd }
+    });
+    const stats = {
+        totalDays: records.length,
+        present: records.filter(r => r.status === 'present').length,
+        late: records.filter(r => r.status === 'late').length,
+        absent: records.filter(r => r.status === 'absent').length,
+        excused: records.filter(r => r.isExcused || r.status === 'excused').length,
+        onLeave: records.filter(r => r.status === 'on_leave').length,
+        wfh: records.filter(r => r.status === 'wfh').length,
+        totalMinutesLate: records.reduce((sum, r) => sum + (r.minutesLate || 0), 0),
+        totalMinutesOvertime: records.reduce((sum, r) => sum + (r.minutesOvertime || 0), 0),
+        missedClockIns: records.filter(r => r.missedClockIn).length,
+        missedClockOuts: records.filter(r => r.missedClockOut).length,
+        totalFingerprintDeduction: records.reduce((sum, r) => sum + (r.fingerprintDeduction || 0), 0),
+        fingerprintMisses: records.filter(r => r.fingerprintMissType && r.fingerprintMissType !== 'none').length
+    };
+    stats.unexcusedAbsences = stats.absent - stats.excused;
     return stats;
 };
 

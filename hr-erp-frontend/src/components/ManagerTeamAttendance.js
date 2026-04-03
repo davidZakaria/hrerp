@@ -1,57 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import API_URL from '../config/api';
+import EmployeeAttendanceDetailModal from './EmployeeAttendanceDetailModal';
+
+function getDefaultDateRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return {
+    startDate: start.toISOString().slice(0, 10),
+    endDate: end.toISOString().slice(0, 10)
+  };
+}
 
 const ManagerTeamAttendance = () => {
   const { t } = useTranslation();
-  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
+  const [rangeStart, setRangeStart] = useState(() => getDefaultDateRange().startDate);
+  const [rangeEnd, setRangeEnd] = useState(() => getDefaultDateRange().endDate);
   const [attendanceReport, setAttendanceReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showEmployeeDetail, setShowEmployeeDetail] = useState(false);
-  const [availableMonths, setAvailableMonths] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  function getCurrentMonth() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`;
-  }
-
   useEffect(() => {
-    fetchAvailableMonths();
-  }, []);
-
-  useEffect(() => {
-    if (selectedMonth) {
+    if (rangeStart && rangeEnd) {
       fetchTeamReport();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth]);
-
-  const fetchAvailableMonths = async () => {
-    const token = localStorage.getItem('token');
-    try {
-      const res = await fetch(`${API_URL}/api/attendance/months`, {
-        headers: { 'x-auth-token': token }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setAvailableMonths(data.months);
-      }
-    } catch (err) {
-      console.error('Error fetching months:', err);
-    }
-  };
+  }, [rangeStart, rangeEnd]);
 
   const fetchTeamReport = async () => {
     setLoading(true);
     setError('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${API_URL}/api/attendance/team-report/${selectedMonth}`, {
+      const qs = new URLSearchParams({ startDate: rangeStart, endDate: rangeEnd }).toString();
+      const res = await fetch(`${API_URL}/api/attendance/team-report?${qs}`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -71,9 +57,10 @@ const ManagerTeamAttendance = () => {
     setLoading(true);
     setError('');
     const token = localStorage.getItem('token');
+    const qs = new URLSearchParams({ startDate: rangeStart, endDate: rangeEnd }).toString();
     try {
       const res = await fetch(
-        `${API_URL}/api/attendance/team-employee/${employee.user.id}/${selectedMonth}`,
+        `${API_URL}/api/attendance/team-employee/${employee.user.id}/detail?${qs}`,
         { headers: { 'x-auth-token': token } }
       );
       const data = await res.json();
@@ -88,31 +75,6 @@ const ManagerTeamAttendance = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  const getStatusBadge = (status) => {
-    const styles = {
-      present: { background: '#22c55e', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' },
-      late: { background: '#f97316', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' },
-      absent: { background: '#ef4444', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' },
-      excused: { background: '#3b82f6', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' },
-      on_leave: { background: '#a855f7', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' },
-      wfh: { background: '#06b6d4', color: '#ffffff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' }
-    };
-    const labels = {
-      wfh: 'WFH',
-      on_leave: 'ON LEAVE'
-    };
-    return (
-      <span style={styles[status] || styles.present}>
-        {labels[status] || status.replace('_', ' ').toUpperCase()}
-      </span>
-    );
   };
 
   const filterReport = (report) => {
@@ -148,19 +110,41 @@ const ManagerTeamAttendance = () => {
       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'flex-end' }}>
         <div>
           <label className="form-label-elegant" style={{ color: '#fff', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
-            {t('managerDashboard.selectMonth', 'Select Month')}:
+            {t('managerDashboard.startDate', 'Start date')}
           </label>
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
+          <input
+            type="date"
+            value={rangeStart}
+            onChange={(e) => setRangeStart(e.target.value)}
             className="form-input-elegant"
-            style={{ maxWidth: '200px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '2px solid rgba(255,255,255,0.2)', borderRadius: '8px', padding: '12px 16px' }}
+            style={{ maxWidth: '180px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '2px solid rgba(255,255,255,0.2)', borderRadius: '8px', padding: '12px 16px' }}
+          />
+        </div>
+        <div>
+          <label className="form-label-elegant" style={{ color: '#fff', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+            {t('managerDashboard.endDate', 'End date')}
+          </label>
+          <input
+            type="date"
+            value={rangeEnd}
+            onChange={(e) => setRangeEnd(e.target.value)}
+            className="form-input-elegant"
+            style={{ maxWidth: '180px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '2px solid rgba(255,255,255,0.2)', borderRadius: '8px', padding: '12px 16px' }}
+          />
+        </div>
+        <div>
+          <button
+            type="button"
+            className="btn-manager"
+            style={{ padding: '12px 16px', marginTop: '22px' }}
+            onClick={() => {
+              const d = getDefaultDateRange();
+              setRangeStart(d.startDate);
+              setRangeEnd(d.endDate);
+            }}
           >
-            <option value={getCurrentMonth()}>{t('managerDashboard.currentMonth', 'Current Month')}</option>
-            {availableMonths.map(month => (
-              <option key={month} value={month}>{month}</option>
-            ))}
-          </select>
+            {t('managerDashboard.currentMonth', 'This month')}
+          </button>
         </div>
         <div style={{ flex: 1, minWidth: '250px' }}>
           <label className="form-label-elegant" style={{ color: '#fff', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
@@ -191,6 +175,26 @@ const ManagerTeamAttendance = () => {
 
       {attendanceReport && !loading && (
         <>
+          {attendanceReport.kpi && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
+              <div style={{ padding: '0.75rem', background: 'rgba(76,175,80,0.15)', border: '1px solid rgba(76,175,80,0.4)', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#81c784' }}>{attendanceReport.kpi.totalPresent}</div>
+                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)' }}>Present days</div>
+              </div>
+              <div style={{ padding: '0.75rem', background: 'rgba(244,67,54,0.15)', border: '1px solid rgba(244,67,54,0.4)', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#e57373' }}>{attendanceReport.kpi.totalAbsences}</div>
+                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)' }}>Absences</div>
+              </div>
+              <div style={{ padding: '0.75rem', background: 'rgba(255,152,0,0.15)', border: '1px solid rgba(255,152,0,0.4)', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ffb74d' }}>{attendanceReport.kpi.totalLateHours}h</div>
+                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)' }}>Late hours</div>
+              </div>
+              <div style={{ padding: '0.75rem', background: 'rgba(156,39,176,0.15)', border: '1px solid rgba(156,39,176,0.4)', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ce93d8' }}>{attendanceReport.kpi.pendingMissedPunches}</div>
+                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)' }}>Missed punches</div>
+              </div>
+            </div>
+          )}
           {attendanceReport.totalEmployees === 0 ? (
             <div className="no-content" style={{ textAlign: 'center', padding: '40px 20px', color: 'rgba(255,255,255,0.7)' }}>
               <span className="no-content-icon" style={{ fontSize: '3rem', display: 'block', marginBottom: '15px' }}>👥</span>
@@ -279,86 +283,15 @@ const ManagerTeamAttendance = () => {
         </>
       )}
 
-      {showEmployeeDetail && selectedEmployee && (
-        <div
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
-          onClick={() => setShowEmployeeDetail(false)}
-        >
-          <div
-            className="attendance-modal-custom"
-            onClick={(e) => e.stopPropagation()}
-            style={{ backgroundColor: '#f5f5f5', borderRadius: '12px', padding: '2rem', maxWidth: '900px', width: '90%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}
-          >
-            <h3 style={{ marginBottom: '1.5rem', color: '#000', fontWeight: 'bold', fontSize: '1.5rem', textAlign: 'center' }}>
-              {t('managerDashboard.attendanceDetails', 'Attendance Details')} - {selectedEmployee.user.name}
-            </h3>
-            <div style={{ marginBottom: '1.5rem', background: '#fff', padding: '1.5rem', borderRadius: '8px', border: '1px solid #ddd' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-                <div><strong style={{ color: '#000' }}>{t('managerDashboard.employeeCode', 'Employee Code')}:</strong> <span>{selectedEmployee.user.employeeCode || 'N/A'}</span></div>
-                <div><strong style={{ color: '#000' }}>{t('managerDashboard.department', 'Department')}:</strong> <span>{selectedEmployee.user.department}</span></div>
-                <div><strong style={{ color: '#000' }}>{t('managerDashboard.workSchedule', 'Work Schedule')}:</strong> <span>{selectedEmployee.user.workSchedule ? `${selectedEmployee.user.workSchedule.startTime} - ${selectedEmployee.user.workSchedule.endTime}` : 'Default (10:00-19:00)'}</span></div>
-              </div>
-            </div>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h4 style={{ marginBottom: '1rem', color: '#000', fontSize: '1.1rem', fontWeight: 'bold' }}>{t('managerDashboard.summaryStats', 'Summary Statistics')}</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
-                <div style={{ padding: '1rem', background: '#fff', borderRadius: '8px', textAlign: 'center', border: '2px solid #4CAF50' }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#000' }}>{selectedEmployee.stats.present}</div>
-                  <div style={{ fontSize: '0.9rem', color: '#000', fontWeight: '600' }}>{t('managerDashboard.present', 'Present')}</div>
-                </div>
-                <div style={{ padding: '1rem', background: '#fff', borderRadius: '8px', textAlign: 'center', border: '2px solid #FF9800' }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#000' }}>{selectedEmployee.stats.late}</div>
-                  <div style={{ fontSize: '0.9rem', color: '#000', fontWeight: '600' }}>{t('managerDashboard.late', 'Late')}</div>
-                </div>
-                <div style={{ padding: '1rem', background: '#fff', borderRadius: '8px', textAlign: 'center', border: '2px solid #F44336' }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#000' }}>{selectedEmployee.stats.unexcusedAbsences}</div>
-                  <div style={{ fontSize: '0.9rem', color: '#000', fontWeight: '600' }}>{t('managerDashboard.absent', 'Unexcused Absences')}</div>
-                </div>
-                <div style={{ padding: '1rem', background: '#fff', borderRadius: '8px', textAlign: 'center', border: '2px solid #2196F3' }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#000' }}>{selectedEmployee.stats.excused}</div>
-                  <div style={{ fontSize: '0.9rem', color: '#000', fontWeight: '600' }}>{t('managerDashboard.excused', 'Excused')}</div>
-                </div>
-                <div style={{ padding: '1rem', background: '#fff', borderRadius: '8px', textAlign: 'center', border: '2px solid #9C27B0' }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#000' }}>{selectedEmployee.stats.onLeave || 0}</div>
-                  <div style={{ fontSize: '0.9rem', color: '#000', fontWeight: '600' }}>{t('managerDashboard.onLeave', 'On Leave')}</div>
-                </div>
-              </div>
-            </div>
-            <div style={{ maxHeight: '350px', overflowY: 'auto', background: '#fff', padding: '1rem', borderRadius: '8px' }}>
-              <h4 style={{ marginBottom: '1rem', color: '#000', fontSize: '1.1rem', fontWeight: 'bold' }}>{t('managerDashboard.dailyAttendance', 'Daily Attendance')}</h4>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#f0f0f0', borderBottom: '2px solid #ddd' }}>
-                    <th style={{ padding: '10px', textAlign: 'left', color: '#000', fontWeight: 'bold' }}>{t('managerDashboard.date', 'Date')}</th>
-                    <th style={{ padding: '10px', textAlign: 'left', color: '#000', fontWeight: 'bold' }}>{t('managerDashboard.clockIn', 'Clock In')}</th>
-                    <th style={{ padding: '10px', textAlign: 'left', color: '#000', fontWeight: 'bold' }}>{t('managerDashboard.clockOut', 'Clock Out')}</th>
-                    <th style={{ padding: '10px', textAlign: 'left', color: '#000', fontWeight: 'bold' }}>{t('managerDashboard.status', 'Status')}</th>
-                    <th style={{ padding: '10px', textAlign: 'left', color: '#000', fontWeight: 'bold' }}>{t('managerDashboard.late', 'Late')}</th>
-                    <th style={{ padding: '10px', textAlign: 'left', color: '#000', fontWeight: 'bold' }}>{t('managerDashboard.overtime', 'Overtime')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedEmployee.records && selectedEmployee.records.map((record, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid #eee', backgroundColor: idx % 2 === 0 ? '#fff' : '#f9f9f9' }}>
-                      <td style={{ padding: '10px', color: '#000', fontSize: '0.9rem' }}>{formatDate(record.date)}</td>
-                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>{record.missedClockIn ? <span style={{ color: '#F44336', fontWeight: 'bold' }}>MISSED</span> : (record.clockIn ? record.clockIn : <span style={{ color: '#ef4444', fontStyle: 'italic' }}>Missing</span>)}</td>
-                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>{record.missedClockOut ? <span style={{ color: '#FF9800', fontWeight: 'bold' }}>MISSED</span> : (record.clockOut ? record.clockOut : <span style={{ color: '#ef4444', fontStyle: 'italic' }}>Missing</span>)}</td>
-                      <td style={{ padding: '10px' }}>{getStatusBadge(record.status)}</td>
-                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>{record.minutesLate > 0 ? <span style={{ color: '#F44336', fontWeight: 'bold' }}>{record.minutesLate}m</span> : '-'}</td>
-                      <td style={{ padding: '10px', fontSize: '0.9rem' }}>{record.minutesOvertime > 0 ? <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>+{record.minutesOvertime}m</span> : '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
-              <button onClick={() => setShowEmployeeDetail(false)} style={{ padding: '0.75rem 2rem', backgroundColor: '#4a90e2', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}>
-                {t('common.close', 'Close')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EmployeeAttendanceDetailModal
+        open={showEmployeeDetail && !!selectedEmployee}
+        onClose={() => setShowEmployeeDetail(false)}
+        payload={selectedEmployee}
+        canFixPunch={false}
+        onFixed={async () => {
+          if (selectedEmployee?.user?.id) await viewEmployeeDetails({ user: selectedEmployee.user });
+        }}
+      />
 
       <style>{`
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }

@@ -16,6 +16,12 @@ const {
     isWeekend,
     getDayName
 } = require('../utils/attendanceParser');
+const { parseDateRangeQuery, monthToRange } = require('../utils/attendanceDateRange');
+const {
+    buildDateRangeDetailRows,
+    aggregateOrgKpis,
+    applyRecalcAttendance
+} = require('../utils/attendanceDetailBuilder');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -195,6 +201,225 @@ async function crossReferenceWithForms(date, userId) {
         console.error('Error cross-referencing with forms:', error);
         return null;
     }
+}
+
+/**
+ * Group attendance records by user and compute per-user stats + overtime summary (admin/manager reports).
+ */
+function buildReportAndOvertimeFromRecords(attendanceRecords) {
+    const userAttendanceMap = {};
+
+    for (const record of attendanceRecords) {
+        if (!record.user || !record.user._id) continue;
+        const userId = record.user._id.toString();
+
+        if (!userAttendanceMap[userId]) {
+            userAttendanceMap[userId] = {
+                user: {
+                    id: record.user._id,
+                    name: record.user.name,
+                    email: record.user.email,
+                    employeeCode: record.user.employeeCode,
+                    department: record.user.department,
+                    workSchedule: record.user.workSchedule
+                },
+                records: [],
+                stats: {
+                    totalDays: 0,
+                    present: 0,
+                    late: 0,
+                    absent: 0,
+                    excused: 0,
+                    onLeave: 0,
+                    wfh: 0,
+                    unexcusedAbsences: 0,
+                    totalMinutesLate: 0,
+                    totalMinutesOvertime: 0,
+                    totalFingerprintDeduction: 0,
+                    fingerprintMisses: 0
+                }
+            };
+        }
+
+        userAttendanceMap[userId].records.push(record);
+        userAttendanceMap[userId].stats.totalDays++;
+
+        const stats = userAttendanceMap[userId].stats;
+        stats.totalMinutesLate += record.minutesLate || 0;
+        stats.totalMinutesOvertime += record.minutesOvertime || 0;
+        stats.totalFingerprintDeduction += record.fingerprintDeduction || 0;
+
+        if (record.fingerprintMissType && record.fingerprintMissType !== 'none') {
+            stats.fingerprintMisses++;
+        }
+
+        if (record.status === 'present') {
+            stats.present++;
+        } else if (record.status === 'late') {
+            stats.present++;
+            stats.late++;
+        } else if (record.status === 'absent') {
+            stats.absent++;
+            if (!record.isExcused) {
+                stats.unexcusedAbsences++;
+            }
+        } else if (record.status === 'excused') {
+            stats.excused++;
+        } else if (record.status === 'on_leave') {
+            stats.onLeave++;
+        } else if (record.status === 'wfh') {
+            stats.wfh++;
+        }
+    }
+
+    const report = Object.values(userAttendanceMap);
+
+    const overtimeSummary = {
+        totalOvertimeMinutes: 0,
+        totalOvertimeHours: 0,
+        employeesWithOvertime: []
+    };
+
+    for (const emp of report) {
+        if (emp.stats.totalMinutesOvertime > 0) {
+            overtimeSummary.totalOvertimeMinutes += emp.stats.totalMinutesOvertime;
+            overtimeSummary.employeesWithOvertime.push({
+                name: emp.user.name,
+                department: emp.user.department,
+                employeeCode: emp.user.employeeCode,
+                overtimeMinutes: emp.stats.totalMinutesOvertime,
+                overtimeHours: Math.round((emp.stats.totalMinutesOvertime / 60) * 100) / 100
+            });
+        }
+    }
+
+    overtimeSummary.totalOvertimeHours = Math.round((overtimeSummary.totalOvertimeMinutes / 60) * 100) / 100;
+    overtimeSummary.employeesWithOvertime.sort((a, b) => b.overtimeMinutes - a.overtimeMinutes);
+
+    return { report, overtimeSummary };
+}
+
+/**
+ * Manager team report: all team members with zeros, filled from attendance in date range.
+ */
+async function buildTeamReportPayload(manager, rangeStart, rangeEnd) {
+    const emptyOvertime = {
+        totalOvertimeMinutes: 0,
+        totalOvertimeHours: 0,
+        employeesWithOvertime: []
+    };
+    const emptyKpi = {
+        totalPresent: 0,
+        totalAbsences: 0,
+        totalLateHours: 0,
+        totalLateMinutes: 0,
+        pendingMissedPunches: 0
+    };
+
+    if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
+        return { report: [], overtimeSummary: emptyOvertime, kpi: emptyKpi };
+    }
+
+    const teamMembers = await User.find({
+        department: { $in: manager.managedDepartments },
+        role: 'employee',
+        status: 'active'
+    }).select('name email employeeCode department workSchedule');
+
+    if (teamMembers.length === 0) {
+        return { report: [], overtimeSummary: emptyOvertime, kpi: emptyKpi };
+    }
+
+    const teamMemberIds = teamMembers.map(u => u._id);
+    const userAttendanceMap = {};
+    for (const member of teamMembers) {
+        const userId = member._id.toString();
+        userAttendanceMap[userId] = {
+            user: {
+                id: member._id,
+                name: member.name,
+                email: member.email,
+                employeeCode: member.employeeCode,
+                department: member.department,
+                workSchedule: member.workSchedule
+            },
+            records: [],
+            stats: {
+                totalDays: 0,
+                present: 0,
+                late: 0,
+                absent: 0,
+                excused: 0,
+                onLeave: 0,
+                wfh: 0,
+                unexcusedAbsences: 0,
+                totalMinutesLate: 0,
+                totalMinutesOvertime: 0,
+                totalFingerprintDeduction: 0,
+                fingerprintMisses: 0
+            }
+        };
+    }
+
+    const attendanceRecords = await Attendance.find({
+        date: { $gte: rangeStart, $lte: rangeEnd },
+        user: { $in: teamMemberIds }
+    })
+        .populate('relatedForm', 'type status')
+        .sort({ date: 1 });
+
+    for (const record of attendanceRecords) {
+        const userId = record.user.toString();
+        if (!userAttendanceMap[userId]) continue;
+        userAttendanceMap[userId].records.push(record);
+        userAttendanceMap[userId].stats.totalDays++;
+        const stats = userAttendanceMap[userId].stats;
+        stats.totalMinutesLate += record.minutesLate || 0;
+        stats.totalMinutesOvertime += record.minutesOvertime || 0;
+        stats.totalFingerprintDeduction += record.fingerprintDeduction || 0;
+        if (record.fingerprintMissType && record.fingerprintMissType !== 'none') {
+            stats.fingerprintMisses++;
+        }
+        if (record.status === 'present') {
+            stats.present++;
+        } else if (record.status === 'late') {
+            stats.present++;
+            stats.late++;
+        } else if (record.status === 'absent') {
+            stats.absent++;
+            if (!record.isExcused) stats.unexcusedAbsences++;
+        } else if (record.status === 'excused') {
+            stats.excused++;
+        } else if (record.status === 'on_leave') {
+            stats.onLeave++;
+        } else if (record.status === 'wfh') {
+            stats.wfh++;
+        }
+    }
+
+    const report = Object.values(userAttendanceMap);
+    const overtimeSummary = {
+        totalOvertimeMinutes: 0,
+        totalOvertimeHours: 0,
+        employeesWithOvertime: []
+    };
+    for (const emp of report) {
+        if (emp.stats.totalMinutesOvertime > 0) {
+            overtimeSummary.totalOvertimeMinutes += emp.stats.totalMinutesOvertime;
+            overtimeSummary.employeesWithOvertime.push({
+                name: emp.user.name,
+                department: emp.user.department,
+                employeeCode: emp.user.employeeCode,
+                overtimeMinutes: emp.stats.totalMinutesOvertime,
+                overtimeHours: Math.round((emp.stats.totalMinutesOvertime / 60) * 100) / 100
+            });
+        }
+    }
+    overtimeSummary.totalOvertimeHours = Math.round((overtimeSummary.totalOvertimeMinutes / 60) * 100) / 100;
+    overtimeSummary.employeesWithOvertime.sort((a, b) => b.overtimeMinutes - a.overtimeMinutes);
+
+    const kpi = aggregateOrgKpis(attendanceRecords);
+    return { report, overtimeSummary, kpi };
 }
 
 /**
@@ -521,6 +746,38 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
 });
 
 /**
+ * GET /api/attendance/report
+ * Admin summary for arbitrary date range (query: startDate, endDate ISO).
+ */
+router.get('/report', auth, async (req, res) => {
+    try {
+        const admin = await User.findById(req.user.id);
+        if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
+            return res.status(403).json({ msg: 'Access denied. Admin only.' });
+        }
+        const parsed = parseDateRangeQuery(req.query);
+        if (parsed.error) {
+            return res.status(400).json({ msg: parsed.error });
+        }
+        const { rangeStart, rangeEnd } = parsed;
+        const attendanceRecords = await Attendance.getAllInDateRange(rangeStart, rangeEnd);
+        const { report, overtimeSummary } = buildReportAndOvertimeFromRecords(attendanceRecords);
+        const kpi = aggregateOrgKpis(attendanceRecords);
+        res.json({
+            startDate: rangeStart.toISOString(),
+            endDate: rangeEnd.toISOString(),
+            totalEmployees: report.length,
+            kpi,
+            overtimeSummary,
+            report
+        });
+    } catch (error) {
+        console.error('Error getting attendance report:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+});
+
+/**
  * GET /api/attendance/monthly-report/:month
  * Get all employees' attendance for a specific month
  * Admin only
@@ -531,121 +788,62 @@ router.get('/monthly-report/:month', auth, async (req, res) => {
         if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
             return res.status(403).json({ msg: 'Access denied. Admin only.' });
         }
-        
-        const { month } = req.params; // Format: YYYY-MM
-        
-        // Validate month format
+
+        const { month } = req.params;
         if (!/^\d{4}-\d{2}$/.test(month)) {
             return res.status(400).json({ msg: 'Invalid month format. Use YYYY-MM' });
         }
-        
-        // Get all attendance records for the month
-        const attendanceRecords = await Attendance.getAllMonthlyAttendance(month);
-        
-        // Group by user and calculate statistics
-        const userAttendanceMap = {};
-        
-        for (const record of attendanceRecords) {
-            const userId = record.user._id.toString();
-            
-            if (!userAttendanceMap[userId]) {
-                userAttendanceMap[userId] = {
-                    user: {
-                        id: record.user._id,
-                        name: record.user.name,
-                        email: record.user.email,
-                        employeeCode: record.user.employeeCode,
-                        department: record.user.department,
-                        workSchedule: record.user.workSchedule
-                    },
-                    records: [],
-                    stats: {
-                        totalDays: 0,
-                        present: 0,
-                        late: 0,
-                        absent: 0,
-                        excused: 0,
-                        onLeave: 0,
-                        wfh: 0,
-                        unexcusedAbsences: 0,
-                        totalMinutesLate: 0,
-                        totalMinutesOvertime: 0,
-                        totalFingerprintDeduction: 0,
-                        fingerprintMisses: 0
-                    }
-                };
-            }
-            
-            userAttendanceMap[userId].records.push(record);
-            userAttendanceMap[userId].stats.totalDays++;
-            
-            // Update statistics
-            const stats = userAttendanceMap[userId].stats;
-            stats.totalMinutesLate += record.minutesLate || 0;
-            stats.totalMinutesOvertime += record.minutesOvertime || 0;
-            stats.totalFingerprintDeduction += record.fingerprintDeduction || 0;
-            
-            if (record.fingerprintMissType && record.fingerprintMissType !== 'none') {
-                stats.fingerprintMisses++;
-            }
-            
-            // Count present (includes both on-time and late arrivals)
-            if (record.status === 'present') {
-                stats.present++;
-            } else if (record.status === 'late') {
-                stats.present++; // Late employees ARE present
-                stats.late++;
-            } else if (record.status === 'absent') {
-                stats.absent++;
-                if (!record.isExcused) {
-                    stats.unexcusedAbsences++;
-                }
-            } else if (record.status === 'excused') {
-                stats.excused++;
-            } else if (record.status === 'on_leave') {
-                stats.onLeave++;
-            } else if (record.status === 'wfh') {
-                stats.wfh++;
-            }
+
+        const mr = monthToRange(month);
+        if (!mr) {
+            return res.status(400).json({ msg: 'Invalid month' });
         }
-        
-        // Convert map to array
-        const report = Object.values(userAttendanceMap);
-        
-        // Calculate overtime summary for admin
-        const overtimeSummary = {
-            totalOvertimeMinutes: 0,
-            totalOvertimeHours: 0,
-            employeesWithOvertime: []
-        };
-        
-        for (const emp of report) {
-            if (emp.stats.totalMinutesOvertime > 0) {
-                overtimeSummary.totalOvertimeMinutes += emp.stats.totalMinutesOvertime;
-                overtimeSummary.employeesWithOvertime.push({
-                    name: emp.user.name,
-                    department: emp.user.department,
-                    employeeCode: emp.user.employeeCode,
-                    overtimeMinutes: emp.stats.totalMinutesOvertime,
-                    overtimeHours: Math.round((emp.stats.totalMinutesOvertime / 60) * 100) / 100
-                });
-            }
-        }
-        
-        overtimeSummary.totalOvertimeHours = Math.round((overtimeSummary.totalOvertimeMinutes / 60) * 100) / 100;
-        
-        // Sort employees by overtime (highest first)
-        overtimeSummary.employeesWithOvertime.sort((a, b) => b.overtimeMinutes - a.overtimeMinutes);
-        
+
+        const attendanceRecords = await Attendance.getAllInDateRange(mr.rangeStart, mr.rangeEnd);
+        const { report, overtimeSummary } = buildReportAndOvertimeFromRecords(attendanceRecords);
+        const kpi = aggregateOrgKpis(attendanceRecords);
+
         res.json({
-            month: month,
+            month,
+            startDate: mr.rangeStart.toISOString(),
+            endDate: mr.rangeEnd.toISOString(),
             totalEmployees: report.length,
-            overtimeSummary: overtimeSummary,
-            report: report
+            kpi,
+            overtimeSummary,
+            report
         });
-        
     } catch (error) {
         console.error('Error getting monthly report:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+});
+
+/**
+ * GET /api/attendance/team-report
+ * Manager team summary for date range (query: startDate, endDate ISO).
+ */
+router.get('/team-report', auth, async (req, res) => {
+    try {
+        const manager = await User.findById(req.user.id);
+        if (!manager || manager.role !== 'manager') {
+            return res.status(403).json({ msg: 'Access denied. Manager only.' });
+        }
+        const parsed = parseDateRangeQuery(req.query);
+        if (parsed.error) {
+            return res.status(400).json({ msg: parsed.error });
+        }
+        const { rangeStart, rangeEnd } = parsed;
+        const { report, overtimeSummary, kpi } = await buildTeamReportPayload(manager, rangeStart, rangeEnd);
+        res.json({
+            startDate: rangeStart.toISOString(),
+            endDate: rangeEnd.toISOString(),
+            totalEmployees: report.length,
+            kpi,
+            overtimeSummary,
+            report
+        });
+    } catch (error) {
+        console.error('Error getting team attendance report:', error);
         res.status(500).json({ msg: 'Server error', error: error.message });
     }
 });
@@ -667,128 +865,219 @@ router.get('/team-report/:month', auth, async (req, res) => {
             return res.status(400).json({ msg: 'Invalid month format. Use YYYY-MM' });
         }
 
-        if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
-            return res.json({
-                month,
-                totalEmployees: 0,
-                overtimeSummary: { totalOvertimeMinutes: 0, totalOvertimeHours: 0, employeesWithOvertime: [] },
-                report: []
-            });
+        const mr = monthToRange(month);
+        if (!mr) {
+            return res.status(400).json({ msg: 'Invalid month' });
         }
 
-        // Get ALL team members (employees in managed departments) with full details
-        const teamMembers = await User.find({
-            department: { $in: manager.managedDepartments },
-            role: 'employee',
-            status: 'active'
-        }).select('name email employeeCode department workSchedule');
-
-        if (teamMembers.length === 0) {
-            return res.json({
-                month,
-                totalEmployees: 0,
-                overtimeSummary: { totalOvertimeMinutes: 0, totalOvertimeHours: 0, employeesWithOvertime: [] },
-                report: []
-            });
-        }
-
-        const teamMemberIds = teamMembers.map(u => u._id);
-
-        // Initialize report with ALL team members (zeros for those without attendance data)
-        const userAttendanceMap = {};
-        for (const member of teamMembers) {
-            const userId = member._id.toString();
-            userAttendanceMap[userId] = {
-                user: {
-                    id: member._id,
-                    name: member.name,
-                    email: member.email,
-                    employeeCode: member.employeeCode,
-                    department: member.department,
-                    workSchedule: member.workSchedule
-                },
-                records: [],
-                stats: {
-                    totalDays: 0,
-                    present: 0,
-                    late: 0,
-                    absent: 0,
-                    excused: 0,
-                    onLeave: 0,
-                    wfh: 0,
-                    unexcusedAbsences: 0,
-                    totalMinutesLate: 0,
-                    totalMinutesOvertime: 0,
-                    totalFingerprintDeduction: 0,
-                    fingerprintMisses: 0
-                }
-            };
-        }
-
-        // Get attendance records and fill in stats for team members who have data
-        const attendanceRecords = await Attendance.find({
+        const { report, overtimeSummary, kpi } = await buildTeamReportPayload(manager, mr.rangeStart, mr.rangeEnd);
+        res.json({
             month,
-            user: { $in: teamMemberIds }
-        })
-            .populate('relatedForm', 'type status')
-            .sort({ date: 1 });
-
-        for (const record of attendanceRecords) {
-            const userId = record.user.toString();
-            if (!userAttendanceMap[userId]) continue;
-            userAttendanceMap[userId].records.push(record);
-            userAttendanceMap[userId].stats.totalDays++;
-            const stats = userAttendanceMap[userId].stats;
-            stats.totalMinutesLate += record.minutesLate || 0;
-            stats.totalMinutesOvertime += record.minutesOvertime || 0;
-            stats.totalFingerprintDeduction += record.fingerprintDeduction || 0;
-            if (record.fingerprintMissType && record.fingerprintMissType !== 'none') {
-                stats.fingerprintMisses++;
-            }
-            if (record.status === 'present') {
-                stats.present++;
-            } else if (record.status === 'late') {
-                stats.present++;
-                stats.late++;
-            } else if (record.status === 'absent') {
-                stats.absent++;
-                if (!record.isExcused) stats.unexcusedAbsences++;
-            } else if (record.status === 'excused') {
-                stats.excused++;
-            } else if (record.status === 'on_leave') {
-                stats.onLeave++;
-            } else if (record.status === 'wfh') {
-                stats.wfh++;
-            }
-        }
-
-        const report = Object.values(userAttendanceMap);
-        const overtimeSummary = {
-            totalOvertimeMinutes: 0,
-            totalOvertimeHours: 0,
-            employeesWithOvertime: []
-        };
-        for (const emp of report) {
-            if (emp.stats.totalMinutesOvertime > 0) {
-                overtimeSummary.totalOvertimeMinutes += emp.stats.totalMinutesOvertime;
-                overtimeSummary.employeesWithOvertime.push({
-                    name: emp.user.name,
-                    department: emp.user.department,
-                    employeeCode: emp.user.employeeCode,
-                    overtimeMinutes: emp.stats.totalMinutesOvertime,
-                    overtimeHours: Math.round((emp.stats.totalMinutesOvertime / 60) * 100) / 100
-                });
-            }
-        }
-        overtimeSummary.totalOvertimeHours = Math.round((overtimeSummary.totalOvertimeMinutes / 60) * 100) / 100;
-        overtimeSummary.employeesWithOvertime.sort((a, b) => b.overtimeMinutes - a.overtimeMinutes);
-
-        res.json({ month, totalEmployees: report.length, overtimeSummary, report });
+            startDate: mr.rangeStart.toISOString(),
+            endDate: mr.rangeEnd.toISOString(),
+            totalEmployees: report.length,
+            kpi,
+            overtimeSummary,
+            report
+        });
     } catch (error) {
         console.error('Error getting team attendance report:', error);
         res.status(500).json({ msg: 'Server error', error: error.message });
     }
 });
+
+/**
+ * PATCH /api/attendance/:attendanceId/fix-punch
+ * Admin/super_admin only — manual punch correction with audit trail.
+ */
+router.patch('/:attendanceId/fix-punch', auth, validateObjectId('attendanceId'), async (req, res) => {
+    try {
+        const admin = await User.findById(req.user.id);
+        if (!admin || !['admin', 'super_admin'].includes(admin.role)) {
+            return res.status(403).json({ msg: 'Access denied. Admin only.' });
+        }
+        const { clockIn, clockOut, reason } = req.body;
+        if (!reason || !String(reason).trim()) {
+            return res.status(400).json({ msg: 'Reason is required for compliance' });
+        }
+        if (clockIn === undefined && clockOut === undefined) {
+            return res.status(400).json({ msg: 'Provide clockIn and/or clockOut' });
+        }
+
+        const att = await Attendance.findById(req.params.attendanceId);
+        if (!att) {
+            return res.status(404).json({ msg: 'Attendance record not found' });
+        }
+
+        const user = await User.findById(att.user);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        const previousValues = {
+            clockIn: att.clockIn,
+            clockOut: att.clockOut,
+            status: att.status,
+            minutesLate: att.minutesLate,
+            minutesOvertime: att.minutesOvertime,
+            missedClockIn: att.missedClockIn,
+            missedClockOut: att.missedClockOut
+        };
+
+        const fieldsChanged = [];
+        if (clockIn !== undefined) {
+            att.clockIn = clockIn;
+            fieldsChanged.push('clockIn');
+        }
+        if (clockOut !== undefined) {
+            att.clockOut = clockOut;
+            fieldsChanged.push('clockOut');
+        }
+
+        att.source = 'manual';
+        applyRecalcAttendance(att, user);
+
+        att.adjustmentHistory.push({
+            at: new Date(),
+            by: req.user.id,
+            reason: String(reason).trim(),
+            fieldsChanged,
+            previousValues
+        });
+        att.lastAdjustedAt = new Date();
+        att.lastAdjustedBy = req.user.id;
+
+        await att.save();
+
+        const populated = await Attendance.findById(att._id)
+            .populate('relatedForm', 'type status startDate endDate excuseDate');
+
+        res.json({ msg: 'Attendance updated', attendance: populated });
+    } catch (error) {
+        console.error('Error fixing punch:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+});
+
+/**
+ * GET /api/attendance/employee/:userId/detail
+ * Admin — full calendar rows + stats for date range.
+ */
+router.get('/employee/:userId/detail', auth, validateObjectId('userId'), async (req, res) => {
+    try {
+        const admin = await User.findById(req.user.id);
+        if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
+            return res.status(403).json({ msg: 'Access denied. Admin only.' });
+        }
+        const parsed = parseDateRangeQuery(req.query);
+        if (parsed.error) {
+            return res.status(400).json({ msg: parsed.error });
+        }
+        const { rangeStart, rangeEnd } = parsed;
+        const { userId } = req.params;
+        const user = await User.findById(userId).select('-password');
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        const records = await Attendance.getAttendanceInDateRange(userId, rangeStart, rangeEnd);
+        const stats = await Attendance.getUserStatsInRange(userId, rangeStart, rangeEnd);
+        const detailRows = buildDateRangeDetailRows(user, rangeStart, rangeEnd, records);
+        res.json({
+            user,
+            startDate: rangeStart.toISOString(),
+            endDate: rangeEnd.toISOString(),
+            records,
+            stats,
+            detailRows
+        });
+    } catch (error) {
+        console.error('Error getting employee detail:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+});
+
+/**
+ * GET /api/attendance/team-employee/:userId/detail
+ * Manager — same as employee detail for team member.
+ */
+router.get('/team-employee/:userId/detail', auth, validateObjectId('userId'), async (req, res) => {
+    try {
+        const manager = await User.findById(req.user.id);
+        if (!manager || manager.role !== 'manager') {
+            return res.status(403).json({ msg: 'Access denied. Manager only.' });
+        }
+        if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
+            return res.status(403).json({ msg: 'No managed departments assigned.' });
+        }
+        const parsed = parseDateRangeQuery(req.query);
+        if (parsed.error) {
+            return res.status(400).json({ msg: parsed.error });
+        }
+        const { rangeStart, rangeEnd } = parsed;
+        const { userId } = req.params;
+        const user = await User.findById(userId).select('-password');
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        if (!manager.managedDepartments.includes(user.department) || user.role !== 'employee') {
+            return res.status(403).json({ msg: 'Employee is not in your managed departments.' });
+        }
+        const records = await Attendance.getAttendanceInDateRange(userId, rangeStart, rangeEnd);
+        const stats = await Attendance.getUserStatsInRange(userId, rangeStart, rangeEnd);
+        const detailRows = buildDateRangeDetailRows(user, rangeStart, rangeEnd, records);
+        res.json({
+            user,
+            startDate: rangeStart.toISOString(),
+            endDate: rangeEnd.toISOString(),
+            records,
+            stats,
+            detailRows
+        });
+    } catch (error) {
+        console.error('Error getting team employee detail:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+});
+
+async function sendMyAttendanceDateRange(req, res) {
+    try {
+        const parsed = parseDateRangeQuery(req.query);
+        if (parsed.error) {
+            return res.status(400).json({ msg: parsed.error });
+        }
+        const { rangeStart, rangeEnd } = parsed;
+        const user = await User.findById(req.user.id).select('-password');
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        const records = await Attendance.getAttendanceInDateRange(req.user.id, rangeStart, rangeEnd);
+        const stats = await Attendance.getUserStatsInRange(req.user.id, rangeStart, rangeEnd);
+        const detailRows = buildDateRangeDetailRows(user, rangeStart, rangeEnd, records);
+        res.json({
+            user,
+            startDate: rangeStart.toISOString(),
+            endDate: rangeEnd.toISOString(),
+            records,
+            stats,
+            detailRows
+        });
+    } catch (error) {
+        console.error('Error getting my attendance detail:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+}
+
+/**
+ * GET /api/attendance/my-attendance?startDate=&endDate=
+ * Logged-in employee — own records, stats, and detail rows for range.
+ */
+router.get('/my-attendance', auth, sendMyAttendanceDateRange);
+
+/**
+ * GET /api/attendance/my-attendance/detail?startDate=&endDate=
+ * Alias — same response as GET /my-attendance (range query).
+ */
+router.get('/my-attendance/detail', auth, sendMyAttendanceDateRange);
 
 /**
  * GET /api/attendance/team-employee/:userId/:month

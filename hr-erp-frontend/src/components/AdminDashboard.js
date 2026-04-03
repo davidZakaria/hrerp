@@ -76,7 +76,7 @@ const AdminDashboard = () => {
 
   // Flags state
   const [allFlags, setAllFlags] = useState([]);
-  const [flagsSummary, setFlagsSummary] = useState({ totalDeductions: 0, totalRewards: 0 });
+  const [, setFlagsSummary] = useState({ totalDeductions: 0, totalRewards: 0 });
 
   // Delete User confirmation modal state
   const [userToDelete, setUserToDelete] = useState(null);

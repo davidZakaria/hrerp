@@ -20,6 +20,13 @@ const NotificationItem = ({ notification, onRemove }) => {
     return () => clearTimeout(timer);
   }, []);
 
+  const handleRemove = useCallback(() => {
+    setIsRemoving(true);
+    setTimeout(() => {
+      onRemove(notification.id);
+    }, 300);
+  }, [notification.id, onRemove]);
+
   useEffect(() => {
     if (notification.autoClose !== false) {
       const timer = setTimeout(() => {
@@ -28,13 +35,6 @@ const NotificationItem = ({ notification, onRemove }) => {
       return () => clearTimeout(timer);
     }
   }, [notification, handleRemove]);
-
-  const handleRemove = useCallback(() => {
-    setIsRemoving(true);
-    setTimeout(() => {
-      onRemove(notification.id);
-    }, 300);
-  }, [notification.id, onRemove]);
 
   const getIcon = () => {
     switch (notification.type) {

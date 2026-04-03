@@ -125,7 +125,7 @@ const SuperAdminDashboard = () => {
   
   // Flags state
   const [allFlags, setAllFlags] = useState([]);
-  const [flagsSummary, setFlagsSummary] = useState({ totalDeductions: 0, totalRewards: 0 });
+  const [, setFlagsSummary] = useState({ totalDeductions: 0, totalRewards: 0 });
   const [backupVerificationResult, setBackupVerificationResult] = useState(null);
   const [openRestoreDropdown, setOpenRestoreDropdown] = useState(null);
 

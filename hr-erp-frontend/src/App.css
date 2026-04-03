@@ -2555,3 +2555,20 @@
     font-size: 10px;
   }
 }
+
+/* Attendance KPI: .elegant-card sets color:#fff — backup dark text for stat cards (inline styles are primary) */
+.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-label {
+  color: #111827 !important;
+}
+.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value--present {
+  color: #14532d !important;
+}
+.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value--absences {
+  color: #991b1b !important;
+}
+.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value--late {
+  color: #9a3412 !important;
+}
+.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value--missed {
+  color: #581c87 !important;
+}

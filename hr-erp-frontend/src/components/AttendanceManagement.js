@@ -508,21 +508,21 @@ const AttendanceManagement = () => {
                   marginBottom: '1.5rem'
                 }}
               >
-                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#E8F5E9', borderRadius: '10px', border: '2px solid #4CAF50', textAlign: 'center' }}>
-                  <div className="kpi-value kpi-value--present" style={{ fontSize: '2rem', fontWeight: 'bold' }}>{attendanceReport.kpi.totalPresent}</div>
-                  <div className="kpi-label" style={{ fontSize: '0.85rem' }}>Total present (days)</div>
+                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#E8F5E9', borderRadius: '10px', border: '2px solid #4CAF50', textAlign: 'center', color: '#111827' }}>
+                  <div className="kpi-value kpi-value--present" style={{ fontSize: '2rem', fontWeight: 'bold', color: '#14532d' }}>{attendanceReport.kpi.totalPresent}</div>
+                  <div className="kpi-label" style={{ fontSize: '0.85rem', color: '#111827', fontWeight: 600 }}>Total present (days)</div>
                 </div>
-                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#FFEBEE', borderRadius: '10px', border: '2px solid #F44336', textAlign: 'center' }}>
-                  <div className="kpi-value kpi-value--absences" style={{ fontSize: '2rem', fontWeight: 'bold' }}>{attendanceReport.kpi.totalAbsences}</div>
-                  <div className="kpi-label" style={{ fontSize: '0.85rem' }}>Total absences</div>
+                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#FFEBEE', borderRadius: '10px', border: '2px solid #F44336', textAlign: 'center', color: '#111827' }}>
+                  <div className="kpi-value kpi-value--absences" style={{ fontSize: '2rem', fontWeight: 'bold', color: '#991b1b' }}>{attendanceReport.kpi.totalAbsences}</div>
+                  <div className="kpi-label" style={{ fontSize: '0.85rem', color: '#111827', fontWeight: 600 }}>Total absences</div>
                 </div>
-                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#FFF3E0', borderRadius: '10px', border: '2px solid #FF9800', textAlign: 'center' }}>
-                  <div className="kpi-value kpi-value--late" style={{ fontSize: '2rem', fontWeight: 'bold' }}>{attendanceReport.kpi.totalLateHours}h</div>
-                  <div className="kpi-label" style={{ fontSize: '0.85rem' }}>Total late hours</div>
+                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#FFF3E0', borderRadius: '10px', border: '2px solid #FF9800', textAlign: 'center', color: '#111827' }}>
+                  <div className="kpi-value kpi-value--late" style={{ fontSize: '2rem', fontWeight: 'bold', color: '#9a3412' }}>{attendanceReport.kpi.totalLateHours}h</div>
+                  <div className="kpi-label" style={{ fontSize: '0.85rem', color: '#111827', fontWeight: 600 }}>Total late hours</div>
                 </div>
-                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#F3E5F5', borderRadius: '10px', border: '2px solid #9C27B0', textAlign: 'center' }}>
-                  <div className="kpi-value kpi-value--missed" style={{ fontSize: '2rem', fontWeight: 'bold' }}>{attendanceReport.kpi.pendingMissedPunches}</div>
-                  <div className="kpi-label" style={{ fontSize: '0.85rem' }}>Missed punch events</div>
+                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#F3E5F5', borderRadius: '10px', border: '2px solid #9C27B0', textAlign: 'center', color: '#111827' }}>
+                  <div className="kpi-value kpi-value--missed" style={{ fontSize: '2rem', fontWeight: 'bold', color: '#581c87' }}>{attendanceReport.kpi.pendingMissedPunches}</div>
+                  <div className="kpi-label" style={{ fontSize: '0.85rem', color: '#111827', fontWeight: 600 }}>Missed punch events</div>
                 </div>
               </div>
             )}
@@ -677,9 +677,10 @@ const AttendanceManagement = () => {
               </div>
             )}
 
-            <div style={{ marginBottom: '1.5rem', color: '#666', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ marginBottom: '1.5rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
               <div>
-                <strong>Total Employees:</strong> {attendanceReport.totalEmployees}
+                <strong style={{ color: '#e2e8f0' }}>Total Employees:</strong>{' '}
+                <span style={{ color: '#f1f5f9' }}>{attendanceReport.totalEmployees}</span>
                 {searchQuery && (
                   <span style={{ marginLeft: '1rem', color: '#4a90e2' }}>
                     (Showing {attendanceReport.report.filter(emp => 
@@ -691,7 +692,7 @@ const AttendanceManagement = () => {
                 )}
               </div>
               {approvedForms.length > 0 && (
-                <span style={{ background: '#E3F2FD', color: '#1565C0', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem' }}>
+                <span style={{ background: '#bfdbfe', color: '#0f172a', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #3b82f6' }}>
                   📝 {approvedForms.length} approved leave/excuse forms in range
                 </span>
               )}

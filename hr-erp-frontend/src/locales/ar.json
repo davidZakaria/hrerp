@@ -183,6 +183,7 @@
     "selectFirstDayVacation": "اختر اليوم الأول من إجازتك",
     "selectLastDayVacation": "اختر اليوم الأخير من إجازتك",
     "currentMonthOnly": "الشهر الحالي فقط",
+    "submissionMonthRangeHelp": "فترة متجددة: من 25 إلى 25 (مثال 25 يناير–25 فبراير)، بما في ذلك نهاية الشهر حتى بداية الشهر التالي",
     "vacationSummary": "ملخص الإجازة",
     "to": "إلى",
     "totalDays": "إجمالي الأيام",

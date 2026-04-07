@@ -8,6 +8,10 @@ const fs = require('fs');
 const { createAuditLog } = require('./audit');
 const { shouldResetExcuseRequests, getNextResetDate } = require('../utils/excuseResetHelper');
 const {
+    getCurrentSubmissionPeriodYmd,
+    vacationMissionDatesWithinPeriod
+} = require('../utils/formSubmissionMonthBounds');
+const {
     normalizeExcuseType,
     getExcuseDurationHours,
     isPaidExcuseExactlyTwoHours
@@ -185,14 +189,13 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             if (new Date(startDate) > new Date(endDate)) {
                 return res.status(400).json({ msg: 'Start date cannot be after end date' });
             }
-            // Dates must be within current month
+            // Rolling period: 25th → 25th (e.g. 25 Jan through 25 Feb inclusive)
             const now = new Date();
-            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-            const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            if (start < monthStart || end > monthEnd) {
-                return res.status(400).json({ msg: 'Vacation dates must be within the current month' });
+            const { first, last } = getCurrentSubmissionPeriodYmd(now);
+            if (!vacationMissionDatesWithinPeriod(startDate, endDate, now)) {
+                return res.status(400).json({
+                    msg: `Vacation dates must fall within the current submission period (${first} through ${last}).`
+                });
             }
         }
 
@@ -264,14 +267,13 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             if (new Date(missionStartDate) > new Date(missionEndDate)) {
                 return res.status(400).json({ msg: 'Start date cannot be after end date' });
             }
-            // Dates must be within current month
+            // Rolling period: 25th → 25th (e.g. 25 Jan through 25 Feb inclusive)
             const now = new Date();
-            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-            const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-            const start = new Date(missionStartDate);
-            const end = new Date(missionEndDate);
-            if (start < monthStart || end > monthEnd) {
-                return res.status(400).json({ msg: 'Mission dates must be within the current month' });
+            const { first, last } = getCurrentSubmissionPeriodYmd(now);
+            if (!vacationMissionDatesWithinPeriod(missionStartDate, missionEndDate, now)) {
+                return res.status(400).json({
+                    msg: `Mission dates must fall within the current submission period (${first} through ${last}).`
+                });
             }
         }
 

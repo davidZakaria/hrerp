@@ -182,6 +182,7 @@
     "selectFirstDayVacation": "Choose the first day of your vacation",
     "selectLastDayVacation": "Choose the last day of your vacation",
     "currentMonthOnly": "Current month only",
+    "submissionMonthRangeHelp": "Rolling period: 25th → 25th (e.g. 25 Jan–25 Feb), including late-month dates into the next month",
     "vacationSummary": "Vacation Summary",
     "from": "From",
     "to": "To",

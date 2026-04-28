@@ -542,15 +542,23 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
-    const { name, email, department, role, managedDepartments, password, status, employeeCode } = req.body;
+    const { name, email, department, role, managedDepartments, password, status, employeeCode, modificationReason } = req.body;
 
     const user = await User.findById(req.params.userId);
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
+    const oldRoleBeforeUpdate = user.role;
+    const oldName = user.name;
+    const oldEmail = user.email;
+    const oldDepartmentBefore = user.department;
+    const oldStatusBefore = user.status;
+    const oldEmployeeCodeBefore = user.employeeCode;
     const previousManagedDepartments = Array.isArray(user.managedDepartments)
       ? [...user.managedDepartments]
       : [];
+
+    const sortDeptKey = (arr) => JSON.stringify([...arr.map(String)].sort());
 
     // Validate role if provided
     const validRoles = ['employee', 'manager', 'admin', 'super_admin'];
@@ -624,9 +632,109 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
       user.password = await bcrypt.hash(password, salt);
     }
 
+    const managedEffective =
+      targetRole === 'manager'
+        ? (() => {
+            let md = Array.isArray(user.managedDepartments) ? [...user.managedDepartments] : [];
+            if (md.length === 0) {
+              const home = user.department && String(user.department).trim();
+              if (home) md = [home];
+            }
+            return md;
+          })()
+        : [];
+
+    const modifications = [];
+    if (name !== undefined && user.name !== oldName) {
+      modifications.push({ field: 'name', oldValue: oldName, newValue: user.name });
+    }
+    if (email !== undefined && user.email !== oldEmail) {
+      modifications.push({ field: 'email', oldValue: oldEmail, newValue: user.email });
+    }
+    if (department !== undefined && user.department !== oldDepartmentBefore) {
+      modifications.push({ field: 'department', oldValue: oldDepartmentBefore, newValue: user.department });
+    }
+    if (role !== undefined && user.role !== oldRoleBeforeUpdate) {
+      modifications.push({ field: 'role', oldValue: oldRoleBeforeUpdate, newValue: user.role });
+    }
+    if (sortDeptKey(previousManagedDepartments) !== sortDeptKey(managedEffective)) {
+      modifications.push({
+        field: 'managedDepartments',
+        oldValue: [...previousManagedDepartments],
+        newValue: [...managedEffective]
+      });
+    }
+    if (status && ['active', 'inactive', 'pending'].includes(status) && user.status !== oldStatusBefore) {
+      modifications.push({ field: 'status', oldValue: oldStatusBefore, newValue: user.status });
+    }
+    if (employeeCode !== undefined) {
+      const newCode = user.employeeCode ? String(user.employeeCode) : null;
+      const oldCode = oldEmployeeCodeBefore ? String(oldEmployeeCodeBefore) : null;
+      if (newCode !== oldCode) {
+        modifications.push({
+          field: 'employeeCode',
+          oldValue: oldEmployeeCodeBefore || 'Not set',
+          newValue: user.employeeCode || 'Removed'
+        });
+      }
+    }
+    if (password && password.trim().length >= 6) {
+      modifications.push({ field: 'password', oldValue: '***', newValue: '*** (changed)' });
+    }
+
+    if (!Array.isArray(user.modificationHistory)) {
+      user.modificationHistory = [];
+    }
+
+    modifications.forEach((mod) => {
+      user.modificationHistory.push({
+        ...mod,
+        modifiedBy: admin._id,
+        reason: modificationReason || null
+      });
+    });
+
+    const auditOld = {};
+    const auditNew = {};
+    if (name !== undefined && user.name !== oldName) {
+      auditOld.name = oldName;
+      auditNew.name = user.name;
+    }
+    if (email !== undefined && user.email !== oldEmail) {
+      auditOld.email = oldEmail;
+      auditNew.email = user.email;
+    }
+    if (department !== undefined && user.department !== oldDepartmentBefore) {
+      auditOld.department = oldDepartmentBefore;
+      auditNew.department = user.department;
+    }
+    if (role !== undefined && user.role !== oldRoleBeforeUpdate) {
+      auditOld.role = oldRoleBeforeUpdate;
+      auditNew.role = user.role;
+    }
+    if (sortDeptKey(previousManagedDepartments) !== sortDeptKey(managedEffective)) {
+      auditOld.managedDepartments = [...previousManagedDepartments];
+      auditNew.managedDepartments = [...managedEffective];
+    }
+    if (status && ['active', 'inactive', 'pending'].includes(status) && user.status !== oldStatusBefore) {
+      auditOld.status = oldStatusBefore;
+      auditNew.status = user.status;
+    }
+    if (employeeCode !== undefined) {
+      const newCode = user.employeeCode ? String(user.employeeCode) : null;
+      const oldCode = oldEmployeeCodeBefore ? String(oldEmployeeCodeBefore) : null;
+      if (newCode !== oldCode) {
+        auditOld.employeeCode = oldEmployeeCodeBefore || null;
+        auditNew.employeeCode = user.employeeCode || null;
+      }
+    }
+
+    const scopeTouched =
+      (role !== undefined && user.role !== oldRoleBeforeUpdate) ||
+      sortDeptKey(previousManagedDepartments) !== sortDeptKey(managedEffective);
+
     await user.save();
-    
-    // Create audit log
+
     await createAuditLog({
       action: 'USER_UPDATED',
       performedBy: admin._id,
@@ -639,11 +747,15 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
         email: user.email,
         department: user.department,
         role: user.role,
-        managedDepartments: user.managedDepartments
+        managedDepartments: user.managedDepartments,
+        ...(modificationReason ? { modificationReason } : {})
       },
+      ...(Object.keys(auditOld).length ? { oldValues: auditOld } : {}),
+      ...(Object.keys(auditNew).length ? { newValues: auditNew } : {}),
+      reason: modificationReason || null,
       ipAddress: req.ip || req.connection.remoteAddress,
       userAgent: req.get('User-Agent'),
-      severity: 'MEDIUM'
+      severity: scopeTouched ? 'HIGH' : 'MEDIUM'
     });
     
     res.json({ msg: 'User updated successfully', user: { ...user.toObject(), password: undefined } });

@@ -338,7 +338,7 @@ body::after {
   gap: 1rem;
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 1020;
 }
 
 .app-title {
@@ -512,20 +512,26 @@ body::after {
   min-height: 44px;
 }
 
-/* Modals Mobile */
+/* Modals — mobile-first: centered panel; overlay scrolls if content is tall */
 .modal-elegant {
-  padding: 1rem;
-  align-items: flex-start;
+  padding: clamp(0.75rem, 3vw, 1.25rem);
+  align-items: center;
+  justify-content: center;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-content-elegant {
   width: 100%;
-  max-width: none;
-  max-height: 90vh;
+  max-width: min(36rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
   overflow-y: auto;
-  margin: 1rem 0;
-  padding: 1.5rem;
+  overflow-x: hidden;
+  margin: 0;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .modal-header {
@@ -1094,7 +1100,8 @@ body::after {
   align-items: center;
   position: sticky;
   top: 0;
-  z-index: 100;
+  /* Above section nav dock (950); was 100 and sat under the nav */
+  z-index: 1020;
 }
 
 .app-title {
@@ -3508,11 +3515,10 @@ form select:focus {
   font-size: 0.9rem;
 }
 
-/* Edit User Modal Enhancements */
+/* Edit User Modal Enhancements — width cap lives in App.css (.modal-content-elegant.edit-user-modal) */
 .edit-user-modal {
-  max-width: 700px;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
 }
 
 /* ===== FORM MANAGEMENT INTERFACE ===== */
@@ -3966,8 +3972,8 @@ form select:focus {
   }
   
   .modal-content-elegant {
-    margin: 1rem;
-    max-height: calc(100vh - 2rem);
+    max-height: calc(100vh - 3rem);
+    max-height: calc(100dvh - 3rem);
   }
 }
 

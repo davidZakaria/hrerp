@@ -2543,7 +2543,7 @@ const AdminDashboard = () => {
       {/* Edit User Modal */}
       {showEditUserModal && (
         <div className="modal-elegant">
-          <div className="modal-content-elegant">
+          <div className="modal-content-elegant edit-user-modal">
             <h2 className="text-gradient">Edit User</h2>
             <form className="form-elegant" onSubmit={handleUpdateUser}>
               <div className="form-group-elegant">

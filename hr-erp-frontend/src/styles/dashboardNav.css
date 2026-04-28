@@ -1,7 +1,7 @@
 /* Role-aware dashboard section navigation — desktop-first polish */
 
 /*
- * Sticky + stacking: .app-header uses z-index ~100. Nav at top:0 + z-index 20 sat UNDER the header (invisible).
+ * Sticky + stacking: .app-header uses z-index 1020. Section nav dock uses 950.
  * Offset sticky top below the header. Manager uses flush top (no app-header band).
  */
 :root {
@@ -10,7 +10,8 @@
 
 @media (max-width: 768px) {
   :root {
-    --dashboard-nav-sticky-top: 6rem;
+    /* Match compact sticky .app-header row + safe area */
+    --dashboard-nav-sticky-top: calc(3.35rem + env(safe-area-inset-top, 0px));
   }
 }
 

@@ -231,6 +231,29 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+/* Logout in dashboard header — compact, never full-width like other .btn-elegant on mobile */
+.app-header .app-header-logout {
+  flex-shrink: 0;
+  width: auto;
+  margin: 0;
+  min-height: 44px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.app-header .app-header-logout:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
 /* Content Area - Dark Theme */
 .main-content {
   flex: 1;
@@ -430,8 +453,11 @@
 @media (max-width: 768px) {
   .app-header {
     padding: 1rem;
-    flex-direction: column;
-    gap: 1rem;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
   }
   
   .main-content {
@@ -1415,9 +1441,12 @@
   }
   
   .app-header {
-    flex-direction: column;
-    gap: 16px;
-    text-align: center;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
   }
   
   .app-title {
@@ -1490,34 +1519,44 @@
 }
 
 /* Enhanced Modals - Dark Mode */
+/* Use inset:0 instead of 100vw/100vh to avoid horizontal shift when scrollbars exist */
 .modal-elegant {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
+  box-sizing: border-box;
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1100;
   animation: fadeIn 0.3s ease-out;
+  padding: clamp(0.75rem, 3vw, 1.5rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-content-elegant {
   background: rgba(0, 0, 0, 0.95);
   backdrop-filter: blur(20px);
   border-radius: 16px;
-  padding: 32px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
+  padding: clamp(1rem, 4vw, 2rem);
+  width: 100%;
+  max-width: min(500px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
   overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.2);
   animation: slideInUp 0.4s ease-out;
   color: #ffffff;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.modal-content-elegant.edit-user-modal {
+  max-width: min(700px, calc(100vw - 2rem));
 }
 
 .modal-header {
@@ -2027,9 +2066,12 @@
   
   .app-header {
     padding: 15px;
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
   }
   
   .app-title {
@@ -2479,6 +2521,71 @@
   .elegant-card:hover,
   .btn-elegant:hover {
     transform: none;
+  }
+}
+
+/* Dashboard sticky top bar — minimal, readable, edge-to-edge on small screens */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding-top: 0;
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .dashboard-container > .app-header {
+    --bar-bleed-l: max(12px, env(safe-area-inset-left, 0px));
+    --bar-bleed-r: max(12px, env(safe-area-inset-right, 0px));
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    text-align: left;
+    width: calc(100% + var(--bar-bleed-l) + var(--bar-bleed-r));
+    max-width: none;
+    margin-left: calc(-1 * var(--bar-bleed-l));
+    margin-right: calc(-1 * var(--bar-bleed-r));
+    margin-bottom: 12px;
+    padding: max(10px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 10px max(14px, env(safe-area-inset-left, 0px));
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    background: rgba(8, 8, 10, 0.92);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .dashboard-container > .app-header .app-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: clamp(0.9375rem, 3.8vw, 1.125rem);
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    text-shadow: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dashboard-container > .app-header .app-header-logout {
+    width: auto;
+    max-width: none;
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-container > .app-header .app-title {
+    font-size: clamp(0.875rem, 3.6vw, 1rem);
   }
 }
 

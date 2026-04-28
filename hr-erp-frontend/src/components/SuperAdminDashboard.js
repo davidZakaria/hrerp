@@ -1568,212 +1568,6 @@ const SuperAdminDashboard = () => {
                   </div>
                 )}
               </div>
-
-              {selectedUser && (
-                <div className="modal-elegant" onClick={() => setSelectedUser(null)}>
-                  <div className="modal-content-elegant edit-user-modal" onClick={(e) => e.stopPropagation()}>
-                    <div className="modal-header">
-                      <h2 className="text-gradient">Edit User: {selectedUser.name}</h2>
-                      <button 
-                        className="close-btn" 
-                        onClick={() => setSelectedUser(null)}
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.2)',
-                          border: '1px solid rgba(255, 255, 255, 0.3)',
-                          borderRadius: '50%',
-                          fontSize: '18px',
-                          cursor: 'pointer',
-                          color: '#fff',
-                          transition: 'all 0.3s ease',
-                          width: '32px',
-                          height: '32px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          lineHeight: '1'
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                    
-                    <form className="form-elegant" onSubmit={(e) => { e.preventDefault(); handleUserUpdate(); }}>
-                      <div className="form-group-elegant">
-                        <label className="form-label-elegant">Name</label>
-                        <input
-                          type="text"
-                          value={userEdit.name}
-                          onChange={(e) => setUserEdit({...userEdit, name: e.target.value})}
-                          className="form-input-elegant"
-                        />
-                      </div>
-                      <div className="form-group-elegant">
-                        <label className="form-label-elegant">Email</label>
-                        <input
-                          type="email"
-                          value={userEdit.email}
-                          onChange={(e) => setUserEdit({...userEdit, email: e.target.value})}
-                          className="form-input-elegant"
-                        />
-                      </div>
-                      <div className="form-group-elegant">
-                        <label className="form-label-elegant">Biometric Code (Employee ID)</label>
-                        <input
-                          type="text"
-                          value={userEdit.employeeCode}
-                          onChange={(e) => setUserEdit({...userEdit, employeeCode: e.target.value})}
-                          className="form-input-elegant"
-                          placeholder="Enter ZKTeco device code (AC-No)"
-                        />
-                        <small style={{color: '#888', fontSize: '0.8rem'}}>Must match the ZKTeco device ID (AC-No). Required for real-time attendance sync.</small>
-                      </div>
-                      <div className="form-group-elegant">
-                        <label className="form-label-elegant">Department</label>
-                        <select
-                          value={userEdit.department}
-                          onChange={(e) => setUserEdit({...userEdit, department: e.target.value})}
-                          className="form-input-elegant"
-                        >
-                          <option value="">Select Department</option>
-                          {availableDepartments.map(dept => (
-                            <option key={dept} value={dept}>{dept}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="form-group-elegant">
-                        <label className="form-label-elegant">Role</label>
-                        <select
-                          value={userEdit.role}
-                          onChange={(e) => {
-                            const newRole = e.target.value;
-                            setUserEdit((prev) => ({
-                              ...prev,
-                              role: newRole,
-                              managedDepartments:
-                                newRole === 'manager'
-                                  ? prev.managedDepartments?.length
-                                    ? [...prev.managedDepartments]
-                                    : prev.department
-                                      ? [prev.department]
-                                      : []
-                                  : []
-                            }));
-                          }}
-                          className="form-input-elegant"
-                        >
-                          <option value="employee">Employee</option>
-                          <option value="manager">Manager</option>
-                          <option value="admin">Admin</option>
-                          <option value="super_admin">Super Admin</option>
-                        </select>
-                      </div>
-                      <div className="form-group-elegant">
-                        <label className="form-label-elegant">Status</label>
-                        <select
-                          value={userEdit.status}
-                          onChange={(e) => setUserEdit({...userEdit, status: e.target.value})}
-                          className="form-input-elegant"
-                        >
-                          <option value="active">Active</option>
-                          <option value="inactive">Inactive (Disabled)</option>
-                          <option value="draft">Draft</option>
-                          <option value="pending">Pending</option>
-                        </select>
-                      </div>
-                      <div className="form-group-elegant">
-                        <label className="form-label-elegant">New Password (leave empty to keep current)</label>
-                        <input
-                          type="password"
-                          value={userEdit.password}
-                          onChange={(e) => setUserEdit({...userEdit, password: e.target.value})}
-                          className="form-input-elegant"
-                          placeholder="Enter new password (min 6 characters)"
-                          minLength="6"
-                        />
-                        <small style={{color: '#888', fontSize: '0.8rem'}}>Only fill this if you want to change the user's password</small>
-                      </div>
-                      <div className="form-group-elegant">
-                        <label className="form-label-elegant">Vacation Days Left</label>
-                        <input
-                          type="number"
-                          value={userEdit.vacationDaysLeft}
-                          onChange={(e) => setUserEdit({...userEdit, vacationDaysLeft: parseInt(e.target.value)})}
-                          className="form-input-elegant"
-                        />
-                      </div>
-                      
-                      {userEdit.role === 'manager' && (
-                        <div className="form-group-elegant">
-                          <label className="form-label-elegant">
-                            Managed Departments ({userEdit.managedDepartments?.length || 0} selected)
-                          </label>
-                          <div className="selection-help">
-                            Click on the department cards below to assign departments this manager will oversee.
-                          </div>
-                          <div className="departments-grid">
-                            {availableDepartments.map(dept => (
-                              <div 
-                                key={dept}
-                                className={`department-card ${userEdit.managedDepartments?.includes(dept) ? 'selected' : ''}`}
-                                onClick={() => handleEditDepartmentChange(dept)}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={userEdit.managedDepartments?.includes(dept) || false}
-                                  onChange={() => {}}
-                                />
-                                <span className="department-name">{dept}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="form-group-elegant" style={{ marginTop: '1rem' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                              <input
-                                type="checkbox"
-                                checked={userEdit.permissions?.canEditDepartmentForms || false}
-                                onChange={(e) => setUserEdit({
-                                  ...userEdit,
-                                  permissions: { ...userEdit.permissions, canEditDepartmentForms: e.target.checked }
-                                })}
-                              />
-                              <span className="form-label-elegant" style={{ marginBottom: 0 }}>
-                                Can edit submitted forms from their departments
-                              </span>
-                            </label>
-                            <small style={{ display: 'block', marginTop: '0.25rem', opacity: 0.8 }}>
-                              When enabled, this manager can modify form content (dates, reason, etc.) for forms submitted by employees in their managed departments.
-                            </small>
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="form-group-elegant">
-                        <label className="form-label-elegant">Modification Reason</label>
-                        <textarea
-                          value={modificationReason}
-                          onChange={(e) => setModificationReason(e.target.value)}
-                          className="form-input-elegant"
-                          rows="3"
-                          placeholder="Explain why you're making this change..."
-                          required
-                        />
-                      </div>
-                      <div className="action-buttons">
-                        <button type="submit" className="btn-elegant btn-success">
-                          Update User
-                        </button>
-                        <button 
-                          type="button" 
-                          className="btn-elegant"
-                          onClick={() => setSelectedUser(null)}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -2323,6 +2117,214 @@ const SuperAdminDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Edit User Modal (outside .elegant-card — avoids overflow/backdrop clipping fixed overlays) */}
+      {selectedUser && (
+        <div className="modal-elegant" onClick={() => setSelectedUser(null)}>
+          <div className="modal-content-elegant edit-user-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="text-gradient">Edit User: {selectedUser.name}</h2>
+              <button 
+                className="close-btn" 
+                onClick={() => setSelectedUser(null)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '50%',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  color: '#fff',
+                  transition: 'all 0.3s ease',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: '1'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <form className="form-elegant" onSubmit={(e) => { e.preventDefault(); handleUserUpdate(); }}>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Name</label>
+                <input
+                  type="text"
+                  value={userEdit.name}
+                  onChange={(e) => setUserEdit({...userEdit, name: e.target.value})}
+                  className="form-input-elegant"
+                />
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Email</label>
+                <input
+                  type="email"
+                  value={userEdit.email}
+                  onChange={(e) => setUserEdit({...userEdit, email: e.target.value})}
+                  className="form-input-elegant"
+                />
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Biometric Code (Employee ID)</label>
+                <input
+                  type="text"
+                  value={userEdit.employeeCode}
+                  onChange={(e) => setUserEdit({...userEdit, employeeCode: e.target.value})}
+                  className="form-input-elegant"
+                  placeholder="Enter ZKTeco device code (AC-No)"
+                />
+                <small style={{color: '#888', fontSize: '0.8rem'}}>Must match the ZKTeco device ID (AC-No). Required for real-time attendance sync.</small>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Department</label>
+                <select
+                  value={userEdit.department}
+                  onChange={(e) => setUserEdit({...userEdit, department: e.target.value})}
+                  className="form-input-elegant"
+                >
+                  <option value="">Select Department</option>
+                  {availableDepartments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Role</label>
+                <select
+                  value={userEdit.role}
+                  onChange={(e) => {
+                    const newRole = e.target.value;
+                    setUserEdit((prev) => ({
+                      ...prev,
+                      role: newRole,
+                      managedDepartments:
+                        newRole === 'manager'
+                          ? prev.managedDepartments?.length
+                            ? [...prev.managedDepartments]
+                            : prev.department
+                              ? [prev.department]
+                              : []
+                          : []
+                    }));
+                  }}
+                  className="form-input-elegant"
+                >
+                  <option value="employee">Employee</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Status</label>
+                <select
+                  value={userEdit.status}
+                  onChange={(e) => setUserEdit({...userEdit, status: e.target.value})}
+                  className="form-input-elegant"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive (Disabled)</option>
+                  <option value="draft">Draft</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">New Password (leave empty to keep current)</label>
+                <input
+                  type="password"
+                  value={userEdit.password}
+                  onChange={(e) => setUserEdit({...userEdit, password: e.target.value})}
+                  className="form-input-elegant"
+                  placeholder="Enter new password (min 6 characters)"
+                  minLength="6"
+                />
+                <small style={{color: '#888', fontSize: '0.8rem'}}>Only fill this if you want to change the user's password</small>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Vacation Days Left</label>
+                <input
+                  type="number"
+                  value={userEdit.vacationDaysLeft}
+                  onChange={(e) => setUserEdit({...userEdit, vacationDaysLeft: parseInt(e.target.value)})}
+                  className="form-input-elegant"
+                />
+              </div>
+
+              {userEdit.role === 'manager' && (
+                <div className="form-group-elegant">
+                  <label className="form-label-elegant">
+                    Managed Departments ({userEdit.managedDepartments?.length || 0} selected)
+                  </label>
+                  <div className="selection-help">
+                    Click on the department cards below to assign departments this manager will oversee.
+                  </div>
+                  <div className="departments-grid">
+                    {availableDepartments.map(dept => (
+                      <div 
+                        key={dept}
+                        className={`department-card ${userEdit.managedDepartments?.includes(dept) ? 'selected' : ''}`}
+                        onClick={() => handleEditDepartmentChange(dept)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={userEdit.managedDepartments?.includes(dept) || false}
+                          onChange={() => {}}
+                        />
+                        <span className="department-name">{dept}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="form-group-elegant" style={{ marginTop: '1rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={userEdit.permissions?.canEditDepartmentForms || false}
+                        onChange={(e) => setUserEdit({
+                          ...userEdit,
+                          permissions: { ...userEdit.permissions, canEditDepartmentForms: e.target.checked }
+                        })}
+                      />
+                      <span className="form-label-elegant" style={{ marginBottom: 0 }}>
+                        Can edit submitted forms from their departments
+                      </span>
+                    </label>
+                    <small style={{ display: 'block', marginTop: '0.25rem', opacity: 0.8 }}>
+                      When enabled, this manager can modify form content (dates, reason, etc.) for forms submitted by employees in their managed departments.
+                    </small>
+                  </div>
+                </div>
+              )}
+
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">Modification Reason</label>
+                <textarea
+                  value={modificationReason}
+                  onChange={(e) => setModificationReason(e.target.value)}
+                  className="form-input-elegant"
+                  rows="3"
+                  placeholder="Explain why you're making this change..."
+                  required
+                />
+              </div>
+              <div className="action-buttons">
+                <button type="submit" className="btn-elegant btn-success">
+                  Update User
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-elegant"
+                  onClick={() => setSelectedUser(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
 
       {/* Form View/Edit Modal */}
       {showFormModal && selectedForm && (

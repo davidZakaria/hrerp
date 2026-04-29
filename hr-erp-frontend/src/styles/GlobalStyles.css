@@ -360,6 +360,33 @@ body::after {
   color: #334155;
 }
 
+.super-admin-dashboard .super-admin-stats-hint {
+  font-size: 0.875rem;
+  color: #475569;
+  margin: 0 0 0.75rem 0;
+  max-width: 48rem;
+  line-height: 1.45;
+}
+
+.super-admin-dashboard .super-admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.super-admin-dashboard .super-admin-forms-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.super-admin-dashboard .super-admin-refresh-forms:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* App Header Mobile */
 .app-header {
   padding: 1rem;

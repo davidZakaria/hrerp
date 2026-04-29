@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import LogoutButton from './LogoutButton';
 import { useTranslation } from 'react-i18next';
@@ -86,10 +86,13 @@ const SuperAdminDashboard = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordResetLoading, setPasswordResetLoading] = useState(false);
-  const [departmentsDirty, setDepartmentsDirty] = useState(false);
   const [departmentGroupCatalog, setDepartmentGroupCatalog] = useState({});
   const [formsSubmittedMonth, setFormsSubmittedMonth] = useState('');
   const [formsEventMonth, setFormsEventMonth] = useState('');
+  const [formsLoading, setFormsLoading] = useState(false);
+  const [formsSuccess, setFormsSuccess] = useState('');
+  const [formsError, setFormsError] = useState('');
+  const [formMutating, setFormMutating] = useState(false);
 
   // Available departments
   const availableDepartments = [
@@ -358,9 +361,10 @@ const SuperAdminDashboard = () => {
     }
   };
 
-  const fetchForms = async () => {
-    setLoading(true);
-    setError('');
+  const fetchForms = useCallback(async () => {
+    setFormsLoading(true);
+    setFormsError('');
+    setFormsSuccess('');
     const token = localStorage.getItem('token');
     try {
       const params = new URLSearchParams();
@@ -375,13 +379,14 @@ const SuperAdminDashboard = () => {
       if (res.ok) {
         setForms(data);
       } else {
-        setError(data.msg || 'Failed to fetch forms');
+        setFormsError(data.msg || 'Failed to fetch forms');
       }
     } catch (err) {
-      setError('Error connecting to server');
+      setFormsError('Error connecting to server');
+    } finally {
+      setFormsLoading(false);
     }
-    setLoading(false);
-  };
+  }, [formsSubmittedMonth, formsEventMonth]);
 
   const fetchAuditLogs = async () => {
     setAuditLoading(true);
@@ -393,7 +398,7 @@ const SuperAdminDashboard = () => {
         limit: 20,
         ...auditFilters
       });
-      
+
       const res = await fetch(`${API_URL}/api/audit?${queryParams}`, {
         headers: { 'x-auth-token': token }
       });
@@ -726,8 +731,7 @@ const SuperAdminDashboard = () => {
     if (activeTab === 'forms') {
       fetchForms();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, formsSubmittedMonth, formsEventMonth]);
+  }, [activeTab, formsSubmittedMonth, formsEventMonth, fetchForms]);
 
   useEffect(() => {
     if (activeTab === 'logs') {
@@ -754,6 +758,25 @@ const SuperAdminDashboard = () => {
     loadCatalog();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const token = localStorage.getItem('token');
+      try {
+        const res = await fetch(`${API_URL}/api/forms/all`, {
+          headers: { 'x-auth-token': token }
+        });
+        const data = await res.json();
+        if (!cancelled && res.ok) setForms(data);
+      } catch (_) {
+        /* ignore: stats load optional */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleUserSelect = (user) => {
     setSelectedUser(user);
     const existingManaged =
@@ -777,7 +800,6 @@ const SuperAdminDashboard = () => {
       employeeCode: user.employeeCode || '',
       permissions: { canEditDepartmentForms: user.permissions?.canEditDepartmentForms || false }
     });
-    setDepartmentsDirty(false);
   };
 
   // Open password reset modal
@@ -924,7 +946,6 @@ const SuperAdminDashboard = () => {
 
   const handleEditGroupChange = (groupKey) => {
     const current = userEdit.managedDepartmentGroups || [];
-    setDepartmentsDirty(true);
     if (current.includes(groupKey)) {
       setUserEdit({
         ...userEdit,
@@ -972,7 +993,6 @@ const SuperAdminDashboard = () => {
   // Handle department selection for managers (edit user)
   const handleEditDepartmentChange = (department) => {
     const currentDepts = userEdit.managedDepartments || [];
-    setDepartmentsDirty(true);
     if (currentDepts.includes(department)) {
       setUserEdit({
         ...userEdit,
@@ -1010,9 +1030,9 @@ const SuperAdminDashboard = () => {
   };
 
   const confirmDeleteForm = async (formId) => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
+    setFormMutating(true);
+    setFormsError('');
+    setFormsSuccess('');
     const token = localStorage.getItem('token');
     try {
       const res = await fetch(`${API_URL}/api/forms/${formId}`, {
@@ -1021,22 +1041,26 @@ const SuperAdminDashboard = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess('Form deleted successfully');
-        fetchForms();
+        setFormsSuccess(t('superAdminDashboard.formDeletedOk'));
+        setError('');
+        setSuccess('');
+        await fetchForms();
         setShowDeleteConfirm(null);
+        setTimeout(() => setFormsSuccess(''), 4000);
       } else {
-        setError(data.msg || 'Failed to delete form');
+        setFormsError(data.msg || 'Failed to delete form');
       }
     } catch (err) {
-      setError('Error connecting to server');
+      setFormsError('Error connecting to server');
+    } finally {
+      setFormMutating(false);
     }
-    setLoading(false);
   };
 
   const handleFormUpdate = async () => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
+    setFormMutating(true);
+    setFormsError('');
+    setFormsSuccess('');
     const token = localStorage.getItem('token');
     try {
       const res = await fetch(`${API_URL}/api/forms/${selectedForm._id}`, {
@@ -1049,23 +1073,29 @@ const SuperAdminDashboard = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess('Form updated successfully');
-        fetchForms();
+        setFormsSuccess(t('superAdminDashboard.formUpdatedOk'));
+        setError('');
+        setSuccess('');
+        await fetchForms();
         setShowFormModal(false);
         setSelectedForm(null);
+        setTimeout(() => setFormsSuccess(''), 4000);
       } else {
-        setError(data.msg || 'Failed to update form');
+        setFormsError(data.msg || 'Failed to update form');
       }
     } catch (err) {
-      setError('Error connecting to server');
+      setFormsError('Error connecting to server');
+    } finally {
+      setFormMutating(false);
     }
-    setLoading(false);
   };
 
   const handleExportForms = () => {
     try {
       const rowsForExport = forms.filter(form =>
         form.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        form.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        form.user?.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         form.type?.toLowerCase().includes(searchTerm.toLowerCase())
       );
       // Create CSV content
@@ -1189,33 +1219,34 @@ const SuperAdminDashboard = () => {
   }, [activeTab]);
 
   return (
-    <div className="dashboard-container fade-in">
+    <div className="dashboard-container super-admin-dashboard fade-in">
       <div className="app-header">
-        <h1 className="app-title">Super Admin Dashboard</h1>
+        <h1 className="app-title">{t('superAdminDashboard.title')}</h1>
         <LogoutButton />
       </div>
-      
+
       <div className="main-content">
-        <div className="grid-4">
+        <p className="super-admin-stats-hint">{t('superAdminDashboard.statsHint')}</p>
+        <div className="grid-4 super-admin-stats-grid">
           <div className="stats-card hover-lift">
             <div className="stats-number">{users.length + pendingUsers.length}</div>
-            <div className="stats-label">Total Users</div>
+            <div className="stats-label">{t('superAdminDashboard.statsTotalAccounts')}</div>
           </div>
           <div className="stats-card hover-lift">
             <div className="stats-number">{users.length}</div>
-            <div className="stats-label">Active Users</div>
+            <div className="stats-label">{t('superAdminDashboard.statsActiveUsers')}</div>
           </div>
           <div className="stats-card hover-lift" style={{ background: pendingUsers.length > 0 ? 'linear-gradient(135deg, #ff9800, #f57c00)' : undefined }}>
             <div className="stats-number">{pendingUsers.length}</div>
-            <div className="stats-label">Pending Approvals</div>
+            <div className="stats-label">{t('superAdminDashboard.statsPendingRegistrations')}</div>
           </div>
           <div className="stats-card hover-lift">
             <div className="stats-number">{forms.length}</div>
-            <div className="stats-label">Total Forms</div>
+            <div className="stats-label">{t('superAdminDashboard.statsFormsLoaded')}</div>
           </div>
           <div className="stats-card hover-lift">
             <div className="stats-number">{forms.filter(f => f.status === 'pending').length}</div>
-            <div className="stats-label">Pending Forms</div>
+            <div className="stats-label">{t('superAdminDashboard.statsPendingForms')}</div>
           </div>
         </div>
 
@@ -1227,11 +1258,11 @@ const SuperAdminDashboard = () => {
           badgeLabel={t('dashboard.nav.badgeSuperAdmin')}
           activeId={activeTab}
           sections={[
-            { id: 'users', label: 'User Management', icon: '👥', onSelect: () => setActiveTab('users') },
-            { id: 'forms', label: 'Form Management', icon: '📋', onSelect: () => setActiveTab('forms') },
-            { id: 'logs', label: 'Audit Logs', icon: '📜', onSelect: () => setActiveTab('logs') },
-            { id: 'attendance', label: 'Attendance', icon: '📊', onSelect: () => setActiveTab('attendance') },
-            { id: 'backup', label: 'Backup & Restore', icon: '💾', onSelect: () => setActiveTab('backup') }
+            { id: 'users', label: t('superAdminDashboard.navUsers'), icon: '👥', onSelect: () => setActiveTab('users') },
+            { id: 'forms', label: t('superAdminDashboard.navForms'), icon: '📋', onSelect: () => setActiveTab('forms') },
+            { id: 'logs', label: t('superAdminDashboard.navLogs'), icon: '📜', onSelect: () => setActiveTab('logs') },
+            { id: 'attendance', label: t('superAdminDashboard.navAttendance'), icon: '📊', onSelect: () => setActiveTab('attendance') },
+            { id: 'backup', label: t('superAdminDashboard.navBackup'), icon: '💾', onSelect: () => setActiveTab('backup') }
           ]}
         />
 
@@ -1239,11 +1270,11 @@ const SuperAdminDashboard = () => {
           <div style={{ marginBottom: '2rem' }}>
             <input
               type="text"
-              placeholder="Search users or forms..."
+              placeholder={t('superAdminDashboard.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="form-input-elegant"
-              style={{ maxWidth: '400px' }}
+              className="form-input-elegant super-admin-global-search"
+              style={{ maxWidth: '480px', width: '100%' }}
             />
           </div>
 
@@ -1285,14 +1316,14 @@ const SuperAdminDashboard = () => {
             </div>
           )}
           
-          {loading && <div className="spinner-elegant"></div>}
+          {(loading || formsLoading) && <div className="spinner-elegant"></div>}
 
           {activeTab === 'users' && (
             <div>
               <div className="section-header-redesign">
                 <div className="section-info">
-                  <h3 className="text-gradient">User Management</h3>
-                  <p className="section-description">Manage system users, roles, and permissions</p>
+                  <h3 className="text-gradient">{t('superAdminDashboard.userMgmtTitle')}</h3>
+                  <p className="section-description">{t('superAdminDashboard.userMgmtDesc')}</p>
                 </div>
                 <div className="section-actions">
                   <button 
@@ -1300,7 +1331,7 @@ const SuperAdminDashboard = () => {
                     onClick={() => setShowCreateUserModal(true)}
                   >
                     <span className="btn-icon">👤</span>
-                    Create New User
+                    {t('adminDashboard.createUser')}
                   </button>
                 </div>
               </div>
@@ -1321,7 +1352,7 @@ const SuperAdminDashboard = () => {
                     alignItems: 'center', 
                     gap: '0.5rem' 
                   }}>
-                    🔔 Pending User Registrations ({pendingUsers.length})
+                    {t('adminDashboard.pendingRegistrationsTitle')} ({pendingUsers.length})
                   </h3>
                   <div style={{ 
                     display: 'grid', 
@@ -1359,9 +1390,9 @@ const SuperAdminDashboard = () => {
                         </div>
                         
                         <div style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#555' }}>
-                          <p style={{ margin: '0.25rem 0' }}><strong>Department:</strong> {user.department}</p>
+                          <p style={{ margin: '0.25rem 0' }}><strong>{t('adminDashboard.departmentLabel')}:</strong> {user.department}</p>
                           <p style={{ margin: '0.25rem 0' }}>
-                            <strong>Employee Code:</strong>{' '}
+                            <strong>{t('adminDashboard.employeeCodeLabel')}:</strong>{' '}
                             <span style={{ 
                               background: user.employeeCode ? '#4caf50' : '#ff9800',
                               color: 'white',
@@ -1369,14 +1400,21 @@ const SuperAdminDashboard = () => {
                               borderRadius: '4px',
                               fontSize: '0.8rem'
                             }}>
-                              {user.employeeCode || 'Not Assigned'}
+                              {user.employeeCode || t('common.notAssigned')}
                             </span>
                           </p>
-                          {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
+                          {user.role === 'manager' && (() => {
+                            const eff = getEffectiveManagedDepartmentsClient(
+                              user.managedDepartments,
+                              user.managedDepartmentGroups,
+                              departmentGroupCatalog
+                            );
+                            if (!eff.length) return null;
+                            return (
                             <div style={{ marginTop: '0.5rem' }}>
-                              <strong>Wants to Manage:</strong>
+                              <strong>{t('adminDashboard.wantsToManage')}:</strong>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                                {user.managedDepartments.map((dept, idx) => (
+                                {eff.map((dept, idx) => (
                                   <span key={idx} style={{
                                     background: '#FF9800',
                                     color: 'white',
@@ -1388,10 +1426,16 @@ const SuperAdminDashboard = () => {
                                   </span>
                                 ))}
                               </div>
+                              {user.managedDepartmentGroups?.length > 0 && (
+                                <span style={{ display: 'block', marginTop: '6px', fontSize: '0.75rem', opacity: 0.9 }}>
+                                  {t('adminDashboard.groupsLabel')}: {user.managedDepartmentGroups.join(', ')}
+                                </span>
+                              )}
                             </div>
-                          )}
+                            );
+                          })()}
                           <p style={{ margin: '0.25rem 0', marginTop: '0.5rem' }}>
-                            <strong>Registered:</strong> {new Date(user.createdAt).toLocaleDateString()}
+                            <strong>{t('adminDashboard.registeredLabel')}:</strong> {new Date(user.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                         
@@ -1411,7 +1455,7 @@ const SuperAdminDashboard = () => {
                               transition: 'transform 0.2s'
                             }}
                           >
-                            ✅ Approve
+                            {t('adminDashboard.approve')}
                           </button>
                           <button
                             onClick={() => handleRejectUser(user._id)}
@@ -1428,7 +1472,7 @@ const SuperAdminDashboard = () => {
                               transition: 'transform 0.2s'
                             }}
                           >
-                            ❌ Reject
+                            {t('adminDashboard.reject')}
                           </button>
                         </div>
                       </div>
@@ -1658,33 +1702,41 @@ const SuperAdminDashboard = () => {
           )}
 
           {activeTab === 'forms' && (
-            <div>
+            <div className="super-admin-forms-panel">
               <div className="section-header-redesign">
                 <div className="section-info">
-                  <h3 className="text-gradient">Form Management</h3>
-                  <p className="section-description">Monitor and manage all system forms and applications</p>
+                  <h3 className="text-gradient">{t('superAdminDashboard.formMgmtTitle')}</h3>
+                  <p className="section-description">{t('superAdminDashboard.formMgmtDesc')}</p>
                 </div>
-                <div className="section-actions">
+                <div className="section-actions super-admin-forms-toolbar">
+                  <button 
+                    type="button"
+                    className="btn-elegant super-admin-refresh-forms"
+                    onClick={() => fetchForms()}
+                    disabled={formsLoading || formMutating}
+                  >
+                    {formsLoading ? t('superAdminDashboard.loadingForms') : t('superAdminDashboard.refreshList')}
+                  </button>
                   <button 
                     className="btn-elegant"
                     onClick={() => setShowSuperAdminFormSubmission(!showSuperAdminFormSubmission)}
                   >
-                    <span className="btn-icon">✈️</span>
-                    {showSuperAdminFormSubmission ? 'Hide Submit Form' : 'Submit My Form'}
+                    <span className="btn-icon">📝</span>
+                    {showSuperAdminFormSubmission ? t('superAdminDashboard.hideSubmitForm') : t('superAdminDashboard.submitMyForm')}
                   </button>
                   <button 
                     className="btn-elegant btn-export"
                     onClick={handleExportForms}
                   >
                     <span className="btn-icon">📊</span>
-                    Export Forms
+                    {t('superAdminDashboard.exportForms')}
                   </button>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', marginBottom: '1.25rem' }}>
+              <div className="form-month-filters super-admin-form-month-filters" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', marginBottom: '1.25rem' }}>
                 <div className="form-group-elegant" style={{ marginBottom: 0 }}>
-                  <label className="form-label-elegant" style={{ display: 'block', marginBottom: '0.35rem' }}>Submitted in</label>
+                  <label className="form-label-elegant" style={{ display: 'block', marginBottom: '0.35rem' }}>{t('adminDashboard.submittedInMonth')}</label>
                   <input
                     type="month"
                     className="form-input-elegant"
@@ -1693,7 +1745,7 @@ const SuperAdminDashboard = () => {
                   />
                 </div>
                 <div className="form-group-elegant" style={{ marginBottom: 0 }}>
-                  <label className="form-label-elegant" style={{ display: 'block', marginBottom: '0.35rem' }}>Event in</label>
+                  <label className="form-label-elegant" style={{ display: 'block', marginBottom: '0.35rem' }}>{t('adminDashboard.eventInMonth')}</label>
                   <input
                     type="month"
                     className="form-input-elegant"
@@ -1709,15 +1761,22 @@ const SuperAdminDashboard = () => {
                     setFormsEventMonth('');
                   }}
                 >
-                  All time
+                  {t('adminDashboard.allTime')}
                 </button>
               </div>
+
+              {formsSuccess && (
+                <div className="success-message" style={{ marginBottom: '1rem' }}>{formsSuccess}</div>
+              )}
+              {formsError && (
+                <div className="error-message" style={{ marginBottom: '1rem' }}>{formsError}</div>
+              )}
 
               {showSuperAdminFormSubmission && (
                 <div className="admin-form-submission-section" style={{ marginBottom: '2rem' }}>
                   <div className="section-header">
-                    <h2>📝 Submit New Personal Form</h2>
-                    <small className="section-subtitle">Submit your own vacation, mission, sick leave & more</small>
+                    <h2>{t('superAdminDashboard.submitPersonalTitle')}</h2>
+                    <small className="section-subtitle">{t('superAdminDashboard.submitPersonalSubtitle')}</small>
                   </div>
                   <div className="form-container">
                     <FormSubmission onFormSubmitted={() => { fetchForms(); setShowSuperAdminFormSubmission(false); }} />
@@ -1729,6 +1788,8 @@ const SuperAdminDashboard = () => {
                 {forms
                   .filter(form => 
                     form.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    form.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    form.user?.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     form.type?.toLowerCase().includes(searchTerm.toLowerCase())
                   )
                   .map(form => {
@@ -1943,12 +2004,14 @@ const SuperAdminDashboard = () => {
                   
                 {forms.filter(form => 
                   form.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  form.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  form.user?.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                   form.type?.toLowerCase().includes(searchTerm.toLowerCase())
                 ).length === 0 && (
                   <div className="no-forms-message">
                     <div className="no-forms-icon">📋</div>
-                    <h3>No forms found</h3>
-                    <p>Try adjusting your search terms or check back later for new submissions.</p>
+                    <h3>{t('superAdminDashboard.noFormsTitle')}</h3>
+                    <p>{t('superAdminDashboard.noFormsBody')}</p>
                   </div>
                 )}
               </div>
@@ -2582,13 +2645,14 @@ const SuperAdminDashboard = () => {
                 </div>
                 
                 <div className="action-buttons">
-                  <button type="submit" className="btn-elegant btn-success">
-                    Update Form
+                  <button type="submit" className="btn-elegant btn-success" disabled={formMutating}>
+                    {formMutating ? 'Saving...' : 'Update Form'}
                   </button>
                   <button 
                     type="button" 
                     className="btn-elegant"
                     onClick={() => setShowFormModal(false)}
+                    disabled={formMutating}
                   >
                     Cancel
                   </button>
@@ -3243,15 +3307,15 @@ const SuperAdminDashboard = () => {
                 <button 
                   className="btn-elegant btn-danger"
                   onClick={() => confirmDeleteForm(showDeleteConfirm)}
-                  disabled={loading}
+                  disabled={formMutating}
                 >
-                  {loading ? 'Deleting...' : 'Delete Form'}
+                  {formMutating ? 'Deleting...' : 'Delete Form'}
                 </button>
                 <button 
                   type="button" 
                   className="btn-elegant"
                   onClick={() => setShowDeleteConfirm(null)}
-                  disabled={loading}
+                  disabled={formMutating}
                 >
                   Cancel
                 </button>

@@ -92,6 +92,8 @@ const SuperAdminDashboard = () => {
   const [formsSubmittedMonth, setFormsSubmittedMonth] = useState('');
   const [formsEventMonth, setFormsEventMonth] = useState('');
   const [formsMonthFilterKind, setFormsMonthFilterKind] = useState('all');
+  /** Unfiltered list for top stat cards only — must not overwrite month-filtered `forms`. */
+  const [formsStatsBaseline, setFormsStatsBaseline] = useState([]);
   const [formsLoading, setFormsLoading] = useState(false);
   const [formsSuccess, setFormsSuccess] = useState('');
   const [formsError, setFormsError] = useState('');
@@ -383,6 +385,9 @@ const SuperAdminDashboard = () => {
       const data = await res.json();
       if (res.ok) {
         setForms(data);
+        if (!formsSubmittedMonth && !formsEventMonth) {
+          setFormsStatsBaseline(data);
+        }
       } else {
         setFormsError(data.msg || 'Failed to fetch forms');
       }
@@ -792,7 +797,7 @@ const SuperAdminDashboard = () => {
           headers: { 'x-auth-token': token }
         });
         const data = await res.json();
-        if (!cancelled && res.ok) setForms(data);
+        if (!cancelled && res.ok) setFormsStatsBaseline(data);
       } catch (_) {
         /* ignore: stats load optional */
       }
@@ -1282,11 +1287,11 @@ const SuperAdminDashboard = () => {
             <div className="stats-label">{t('superAdminDashboard.statsPendingRegistrations')}</div>
           </div>
           <div className="stats-card hover-lift">
-            <div className="stats-number">{forms.length}</div>
+            <div className="stats-number">{formsStatsBaseline.length}</div>
             <div className="stats-label">{t('superAdminDashboard.statsFormsLoaded')}</div>
           </div>
           <div className="stats-card hover-lift">
-            <div className="stats-number">{forms.filter(f => f.status === 'pending').length}</div>
+            <div className="stats-number">{formsStatsBaseline.filter(f => f.status === 'pending').length}</div>
             <div className="stats-label">{t('superAdminDashboard.statsPendingForms')}</div>
           </div>
         </div>

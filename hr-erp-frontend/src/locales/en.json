@@ -167,6 +167,24 @@
     "wantsToManage": "Requested scope (effective)",
     "groupsLabel": "Groups"
   },
+  "userManagement": {
+    "filterTypeLabel": "Filter style",
+    "filterSimple": "Quick search (use the search box above)",
+    "filterAdvanced": "Advanced (department, role, status)",
+    "viewLabel": "Display",
+    "viewCards": "Cards",
+    "viewTable": "Table (Excel-style preview)",
+    "filterAny": "Any",
+    "toolbarHint": "Advanced filters apply together with the search box. Table view is for scanning many rows like a spreadsheet.",
+    "colVacation": "Vac. days",
+    "colJoined": "Joined",
+    "colLastLogin": "Last login",
+    "colScope": "Manages",
+    "colFlags": "Flags",
+    "never": "Never",
+    "noUsersTitle": "No users match",
+    "noUsersBody": "Try a different search, switch filter style, or create a new user."
+  },
   "superAdminDashboard": {
     "title": "Super Admin",
     "navUsers": "User management",

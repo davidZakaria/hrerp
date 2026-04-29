@@ -13,6 +13,8 @@ import DashboardSectionNav from './layout/DashboardSectionNav';
 import { smoothScrollToElement } from '../utils/smoothScroll';
 import { getEffectiveManagedDepartmentsClient } from '../utils/effectiveManagedDepartments';
 import FormManagementMonthFilterBar from './forms/FormManagementMonthFilterBar';
+import UserManagementToolbar from './users/UserManagementToolbar';
+import UserManagementUsersTable from './users/UserManagementUsersTable';
 import {
   filterFormsByManagementMonths,
   currentYearMonth,
@@ -47,6 +49,11 @@ const AdminDashboard = () => {
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState('');
   const [usersSearch, setUsersSearch] = useState('');
+  const [userMgmtFilterLayout, setUserMgmtFilterLayout] = useState('simple');
+  const [userMgmtViewMode, setUserMgmtViewMode] = useState('cards');
+  const [userMgmtDeptFilter, setUserMgmtDeptFilter] = useState('');
+  const [userMgmtRoleFilter, setUserMgmtRoleFilter] = useState('');
+  const [userMgmtStatusFilter, setUserMgmtStatusFilter] = useState('');
   
   // Modals state
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
@@ -875,14 +882,47 @@ const AdminDashboard = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => {
-    // Hide super admin accounts from regular admins
-    if (user.role === 'super_admin' && currentUser?.role !== 'super_admin') {
-      return false;
-    }
-    return user.name?.toLowerCase().includes(usersSearch.toLowerCase()) ||
-           user.email?.toLowerCase().includes(usersSearch.toLowerCase());
-  });
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      if (user.role === 'super_admin' && currentUser?.role !== 'super_admin') {
+        return false;
+      }
+      const q = usersSearch.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        [user.name, user.email, user.role, user.department, user.employeeCode].some((f) =>
+          String(f ?? '').toLowerCase().includes(q)
+        );
+      if (!matchesSearch) return false;
+      if (userMgmtFilterLayout === 'advanced') {
+        if (userMgmtDeptFilter && user.department !== userMgmtDeptFilter) return false;
+        if (userMgmtRoleFilter && user.role !== userMgmtRoleFilter) return false;
+        if (userMgmtStatusFilter && user.status !== userMgmtStatusFilter) return false;
+      }
+      return true;
+    });
+  }, [
+    users,
+    usersSearch,
+    currentUser,
+    userMgmtFilterLayout,
+    userMgmtDeptFilter,
+    userMgmtRoleFilter,
+    userMgmtStatusFilter,
+  ]);
+
+  const userMgmtDeptOptions = useMemo(
+    () => [...new Set(users.map((u) => u.department).filter(Boolean))].sort(),
+    [users]
+  );
+  const userMgmtRoleOptions = useMemo(
+    () => [...new Set(users.map((u) => u.role).filter(Boolean))].sort(),
+    [users]
+  );
+  const userMgmtStatusOptions = useMemo(
+    () => [...new Set(users.map((u) => u.status).filter(Boolean))].sort(),
+    [users]
+  );
 
   const filteredPendingUsers = pendingUsers.filter(user => {
     // Hide super admin accounts from regular admins
@@ -1558,6 +1598,22 @@ const AdminDashboard = () => {
 
             {usersError && <div className="error-message">{usersError}</div>}
 
+            <UserManagementToolbar
+              filterLayout={userMgmtFilterLayout}
+              onFilterLayoutChange={setUserMgmtFilterLayout}
+              viewMode={userMgmtViewMode}
+              onViewModeChange={setUserMgmtViewMode}
+              departmentOptions={userMgmtDeptOptions}
+              roleOptions={userMgmtRoleOptions}
+              statusOptions={userMgmtStatusOptions}
+              deptValue={userMgmtDeptFilter}
+              roleValue={userMgmtRoleFilter}
+              statusValue={userMgmtStatusFilter}
+              onDeptChange={setUserMgmtDeptFilter}
+              onRoleChange={setUserMgmtRoleFilter}
+              onStatusChange={setUserMgmtStatusFilter}
+            />
+
             {/* Pending Users Section */}
             {pendingUsers.length > 0 && (
               <div className="super-admin-section">
@@ -1669,11 +1725,30 @@ const AdminDashboard = () => {
             <div className="super-admin-section">
               <div className="section-title-container">
                 <h3 className="section-title">
-                  👥 Users ({currentUser?.role === 'super_admin' 
-                    ? users.length 
-                    : users.filter(u => u.role !== 'super_admin').length})
+                  👥 Users ({filteredUsers.length})
                 </h3>
               </div>
+              {userMgmtViewMode === 'table' ? (
+                filteredUsers.length === 0 ? (
+                  <div className="no-users-message" style={{ marginTop: '1rem' }}>
+                    <div className="no-users-icon">👥</div>
+                    <h3>{t('userManagement.noUsersTitle')}</h3>
+                    <p>{t('userManagement.noUsersBody')}</p>
+                  </div>
+                ) : (
+                <UserManagementUsersTable
+                  users={filteredUsers}
+                  departmentGroupCatalog={departmentGroupCatalog}
+                  getEmployeeFlags={getEmployeeFlags}
+                  onEdit={handleEditUser}
+                  onResetPassword={openPasswordResetModal}
+                  onDelete={handleDeleteUser}
+                  onReactivate={handleReactivateUser}
+                  onMoveToDraft={handleMoveToDraft}
+                  onRemoveFlag={handleRemoveFlag}
+                />
+                )
+              ) : (
               <div className="super-admin-card-grid">
                 {filteredUsers.map(user => (
                   <div key={user._id} className="super-admin-card user-card">
@@ -1813,6 +1888,7 @@ const AdminDashboard = () => {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </div>
         )}

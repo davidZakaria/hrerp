@@ -167,6 +167,24 @@
     "wantsToManage": "نطاق الإدارة المطلوب (الفعّال)",
     "groupsLabel": "المجموعات"
   },
+  "userManagement": {
+    "filterTypeLabel": "أسلوب التصفية",
+    "filterSimple": "بحث سريع (استخدم مربع البحث أعلاه)",
+    "filterAdvanced": "متقدم (القسم، الدور، الحالة)",
+    "viewLabel": "العرض",
+    "viewCards": "بطاقات",
+    "viewTable": "جدول (معاينة مثل Excel)",
+    "filterAny": "الكل",
+    "toolbarHint": "تطبّق المرشحات المتقدمة مع صندوق البحث. عرض الجدول مفيد لمراجعة صفوف كثيرة.",
+    "colVacation": "أيام إجازة",
+    "colJoined": "تاريخ الانضمام",
+    "colLastLogin": "آخر دخول",
+    "colScope": "إدارة الأقسام",
+    "colFlags": "علامات",
+    "never": "أبدًا",
+    "noUsersTitle": "لا يوجد مستخدمون مطابقون",
+    "noUsersBody": "جرّب بحثًا آخر أو غيّر أسلوب التصفية أو أنشئ مستخدمًا جديدًا."
+  },
   "superAdminDashboard": {
     "title": "المدير الأعلى",
     "navUsers": "إدارة المستخدمين",

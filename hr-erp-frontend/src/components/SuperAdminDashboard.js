@@ -14,6 +14,8 @@ import {
   filterFormsByManagementMonths,
   currentYearMonth,
 } from '../utils/filterFormsByManagementMonths';
+import UserManagementToolbar from './users/UserManagementToolbar';
+import UserManagementUsersTable from './users/UserManagementUsersTable';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -28,6 +30,11 @@ const SuperAdminDashboard = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [modificationReason, setModificationReason] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [userMgmtFilterLayout, setUserMgmtFilterLayout] = useState('simple');
+  const [userMgmtViewMode, setUserMgmtViewMode] = useState('cards');
+  const [userMgmtDeptFilter, setUserMgmtDeptFilter] = useState('');
+  const [userMgmtRoleFilter, setUserMgmtRoleFilter] = useState('');
+  const [userMgmtStatusFilter, setUserMgmtStatusFilter] = useState('');
   const [activeTab, setActiveTab] = useState('users');
   
   // Audit logs state
@@ -1127,6 +1134,44 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  const userMgmtDeptOptions = useMemo(
+    () => [...new Set(users.map((u) => u.department).filter(Boolean))].sort(),
+    [users]
+  );
+  const userMgmtRoleOptions = useMemo(
+    () => [...new Set(users.map((u) => u.role).filter(Boolean))].sort(),
+    [users]
+  );
+  const userMgmtStatusOptions = useMemo(
+    () => [...new Set(users.map((u) => u.status).filter(Boolean))].sort(),
+    [users]
+  );
+
+  const superAdminDirectoryUsers = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    return users.filter((u) => {
+      const matchesSearch =
+        !q ||
+        [u.name, u.email, u.role, u.department, u.employeeCode].some((f) =>
+          String(f ?? '').toLowerCase().includes(q)
+        );
+      if (!matchesSearch) return false;
+      if (userMgmtFilterLayout === 'advanced') {
+        if (userMgmtDeptFilter && u.department !== userMgmtDeptFilter) return false;
+        if (userMgmtRoleFilter && u.role !== userMgmtRoleFilter) return false;
+        if (userMgmtStatusFilter && u.status !== userMgmtStatusFilter) return false;
+      }
+      return true;
+    });
+  }, [
+    users,
+    searchTerm,
+    userMgmtFilterLayout,
+    userMgmtDeptFilter,
+    userMgmtRoleFilter,
+    userMgmtStatusFilter,
+  ]);
+
   const superAdminFormsMonthFiltered = useMemo(
     () => filterFormsByManagementMonths(forms, formsSubmittedMonth, formsEventMonth),
     [forms, formsSubmittedMonth, formsEventMonth]
@@ -1539,15 +1584,45 @@ const SuperAdminDashboard = () => {
                 </div>
               )}
 
+              <UserManagementToolbar
+                filterLayout={userMgmtFilterLayout}
+                onFilterLayoutChange={setUserMgmtFilterLayout}
+                viewMode={userMgmtViewMode}
+                onViewModeChange={setUserMgmtViewMode}
+                departmentOptions={userMgmtDeptOptions}
+                roleOptions={userMgmtRoleOptions}
+                statusOptions={userMgmtStatusOptions}
+                deptValue={userMgmtDeptFilter}
+                roleValue={userMgmtRoleFilter}
+                statusValue={userMgmtStatusFilter}
+                onDeptChange={setUserMgmtDeptFilter}
+                onRoleChange={setUserMgmtRoleFilter}
+                onStatusChange={setUserMgmtStatusFilter}
+              />
+
+              {userMgmtViewMode === 'table' ? (
+                superAdminDirectoryUsers.length === 0 ? (
+                  <div className="no-users-message" style={{ marginTop: '1rem' }}>
+                    <div className="no-users-icon">👥</div>
+                    <h3>{t('userManagement.noUsersTitle')}</h3>
+                    <p>{t('userManagement.noUsersBody')}</p>
+                  </div>
+                ) : (
+                <UserManagementUsersTable
+                  users={superAdminDirectoryUsers}
+                  departmentGroupCatalog={departmentGroupCatalog}
+                  getEmployeeFlags={getEmployeeFlags}
+                  onEdit={handleUserSelect}
+                  onResetPassword={openPasswordResetModal}
+                  onDelete={handleDeleteUser}
+                  onReactivate={handleReactivateUser}
+                  onMoveToDraft={handleMoveToDraft}
+                  onRemoveFlag={handleRemoveFlag}
+                />
+                )
+              ) : (
               <div className="users-container">
-                {users
-                  .filter(user => 
-                    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    user.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    user.department?.toLowerCase().includes(searchTerm.toLowerCase())
-                  )
-                  .map(user => {
+                {superAdminDirectoryUsers.map(user => {
                     const getRoleIcon = (role) => {
                       switch(role) {
                         case 'super_admin': return '⚡';
@@ -1743,12 +1818,7 @@ const SuperAdminDashboard = () => {
                     );
                   })}
                   
-                {users.filter(user => 
-                  user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  user.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  user.department?.toLowerCase().includes(searchTerm.toLowerCase())
-                ).length === 0 && (
+                {superAdminDirectoryUsers.length === 0 && (
                   <div className="no-users-message">
                     <div className="no-users-icon">👥</div>
                     <h3>No users found</h3>
@@ -1756,6 +1826,7 @@ const SuperAdminDashboard = () => {
                   </div>
                 )}
               </div>
+              )}
             </div>
           )}
 

@@ -5930,3 +5930,190 @@ form select:focus {
 }
 
 /* ===== END EMPLOYEE FLAGS STYLES ===== */
+
+/* ===== USER MANAGEMENT: toolbar + Excel-style table ===== */
+.user-mgmt-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  align-items: flex-end;
+}
+
+.user-mgmt-toolbar-primary {
+  margin-bottom: 0.5rem;
+}
+
+.user-mgmt-toolbar-advanced {
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.user-mgmt-toolbar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 160px;
+}
+
+.user-mgmt-toolbar-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.user-mgmt-toolbar-select {
+  min-width: 200px;
+}
+
+.user-mgmt-toolbar-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  opacity: 0.72;
+  line-height: 1.4;
+}
+
+.user-mgmt-sheet-wrap {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(15, 23, 42, 0.65);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.user-mgmt-sheet {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  color: #e8eaed;
+}
+
+.user-mgmt-sheet thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  padding: 0.55rem 0.65rem;
+  background: linear-gradient(180deg, #2d3748, #252f3d);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-bottom: 2px solid rgba(100, 181, 246, 0.45);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.user-mgmt-sheet tbody td {
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  vertical-align: middle;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.user-mgmt-sheet tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.user-mgmt-sheet tbody tr:hover td {
+  background: rgba(100, 181, 246, 0.12);
+}
+
+.user-mgmt-sheet-col-idx,
+.user-mgmt-sheet-num {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.user-mgmt-sheet-strong {
+  font-weight: 600;
+  color: #fff;
+}
+
+.user-mgmt-sheet-clip {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-mgmt-sheet-flags {
+  text-align: center;
+}
+
+.user-mgmt-sheet-flag-pill {
+  display: inline-block;
+  min-width: 1.5rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(255, 152, 0, 0.25);
+  border: 1px solid rgba(255, 152, 0, 0.45);
+  font-weight: 600;
+}
+
+.user-mgmt-sheet-actions-col {
+  min-width: 200px;
+}
+
+.user-mgmt-sheet-actions-cell {
+  white-space: normal;
+}
+
+.user-mgmt-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.user-mgmt-sheet-btn {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.user-mgmt-sheet-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.user-mgmt-sheet-btn-primary {
+  background: rgba(33, 150, 243, 0.35);
+  border-color: rgba(33, 150, 243, 0.55);
+}
+
+.user-mgmt-sheet-btn-warn {
+  background: rgba(255, 152, 0, 0.3);
+  border-color: rgba(255, 152, 0, 0.5);
+}
+
+.user-mgmt-sheet-btn-success {
+  background: rgba(76, 175, 80, 0.35);
+  border-color: rgba(76, 175, 80, 0.55);
+}
+
+.user-mgmt-sheet-btn-danger {
+  background: rgba(244, 67, 54, 0.3);
+  border-color: rgba(244, 67, 54, 0.5);
+}
+
+.user-mgmt-sheet-flag-row {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.user-mgmt-sheet-flag-x {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+.users-section .user-mgmt-toolbar {
+  background: rgba(255, 255, 255, 0.06);
+}

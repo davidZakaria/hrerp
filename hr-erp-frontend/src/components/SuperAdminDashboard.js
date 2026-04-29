@@ -8,6 +8,7 @@ import API_URL from '../config/api';
 import DashboardSectionNav from './layout/DashboardSectionNav';
 import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
 import { getEffectiveManagedDepartmentsClient } from '../utils/effectiveManagedDepartments';
+import { FRONTEND_UI_REVISION } from '../frontendUiRevision';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -1723,7 +1724,13 @@ const SuperAdminDashboard = () => {
             <div className="super-admin-forms-panel">
               <div className="section-header-redesign">
                 <div className="section-info">
-                  <h3 className="text-gradient">{t('superAdminDashboard.formMgmtTitle')}</h3>
+                  <h3 className="text-gradient">
+                    {t('superAdminDashboard.formMgmtTitle')}
+                    <span className="super-admin-ui-revision" title="Shown when this JS bundle is loaded. If missing, the site is serving an old build or cache.">
+                      {' '}
+                      · {FRONTEND_UI_REVISION}
+                    </span>
+                  </h3>
                   <p className="section-description">{t('superAdminDashboard.formMgmtDesc')}</p>
                 </div>
                 <div className="section-actions super-admin-forms-toolbar">

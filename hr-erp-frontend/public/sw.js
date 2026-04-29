@@ -2,7 +2,7 @@
  * Minimal service worker: do NOT cache hashed webpack assets (/static/js/*, /static/css/*).
  * Cache-first for those caused ChunkLoadError after deploy (old main.*.js loading missing chunks).
  */
-const CACHE_NAME = 'hr-erp-shell-v2';
+const CACHE_NAME = 'hr-erp-shell-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

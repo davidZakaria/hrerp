@@ -360,6 +360,15 @@ body::after {
   color: #334155;
 }
 
+.super-admin-dashboard .super-admin-ui-revision {
+  font-size: 0.65em;
+  font-weight: 600;
+  color: #ca8a04;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 .super-admin-dashboard .super-admin-stats-hint {
   font-size: 0.875rem;
   color: #475569;

@@ -1,6 +1,10 @@
 /**
- * Month filters for Form Management (UTC month boundaries).
+ * Month filters for Form Management.
+ * Uses wall-clock calendar months in a fixed offset (default Egypt UTC+2) so
+ * "April" matches how users expect local dates, not UTC-only boundaries.
+ *
  * Query params: submittedMonth=YYYY-MM, eventMonth=YYYY-MM
+ * Env: FORM_MONTH_TZ_OFFSET e.g. +02:00, -05:00
  */
 
 function parseYm(s) {
@@ -13,17 +17,31 @@ function parseYm(s) {
     return { year, month };
 }
 
-/** Inclusive UTC range for a calendar month */
-function utcMonthBounds(year, month) {
-    const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
-    const end = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+function getTzOffsetString() {
+    const o = process.env.FORM_MONTH_TZ_OFFSET || '+02:00';
+    if (typeof o !== 'string' || !/^[+-]\d{2}:\d{2}$/.test(o.trim())) {
+        return '+02:00';
+    }
+    return o.trim();
+}
+
+/**
+ * Inclusive instant range for a calendar month in the configured offset zone.
+ */
+function zonedMonthBounds(year, month, tzOffset) {
+    const ym = `${year}-${String(month).padStart(2, '0')}`;
+    const start = new Date(`${ym}-01T00:00:00${tzOffset}`);
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const end = new Date(
+        `${ym}-${String(lastDay).padStart(2, '0')}T23:59:59.999${tzOffset}`
+    );
     return { start, end };
 }
 
 function buildSubmittedMonthCondition(submittedMonth) {
     const p = parseYm(submittedMonth);
     if (!p) return null;
-    const { start, end } = utcMonthBounds(p.year, p.month);
+    const { start, end } = zonedMonthBounds(p.year, p.month, getTzOffsetString());
     return { createdAt: { $gte: start, $lte: end } };
 }
 
@@ -33,7 +51,7 @@ function buildSubmittedMonthCondition(submittedMonth) {
 function buildEventMonthCondition(eventMonth) {
     const p = parseYm(eventMonth);
     if (!p) return null;
-    const { start, end } = utcMonthBounds(p.year, p.month);
+    const { start, end } = zonedMonthBounds(p.year, p.month, getTzOffsetString());
     return {
         $or: [
             {
@@ -93,7 +111,8 @@ function mergeFormMonthFilters(baseFilter, submittedMonth, eventMonth) {
 
 module.exports = {
     parseYm,
-    utcMonthBounds,
+    zonedMonthBounds,
+    getTzOffsetString,
     buildSubmittedMonthCondition,
     buildEventMonthCondition,
     mergeFormMonthFilters

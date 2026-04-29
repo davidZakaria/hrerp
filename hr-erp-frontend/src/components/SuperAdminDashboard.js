@@ -9,6 +9,7 @@ import DashboardSectionNav from './layout/DashboardSectionNav';
 import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
 import { getEffectiveManagedDepartmentsClient } from '../utils/effectiveManagedDepartments';
 import { FRONTEND_UI_REVISION } from '../frontendUiRevision';
+import FormManagementMonthFilterBar from './forms/FormManagementMonthFilterBar';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -90,6 +91,7 @@ const SuperAdminDashboard = () => {
   const [departmentGroupCatalog, setDepartmentGroupCatalog] = useState({});
   const [formsSubmittedMonth, setFormsSubmittedMonth] = useState('');
   const [formsEventMonth, setFormsEventMonth] = useState('');
+  const [formsMonthFilterKind, setFormsMonthFilterKind] = useState('all');
   const [formsLoading, setFormsLoading] = useState(false);
   const [formsSuccess, setFormsSuccess] = useState('');
   const [formsError, setFormsError] = useState('');
@@ -388,6 +390,26 @@ const SuperAdminDashboard = () => {
       setFormsError('Error connecting to server');
     } finally {
       setFormsLoading(false);
+    }
+  }, [formsSubmittedMonth, formsEventMonth]);
+
+  const handleFormsMonthFilterKindChange = useCallback((kind) => {
+    const sub = formsSubmittedMonth;
+    const ev = formsEventMonth;
+    const keep = sub || ev;
+    setFormsMonthFilterKind(kind);
+    if (kind === 'all') {
+      setFormsSubmittedMonth('');
+      setFormsEventMonth('');
+    } else if (kind === 'submitted') {
+      setFormsEventMonth('');
+      setFormsSubmittedMonth(sub || keep || '');
+    } else if (kind === 'event') {
+      setFormsSubmittedMonth('');
+      setFormsEventMonth(ev || keep || '');
+    } else if (kind === 'both') {
+      setFormsSubmittedMonth(sub || ev || '');
+      setFormsEventMonth(ev || sub || '');
     }
   }, [formsSubmittedMonth, formsEventMonth]);
 
@@ -1759,36 +1781,14 @@ const SuperAdminDashboard = () => {
                 </div>
               </div>
 
-              <div className="form-month-filters super-admin-form-month-filters" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', marginBottom: '1.25rem' }}>
-                <div className="form-group-elegant" style={{ marginBottom: 0 }}>
-                  <label className="form-label-elegant" style={{ display: 'block', marginBottom: '0.35rem' }}>{t('adminDashboard.submittedInMonth')}</label>
-                  <input
-                    type="month"
-                    className="form-input-elegant"
-                    value={formsSubmittedMonth}
-                    onChange={(e) => setFormsSubmittedMonth(e.target.value)}
-                  />
-                </div>
-                <div className="form-group-elegant" style={{ marginBottom: 0 }}>
-                  <label className="form-label-elegant" style={{ display: 'block', marginBottom: '0.35rem' }}>{t('adminDashboard.eventInMonth')}</label>
-                  <input
-                    type="month"
-                    className="form-input-elegant"
-                    value={formsEventMonth}
-                    onChange={(e) => setFormsEventMonth(e.target.value)}
-                  />
-                </div>
-                <button
-                  type="button"
-                  className="btn-elegant"
-                  onClick={() => {
-                    setFormsSubmittedMonth('');
-                    setFormsEventMonth('');
-                  }}
-                >
-                  {t('adminDashboard.allTime')}
-                </button>
-              </div>
+              <FormManagementMonthFilterBar
+                filterKind={formsMonthFilterKind}
+                onFilterKindChange={handleFormsMonthFilterKindChange}
+                submittedMonth={formsSubmittedMonth}
+                eventMonth={formsEventMonth}
+                onSubmittedMonthChange={setFormsSubmittedMonth}
+                onEventMonthChange={setFormsEventMonth}
+              />
 
               {formsSuccess && (
                 <div className="success-message" style={{ marginBottom: '1rem' }}>{formsSuccess}</div>
@@ -1823,79 +1823,33 @@ const SuperAdminDashboard = () => {
                   />
                 </div>
 
-                <div className="form-type-navigation">
-                  <button
-                    type="button"
-                    className={`form-type-tab ${superAdminFormType === 'all' ? 'active' : ''}`}
-                    onClick={() => setSuperAdminFormType('all')}
+                <div className="form-mgmt-type-row">
+                  <label htmlFor="super-admin-form-type">{t('superAdminDashboard.typeFilterLabel')}</label>
+                  <select
+                    id="super-admin-form-type"
+                    className="form-mgmt-select"
+                    value={superAdminFormType}
+                    onChange={(e) => setSuperAdminFormType(e.target.value)}
                   >
-                    📋 {t('superAdminDashboard.formTabAll')} ({forms.length})
-                  </button>
-                  <button
-                    type="button"
-                    className={`form-type-tab ${superAdminFormType === 'vacation' ? 'active' : ''}`}
-                    onClick={() => setSuperAdminFormType('vacation')}
-                  >
-                    🏖️ {t('forms.vacation')} ({forms.filter((f) => f.type === 'vacation').length})
-                  </button>
-                  <button
-                    type="button"
-                    className={`form-type-tab ${superAdminFormType === 'excuse' ? 'active' : ''}`}
-                    onClick={() => setSuperAdminFormType('excuse')}
-                  >
-                    🕐 {t('forms.excuse')} ({forms.filter((f) => f.type === 'excuse').length})
-                  </button>
-                  <button
-                    type="button"
-                    className={`form-type-tab ${superAdminFormType === 'wfh' ? 'active' : ''}`}
-                    onClick={() => setSuperAdminFormType('wfh')}
-                  >
-                    🏠 {t('forms.workFromHome')} ({forms.filter((f) => f.type === 'wfh').length})
-                  </button>
-                  <button
-                    type="button"
-                    className={`form-type-tab ${superAdminFormType === 'sick_leave' ? 'active' : ''}`}
-                    onClick={() => setSuperAdminFormType('sick_leave')}
-                  >
-                    🏥 {t('forms.sickLeave')} ({forms.filter((f) => f.type === 'sick_leave').length})
-                  </button>
-                  <button
-                    type="button"
-                    className={`form-type-tab ${superAdminFormType === 'extra_hours' ? 'active' : ''}`}
-                    onClick={() => setSuperAdminFormType('extra_hours')}
-                  >
-                    ⏱️ {t('forms.extra_hours')} ({forms.filter((f) => f.type === 'extra_hours').length})
-                  </button>
-                  <button
-                    type="button"
-                    className={`form-type-tab ${superAdminFormType === 'mission' ? 'active' : ''}`}
-                    onClick={() => setSuperAdminFormType('mission')}
-                  >
-                    ✈️ {t('forms.mission')} ({forms.filter((f) => f.type === 'mission').length})
-                  </button>
+                    <option value="all">{t('superAdminDashboard.formTabAll')} ({forms.length})</option>
+                    <option value="vacation">{t('forms.vacation')} ({forms.filter((f) => f.type === 'vacation').length})</option>
+                    <option value="excuse">{t('forms.excuse')} ({forms.filter((f) => f.type === 'excuse').length})</option>
+                    <option value="wfh">{t('forms.workFromHome')} ({forms.filter((f) => f.type === 'wfh').length})</option>
+                    <option value="sick_leave">{t('forms.sickLeave')} ({forms.filter((f) => f.type === 'sick_leave').length})</option>
+                    <option value="extra_hours">{t('forms.extra_hours')} ({forms.filter((f) => f.type === 'extra_hours').length})</option>
+                    <option value="mission">{t('forms.mission')} ({forms.filter((f) => f.type === 'mission').length})</option>
+                  </select>
                 </div>
 
-                <div className="grid-4 super-admin-pipeline-stats">
-                  <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #ff9800, #f57c00)' }}>
-                    <div className="stats-number">{superAdminPipelineForms.filter((f) => f.status === 'pending').length}</div>
-                    <div className="stats-label">{t('adminDashboard.summaryPendingManager')}</div>
-                  </div>
-                  <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #2196f3, #1976d2)' }}>
-                    <div className="stats-number">
-                      {superAdminPipelineForms.filter((f) => f.status === 'manager_approved' || f.status === 'manager_submitted').length}
-                    </div>
-                    <div className="stats-label">{t('adminDashboard.summaryAwaitingHr')}</div>
-                  </div>
-                  <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #4caf50, #388e3c)' }}>
-                    <div className="stats-number">{superAdminPipelineForms.filter((f) => f.status === 'approved').length}</div>
-                    <div className="stats-label">{t('adminDashboard.summaryApproved')}</div>
-                  </div>
-                  <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #f44336, #c62828)' }}>
-                    <div className="stats-number">
-                      {superAdminPipelineForms.filter((f) => f.status === 'rejected' || f.status === 'manager_rejected').length}
-                    </div>
-                    <div className="stats-label">{t('adminDashboard.summaryRejected')}</div>
-                  </div>
+                <div className="form-mgmt-pipeline-inline" aria-label={t('superAdminDashboard.pipelineCompact')}>
+                  <strong className="form-mgmt-pipeline-strong">{t('superAdminDashboard.pipelineCompact')}:</strong>
+                  <span>{t('adminDashboard.summaryPendingManager')}: {superAdminPipelineForms.filter((f) => f.status === 'pending').length}</span>
+                  <span className="pipe-sep">|</span>
+                  <span>{t('adminDashboard.summaryAwaitingHr')}: {superAdminPipelineForms.filter((f) => f.status === 'manager_approved' || f.status === 'manager_submitted').length}</span>
+                  <span className="pipe-sep">|</span>
+                  <span>{t('adminDashboard.summaryApproved')}: {superAdminPipelineForms.filter((f) => f.status === 'approved').length}</span>
+                  <span className="pipe-sep">|</span>
+                  <span>{t('adminDashboard.summaryRejected')}: {superAdminPipelineForms.filter((f) => f.status === 'rejected' || f.status === 'manager_rejected').length}</span>
                 </div>
 
                 <div className="forms-container">

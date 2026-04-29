@@ -184,7 +184,7 @@
     "userMgmtTitle": "إدارة المستخدمين",
     "userMgmtDesc": "جميع الحسابات والأدوار ومجموعات الأقسام والعلامات",
     "formMgmtTitle": "إدارة النماذج",
-    "formMgmtDesc": "كل الطلبات في النظام — تصفية بالشهر، بحث، تصدير، تصحيح أو حذف",
+    "formMgmtDesc": "ابدأ بتصفية التاريخ، ثم اضبط النوع أو البحث. يمكنك التصدير أو التصحيح أدناه.",
     "submitMyForm": "تقديم طلب شخصي",
     "hideSubmitForm": "إخفاء النموذج",
     "exportForms": "تصدير CSV",
@@ -198,7 +198,24 @@
     "loadingForms": "جاري تحميل النماذج…",
     "searchFormsList": "بحث في هذه القائمة (الاسم، البريد، القسم، النوع)",
     "formTabAll": "كل الأنواع",
-    "pipelineHint": "أعداد مراحل الموافقة للمرشح الحالي (نوع النموذج + شهور التصفية)"
+    "pipelineHint": "الأعداد أدناه تطابق نوع الطلب ومرشح التاريخ الذي اخترته.",
+    "typeFilterLabel": "نوع الطلب",
+    "pipelineCompact": "مسار الموافقة"
+  },
+  "formManagement": {
+    "dateFilter": "عرض الطلبات",
+    "filterAll": "كل التواريخ (بدون تصفية شهر)",
+    "filterSubmitted": "مُرسَلة في هذا الشهر",
+    "filterEvent": "إجازة / نشاط / مهمة في هذا الشهر",
+    "filterBoth": "شهر الإرسال وشهر النشاط معًا (مرنّج صارم)",
+    "submittedMonthShort": "تاريخ الإرسال",
+    "eventMonthShort": "نشاط / إجازة",
+    "quickThisMonth": "هذا الشهر",
+    "quickLastMonth": "الشهر الماضي",
+    "clear": "إلغاء التصفية",
+    "timezoneHint": "حدود الشهر تعتمد توقيت مصر (UTC+2) لتطابق التقويم المحلي.",
+    "typeLabel": "نوع الطلب",
+    "pipelineSummary": "المسار (النوع المحدد)"
   },
   "forms": {
     "vacation": "إجازة",

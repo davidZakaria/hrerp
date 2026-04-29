@@ -184,7 +184,7 @@
     "userMgmtTitle": "User management",
     "userMgmtDesc": "All accounts, roles, department groups, and flags",
     "formMgmtTitle": "Form management",
-    "formMgmtDesc": "Every request in the system — filter by month, search, export, correct, or delete",
+    "formMgmtDesc": "Filter by date first, then narrow by type or search. Export or correct entries below.",
     "submitMyForm": "Submit personal request",
     "hideSubmitForm": "Hide form",
     "exportForms": "Export CSV",
@@ -198,7 +198,24 @@
     "loadingForms": "Loading forms…",
     "searchFormsList": "Search this list (name, email, department, type)",
     "formTabAll": "All types",
-    "pipelineHint": "Pipeline counts for the filter above (type tab + month filters)"
+    "pipelineHint": "Counts below match the request type and date filter you chose.",
+    "typeFilterLabel": "Request type",
+    "pipelineCompact": "Pipeline"
+  },
+  "formManagement": {
+    "dateFilter": "Show requests",
+    "filterAll": "All dates (no month limit)",
+    "filterSubmitted": "Submitted in this month",
+    "filterEvent": "Leave / trip / activity in this month",
+    "filterBoth": "Submitted month AND activity month (strict)",
+    "submittedMonthShort": "Submitted",
+    "eventMonthShort": "Activity",
+    "quickThisMonth": "This month",
+    "quickLastMonth": "Last month",
+    "clear": "Clear filter",
+    "timezoneHint": "Month boundaries use Egypt time (UTC+2) so they line up with local calendar dates.",
+    "typeLabel": "Request type",
+    "pipelineSummary": "Pipeline (selected type)"
   },
   "forms": {
     "vacation": "Vacation",

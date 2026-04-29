@@ -397,33 +397,40 @@ body::after {
 }
 
 .super-admin-dashboard .super-admin-forms-shell {
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.04) 0%, rgba(234, 179, 8, 0.1) 100%);
-  border: 1px solid rgba(234, 179, 8, 0.38);
-  border-radius: 16px;
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+  background: linear-gradient(165deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 41, 59, 0.88) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 14px;
+  padding: 1.1rem 1.15rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+  color: #e2e8f0;
+  color-scheme: dark;
 }
 
 .super-admin-dashboard .super-admin-forms-shell .super-admin-pipeline-hint {
-  font-size: 0.8125rem;
-  color: #64748b;
-  margin: 0 0 1rem 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin: 0 0 0.85rem 0;
   line-height: 1.45;
 }
 
 .super-admin-dashboard .super-admin-forms-search-row {
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
 }
 
 .super-admin-dashboard .super-admin-forms-search-row label {
   display: block;
   margin-bottom: 0.35rem;
+  color: #cbd5e1;
+  font-size: 0.82rem;
 }
 
 .super-admin-dashboard .super-admin-forms-search-input {
   max-width: 28rem;
   width: 100%;
+  background: #0f172a;
+  color: #f1f5f9;
+  border: 1px solid rgba(71, 85, 105, 0.9);
 }
 
 .super-admin-dashboard .super-admin-forms-shell .form-type-navigation {
@@ -431,11 +438,145 @@ body::after {
 }
 
 .super-admin-dashboard .super-admin-pipeline-stats {
-  margin-bottom: 1.25rem !important;
+  margin-bottom: 1rem !important;
 }
 
 .super-admin-dashboard .super-admin-forms-shell .forms-container {
   margin-top: 0.5rem;
+}
+
+/* Form management (Admin + Super Admin): calmer dark panel for month filters */
+.form-mgmt-filters-bar {
+  background: linear-gradient(165deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.92) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 12px;
+  padding: 1rem 1.1rem 0.85rem;
+  margin-bottom: 1.25rem;
+  color: #e2e8f0;
+  color-scheme: dark;
+}
+
+.form-mgmt-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.85rem 1rem;
+}
+
+.form-mgmt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.form-mgmt-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  letter-spacing: 0.02em;
+}
+
+.form-mgmt-select,
+.form-mgmt-month-input {
+  background: #0f172a;
+  color: #f1f5f9;
+  border: 1px solid rgba(71, 85, 105, 0.9);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.9rem;
+  min-width: 12rem;
+  max-width: 100%;
+}
+
+.form-mgmt-select:focus,
+.form-mgmt-month-input:focus {
+  outline: none;
+  border-color: #eab308;
+  box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.2);
+}
+
+.form-mgmt-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.form-mgmt-chip {
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px solid rgba(234, 179, 8, 0.45);
+  color: #fde68a;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.form-mgmt-chip:hover {
+  background: rgba(234, 179, 8, 0.28);
+}
+
+.form-mgmt-chip-muted {
+  background: rgba(51, 65, 85, 0.5);
+  border-color: rgba(100, 116, 139, 0.6);
+  color: #94a3b8;
+}
+
+.form-mgmt-chip-muted:hover {
+  background: rgba(51, 65, 85, 0.75);
+}
+
+.form-mgmt-timezone-hint {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0.65rem 0 0 0;
+  line-height: 1.45;
+  max-width: 40rem;
+}
+
+.form-mgmt-type-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.form-mgmt-type-row label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.form-mgmt-pipeline-strong {
+  color: #fde68a;
+  font-weight: 700;
+  margin-right: 0.35rem;
+}
+
+.form-mgmt-pipeline-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.85rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 10px;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  margin-bottom: 1rem;
+}
+
+.form-mgmt-pipeline-inline .pipe-sep {
+  color: #64748b;
+  user-select: none;
+}
+
+.admin-dashboard .form-mgmt-filters-bar {
+  margin-top: 0.25rem;
 }
 
 /* App Header Mobile */

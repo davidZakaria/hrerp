@@ -19,6 +19,17 @@ const {
 const { getEffectiveManagedDepartments } = require('../utils/effectiveManagedDepartments');
 const { mergeFormMonthFilters } = require('../utils/formMonthFilters');
 
+/** Express can duplicate query keys; normalize to a single trimmed YYYY-MM string */
+function firstQueryParam(val) {
+    if (val == null) return undefined;
+    if (Array.isArray(val)) {
+        const first = val.find((x) => x != null && String(x).trim() !== '');
+        return first != null ? String(first).trim() : undefined;
+    }
+    const s = String(val).trim();
+    return s === '' ? undefined : s;
+}
+
 // Middleware to verify JWT token
 const auth = require('../middleware/auth');
 const { validateObjectId } = require('../middleware/validateObjectId');
@@ -370,7 +381,9 @@ router.get('/admin', auth, async (req, res) => {
         }
 
         const page = parseInt(req.query.page, 10) || 1;
-        const hasMonth = !!(req.query.submittedMonth || req.query.eventMonth);
+        const submittedMonth = firstQueryParam(req.query.submittedMonth);
+        const eventMonth = firstQueryParam(req.query.eventMonth);
+        const hasMonth = !!(submittedMonth || eventMonth);
         const limit = Math.min(
             parseInt(req.query.limit, 10) || (hasMonth ? 500 : 50),
             2000
@@ -387,21 +400,23 @@ router.get('/admin', auth, async (req, res) => {
 
         const filter = mergeFormMonthFilters(
             baseFilter,
-            req.query.submittedMonth,
-            req.query.eventMonth
+            submittedMonth,
+            eventMonth
         );
 
-        // Check cache first
+        // Month-filtered lists must not use a stale short-TTL cache (easy to confuse with "all months")
         const cacheKey = `forms-admin-${JSON.stringify({
             baseFilter,
-            submittedMonth: req.query.submittedMonth || null,
-            eventMonth: req.query.eventMonth || null,
+            submittedMonth: submittedMonth || null,
+            eventMonth: eventMonth || null,
             page,
             limit
         })}`;
-        const cachedForms = getCachedData(cacheKey);
-        if (cachedForms) {
-            return res.json(cachedForms);
+        if (!hasMonth) {
+            const cachedForms = getCachedData(cacheKey);
+            if (cachedForms) {
+                return res.json(cachedForms);
+            }
         }
 
         // Use simple populate instead of complex aggregation for compatibility
@@ -413,8 +428,9 @@ router.get('/admin', auth, async (req, res) => {
             .skip(skip)
             .limit(limit);
         
-        // Cache the results
-        setCachedData(cacheKey, forms);
+        if (!hasMonth) {
+            setCachedData(cacheKey, forms);
+        }
         
         res.json(forms);
     } catch (err) {
@@ -1536,10 +1552,12 @@ router.get('/all', auth, async (req, res) => {
         if (user.role !== 'super_admin') {
             return res.status(403).json({ msg: 'Not authorized as super admin' });
         }
+        const submittedMonth = firstQueryParam(req.query.submittedMonth);
+        const eventMonth = firstQueryParam(req.query.eventMonth);
         const filter = mergeFormMonthFilters(
             {},
-            req.query.submittedMonth,
-            req.query.eventMonth
+            submittedMonth,
+            eventMonth
         );
         const forms = await Form.find(filter)
             .populate('user', 'name email department')

@@ -12,6 +12,7 @@ import logger from '../utils/logger';
 import DashboardSectionNav from './layout/DashboardSectionNav';
 import { smoothScrollToElement } from '../utils/smoothScroll';
 import { getEffectiveManagedDepartmentsClient } from '../utils/effectiveManagedDepartments';
+import FormManagementMonthFilterBar from './forms/FormManagementMonthFilterBar';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -33,6 +34,7 @@ const AdminDashboard = () => {
   const [refreshingForms, setRefreshingForms] = useState(false);
   const [formsSubmittedMonth, setFormsSubmittedMonth] = useState('');
   const [formsEventMonth, setFormsEventMonth] = useState('');
+  const [formsMonthFilterKind, setFormsMonthFilterKind] = useState('all');
   const [departmentGroupCatalog, setDepartmentGroupCatalog] = useState({});
   
   // User Management state
@@ -216,6 +218,26 @@ const AdminDashboard = () => {
       setRefreshingForms(false);
     }
   }, [fetchAllUserBalances, formsSubmittedMonth, formsEventMonth]);
+
+  const handleFormsMonthFilterKindChange = useCallback((kind) => {
+    const sub = formsSubmittedMonth;
+    const ev = formsEventMonth;
+    const keep = sub || ev;
+    setFormsMonthFilterKind(kind);
+    if (kind === 'all') {
+      setFormsSubmittedMonth('');
+      setFormsEventMonth('');
+    } else if (kind === 'submitted') {
+      setFormsEventMonth('');
+      setFormsSubmittedMonth(sub || keep || '');
+    } else if (kind === 'event') {
+      setFormsSubmittedMonth('');
+      setFormsEventMonth(ev || keep || '');
+    } else if (kind === 'both') {
+      setFormsSubmittedMonth(sub || ev || '');
+      setFormsEventMonth(ev || sub || '');
+    }
+  }, [formsSubmittedMonth, formsEventMonth]);
 
   const fetchCurrentUser = useCallback(async () => {
     try {
@@ -1812,38 +1834,14 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            <div className="form-month-filters admin-form-month-filters" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>{t('adminDashboard.submittedInMonth')}</label>
-                <input
-                  type="month"
-                  className="form-input-elegant"
-                  style={{ minWidth: '160px' }}
-                  value={formsSubmittedMonth}
-                  onChange={(e) => setFormsSubmittedMonth(e.target.value)}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>{t('adminDashboard.eventInMonth')}</label>
-                <input
-                  type="month"
-                  className="form-input-elegant"
-                  style={{ minWidth: '160px' }}
-                  value={formsEventMonth}
-                  onChange={(e) => setFormsEventMonth(e.target.value)}
-                />
-              </div>
-              <button
-                type="button"
-                className="btn-elegant"
-                onClick={() => {
-                  setFormsSubmittedMonth('');
-                  setFormsEventMonth('');
-                }}
-              >
-                {t('adminDashboard.allTime')}
-              </button>
-            </div>
+            <FormManagementMonthFilterBar
+              filterKind={formsMonthFilterKind}
+              onFilterKindChange={handleFormsMonthFilterKindChange}
+              submittedMonth={formsSubmittedMonth}
+              eventMonth={formsEventMonth}
+              onSubmittedMonthChange={setFormsSubmittedMonth}
+              onEventMonthChange={setFormsEventMonth}
+            />
 
             {/* Vacation Management Cards */}
             <div className="vacation-management-section">
@@ -1921,65 +1919,32 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            {/* Form Type Navigation */}
-            <div className="elegant-card" style={{ marginBottom: '2rem' }}>
-              <div className="form-type-navigation">
-                <button 
-                  className={`form-type-tab ${activeFormType === 'vacation' ? 'active' : ''}`}
-                  onClick={() => setActiveFormType('vacation')}
+            <div className="form-mgmt-filters-bar admin-form-type-shell" style={{ marginBottom: '1.25rem' }}>
+              <div className="form-mgmt-type-row" style={{ marginBottom: 0 }}>
+                <label htmlFor="admin-form-type">{t('formManagement.typeLabel')}</label>
+                <select
+                  id="admin-form-type"
+                  className="form-mgmt-select"
+                  value={activeFormType}
+                  onChange={(e) => setActiveFormType(e.target.value)}
                 >
-                  🏖️ Vacation Requests ({forms.filter(f => f.type === 'vacation').length})
-                </button>
-                <button 
-                  className={`form-type-tab ${activeFormType === 'excuse' ? 'active' : ''}`}
-                  onClick={() => setActiveFormType('excuse')}
-                >
-                  🕐 Excuse Requests ({forms.filter(f => f.type === 'excuse').length})
-                </button>
-                <button 
-                  className={`form-type-tab ${activeFormType === 'wfh' ? 'active' : ''}`}
-                  onClick={() => setActiveFormType('wfh')}
-                >
-                  🏠 Work From Home ({forms.filter(f => f.type === 'wfh').length})
-                </button>
-                <button 
-                  className={`form-type-tab ${activeFormType === 'sick_leave' ? 'active' : ''}`}
-                  onClick={() => setActiveFormType('sick_leave')}
-                >
-                  🏥 Sick Leave ({forms.filter(f => f.type === 'sick_leave').length})
-                </button>
-                <button 
-                  className={`form-type-tab ${activeFormType === 'extra_hours' ? 'active' : ''}`}
-                  onClick={() => setActiveFormType('extra_hours')}
-                >
-                  ⏱️ Overtime Hours ({forms.filter(f => f.type === 'extra_hours').length})
-                </button>
-                <button 
-                  className={`form-type-tab ${activeFormType === 'mission' ? 'active' : ''}`}
-                  onClick={() => setActiveFormType('mission')}
-                >
-                  ✈️ Mission ({forms.filter(f => f.type === 'mission').length})
-                </button>
+                  <option value="vacation">{t('forms.vacation')} ({forms.filter((f) => f.type === 'vacation').length})</option>
+                  <option value="excuse">{t('forms.excuse')} ({forms.filter((f) => f.type === 'excuse').length})</option>
+                  <option value="wfh">{t('forms.workFromHome')} ({forms.filter((f) => f.type === 'wfh').length})</option>
+                  <option value="sick_leave">{t('forms.sickLeave')} ({forms.filter((f) => f.type === 'sick_leave').length})</option>
+                  <option value="extra_hours">{t('forms.extra_hours')} ({forms.filter((f) => f.type === 'extra_hours').length})</option>
+                  <option value="mission">{t('forms.mission')} ({forms.filter((f) => f.type === 'mission').length})</option>
+                </select>
               </div>
-            </div>
-
-            {/* Forms Summary Cards for Selected Type */}
-            <div className="grid-4" style={{ marginBottom: '2rem' }}>
-              <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #ff9800, #f57c00)' }}>
-                <div className="stats-number">{forms.filter(f => f.type === activeFormType && f.status === 'pending').length}</div>
-                <div className="stats-label">{t('adminDashboard.summaryPendingManager')}</div>
-              </div>
-              <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #2196f3, #1976d2)' }}>
-                <div className="stats-number">{forms.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length}</div>
-                <div className="stats-label">{t('adminDashboard.summaryAwaitingHr')}</div>
-              </div>
-              <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #4caf50, #388e3c)' }}>
-                <div className="stats-number">{forms.filter(f => f.type === activeFormType && f.status === 'approved').length}</div>
-                <div className="stats-label">{t('adminDashboard.summaryApproved')}</div>
-              </div>
-              <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #f44336, #d32f2f)' }}>
-                <div className="stats-number">{forms.filter(f => f.type === activeFormType && (f.status === 'rejected' || f.status === 'manager_rejected')).length}</div>
-                <div className="stats-label">{t('adminDashboard.summaryRejected')}</div>
+              <div className="form-mgmt-pipeline-inline" style={{ marginTop: '0.75rem', marginBottom: 0 }} aria-label={t('formManagement.pipelineSummary')}>
+                <strong className="form-mgmt-pipeline-strong">{t('formManagement.pipelineSummary')}</strong>
+                <span>{t('adminDashboard.summaryPendingManager')}: {forms.filter((f) => f.type === activeFormType && f.status === 'pending').length}</span>
+                <span className="pipe-sep">|</span>
+                <span>{t('adminDashboard.summaryAwaitingHr')}: {forms.filter((f) => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length}</span>
+                <span className="pipe-sep">|</span>
+                <span>{t('adminDashboard.summaryApproved')}: {forms.filter((f) => f.type === activeFormType && f.status === 'approved').length}</span>
+                <span className="pipe-sep">|</span>
+                <span>{t('adminDashboard.summaryRejected')}: {forms.filter((f) => f.type === activeFormType && (f.status === 'rejected' || f.status === 'manager_rejected')).length}</span>
               </div>
             </div>
 

@@ -14,6 +14,16 @@ const jwt = require('jsonwebtoken');
 const { createAuditLog } = require('./audit');
 const Audit = require('../models/Audit');
 const { validateObjectId } = require('../middleware/validateObjectId');
+const { DEPARTMENT_GROUPS } = require('../config/departmentGroups');
+const { getEffectiveManagedDepartments } = require('../utils/effectiveManagedDepartments');
+
+function sanitizeManagedDepartmentGroups(raw) {
+  if (!Array.isArray(raw)) return [];
+  const allowed = new Set(Object.keys(DEPARTMENT_GROUPS));
+  return [
+    ...new Set(raw.filter((g) => typeof g === 'string' && allowed.has(g.trim())).map((g) => g.trim()))
+  ];
+}
 
 // Get all users (for admin)
 router.get('/', auth, async (req, res) => {
@@ -27,6 +37,20 @@ router.get('/', auth, async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
+  }
+});
+
+// Catalog of department group keys → leaf departments (admin UI for manager scope)
+router.get('/department-group-catalog', auth, async (req, res) => {
+  try {
+    const requester = await User.findById(req.user.id);
+    if (!requester || (requester.role !== 'admin' && requester.role !== 'super_admin')) {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+    res.json({ groups: DEPARTMENT_GROUPS });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ msg: 'Server error' });
   }
 });
 
@@ -199,7 +223,7 @@ router.post('/', auth, async (req, res) => {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
-    const { name, email, password, department, role, status, managedDepartments, employeeCode } = req.body;
+    const { name, email, password, department, role, status, managedDepartments, managedDepartmentGroups, employeeCode } = req.body;
 
     // Check if user exists
     let user = await User.findOne({ email });
@@ -226,6 +250,8 @@ router.post('/', auth, async (req, res) => {
       vacationDaysLeft: 21,
       excuseHoursLeft: 2,
       managedDepartments: (role === 'manager' && managedDepartments) ? managedDepartments : [],
+      managedDepartmentGroups:
+        role === 'manager' ? sanitizeManagedDepartmentGroups(managedDepartmentGroups || []) : [],
       employeeCode: employeeCode || undefined
     });
 
@@ -250,6 +276,7 @@ router.post('/', auth, async (req, res) => {
         role: user.role,
         status: user.status,
         managedDepartments: user.managedDepartments,
+        managedDepartmentGroups: user.managedDepartmentGroups,
         employeeCode: user.employeeCode
       },
       ipAddress: req.ip || req.connection.remoteAddress,
@@ -373,6 +400,7 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
       password,
       employeeCode,
       managedDepartments,
+      managedDepartmentGroups,
       permissions
     } = req.body;
 
@@ -383,6 +411,9 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     const oldRoleBeforeUpdate = user.role;
     const previousManagedDepartments = Array.isArray(user.managedDepartments)
       ? [...user.managedDepartments]
+      : [];
+    const previousManagedDepartmentGroups = Array.isArray(user.managedDepartmentGroups)
+      ? [...user.managedDepartmentGroups]
       : [];
 
     // Validate role
@@ -438,12 +469,20 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
         let newManagedDepts;
         if (sanitizedDepts.length > 0) {
           newManagedDepts = sanitizedDepts;
-        } else if (effectiveHome) {
-          newManagedDepts = [effectiveHome];
-        } else if (previousManagedDepartments.length > 0) {
-          newManagedDepts = [...previousManagedDepartments];
         } else {
-          newManagedDepts = [];
+          const nextGroups =
+            managedDepartmentGroups !== undefined
+              ? sanitizeManagedDepartmentGroups(managedDepartmentGroups)
+              : previousManagedDepartmentGroups;
+          if (nextGroups.length > 0) {
+            newManagedDepts = [];
+          } else if (previousManagedDepartments.length > 0) {
+            newManagedDepts = [...previousManagedDepartments];
+          } else if (effectiveHome) {
+            newManagedDepts = [effectiveHome];
+          } else {
+            newManagedDepts = [];
+          }
         }
         const oldDepts = JSON.stringify(previousManagedDepartments.map(String).sort());
         const newDepts = JSON.stringify(newManagedDepts.map(String).sort());
@@ -462,8 +501,23 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
         }
         user.managedDepartments = newManagedDepts;
       }
+
+      if (managedDepartmentGroups !== undefined) {
+        const sanitized = sanitizeManagedDepartmentGroups(managedDepartmentGroups);
+        const oldG = JSON.stringify([...previousManagedDepartmentGroups].map(String).sort());
+        const newG = JSON.stringify([...sanitized].map(String).sort());
+        if (oldG !== newG) {
+          modifications.push({
+            field: 'managedDepartmentGroups',
+            oldValue: [...previousManagedDepartmentGroups],
+            newValue: sanitized
+          });
+        }
+        user.managedDepartmentGroups = sanitized;
+      }
     } else {
       user.managedDepartments = [];
+      user.managedDepartmentGroups = [];
     }
 
     // Permissions (for managers) - canEditDepartmentForms allows editing form content
@@ -542,7 +596,7 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
-    const { name, email, department, role, managedDepartments, password, status, employeeCode, modificationReason } = req.body;
+    const { name, email, department, role, managedDepartments, managedDepartmentGroups, password, status, employeeCode, modificationReason } = req.body;
 
     const user = await User.findById(req.params.userId);
     if (!user) {
@@ -556,6 +610,9 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     const oldEmployeeCodeBefore = user.employeeCode;
     const previousManagedDepartments = Array.isArray(user.managedDepartments)
       ? [...user.managedDepartments]
+      : [];
+    const previousManagedDepartmentGroups = Array.isArray(user.managedDepartmentGroups)
+      ? [...user.managedDepartmentGroups]
       : [];
 
     const sortDeptKey = (arr) => JSON.stringify([...arr.map(String)].sort());
@@ -602,16 +659,28 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
         const home = (user.department && String(user.department).trim()) || '';
         if (sanitized.length > 0) {
           user.managedDepartments = sanitized;
-        } else if (home) {
-          user.managedDepartments = [home];
-        } else if (previousManagedDepartments.length > 0) {
-          user.managedDepartments = [...previousManagedDepartments];
         } else {
-          user.managedDepartments = [];
+          const nextGroups =
+            managedDepartmentGroups !== undefined
+              ? sanitizeManagedDepartmentGroups(managedDepartmentGroups)
+              : previousManagedDepartmentGroups;
+          if (nextGroups.length > 0) {
+            user.managedDepartments = [];
+          } else if (previousManagedDepartments.length > 0) {
+            user.managedDepartments = [...previousManagedDepartments];
+          } else if (home) {
+            user.managedDepartments = [home];
+          } else {
+            user.managedDepartments = [];
+          }
         }
+      }
+      if (managedDepartmentGroups !== undefined) {
+        user.managedDepartmentGroups = sanitizeManagedDepartmentGroups(managedDepartmentGroups);
       }
     } else if (role !== undefined) {
       user.managedDepartments = [];
+      user.managedDepartmentGroups = [];
     }
     
     // Update employeeCode (biometric code)
@@ -632,17 +701,17 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
       user.password = await bcrypt.hash(password, salt);
     }
 
-    const managedEffective =
-      targetRole === 'manager'
-        ? (() => {
-            let md = Array.isArray(user.managedDepartments) ? [...user.managedDepartments] : [];
-            if (md.length === 0) {
-              const home = user.department && String(user.department).trim();
-              if (home) md = [home];
-            }
-            return md;
-          })()
+    const previousEffective =
+      oldRoleBeforeUpdate === 'manager'
+        ? getEffectiveManagedDepartments({
+            role: 'manager',
+            managedDepartments: previousManagedDepartments,
+            managedDepartmentGroups: previousManagedDepartmentGroups
+          })
         : [];
+
+    const managedEffective =
+      targetRole === 'manager' ? getEffectiveManagedDepartments(user) : [];
 
     const modifications = [];
     if (name !== undefined && user.name !== oldName) {
@@ -657,10 +726,10 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     if (role !== undefined && user.role !== oldRoleBeforeUpdate) {
       modifications.push({ field: 'role', oldValue: oldRoleBeforeUpdate, newValue: user.role });
     }
-    if (sortDeptKey(previousManagedDepartments) !== sortDeptKey(managedEffective)) {
+    if (sortDeptKey(previousEffective) !== sortDeptKey(managedEffective)) {
       modifications.push({
         field: 'managedDepartments',
-        oldValue: [...previousManagedDepartments],
+        oldValue: [...previousEffective],
         newValue: [...managedEffective]
       });
     }
@@ -712,8 +781,8 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
       auditOld.role = oldRoleBeforeUpdate;
       auditNew.role = user.role;
     }
-    if (sortDeptKey(previousManagedDepartments) !== sortDeptKey(managedEffective)) {
-      auditOld.managedDepartments = [...previousManagedDepartments];
+    if (sortDeptKey(previousEffective) !== sortDeptKey(managedEffective)) {
+      auditOld.managedDepartments = [...previousEffective];
       auditNew.managedDepartments = [...managedEffective];
     }
     if (status && ['active', 'inactive', 'pending'].includes(status) && user.status !== oldStatusBefore) {
@@ -731,7 +800,7 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
 
     const scopeTouched =
       (role !== undefined && user.role !== oldRoleBeforeUpdate) ||
-      sortDeptKey(previousManagedDepartments) !== sortDeptKey(managedEffective);
+      sortDeptKey(previousEffective) !== sortDeptKey(managedEffective);
 
     await user.save();
 
@@ -748,6 +817,7 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
         department: user.department,
         role: user.role,
         managedDepartments: user.managedDepartments,
+        managedDepartmentGroups: user.managedDepartmentGroups,
         ...(modificationReason ? { modificationReason } : {})
       },
       ...(Object.keys(auditOld).length ? { oldValues: auditOld } : {}),
@@ -965,9 +1035,14 @@ router.get('/team-members', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Not authorized - Manager role required' });
         }
 
+        const effectiveDepts = getEffectiveManagedDepartments(manager);
+        if (effectiveDepts.length === 0) {
+          return res.json([]);
+        }
+
         // Find users in departments that this manager manages
         const teamMembers = await User.find({
-            department: { $in: manager.managedDepartments },
+            department: { $in: effectiveDepts },
             role: 'employee',
             status: 'active'
         }).select('name email department vacationDaysLeft role');

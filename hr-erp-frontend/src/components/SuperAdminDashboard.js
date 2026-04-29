@@ -7,6 +7,7 @@ import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 import DashboardSectionNav from './layout/DashboardSectionNav';
 import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
+import { getEffectiveManagedDepartmentsClient } from '../utils/effectiveManagedDepartments';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -44,6 +45,7 @@ const SuperAdminDashboard = () => {
     vacationDaysLeft: 0,
     status: '',
     managedDepartments: [],
+    managedDepartmentGroups: [],
     password: '',
     employeeCode: '',
     permissions: { canEditDepartmentForms: false }
@@ -63,6 +65,7 @@ const SuperAdminDashboard = () => {
     status: 'active',
     vacationDaysLeft: 21,
     managedDepartments: [],
+    managedDepartmentGroups: [],
     employeeCode: ''
   });
 
@@ -84,6 +87,9 @@ const SuperAdminDashboard = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordResetLoading, setPasswordResetLoading] = useState(false);
   const [departmentsDirty, setDepartmentsDirty] = useState(false);
+  const [departmentGroupCatalog, setDepartmentGroupCatalog] = useState({});
+  const [formsSubmittedMonth, setFormsSubmittedMonth] = useState('');
+  const [formsEventMonth, setFormsEventMonth] = useState('');
 
   // Available departments
   const availableDepartments = [
@@ -357,7 +363,12 @@ const SuperAdminDashboard = () => {
     setError('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${API_URL}/api/forms/all`, {
+      const params = new URLSearchParams();
+      if (formsSubmittedMonth) params.set('submittedMonth', formsSubmittedMonth);
+      if (formsEventMonth) params.set('eventMonth', formsEventMonth);
+      const qs = params.toString();
+      const url = `${API_URL}/api/forms/all${qs ? `?${qs}` : ''}`;
+      const res = await fetch(url, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -701,8 +712,6 @@ const SuperAdminDashboard = () => {
     if (activeTab === 'users') {
       fetchUsers();
       fetchAllFlags();
-    } else if (activeTab === 'forms') {
-      fetchForms();
     } else if (activeTab === 'logs') {
       fetchAuditLogs();
       fetchAuditStats();
@@ -714,11 +723,36 @@ const SuperAdminDashboard = () => {
   }, [activeTab]);
 
   useEffect(() => {
+    if (activeTab === 'forms') {
+      fetchForms();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, formsSubmittedMonth, formsEventMonth]);
+
+  useEffect(() => {
     if (activeTab === 'logs') {
       fetchAuditLogs();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auditPage, auditFilters]);
+
+  useEffect(() => {
+    const loadCatalog = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_URL}/api/users/department-group-catalog`, {
+          headers: { 'x-auth-token': token }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDepartmentGroupCatalog(data.groups || {});
+        }
+      } catch (e) {
+        console.error('department-group-catalog', e);
+      }
+    };
+    loadCatalog();
+  }, []);
 
   const handleUserSelect = (user) => {
     setSelectedUser(user);
@@ -736,6 +770,9 @@ const SuperAdminDashboard = () => {
       vacationDaysLeft: user.vacationDaysLeft,
       status: user.status,
       managedDepartments: existingManaged,
+      managedDepartmentGroups: Array.isArray(user.managedDepartmentGroups)
+        ? [...user.managedDepartmentGroups]
+        : [],
       password: '', // Empty - only fill if admin wants to change password
       employeeCode: user.employeeCode || '',
       permissions: { canEditDepartmentForms: user.permissions?.canEditDepartmentForms || false }
@@ -817,9 +854,12 @@ const SuperAdminDashboard = () => {
           employeeCode: userEdit.employeeCode,
           password: userEdit.password || undefined,
           modificationReason,
-          ...(userEdit.role === 'manager' && departmentsDirty && {
+          ...(userEdit.role === 'manager' && {
             managedDepartments: Array.isArray(userEdit.managedDepartments)
               ? userEdit.managedDepartments.filter((d) => typeof d === 'string' && d.trim())
+              : [],
+            managedDepartmentGroups: Array.isArray(userEdit.managedDepartmentGroups)
+              ? userEdit.managedDepartmentGroups.filter((g) => typeof g === 'string' && g.trim())
               : []
           }),
           ...(userEdit.role === 'manager' && { permissions: userEdit.permissions })
@@ -868,6 +908,7 @@ const SuperAdminDashboard = () => {
           status: 'active',
           vacationDaysLeft: 21,
           managedDepartments: [],
+          managedDepartmentGroups: [],
           employeeCode: ''
         });
         setShowCreateUserModal(false);
@@ -879,6 +920,37 @@ const SuperAdminDashboard = () => {
       setError('Error connecting to server');
     }
     setLoading(false);
+  };
+
+  const handleEditGroupChange = (groupKey) => {
+    const current = userEdit.managedDepartmentGroups || [];
+    setDepartmentsDirty(true);
+    if (current.includes(groupKey)) {
+      setUserEdit({
+        ...userEdit,
+        managedDepartmentGroups: current.filter((g) => g !== groupKey)
+      });
+    } else {
+      setUserEdit({
+        ...userEdit,
+        managedDepartmentGroups: [...current, groupKey]
+      });
+    }
+  };
+
+  const handleNewUserGroupChange = (groupKey) => {
+    const current = newUser.managedDepartmentGroups || [];
+    if (current.includes(groupKey)) {
+      setNewUser({
+        ...newUser,
+        managedDepartmentGroups: current.filter((g) => g !== groupKey)
+      });
+    } else {
+      setNewUser({
+        ...newUser,
+        managedDepartmentGroups: [...current, groupKey]
+      });
+    }
   };
 
   // Handle department selection for managers (new user)
@@ -992,11 +1064,15 @@ const SuperAdminDashboard = () => {
 
   const handleExportForms = () => {
     try {
+      const rowsForExport = forms.filter(form =>
+        form.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        form.type?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
       // Create CSV content
       const headers = ['Employee', 'Email', 'Department', 'Form Type', 'Status', 'Start Date', 'End Date', 'Days', 'Reason', 'Submitted Date'];
       const csvContent = [
         headers.join(','),
-        ...forms.map(form => [
+        ...rowsForExport.map(form => [
           `"${form.user?.name || 'Unknown'}"`,
           `"${form.user?.email || 'Unknown'}"`,
           `"${form.user?.department || 'N/A'}"`,
@@ -1461,14 +1537,24 @@ const SuperAdminDashboard = () => {
                             </div>
                           </div>
                           
-                          {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
+                          {user.role === 'manager' &&
+                            (user.managedDepartments?.length > 0 || user.managedDepartmentGroups?.length > 0) && (
                             <div className="managed-departments-display">
-                              <span className="info-label">Manages:</span>
+                              <span className="info-label">Manages (effective):</span>
                               <div className="departments-tags">
-                                {user.managedDepartments.map(dept => (
+                                {getEffectiveManagedDepartmentsClient(
+                                  user.managedDepartments,
+                                  user.managedDepartmentGroups,
+                                  departmentGroupCatalog
+                                ).map((dept) => (
                                   <span key={dept} className="department-tag-small">{dept}</span>
                                 ))}
                               </div>
+                              {user.managedDepartmentGroups?.length > 0 && (
+                                <div style={{ marginTop: '6px', fontSize: '0.8rem', opacity: 0.85 }}>
+                                  Groups: {user.managedDepartmentGroups.join(', ')}
+                                </div>
+                              )}
                             </div>
                           )}
                           
@@ -1594,6 +1680,37 @@ const SuperAdminDashboard = () => {
                     Export Forms
                   </button>
                 </div>
+              </div>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', marginBottom: '1.25rem' }}>
+                <div className="form-group-elegant" style={{ marginBottom: 0 }}>
+                  <label className="form-label-elegant" style={{ display: 'block', marginBottom: '0.35rem' }}>Submitted in</label>
+                  <input
+                    type="month"
+                    className="form-input-elegant"
+                    value={formsSubmittedMonth}
+                    onChange={(e) => setFormsSubmittedMonth(e.target.value)}
+                  />
+                </div>
+                <div className="form-group-elegant" style={{ marginBottom: 0 }}>
+                  <label className="form-label-elegant" style={{ display: 'block', marginBottom: '0.35rem' }}>Event in</label>
+                  <input
+                    type="month"
+                    className="form-input-elegant"
+                    value={formsEventMonth}
+                    onChange={(e) => setFormsEventMonth(e.target.value)}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn-elegant"
+                  onClick={() => {
+                    setFormsSubmittedMonth('');
+                    setFormsEventMonth('');
+                  }}
+                >
+                  All time
+                </button>
               </div>
 
               {showSuperAdminFormSubmission && (
@@ -2206,7 +2323,8 @@ const SuperAdminDashboard = () => {
                             : prev.department
                               ? [prev.department]
                               : []
-                          : []
+                          : [],
+                      managedDepartmentGroups: newRole === 'manager' ? (prev.managedDepartmentGroups || []) : []
                     }));
                   }}
                   className="form-input-elegant"
@@ -2276,6 +2394,41 @@ const SuperAdminDashboard = () => {
                       </div>
                     ))}
                   </div>
+                  {Object.keys(departmentGroupCatalog).length > 0 && (
+                    <>
+                      <label className="form-label-elegant" style={{ marginTop: '1rem' }}>
+                        Department groups ({userEdit.managedDepartmentGroups?.length || 0} selected)
+                      </label>
+                      <div className="selection-help">
+                        Top-tier scope: one group adds all listed departments (see server config).
+                      </div>
+                      <div className="departments-grid" style={{ marginBottom: '0.5rem' }}>
+                        {Object.keys(departmentGroupCatalog).map((key) => (
+                          <div
+                            key={key}
+                            className={`department-card ${userEdit.managedDepartmentGroups?.includes(key) ? 'selected' : ''}`}
+                            onClick={() => handleEditGroupChange(key)}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={userEdit.managedDepartmentGroups?.includes(key) || false}
+                              onChange={() => {}}
+                            />
+                            <span className="department-name">{key.replace(/_/g, ' ')}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p style={{ fontSize: '0.85rem', opacity: 0.85, margin: '0 0 1rem' }}>
+                        Effective coverage:{' '}
+                        {getEffectiveManagedDepartmentsClient(
+                          userEdit.managedDepartments,
+                          userEdit.managedDepartmentGroups,
+                          departmentGroupCatalog
+                        ).length}{' '}
+                        departments
+                      </p>
+                    </>
+                  )}
                   <div className="form-group-elegant" style={{ marginTop: '1rem' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                       <input
@@ -3273,9 +3426,10 @@ const SuperAdminDashboard = () => {
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser({
-                    ...newUser, 
-                    role: e.target.value, 
-                    managedDepartments: e.target.value === 'manager' ? newUser.managedDepartments : []
+                    ...newUser,
+                    role: e.target.value,
+                    managedDepartments: e.target.value === 'manager' ? newUser.managedDepartments : [],
+                    managedDepartmentGroups: e.target.value === 'manager' ? newUser.managedDepartmentGroups : []
                   })}
                   className="form-input-elegant"
                 >
@@ -3352,6 +3506,64 @@ const SuperAdminDashboard = () => {
                       </div>
                     ))}
                   </div>
+                  {Object.keys(departmentGroupCatalog).length > 0 && (
+                    <>
+                      <label className="form-label-elegant" style={{ marginTop: '1rem', display: 'block' }}>
+                        Department groups ({newUser.managedDepartmentGroups?.length || 0} selected)
+                      </label>
+                      <div className="selection-help" style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '0.75rem' }}>
+                        Optional: assign a named group (e.g. all engineering units) from server config.
+                      </div>
+                      <div
+                        className="departments-grid"
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                          gap: '0.5rem',
+                          marginTop: '0.5rem',
+                          marginBottom: '0.5rem'
+                        }}
+                      >
+                        {Object.keys(departmentGroupCatalog).map((key) => (
+                          <div
+                            key={key}
+                            className={`department-card ${newUser.managedDepartmentGroups?.includes(key) ? 'selected' : ''}`}
+                            onClick={() => handleNewUserGroupChange(key)}
+                            style={{
+                              padding: '0.8rem',
+                              border: '1px solid rgba(255, 255, 255, 0.2)',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              backgroundColor: newUser.managedDepartmentGroups?.includes(key)
+                                ? 'rgba(59, 130, 246, 0.3)'
+                                : 'rgba(255, 255, 255, 0.1)',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={newUser.managedDepartmentGroups?.includes(key) || false}
+                              onChange={() => {}}
+                              style={{ marginRight: '0.5rem' }}
+                            />
+                            <span className="department-name" style={{ color: '#fff', fontSize: '0.9rem' }}>
+                              {key.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <p style={{ fontSize: '0.85rem', opacity: 0.85 }}>
+                        Effective coverage:{' '}
+                        {getEffectiveManagedDepartmentsClient(
+                          newUser.managedDepartments,
+                          newUser.managedDepartmentGroups,
+                          departmentGroupCatalog
+                        ).length}{' '}
+                        departments
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
               

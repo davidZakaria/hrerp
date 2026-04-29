@@ -38,7 +38,10 @@ const Login = ({ onLogin }) => {
         localStorage.setItem('userRole', data.role);
         localStorage.setItem('userId', data.userId);
         localStorage.setItem('userName', data.name);
-        localStorage.setItem('managedDepartments', JSON.stringify(data.managedDepartments || []));
+        localStorage.setItem(
+          'managedDepartments',
+          JSON.stringify(data.effectiveManagedDepartments || data.managedDepartments || [])
+        );
         
         // Redirect based on user role
         setTimeout(() => {

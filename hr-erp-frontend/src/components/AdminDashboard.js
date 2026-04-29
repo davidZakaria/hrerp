@@ -11,6 +11,7 @@ import API_URL from '../config/api';
 import logger from '../utils/logger';
 import DashboardSectionNav from './layout/DashboardSectionNav';
 import { smoothScrollToElement } from '../utils/smoothScroll';
+import { getEffectiveManagedDepartmentsClient } from '../utils/effectiveManagedDepartments';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -23,17 +24,21 @@ const AdminDashboard = () => {
   const [forms, setForms] = useState([]);
   const [formsLoading, setFormsLoading] = useState(false);
   const [formsError, setFormsError] = useState('');
+  const [formsSuccess, setFormsSuccess] = useState('');
   const [comments, setComments] = useState({});
   const [formsSearch, setFormsSearch] = useState('');
   const [vacationDaysMap, setVacationDaysMap] = useState({});
   const [activeFormType, setActiveFormType] = useState('vacation');
   const [processingForms, setProcessingForms] = useState(new Set());
   const [refreshingForms, setRefreshingForms] = useState(false);
+  const [formsSubmittedMonth, setFormsSubmittedMonth] = useState('');
+  const [formsEventMonth, setFormsEventMonth] = useState('');
+  const [departmentGroupCatalog, setDepartmentGroupCatalog] = useState({});
   
   // User Management state
   const [users, setUsers] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
-  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState('');
   const [usersSearch, setUsersSearch] = useState('');
   
@@ -67,6 +72,7 @@ const AdminDashboard = () => {
     department: '', 
     role: 'employee',
     managedDepartments: [],
+    managedDepartmentGroups: [],
     employeeCode: ''
   });
   const [message, setMessage] = useState('');
@@ -92,6 +98,7 @@ const AdminDashboard = () => {
     department: '',
     role: 'employee',
     managedDepartments: [],
+    managedDepartmentGroups: [],
     employeeCode: '',
     password: '',
     status: 'active'
@@ -179,20 +186,21 @@ const AdminDashboard = () => {
     setFormsLoading(true);
     setRefreshingForms(true);
     setFormsError('');
+    setFormsSuccess('');
     const token = localStorage.getItem('token');
     try {
-      logger.log('🔄 Fetching admin forms...');
+      const params = {};
+      if (formsSubmittedMonth) params.submittedMonth = formsSubmittedMonth;
+      if (formsEventMonth) params.eventMonth = formsEventMonth;
       const res = await axios.get(`${API_URL}/api/forms/admin`, {
-        headers: { 'x-auth-token': token }
+        headers: { 'x-auth-token': token },
+        params
       });
       const data = res.data;
       setForms(data);
-      logger.log(`✅ Admin forms received: ${data.length} forms`);
-      
-      // Batch fetch all user balances in a single request (much faster!)
       fetchAllUserBalances();
     } catch (err) {
-      logger.error('❌ Forms fetch error:', err);
+      logger.error('Forms fetch error:', err);
       if (err.response) {
         // Server responded with error status
         setFormsError(err.response.data?.msg || `Server error: ${err.response.status}`);
@@ -207,10 +215,9 @@ const AdminDashboard = () => {
       setFormsLoading(false);
       setRefreshingForms(false);
     }
-  }, [fetchAllUserBalances]);
+  }, [fetchAllUserBalances, formsSubmittedMonth, formsEventMonth]);
 
-  // Fetch current user info
-  const fetchCurrentUser = async () => {
+  const fetchCurrentUser = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const res = await axios.get(`${API_URL}/api/auth/me`, {
@@ -220,10 +227,9 @@ const AdminDashboard = () => {
     } catch (err) {
       logger.error('Error fetching current user:', err);
     }
-  };
+  }, []);
 
-  // Fetch all users (active and pending)
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setUsersLoading(true);
     setUsersError('');
     try {
@@ -237,20 +243,18 @@ const AdminDashboard = () => {
     } catch (err) {
       logger.error('Error fetching users:', err);
       setUsersError('Error fetching users');
+    } finally {
+      setUsersLoading(false);
     }
-    setUsersLoading(false);
-  };
+  }, []);
 
-  // Fetch all employee flags
-  const fetchAllFlags = async () => {
+  const fetchAllFlags = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const res = await axios.get(`${API_URL}/api/employee-flags/all`, {
         headers: { 'x-auth-token': token }
       });
       setAllFlags(res.data.flags || []);
-      
-      // Calculate summary
       const flags = res.data.flags || [];
       const deductions = flags.filter(f => f.type === 'deduction').length;
       const rewards = flags.filter(f => f.type === 'reward').length;
@@ -258,7 +262,7 @@ const AdminDashboard = () => {
     } catch (err) {
       logger.error('Error fetching flags:', err);
     }
-  };
+  }, []);
 
   // Get flags for a specific employee
   const getEmployeeFlags = (employeeId) => {
@@ -324,7 +328,7 @@ const AdminDashboard = () => {
         { headers: { 'x-auth-token': token } }
       );
       setMessage('User created successfully');
-      setNewUser({ name: '', email: '', password: '', department: '', role: 'employee', managedDepartments: [], employeeCode: '' });
+      setNewUser({ name: '', email: '', password: '', department: '', role: 'employee', managedDepartments: [], managedDepartmentGroups: [], employeeCode: '' });
       setShowCreateUserModal(false);
       fetchUsers();
     } catch (err) {
@@ -351,6 +355,9 @@ const AdminDashboard = () => {
       department: user.department,
       role: user.role,
       managedDepartments: user.managedDepartments || [],
+      managedDepartmentGroups: Array.isArray(user.managedDepartmentGroups)
+        ? [...user.managedDepartmentGroups]
+        : [],
       employeeCode: user.employeeCode || '',
       password: '', // Empty - only fill if admin wants to change password
       status: user.status || 'active'
@@ -373,6 +380,36 @@ const AdminDashboard = () => {
       fetchUsers();
     } catch (err) {
       setMessage(err.response?.data?.msg || 'Error updating user');
+    }
+  };
+
+  const handleEditUserGroupChange = (groupKey) => {
+    const current = editUserData.managedDepartmentGroups || [];
+    if (current.includes(groupKey)) {
+      setEditUserData({
+        ...editUserData,
+        managedDepartmentGroups: current.filter((g) => g !== groupKey)
+      });
+    } else {
+      setEditUserData({
+        ...editUserData,
+        managedDepartmentGroups: [...current, groupKey]
+      });
+    }
+  };
+
+  const handleNewUserGroupChange = (groupKey) => {
+    const current = newUser.managedDepartmentGroups || [];
+    if (current.includes(groupKey)) {
+      setNewUser({
+        ...newUser,
+        managedDepartmentGroups: current.filter((g) => g !== groupKey)
+      });
+    } else {
+      setNewUser({
+        ...newUser,
+        managedDepartmentGroups: [...current, groupKey]
+      });
     }
   };
 
@@ -538,6 +575,7 @@ const AdminDashboard = () => {
   const handleFormAction = async (id, status) => {
     const token = localStorage.getItem('token');
     setFormsError('');
+    setFormsSuccess('');
     
     if (!token) {
       setFormsError('Authentication required. Please log in again.');
@@ -546,7 +584,6 @@ const AdminDashboard = () => {
 
     // Prevent duplicate submissions by checking if this form is already being processed
     if (processingForms.has(id)) {
-      logger.log('Form already being processed, ignoring duplicate request');
       return;
     }
 
@@ -554,13 +591,6 @@ const AdminDashboard = () => {
     setProcessingForms(prev => new Set([...prev, id]));
 
     try {
-      logger.log('Admin form action:', {
-        formId: id,
-        status: status,
-        adminComment: comments[id] || 'No comment'
-      });
-
-      // Create timeout controller
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
@@ -583,26 +613,22 @@ const AdminDashboard = () => {
       const data = await res.json();
       
       if (res.ok) {
-        logger.log('Form action successful:', data);
-        
-        // OPTIMISTIC UPDATE: Immediately update the form status in UI
-        setForms(prevForms => 
-          prevForms.map(form => 
-            form._id === id 
-              ? { 
-                  ...form, 
+        setForms(prevForms =>
+          prevForms.map(form =>
+            form._id === id
+              ? {
+                  ...form,
                   status: status,
                   adminApprovedBy: currentUser,
                   adminApprovedAt: new Date().toISOString(),
                   adminComment: comments[id] || ''
-                } 
+                }
               : form
           )
         );
-        
-        // Show success message
-        const successMessage = `✅ Form ${status} successfully!`;
-        setFormsError(successMessage);
+
+        setFormsSuccess(t('adminDashboard.formActionSuccess'));
+        setFormsError('');
         
         // Clear the comment for this form
         setComments(prev => {
@@ -611,15 +637,13 @@ const AdminDashboard = () => {
           return updated;
         });
         
-        // Clear success message after 3 seconds
+        // Clear success message after a few seconds
         setTimeout(() => {
-          setFormsError('');
-        }, 3000);
-        
-        // Refresh from server in background to ensure consistency
-        setTimeout(async () => {
-          logger.log('🔄 Background refresh for consistency...');
-          await fetchForms();
+          setFormsSuccess('');
+        }, 4000);
+
+        setTimeout(() => {
+          fetchForms();
         }, 1000);
         
       } else {
@@ -648,8 +672,9 @@ const AdminDashboard = () => {
         } else if (res.status >= 500) {
           errorMessage = 'Server error. Please try again later.';
         }
-        
+
         setFormsError(errorMessage);
+        setFormsSuccess('');
         
         if (data.msg?.includes('insufficient vacation days')) {
           handleCommentChange(id, data.msg);
@@ -672,11 +697,9 @@ const AdminDashboard = () => {
       }
       
       setFormsError(errorMessage);
-      
-      // Refresh forms to ensure UI is in sync with server
+      setFormsSuccess('');
       setTimeout(() => fetchForms(), 2000);
     } finally {
-      // Remove from processing set
       setProcessingForms(prev => {
         const updated = new Set(prev);
         updated.delete(id);
@@ -689,31 +712,28 @@ const AdminDashboard = () => {
     if (window.confirm('Are you sure you want to delete this form?')) {
       const token = localStorage.getItem('token');
       setFormsError('');
-      
+      setFormsSuccess('');
+
       const deleteUrl = `${API_URL}/api/forms/${id}`;
-      logger.log('🗑️ Deleting form with URL:', deleteUrl);
-      logger.log('🗑️ Form ID:', id);
-      
+
       try {
         const res = await fetch(deleteUrl, {
           method: 'DELETE',
           headers: { 'x-auth-token': token }
         });
-        
-        logger.log('🗑️ Delete response status:', res.status);
-        
+
         if (res.ok) {
-          logger.log('✅ Form deleted successfully');
-          setFormsError('✅ Form deleted successfully! Refreshing...');
+          setFormsSuccess(t('adminDashboard.formDeletedSuccess'));
+          setFormsError('');
           await fetchForms();
-          setTimeout(() => setFormsError(''), 3000);
+          setTimeout(() => setFormsSuccess(''), 4000);
         } else {
           const data = await res.json();
-          logger.error('❌ Delete failed:', data);
+          logger.error('Delete form failed:', data);
           setFormsError(data.msg || 'Failed to delete form.');
         }
       } catch (err) {
-        logger.error('❌ Delete error:', err);
+        logger.error('Delete form error:', err);
         setFormsError('Error connecting to server.');
       }
     }
@@ -840,55 +860,65 @@ const AdminDashboard = () => {
            user.email?.toLowerCase().includes(usersSearch.toLowerCase());
   });
 
-  // Load data based on active tab
   useEffect(() => {
-    if (activeTab === 'forms') {
-      fetchForms();
-    } else if (activeTab === 'users' || activeTab === 'overview') {
-      fetchUsers();
-    }
-    if (activeTab === 'overview') {
-      fetchEmployeeSummary();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]); // Only depend on activeTab, not fetchForms
+    const loadCatalog = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_URL}/api/users/department-group-catalog`, {
+          headers: { 'x-auth-token': token }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDepartmentGroupCatalog(data.groups || {});
+        }
+      } catch (e) {
+        logger.error('department-group-catalog', e);
+      }
+    };
+    loadCatalog();
+  }, []);
 
-  // Initial load - run once on mount
   useEffect(() => {
     fetchCurrentUser();
-    fetchUsers();
-    fetchForms();
-    fetchAllFlags();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array - run only once on mount
+  }, [fetchCurrentUser]);
 
-  // Auto-refresh forms every 30 seconds to keep data synchronized
+  useEffect(() => {
+    if (activeTab === 'overview') {
+      fetchUsers();
+      fetchEmployeeSummary();
+      fetchForms();
+    } else if (activeTab === 'users') {
+      fetchUsers();
+      fetchAllFlags();
+    }
+  }, [activeTab, fetchUsers, fetchEmployeeSummary, fetchForms, fetchAllFlags]);
+
+  useEffect(() => {
+    if (activeTab !== 'forms') return;
+    fetchForms();
+  }, [activeTab, formsSubmittedMonth, formsEventMonth, fetchForms]);
+
+  // Auto-refresh forms every 30 seconds while on Forms tab
   useEffect(() => {
     const interval = setInterval(() => {
       if (activeTab === 'forms') {
-        logger.log('Auto-refreshing forms data...');
         fetchForms();
       }
-    }, 30000); // 30 seconds
+    }, 30000);
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]); // Only depend on activeTab, not fetchForms
+  }, [activeTab, fetchForms]);
 
-  // Refresh when page becomes visible (user switches back to tab)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && activeTab === 'forms') {
-        logger.log('Page became visible, refreshing forms...');
         fetchForms();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]); // Only depend on activeTab, not fetchForms
-
+  }, [activeTab, fetchForms]);
   useEffect(() => {
     if (skipMainScrollRef.current) {
       skipMainScrollRef.current = false;
@@ -906,10 +936,10 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="dashboard-container fade-in">
+    <div className="dashboard-container admin-dashboard fade-in">
       {/* Header */}
       <div className="app-header">
-        <h1 className="app-title">Admin Dashboard</h1>
+        <h1 className="app-title">{t('adminDashboard.title')}</h1>
         <LogoutButton />
       </div>
 
@@ -921,10 +951,10 @@ const AdminDashboard = () => {
         badgeLabel={t('dashboard.nav.badgeAdmin')}
         activeId={activeTab}
         sections={[
-          { id: 'overview', label: 'Overview', icon: '📊', onSelect: () => setActiveTab('overview') },
+          { id: 'overview', label: t('adminDashboard.navOverview'), icon: '📊', onSelect: () => setActiveTab('overview') },
           { id: 'users', label: t('userManagement') || 'User Management', icon: '👥', onSelect: () => setActiveTab('users') },
           { id: 'forms', label: t('formsManagement') || 'Forms Management', icon: '📋', onSelect: () => setActiveTab('forms') },
-          { id: 'ats', label: 'ATS System', icon: '🎯', onSelect: () => setActiveTab('ats') },
+          { id: 'ats', label: t('adminDashboard.navAts'), icon: '🎯', onSelect: () => setActiveTab('ats') },
           { id: 'attendance', label: t('attendance') || 'Attendance', icon: '📈', onSelect: () => setActiveTab('attendance') }
         ]}
       />
@@ -935,6 +965,7 @@ const AdminDashboard = () => {
         {activeTab === 'overview' && (
           <div className="overview-section">
             {/* Stats Cards */}
+            <p className="admin-dashboard-stats-hint">{t('adminDashboard.statsHint')}</p>
             <div className="grid-4">
               <div className="stats-card hover-lift">
                 <div className="stats-number">
@@ -942,7 +973,7 @@ const AdminDashboard = () => {
                     ? users.length 
                     : users.filter(u => u.role !== 'super_admin').length}
                 </div>
-                <div className="stats-label">Active Users</div>
+                <div className="stats-label">{t('adminDashboard.statsActiveUsers')}</div>
               </div>
               <div className="stats-card hover-lift">
                 <div className="stats-number">
@@ -950,32 +981,32 @@ const AdminDashboard = () => {
                     ? pendingUsers.length 
                     : pendingUsers.filter(u => u.role !== 'super_admin').length}
                 </div>
-                <div className="stats-label">Pending Approvals</div>
+                <div className="stats-label">{t('adminDashboard.statsPendingApprovals')}</div>
               </div>
               <div className="stats-card hover-lift">
                 <div className="stats-number">{forms.length}</div>
-                <div className="stats-label">Total Forms</div>
+                <div className="stats-label">{t('adminDashboard.statsTotalForms')}</div>
               </div>
               <div className="stats-card hover-lift">
                 <div className="stats-number">{forms.filter(f => f.status === 'pending').length}</div>
-                <div className="stats-label">Pending Forms</div>
+                <div className="stats-label">{t('adminDashboard.statsPendingForms')}</div>
               </div>
             </div>
 
             {/* Pending User Approvals */}
-            {pendingUsers.length > 0 && (
+            {filteredPendingUsers.length > 0 && (
               <div className="elegant-card">
                 <h2 className="section-title">
-                  🔔 Pending User Registrations ({pendingUsers.length})
+                  {t('adminDashboard.pendingRegistrationsTitle')} ({filteredPendingUsers.length})
                 </h2>
                 <div className="pending-users-grid">
-                  {pendingUsers.map(user => (
+                  {filteredPendingUsers.map(user => (
                     <div key={user._id} className="pending-user-card">
                       <div className="user-info">
                         <h3>{user.name}</h3>
                         <p>{user.email}</p>
                         <p>
-                          <strong>Role:</strong>{' '}
+                          <strong>{t('adminDashboard.roleLabel')}:</strong>{' '}
                           <span style={{ 
                             background: user.role === 'manager' ? '#9C27B0' : '#2196F3',
                             color: 'white',
@@ -986,9 +1017,9 @@ const AdminDashboard = () => {
                             {user.role === 'manager' ? '👔 Manager' : '👤 Employee'}
                           </span>
                         </p>
-                        <p><strong>Department:</strong> {user.department}</p>
+                        <p><strong>{t('adminDashboard.departmentLabel')}:</strong> {user.department}</p>
                         <p>
-                          <strong>Employee Code:</strong>{' '}
+                          <strong>{t('adminDashboard.employeeCodeLabel')}:</strong>{' '}
                           <span style={{ 
                             background: user.employeeCode ? '#4caf50' : '#ff9800',
                             color: 'white',
@@ -996,14 +1027,21 @@ const AdminDashboard = () => {
                             borderRadius: '4px',
                             fontSize: '0.85rem'
                           }}>
-                            {user.employeeCode || 'Not Assigned'}
+                            {user.employeeCode || t('common.notAssigned')}
                           </span>
                         </p>
-                        {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
+                        {user.role === 'manager' && (() => {
+                          const eff = getEffectiveManagedDepartmentsClient(
+                            user.managedDepartments,
+                            user.managedDepartmentGroups,
+                            departmentGroupCatalog
+                          );
+                          if (!eff.length) return null;
+                          return (
                           <p style={{ marginTop: '0.5rem' }}>
-                            <strong>🎯 Wants to Manage:</strong>
+                            <strong>{t('adminDashboard.wantsToManage')}:</strong>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                              {user.managedDepartments.map((dept, idx) => (
+                              {eff.map((dept, idx) => (
                                 <span key={idx} style={{
                                   background: '#FF9800',
                                   color: 'white',
@@ -1015,22 +1053,28 @@ const AdminDashboard = () => {
                                 </span>
                               ))}
                             </div>
+                            {user.managedDepartmentGroups?.length > 0 && (
+                              <span style={{ display: 'block', marginTop: '6px', fontSize: '0.75rem', opacity: 0.9 }}>
+                                {t('adminDashboard.groupsLabel')}: {user.managedDepartmentGroups.join(', ')}
+                              </span>
+                            )}
                           </p>
-                        )}
-                        <p><strong>Registered:</strong> {new Date(user.createdAt).toLocaleDateString()}</p>
+                          );
+                        })()}
+                        <p><strong>{t('adminDashboard.registeredLabel')}:</strong> {new Date(user.createdAt).toLocaleDateString()}</p>
                       </div>
                       <div className="user-actions">
                         <button 
                           className="btn-elegant btn-success"
                           onClick={() => handleApproveUser(user._id)}
                         >
-                          ✅ Approve
+                          {t('adminDashboard.approve')}
                         </button>
                         <button 
                           className="btn-elegant btn-danger"
                           onClick={() => handleRejectUser(user._id)}
                         >
-                          ❌ Reject
+                          {t('adminDashboard.reject')}
                         </button>
                       </div>
                     </div>
@@ -1041,13 +1085,13 @@ const AdminDashboard = () => {
 
             {/* Quick Actions */}
             <div className="elegant-card">
-              <h2 className="section-title">Quick Actions</h2>
+              <h2 className="section-title">{t('adminDashboard.quickActions')}</h2>
               <div className="action-buttons">
                 <button 
                   className="btn-elegant btn-success"
                   onClick={() => setShowCreateUserModal(true)}
                 >
-                  👤 Create New User
+                  {t('adminDashboard.createUser')}
                 </button>
                 <button 
                   className="btn-elegant"
@@ -1056,13 +1100,13 @@ const AdminDashboard = () => {
                     fetchAllEmployees();
                   }}
                 >
-                  🏖️ Manage Vacation Days
+                  {t('adminDashboard.manageVacation')}
                 </button>
                 <button 
                   className="btn-elegant"
                   onClick={handleShowReport}
                 >
-                  📊 Vacation Report
+                  {t('adminDashboard.vacationReport')}
                 </button>
               </div>
             </div>
@@ -1071,8 +1115,8 @@ const AdminDashboard = () => {
             <div className="elegant-card" style={{ marginTop: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h2 className="section-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  📈 Employee Insights
-                  {summaryLoading && <span style={{ fontSize: '0.8rem', color: '#666', fontWeight: 'normal' }}>(Loading...)</span>}
+                  {t('adminDashboard.employeeInsights')}
+                  {summaryLoading && <span style={{ fontSize: '0.8rem', color: '#666', fontWeight: 'normal' }}>({t('adminDashboard.insightsLoading')})</span>}
                 </h2>
                 {employeeSummary && (
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -1105,7 +1149,7 @@ const AdminDashboard = () => {
                       className="btn-elegant"
                       style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
                     >
-                      📥 Export CSV
+                      {t('adminDashboard.exportCsv')}
                     </button>
                     <button
                       onClick={() => {
@@ -1450,7 +1494,7 @@ const AdminDashboard = () => {
               {!employeeSummary && !summaryLoading && (
                 <div style={{ textAlign: 'center', padding: '3rem', color: '#666' }}>
                   <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
-                  <div>No data available. Upload attendance data to see employee insights.</div>
+                  <div>{t('adminDashboard.noInsightsData')}</div>
                 </div>
               )}
             </div>
@@ -1461,11 +1505,11 @@ const AdminDashboard = () => {
         {activeTab === 'users' && (
           <div className="users-section">
             <div className="section-header">
-              <h2 className="section-title">👥 User Management</h2>
+              <h2 className="section-title">{t('adminDashboard.usersSectionTitle')}</h2>
               <div className="section-actions">
                 <input
                   type="text"
-                  placeholder="🔍 Search users by name, email, or department..."
+                  placeholder={t('adminDashboard.searchUsersPlaceholder')}
                   value={usersSearch}
                   onChange={(e) => setUsersSearch(e.target.value)}
                   className="search-input"
@@ -1474,7 +1518,7 @@ const AdminDashboard = () => {
                   className="btn-elegant btn-success"
                   onClick={() => setShowCreateUserModal(true)}
                 >
-                  👤 Create New User
+                  {t('adminDashboard.createUser')}
                 </button>
               </div>
             </div>
@@ -1529,11 +1573,18 @@ const AdminDashboard = () => {
                           <span className="info-label">Department:</span>
                           <span className="info-value">{user.department}</span>
                         </div>
-                        {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
+                        {user.role === 'manager' && (() => {
+                          const eff = getEffectiveManagedDepartmentsClient(
+                            user.managedDepartments,
+                            user.managedDepartmentGroups,
+                            departmentGroupCatalog
+                          );
+                          if (!eff.length) return null;
+                          return (
                           <div className="info-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                            <span className="info-label" style={{ marginBottom: '0.5rem' }}>🎯 Wants to Manage:</span>
+                            <span className="info-label" style={{ marginBottom: '0.5rem' }}>🎯 Wants to Manage (effective):</span>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                              {user.managedDepartments.map((dept, idx) => (
+                              {eff.map((dept, idx) => (
                                 <span key={idx} style={{
                                   background: '#FF9800',
                                   color: 'white',
@@ -1546,26 +1597,20 @@ const AdminDashboard = () => {
                                 </span>
                               ))}
                             </div>
+                            {user.managedDepartmentGroups?.length > 0 && (
+                              <span style={{ marginTop: '6px', fontSize: '0.75rem', opacity: 0.9 }}>
+                                Groups: {user.managedDepartmentGroups.join(', ')}
+                              </span>
+                            )}
                           </div>
-                        )}
+                          );
+                        })()}
                         <div className="info-row">
                           <span className="info-label">Registration Date:</span>
                           <span className="info-value">
                             {new Date(user.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-                        {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
-                          <div className="info-row">
-                            <span className="info-label">Managed Departments:</span>
-                            <div className="department-tags">
-                              {user.managedDepartments.map((dept, index) => (
-                                <span key={index} className="department-tag">
-                                  {dept}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
                       <div className="card-actions">
                         <button 
@@ -1645,18 +1690,31 @@ const AdminDashboard = () => {
                           {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
                         </span>
                       </div>
-                      {user.role === 'manager' && user.managedDepartments && user.managedDepartments.length > 0 && (
+                      {user.role === 'manager' && (() => {
+                        const eff = getEffectiveManagedDepartmentsClient(
+                          user.managedDepartments,
+                          user.managedDepartmentGroups,
+                          departmentGroupCatalog
+                        );
+                        if (!eff.length) return null;
+                        return (
                         <div className="info-row">
-                          <span className="info-label">Managed Departments:</span>
+                          <span className="info-label">Managed (effective):</span>
                           <div className="department-tags">
-                            {user.managedDepartments.map((dept, index) => (
+                            {eff.map((dept, index) => (
                               <span key={index} className="department-tag">
                                 {dept}
                               </span>
                             ))}
                           </div>
+                          {user.managedDepartmentGroups?.length > 0 && (
+                            <div style={{ fontSize: '0.8rem', marginTop: '6px', width: '100%' }}>
+                              Groups: {user.managedDepartmentGroups.join(', ')}
+                            </div>
+                          )}
                         </div>
-                      )}
+                        );
+                      })()}
                       {/* Employee Flags */}
                       {getEmployeeFlags(user._id).length > 0 && (
                         <div className="info-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
@@ -1730,32 +1788,61 @@ const AdminDashboard = () => {
         {activeTab === 'forms' && (
           <div className="forms-section">
             <div className="section-header">
-              <h2 className="section-title">📋 Forms Management Dashboard {refreshingForms ? '(Refreshing...)' : ''}</h2>
+              <h2 className="section-title">
+                {t('adminDashboard.formsSectionTitle')}
+                {refreshingForms ? ` (${t('adminDashboard.formsRefreshing')})` : ''}
+              </h2>
               <div className="section-actions">
                 <input
                   type="text"
-                  placeholder="🔍 Search by employee name, email, or department..."
+                  placeholder={t('adminDashboard.searchFormsPlaceholder')}
                   value={formsSearch}
                   onChange={(e) => setFormsSearch(e.target.value)}
                   className="search-input"
                 />
                 <button 
-                  className="btn-elegant"
-                  onClick={() => {
-                    logger.log('Manual refresh triggered');
-                    fetchForms();
-                  }}
+                  className="btn-elegant admin-forms-refresh"
+                  onClick={() => fetchForms()}
                   disabled={formsLoading || refreshingForms}
-                  title="Refresh forms data"
-                  style={{ 
-                    marginLeft: '10px',
-                    background: (formsLoading || refreshingForms) ? '#ccc' : undefined,
-                    cursor: (formsLoading || refreshingForms) ? 'not-allowed' : 'pointer'
-                  }}
+                  type="button"
+                  title={t('adminDashboard.refresh')}
                 >
-                  {(formsLoading || refreshingForms) ? '⏳ Refreshing...' : '🔄 Refresh'}
+                  {(formsLoading || refreshingForms) ? t('adminDashboard.formsRefreshing') : t('adminDashboard.refresh')}
                 </button>
               </div>
+            </div>
+
+            <div className="form-month-filters admin-form-month-filters" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>{t('adminDashboard.submittedInMonth')}</label>
+                <input
+                  type="month"
+                  className="form-input-elegant"
+                  style={{ minWidth: '160px' }}
+                  value={formsSubmittedMonth}
+                  onChange={(e) => setFormsSubmittedMonth(e.target.value)}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>{t('adminDashboard.eventInMonth')}</label>
+                <input
+                  type="month"
+                  className="form-input-elegant"
+                  style={{ minWidth: '160px' }}
+                  value={formsEventMonth}
+                  onChange={(e) => setFormsEventMonth(e.target.value)}
+                />
+              </div>
+              <button
+                type="button"
+                className="btn-elegant"
+                onClick={() => {
+                  setFormsSubmittedMonth('');
+                  setFormsEventMonth('');
+                }}
+              >
+                {t('adminDashboard.allTime')}
+              </button>
             </div>
 
             {/* Vacation Management Cards */}
@@ -1880,27 +1967,24 @@ const AdminDashboard = () => {
             <div className="grid-4" style={{ marginBottom: '2rem' }}>
               <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #ff9800, #f57c00)' }}>
                 <div className="stats-number">{forms.filter(f => f.type === activeFormType && f.status === 'pending').length}</div>
-                <div className="stats-label">Pending Manager</div>
+                <div className="stats-label">{t('adminDashboard.summaryPendingManager')}</div>
               </div>
               <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #2196f3, #1976d2)' }}>
                 <div className="stats-number">{forms.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length}</div>
-                <div className="stats-label">Awaiting HR</div>
+                <div className="stats-label">{t('adminDashboard.summaryAwaitingHr')}</div>
               </div>
               <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #4caf50, #388e3c)' }}>
                 <div className="stats-number">{forms.filter(f => f.type === activeFormType && f.status === 'approved').length}</div>
-                <div className="stats-label">Approved</div>
+                <div className="stats-label">{t('adminDashboard.summaryApproved')}</div>
               </div>
               <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #f44336, #d32f2f)' }}>
                 <div className="stats-number">{forms.filter(f => f.type === activeFormType && (f.status === 'rejected' || f.status === 'manager_rejected')).length}</div>
-                <div className="stats-label">Rejected</div>
+                <div className="stats-label">{t('adminDashboard.summaryRejected')}</div>
               </div>
             </div>
 
-            {formsError && (
-              <div className={formsError.includes('✅') ? 'success-message' : 'error-message'}>
-                {formsError}
-              </div>
-            )}
+            {formsSuccess && <div className="success-message">{formsSuccess}</div>}
+            {formsError && <div className="error-message">{formsError}</div>}
             {formsLoading && <div className="spinner-elegant"></div>}
 
             {/* Pending Manager Approval Section */}
@@ -2481,7 +2565,7 @@ const AdminDashboard = () => {
                 <label className="form-label-elegant">Role</label>
                 <select
                   value={newUser.role}
-                  onChange={(e) => setNewUser({...newUser, role: e.target.value, managedDepartments: e.target.value === 'manager' ? newUser.managedDepartments : []})}
+                  onChange={(e) => setNewUser({...newUser, role: e.target.value, managedDepartments: e.target.value === 'manager' ? newUser.managedDepartments : [], managedDepartmentGroups: e.target.value === 'manager' ? newUser.managedDepartmentGroups : []})}
                   className="form-input-elegant"
                 >
                   <option value="employee">Employee</option>
@@ -2521,6 +2605,44 @@ const AdminDashboard = () => {
                       </div>
                     ))}
                   </div>
+                  {Object.keys(departmentGroupCatalog).length > 0 && (
+                    <>
+                      <label className="form-label-elegant" style={{ marginTop: '1rem', display: 'block' }}>
+                        Department groups ({newUser.managedDepartmentGroups?.length || 0} selected)
+                      </label>
+                      <div className="departments-grid" style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '0.5rem',
+                        marginTop: '0.5rem'
+                      }}>
+                        {Object.keys(departmentGroupCatalog).map((key) => (
+                          <div
+                            key={key}
+                            className={`department-card ${newUser.managedDepartmentGroups?.includes(key) ? 'selected' : ''}`}
+                            onClick={() => handleNewUserGroupChange(key)}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={newUser.managedDepartmentGroups?.includes(key) || false}
+                              onChange={() => {}}
+                              style={{ marginRight: '0.5rem' }}
+                            />
+                            <span className="department-name">{key.replace(/_/g, ' ')}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p style={{ fontSize: '0.85rem', opacity: 0.85, marginTop: '0.5rem' }}>
+                        Effective coverage:{' '}
+                        {getEffectiveManagedDepartmentsClient(
+                          newUser.managedDepartments,
+                          newUser.managedDepartmentGroups,
+                          departmentGroupCatalog
+                        ).length}{' '}
+                        departments
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
               <div className="action-buttons">
@@ -2595,7 +2717,7 @@ const AdminDashboard = () => {
                 <label className="form-label-elegant">Role</label>
                 <select
                   value={editUserData.role}
-                  onChange={(e) => setEditUserData({...editUserData, role: e.target.value, managedDepartments: e.target.value === 'manager' ? editUserData.managedDepartments : []})}
+                  onChange={(e) => setEditUserData({...editUserData, role: e.target.value, managedDepartments: e.target.value === 'manager' ? editUserData.managedDepartments : [], managedDepartmentGroups: e.target.value === 'manager' ? editUserData.managedDepartmentGroups : []})}
                   className="form-input-elegant"
                 >
                   <option value="employee">Employee</option>
@@ -2660,6 +2782,44 @@ const AdminDashboard = () => {
                       </div>
                     ))}
                   </div>
+                  {Object.keys(departmentGroupCatalog).length > 0 && (
+                    <>
+                      <label className="form-label-elegant" style={{ marginTop: '1rem', display: 'block' }}>
+                        Department groups ({editUserData.managedDepartmentGroups?.length || 0} selected)
+                      </label>
+                      <div className="departments-grid" style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '0.5rem',
+                        marginTop: '0.5rem'
+                      }}>
+                        {Object.keys(departmentGroupCatalog).map((key) => (
+                          <div
+                            key={key}
+                            className={`department-card ${editUserData.managedDepartmentGroups?.includes(key) ? 'selected' : ''}`}
+                            onClick={() => handleEditUserGroupChange(key)}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={editUserData.managedDepartmentGroups?.includes(key) || false}
+                              onChange={() => {}}
+                              style={{ marginRight: '0.5rem' }}
+                            />
+                            <span className="department-name">{key.replace(/_/g, ' ')}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p style={{ fontSize: '0.85rem', opacity: 0.85, marginTop: '0.5rem' }}>
+                        Effective coverage:{' '}
+                        {getEffectiveManagedDepartmentsClient(
+                          editUserData.managedDepartments,
+                          editUserData.managedDepartmentGroups,
+                          departmentGroupCatalog
+                        ).length}{' '}
+                        departments
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
               <div className="action-buttons">

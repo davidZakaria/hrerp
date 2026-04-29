@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const { getEffectiveManagedDepartments } = require('../utils/effectiveManagedDepartments');
+const { groupKeysCoveringDepartment } = require('../config/departmentGroups');
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -24,6 +26,10 @@ const userSchema = new mongoose.Schema({
         required: true
     },
     managedDepartments: [{
+        type: String
+    }],
+    /** Manager-only: keys into config/departmentGroups (expanded at runtime, not stored as duplicate list) */
+    managedDepartmentGroups: [{
         type: String
     }],
     permissions: {
@@ -133,7 +139,8 @@ userSchema.methods.canManageDepartment = function(department) {
     return true;
   }
   if (this.role === 'manager') {
-    return this.managedDepartments && this.managedDepartments.includes(department);
+    const effective = getEffectiveManagedDepartments(this);
+    return effective.includes(department);
   }
   return false;
 };
@@ -145,7 +152,7 @@ userSchema.methods.getPermissions = function() {
     canEditUsers: ['super_admin', 'admin'].includes(this.role),
     canViewAllForms: ['super_admin', 'admin'].includes(this.role),
     canApproveAll: ['super_admin', 'admin'].includes(this.role),
-    canManageTeam: this.role === 'manager' && this.managedDepartments?.length > 0,
+    canManageTeam: this.role === 'manager' && getEffectiveManagedDepartments(this).length > 0,
     canViewAuditLogs: this.role === 'super_admin',
     canCreateUsers: ['super_admin', 'admin'].includes(this.role),
     canDeleteUsers: this.role === 'super_admin',
@@ -162,19 +169,28 @@ userSchema.statics.findActiveByRole = function(role) {
 };
 
 userSchema.statics.findByDepartment = function(department, includeManagers = false) {
-  const query = includeManagers 
-    ? { $or: [{ department }, { managedDepartments: department }] }
+  const groupKeys = groupKeysCoveringDepartment(department);
+  const query = includeManagers
+    ? {
+        $or: [
+          { department },
+          { managedDepartments: department },
+          ...(groupKeys.length ? [{ managedDepartmentGroups: { $in: groupKeys } }] : [])
+        ]
+      }
     : { department };
-  
+
   return this.find({ ...query, status: 'active' }).select('-password');
 };
 
 userSchema.statics.findTeamMembers = function(managerId) {
   return this.findById(managerId)
     .then(manager => {
-      if (!manager || !manager.managedDepartments) return [];
+      if (!manager) return [];
+      const effective = getEffectiveManagedDepartments(manager);
+      if (effective.length === 0) return [];
       return this.find({
-        department: { $in: manager.managedDepartments },
+        department: { $in: effective },
         status: 'active'
       }).select('-password');
     });
@@ -187,14 +203,19 @@ userSchema.pre('save', function(next) {
     this.email = this.email.toLowerCase().trim();
   }
   
-  // Ensure managers have managed departments
-  if (this.role === 'manager' && (!this.managedDepartments || this.managedDepartments.length === 0)) {
-    this.managedDepartments = [this.department];
+  // Ensure managers have at least one scope: home department, explicit depts, or groups
+  if (this.role === 'manager') {
+    const hasGroups = this.managedDepartmentGroups && this.managedDepartmentGroups.length > 0;
+    const hasDepts = this.managedDepartments && this.managedDepartments.length > 0;
+    if (!hasDepts && !hasGroups) {
+      this.managedDepartments = [this.department];
+    }
   }
-  
+
   // Clear managed departments and form-edit permission for non-managers
   if (this.role !== 'manager') {
     this.managedDepartments = [];
+    this.managedDepartmentGroups = [];
     if (this.permissions) this.permissions.canEditDepartmentForms = false;
   }
   

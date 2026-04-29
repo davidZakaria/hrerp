@@ -16,6 +16,8 @@ const {
     getExcuseDurationHours,
     isPaidExcuseExactlyTwoHours
 } = require('../utils/excuseType');
+const { getEffectiveManagedDepartments } = require('../utils/effectiveManagedDepartments');
+const { mergeFormMonthFilters } = require('../utils/formMonthFilters');
 
 // Middleware to verify JWT token
 const auth = require('../middleware/auth');
@@ -367,20 +369,36 @@ router.get('/admin', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Not authorized' });
         }
 
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 50;
+        const page = parseInt(req.query.page, 10) || 1;
+        const hasMonth = !!(req.query.submittedMonth || req.query.eventMonth);
+        const limit = Math.min(
+            parseInt(req.query.limit, 10) || (hasMonth ? 500 : 50),
+            2000
+        );
         const skip = (page - 1) * limit;
         
-        const filter = {};
-        if (req.query.status) filter.status = req.query.status;
-        if (req.query.type) filter.type = req.query.type;
+        const baseFilter = {};
+        if (req.query.status) baseFilter.status = req.query.status;
+        if (req.query.type) baseFilter.type = req.query.type;
         if (req.query.department) {
             const users = await User.find({ department: req.query.department }).select('_id');
-            filter.user = { $in: users.map(u => u._id) };
+            baseFilter.user = { $in: users.map(u => u._id) };
         }
 
+        const filter = mergeFormMonthFilters(
+            baseFilter,
+            req.query.submittedMonth,
+            req.query.eventMonth
+        );
+
         // Check cache first
-        const cacheKey = `forms-admin-${JSON.stringify(filter)}-${page}-${limit}`;
+        const cacheKey = `forms-admin-${JSON.stringify({
+            baseFilter,
+            submittedMonth: req.query.submittedMonth || null,
+            eventMonth: req.query.eventMonth || null,
+            page,
+            limit
+        })}`;
         const cachedForms = getCachedData(cacheKey);
         if (cachedForms) {
             return res.json(cachedForms);
@@ -408,13 +426,16 @@ router.get('/admin', auth, async (req, res) => {
 // Optimized pending forms for manager with better query
 router.get('/manager/pending', auth, async (req, res) => {
     try {
-        const manager = await User.findById(req.user.id).select('role managedDepartments');
+        const manager = await User.findById(req.user.id).select(
+            'role managedDepartments managedDepartmentGroups'
+        );
         if (manager.role !== 'manager') {
             return res.status(403).json({ msg: 'Not authorized - Manager role required' });
         }
 
-        if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
-            return res.json([]); // No managed departments = no forms to show
+        const effectiveDepts = getEffectiveManagedDepartments(manager);
+        if (effectiveDepts.length === 0) {
+            return res.json([]);
         }
 
         // No caching for pending forms to ensure real-time accuracy
@@ -433,7 +454,7 @@ router.get('/manager/pending', auth, async (req, res) => {
             {
                 $match: {
                     status: 'pending',
-                    'userInfo.department': { $in: manager.managedDepartments },
+                    'userInfo.department': { $in: effectiveDepts },
                     'userInfo._id': { $ne: manager._id } // Exclude manager's own forms
                 }
             },
@@ -555,13 +576,14 @@ router.get('/manager/team-forms', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Not authorized - Manager role required' });
         }
 
-        if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
-            return res.json([]); // No managed departments = no forms to show
+        const effectiveDepts = getEffectiveManagedDepartments(manager);
+        if (effectiveDepts.length === 0) {
+            return res.json([]);
         }
 
         // Find team members in managed departments first
         const teamMembers = await User.find({
-            department: { $in: manager.managedDepartments },
+            department: { $in: effectiveDepts },
             role: 'employee',
             status: 'active'
         }).select('_id');
@@ -616,7 +638,8 @@ router.put('/manager/:id', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Not authorized - Manager role required' });
         }
 
-        if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
+        const effectiveDepts = getEffectiveManagedDepartments(manager);
+        if (effectiveDepts.length === 0) {
             return res.status(403).json({ msg: 'No departments assigned to manage' });
         }
 
@@ -645,7 +668,7 @@ router.put('/manager/:id', auth, async (req, res) => {
         // Double-check: Ensure the form's user is an active employee in manager's departments
         const isTeamMember = await User.findOne({
             _id: form.user._id,
-            department: { $in: manager.managedDepartments },
+            department: { $in: effectiveDepts },
             role: 'employee',
             status: 'active'
         });
@@ -822,7 +845,8 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
         if (!manager || manager.role !== 'manager') {
             return res.status(403).json({ msg: 'Not authorized - Manager role required' });
         }
-        if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
+        const effectiveDepts = getEffectiveManagedDepartments(manager);
+        if (effectiveDepts.length === 0) {
             return res.status(403).json({ msg: 'No departments assigned to manage' });
         }
 
@@ -833,7 +857,7 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
 
         const isTeamMember = await User.findOne({
             _id: form.user._id,
-            department: { $in: manager.managedDepartments },
+            department: { $in: effectiveDepts },
             role: 'employee',
             status: 'active'
         });
@@ -1512,7 +1536,12 @@ router.get('/all', auth, async (req, res) => {
         if (user.role !== 'super_admin') {
             return res.status(403).json({ msg: 'Not authorized as super admin' });
         }
-        const forms = await Form.find()
+        const filter = mergeFormMonthFilters(
+            {},
+            req.query.submittedMonth,
+            req.query.eventMonth
+        );
+        const forms = await Form.find(filter)
             .populate('user', 'name email department')
             .sort({ createdAt: -1 });
         res.json(forms);
@@ -1700,9 +1729,8 @@ router.get('/document/:filename', auth, async (req, res) => {
             // Super admins and admins can view all documents
             authorized = true;
         } else if (requestingUser.role === 'manager') {
-            // Managers can only view documents from their managed departments
-            if (requestingUser.managedDepartments && 
-                requestingUser.managedDepartments.includes(form.user.department)) {
+            const eff = getEffectiveManagedDepartments(requestingUser);
+            if (eff.length && eff.includes(form.user.department)) {
                 authorized = true;
             }
         } else if (requestingUser._id.toString() === form.user._id.toString()) {
@@ -1761,8 +1789,8 @@ router.get('/document-info/:formId', auth, async (req, res) => {
         if (requestingUser.role === 'super_admin' || requestingUser.role === 'admin') {
             authorized = true;
         } else if (requestingUser.role === 'manager') {
-            if (requestingUser.managedDepartments && 
-                requestingUser.managedDepartments.includes(form.user.department)) {
+            const eff = getEffectiveManagedDepartments(requestingUser);
+            if (eff.length && eff.includes(form.user.department)) {
                 authorized = true;
             }
         } else if (requestingUser._id.toString() === form.user._id.toString()) {

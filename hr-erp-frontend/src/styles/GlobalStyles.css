@@ -330,6 +330,36 @@ body::after {
   min-height: 100vh;
 }
 
+/* Admin dashboard: clearer hierarchy for day-to-day maintenance */
+.admin-dashboard .admin-dashboard-stats-hint {
+  font-size: 0.875rem;
+  color: #475569;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.45;
+  max-width: 52rem;
+}
+
+.admin-dashboard .admin-forms-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-dashboard .section-header {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin-dashboard .section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-dashboard .form-month-filters label {
+  color: #334155;
+}
+
 /* App Header Mobile */
 .app-header {
   padding: 1rem;
@@ -1864,8 +1894,8 @@ input[type="time"]:focus {
 .manager-dashboard textarea:focus,
 .manager-dashboard select:focus {
   background: rgba(0, 0, 0, 0.8) !important;
-  border-color: #667eea !important;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3) !important;
+  border-color: #c9a227 !important;
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.28) !important;
 }
 
 /* File input specific styling */

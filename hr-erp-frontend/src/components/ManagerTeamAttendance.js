@@ -117,7 +117,7 @@ const ManagerTeamAttendance = () => {
             value={rangeStart}
             onChange={(e) => setRangeStart(e.target.value)}
             className="form-input-elegant"
-            style={{ maxWidth: '180px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '2px solid rgba(255,255,255,0.2)', borderRadius: '8px', padding: '12px 16px' }}
+            style={{ maxWidth: '180px', background: 'rgba(12,10,8,0.65)', color: '#fff', border: '2px solid rgba(201,162,39,0.35)', borderRadius: '8px', padding: '12px 16px' }}
           />
         </div>
         <div>
@@ -129,7 +129,7 @@ const ManagerTeamAttendance = () => {
             value={rangeEnd}
             onChange={(e) => setRangeEnd(e.target.value)}
             className="form-input-elegant"
-            style={{ maxWidth: '180px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '2px solid rgba(255,255,255,0.2)', borderRadius: '8px', padding: '12px 16px' }}
+            style={{ maxWidth: '180px', background: 'rgba(12,10,8,0.65)', color: '#fff', border: '2px solid rgba(201,162,39,0.35)', borderRadius: '8px', padding: '12px 16px' }}
           />
         </div>
         <div>
@@ -156,7 +156,7 @@ const ManagerTeamAttendance = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="form-input-elegant"
-            style={{ width: '100%', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '2px solid rgba(255,255,255,0.2)', borderRadius: '8px', padding: '12px 16px' }}
+            style={{ width: '100%', background: 'rgba(12,10,8,0.65)', color: '#fff', border: '2px solid rgba(201,162,39,0.35)', borderRadius: '8px', padding: '12px 16px' }}
           />
         </div>
       </div>
@@ -189,8 +189,8 @@ const ManagerTeamAttendance = () => {
                 <div className="kpi-value kpi-value--late" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#9a3412' }}>{attendanceReport.kpi.totalLateHours}h</div>
                 <div className="kpi-label" style={{ fontSize: '0.75rem', color: '#111827', fontWeight: 600 }}>Late hours</div>
               </div>
-              <div className="attendance-kpi-card" style={{ padding: '0.75rem', background: 'rgba(156,39,176,0.15)', border: '1px solid rgba(156,39,176,0.4)', borderRadius: '8px', textAlign: 'center', color: '#111827' }}>
-                <div className="kpi-value kpi-value--missed" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#581c87' }}>{attendanceReport.kpi.pendingMissedPunches}</div>
+              <div className="attendance-kpi-card" style={{ padding: '0.75rem', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.35)', borderRadius: '8px', textAlign: 'center', color: '#111827' }}>
+                <div className="kpi-value kpi-value--missed" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#6b4f1e' }}>{attendanceReport.kpi.pendingMissedPunches}</div>
                 <div className="kpi-label" style={{ fontSize: '0.75rem', color: '#111827', fontWeight: 600 }}>Missed punches</div>
               </div>
             </div>
@@ -204,8 +204,8 @@ const ManagerTeamAttendance = () => {
           ) : (
             <>
               {attendanceReport.overtimeSummary && attendanceReport.overtimeSummary.totalOvertimeMinutes > 0 && (
-                <div style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.15) 0%, rgba(33, 150, 243, 0.05) 100%)', border: '1px solid rgba(33, 150, 243, 0.3)', borderRadius: '12px', padding: '1rem' }}>
-                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#60a5fa' }}>{t('managerDashboard.overtimeSummary', 'Overtime Summary')}</h4>
+                <div style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, rgba(201, 162, 39, 0.12) 0%, rgba(107, 79, 30, 0.06) 100%)', border: '1px solid rgba(201, 162, 39, 0.35)', borderRadius: '12px', padding: '1rem' }}>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#e5c76b' }}>{t('managerDashboard.overtimeSummary', 'Overtime Summary')}</h4>
                   <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                     <span style={{ color: 'rgba(255,255,255,0.9)' }}>{attendanceReport.overtimeSummary.totalOvertimeHours}h {t('managerDashboard.totalOvertime', 'total overtime')}</span>
                     <span style={{ color: 'rgba(255,255,255,0.9)' }}>{attendanceReport.overtimeSummary.employeesWithOvertime.length} {t('managerDashboard.employeesWithOvertime', 'employees with overtime')}</span>
@@ -215,7 +215,7 @@ const ManagerTeamAttendance = () => {
               <div style={{ marginBottom: '1rem', color: 'rgba(255,255,255,0.8)' }}>
                 <strong>{t('managerDashboard.totalEmployees', 'Total Employees')}:</strong> {attendanceReport.totalEmployees}
                 {searchQuery && (
-                  <span style={{ marginLeft: '1rem', color: '#60a5fa' }}>
+                  <span style={{ marginLeft: '1rem', color: '#e5c76b' }}>
                     ({t('managerDashboard.showingResults', 'Showing')} {filteredReport.length} {t('managerDashboard.results', 'results')})
                   </span>
                 )}
@@ -223,7 +223,7 @@ const ManagerTeamAttendance = () => {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', minWidth: '1100px', borderCollapse: 'separate', borderSpacing: '0', fontSize: '0.9rem' }}>
                   <thead>
-                    <tr style={{ background: 'rgba(0,0,0,0.5)' }}>
+                    <tr style={{ background: 'rgba(12,10,8,0.45)', boxShadow: 'inset 0 -2px 0 rgba(201,162,39,0.35)' }}>
                       <th style={{ padding: '12px 16px', textAlign: 'left', color: '#fff', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '140px' }}>{t('managerDashboard.employee', 'Employee')}</th>
                       <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fff', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '70px' }}>{t('managerDashboard.code', 'Code')}</th>
                       <th style={{ padding: '12px 10px', textAlign: 'left', color: '#fff', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '110px' }}>{t('managerDashboard.department', 'Department')}</th>
@@ -232,8 +232,8 @@ const ManagerTeamAttendance = () => {
                       <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fb923c', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '50px' }}>{t('managerDashboard.late', 'Late')}</th>
                       <th style={{ padding: '12px 10px', textAlign: 'center', color: '#f87171', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '60px' }}>{t('managerDashboard.absent', 'Absent')}</th>
                       <th style={{ padding: '12px 10px', textAlign: 'center', color: '#c084fc', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '55px' }}>{t('managerDashboard.leave', 'Leave')}</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#38bdf8', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '45px' }}>WFH</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#60a5fa', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '60px' }}>{t('managerDashboard.excused', 'Excused')}</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#d4a84b', fontWeight: '600', borderBottom: '2px solid rgba(201,162,39,0.35)', minWidth: '45px' }}>WFH</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#e5c76b', fontWeight: '600', borderBottom: '2px solid rgba(201,162,39,0.35)', minWidth: '60px' }}>{t('managerDashboard.excused', 'Excused')}</th>
                       <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fbbf24', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '65px' }}>FP</th>
                       <th style={{ padding: '12px 10px', textAlign: 'center', color: '#f87171', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '60px' }}>{t('managerDashboard.deduct', 'Deduct')}</th>
                       <th style={{ padding: '12px 10px', textAlign: 'center', color: '#4ade80', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '55px' }}>OT</th>
@@ -256,9 +256,9 @@ const ManagerTeamAttendance = () => {
                         <td style={{ padding: '12px 10px', textAlign: 'center', color: '#f87171', fontWeight: '600' }}>{emp.stats.unexcusedAbsences}</td>
                         <td style={{ padding: '12px 10px', textAlign: 'center', color: '#c084fc', fontWeight: '600' }}>{emp.stats.onLeave || 0}</td>
                         <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                          {(emp.stats.wfh || 0) > 0 ? <span style={{ background: 'rgba(56,189,248,0.2)', color: '#38bdf8', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.9rem' }}>{emp.stats.wfh}</span> : <span style={{ color: '#64748b' }}>0</span>}
+                          {(emp.stats.wfh || 0) > 0 ? <span style={{ background: 'rgba(201,162,39,0.2)', color: '#e5c76b', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.9rem' }}>{emp.stats.wfh}</span> : <span style={{ color: '#64748b' }}>0</span>}
                         </td>
-                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#60a5fa', fontWeight: '600' }}>{emp.stats.excused || 0}</td>
+                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#e5c76b', fontWeight: '600' }}>{emp.stats.excused || 0}</td>
                         <td style={{ padding: '12px 10px', textAlign: 'center' }}>
                           {(emp.stats.fingerprintMisses || 0) > 0 ? <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>{emp.stats.fingerprintMisses}</span> : <span style={{ color: '#64748b' }}>0</span>}
                         </td>
@@ -269,7 +269,7 @@ const ManagerTeamAttendance = () => {
                           {(emp.stats.totalMinutesOvertime || 0) > 0 ? <span style={{ background: 'rgba(74,222,128,0.2)', color: '#4ade80', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.9rem' }}>+{emp.stats.totalMinutesOvertime}</span> : <span style={{ color: '#64748b' }}>0</span>}
                         </td>
                         <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                          <button onClick={() => viewEmployeeDetails(emp)} className="btn-manager" style={{ padding: '6px 14px', fontSize: '0.85rem', background: 'linear-gradient(135deg, #2196F3, #1976D2)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
+                          <button onClick={() => viewEmployeeDetails(emp)} className="btn-manager" style={{ padding: '6px 14px', fontSize: '0.85rem', background: 'linear-gradient(135deg, #c9a227, #6b4f1e)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
                             {t('managerDashboard.viewDetails', 'View Details')}
                           </button>
                         </td>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import DashboardSectionNav from './layout/DashboardSectionNav';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +25,7 @@ const ManagerDashboard = ({ onLogout }) => {
   const [showTeamForms, setShowTeamForms] = useState(false);
   const [showATS, setShowATS] = useState(false);
   const [showTeamAttendance, setShowTeamAttendance] = useState(true);
+  const [managerNavActiveId, setManagerNavActiveId] = useState('teamAttendance');
   const [myForms, setMyForms] = useState([]);
   const [teamForms, setTeamForms] = useState([]);
   const [vacationDaysLeft, setVacationDaysLeft] = useState(null);
@@ -59,6 +60,13 @@ const ManagerDashboard = ({ onLogout }) => {
   const managerAtsRef = useRef(null);
   const pendingApprovalsRef = useRef(null);
 
+  const effectiveDeptList = useMemo(() => {
+    if (!user) return [];
+    const eff = user.effectiveManagedDepartments;
+    if (Array.isArray(eff) && eff.length) return eff;
+    return user.managedDepartments || [];
+  }, [user]);
+
   const scrollToManagerSection = (ref) => {
     setTimeout(() => smoothScrollToElement(ref?.current, DEFAULT_SCROLL_OFFSET), 60);
   };
@@ -82,7 +90,6 @@ const ManagerDashboard = ({ onLogout }) => {
   // Auto-refresh pending forms every 20 seconds to keep data synchronized
   useEffect(() => {
     const interval = setInterval(() => {
-      logger.log('Auto-refreshing pending forms...');
       fetchPendingForms();
     }, 20000); // 20 seconds
 
@@ -93,7 +100,6 @@ const ManagerDashboard = ({ onLogout }) => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        logger.log('Page became visible, refreshing pending forms...');
         fetchPendingForms();
       }
     };
@@ -112,7 +118,10 @@ const ManagerDashboard = ({ onLogout }) => {
       if (response.data) {
         setUser(response.data);
         localStorage.setItem('userName', response.data.name);
-        localStorage.setItem('managedDepartments', JSON.stringify(response.data.managedDepartments || []));
+        localStorage.setItem(
+          'managedDepartments',
+          JSON.stringify(response.data.effectiveManagedDepartments || response.data.managedDepartments || [])
+        );
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -181,6 +190,7 @@ const ManagerDashboard = ({ onLogout }) => {
   };
 
   const handleShowForm = () => {
+    setManagerNavActiveId('submit');
     setShowForm(true);
     setShowMyForms(false);
     setShowTeamForms(false);
@@ -192,6 +202,7 @@ const ManagerDashboard = ({ onLogout }) => {
   };
 
   const handleShowMyForms = () => {
+    setManagerNavActiveId('myForms');
     setShowMyForms(true);
     setShowForm(false);
     setShowTeamForms(false);
@@ -204,6 +215,7 @@ const ManagerDashboard = ({ onLogout }) => {
   };
 
   const handleShowTeamForms = () => {
+    setManagerNavActiveId('teamForms');
     setShowTeamForms(true);
     setShowForm(false);
     setShowMyForms(false);
@@ -214,6 +226,7 @@ const ManagerDashboard = ({ onLogout }) => {
   };
 
   const handleShowATS = () => {
+    setManagerNavActiveId('ats');
     setShowATS(true);
     setShowForm(false);
     setShowMyForms(false);
@@ -223,6 +236,7 @@ const ManagerDashboard = ({ onLogout }) => {
   };
 
   const handleShowTeamAttendance = () => {
+    setManagerNavActiveId('teamAttendance');
     setShowTeamAttendance(true);
     setShowATS(false);
     setShowForm(false);
@@ -232,6 +246,7 @@ const ManagerDashboard = ({ onLogout }) => {
   };
 
   const handleGoToTeamApprovals = () => {
+    setManagerNavActiveId('teamApprovals');
     fetchPendingForms();
     setTimeout(() => smoothScrollToElement(pendingApprovalsRef.current, DEFAULT_SCROLL_OFFSET), 80);
   };
@@ -267,6 +282,7 @@ const ManagerDashboard = ({ onLogout }) => {
     fetchExcuseHours();
     setShowForm(false);
     setShowMyForms(true);
+    setManagerNavActiveId('myForms');
     fetchMyForms();
   };
 
@@ -289,30 +305,14 @@ const ManagerDashboard = ({ onLogout }) => {
     try {
       setRefreshingPending(true);
       const token = localStorage.getItem('token');
-      logger.log('🔄 Fetching pending team requests...');
-      
+
       const response = await axios.get(`${API_URL}/api/forms/manager/pending`, {
         headers: { 'x-auth-token': token }
       });
-      
-      logger.log('✅ Pending team requests received:', {
-        count: response.data.length,
-        requests: response.data.map(form => ({
-          id: form._id,
-          type: form.type,
-          status: form.status,
-          submittedBy: form.user?.name,
-          department: form.user?.department
-        }))
-      });
-      
+
       setPendingForms(response.data);
-      
-      // Log after state update to confirm
-      logger.log(`📊 Updated pending forms state: ${response.data.length} forms`);
-      
     } catch (error) {
-      console.error('❌ Error fetching pending team requests:', error);
+      console.error('Error fetching pending team requests:', error);
       setMessage('Error loading pending team requests');
     } finally {
       setRefreshingPending(false);
@@ -736,16 +736,6 @@ const ManagerDashboard = ({ onLogout }) => {
     return diffDays;
   };
 
-  const managerNavActiveId = showATS
-    ? 'ats'
-    : showForm
-      ? 'submit'
-      : showMyForms
-        ? 'myForms'
-        : showTeamForms
-          ? 'teamForms'
-          : 'teamAttendance';
-
   if (loading || !user) {
     return (
       <div className="loading-container">
@@ -758,14 +748,14 @@ const ManagerDashboard = ({ onLogout }) => {
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(145deg, #1a1510 0%, #2a2218 40%, #c9a227 140%);
             color: white;
           }
           .spinner {
             width: 40px;
             height: 40px;
             border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid white;
+            border-top: 4px solid #e5c76b;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
@@ -786,10 +776,11 @@ const ManagerDashboard = ({ onLogout }) => {
         <div className="user-info">
           <h1>{t('managerDashboard.managerDashboard')}</h1>
           <p>{t('managerDashboard.welcome')}, {user?.name || t('dashboard.manager')}</p>
-          <p className="departments">{t('managerDashboard.managing', { departments: user?.managedDepartments?.join(', ') || 'No departments' })}</p>
-          <small style={{ color: 'rgba(255, 255, 255, 0.6)', fontStyle: 'italic' }}>
-            {t('managerDashboard.seeAndManageRequests')}
-          </small>
+          <p className="departments">
+            {t('managerDashboard.managing', {
+              departments: effectiveDeptList.length ? effectiveDeptList.join(', ') : t('managerDashboard.noDepartmentsAssigned')
+            })}
+          </p>
         </div>
         <button onClick={onLogout} className="logout-btn">{t('common.logout')}</button>
       </div>
@@ -821,19 +812,6 @@ const ManagerDashboard = ({ onLogout }) => {
 
       {/* Stats */}
       <div className="stats-section">
-        <div 
-          className="stat-card stat-card-clickable team-attendance-stat"
-          onClick={() => { handleShowTeamAttendance(); setShowForm(false); setShowMyForms(false); setShowTeamForms(false); setShowATS(false); }}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && handleShowTeamAttendance()}
-          title={t('managerDashboard.teamAttendance', 'Team Attendance')}
-        >
-          <div className="stat-icon">📊</div>
-          <h3>→</h3>
-          <p>{t('managerDashboard.teamAttendance', 'Team Attendance')}</p>
-          <small>{t('managerDashboard.viewEmployeeAttendance', 'View your team\'s attendance')}</small>
-        </div>
         <div className="stat-card">
           <h3>{teamMembers.length}</h3>
           <p>{t('managerDashboard.myTeamMembers')}</p>
@@ -852,7 +830,7 @@ const ManagerDashboard = ({ onLogout }) => {
           <small>{t('managerDashboard.awaitingYourApproval')}</small>
         </div>
         <div className="stat-card">
-          <h3>{user?.managedDepartments?.length || 0}</h3>
+          <h3>{effectiveDeptList.length}</h3>
           <p>{t('common.managedDepartments')}</p>
           <small>{t('managerDashboard.underYourSupervision')}</small>
         </div>
@@ -861,8 +839,7 @@ const ManagerDashboard = ({ onLogout }) => {
       {/* Manager's Personal Section */}
       <div className="section manager-personal-section">
         <div className="section-header">
-          <h2>📋 {t('managerDashboard.myPersonalFormsAndRequests')}</h2>
-          <small className="section-subtitle">{t('managerDashboard.submitAndViewYourOwnFormsSeparateFromTeamManagement')}</small>
+          <h2>{t('managerDashboard.myPersonalFormsAndRequests')}</h2>
         </div>
         
         {/* Vacation and Excuse Days Cards */}
@@ -1010,13 +987,15 @@ const ManagerDashboard = ({ onLogout }) => {
                     {form.adminApprovedBy && (
                       <div className="comment-section admin-action-section">
                         <strong>
-                          {form.status === 'rejected' ? 'رفض من الموارد البشرية' : 'موافقة من الموارد البشرية'}:
+                          {form.status === 'rejected'
+                            ? t('managerDashboard.hrRejectedByHR')
+                            : t('managerDashboard.hrApprovedByHR')}:
                         </strong>
                         <p style={{ color: form.status === 'rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
                           🏢 {form.adminApprovedBy.name}
                           {form.adminApprovedAt && (
                             <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
-                              {' '}في {new Date(form.adminApprovedAt).toLocaleDateString()}
+                              {' '}{t('managerDashboard.on')} {new Date(form.adminApprovedAt).toLocaleDateString()}
                             </span>
                           )}
                         </p>
@@ -1026,7 +1005,9 @@ const ManagerDashboard = ({ onLogout }) => {
                     {form.adminComment && (
                       <div className="comment-section">
                         <strong>
-                          {form.adminApprovedBy ? `الموارد البشرية (${form.adminApprovedBy.name})` : 'الموارد البشرية'}:
+                          {form.adminApprovedBy
+                            ? t('managerDashboard.hrCommentWithName', { name: form.adminApprovedBy.name })
+                            : t('managerDashboard.hrComment')}:
                         </strong>
                         <p>{form.adminComment}</p>
                       </div>
@@ -1049,7 +1030,7 @@ const ManagerDashboard = ({ onLogout }) => {
       {showTeamForms && (
         <div ref={managerTeamFormsRef} className="section team-management-section dashboard-section-anchor">
           <div className="section-header">
-            <h2>👥 {t('managerDashboard.myTeamMembersForms')}</h2>
+          <h2>{t('managerDashboard.myTeamMembersForms')}</h2>
             <small className="section-subtitle">{t('managerDashboard.allFormsSubmittedByYourTeamMembersFromManagedDepartments')}</small>
           </div>
           {teamForms.length > 0 ? (
@@ -1145,13 +1126,15 @@ const ManagerDashboard = ({ onLogout }) => {
                     {form.adminApprovedBy && (
                       <div className="comment-section admin-action-section">
                         <strong>
-                          {form.status === 'rejected' ? 'رفض من الموارد البشرية' : 'موافقة من الموارد البشرية'}:
+                          {form.status === 'rejected'
+                            ? t('managerDashboard.hrRejectedByHR')
+                            : t('managerDashboard.hrApprovedByHR')}:
                         </strong>
                         <p style={{ color: form.status === 'rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
                           🏢 {form.adminApprovedBy.name}
                           {form.adminApprovedAt && (
                             <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
-                              {' '}في {new Date(form.adminApprovedAt).toLocaleDateString()}
+                              {' '}{t('managerDashboard.on')} {new Date(form.adminApprovedAt).toLocaleDateString()}
                             </span>
                           )}
                         </p>
@@ -1161,7 +1144,9 @@ const ManagerDashboard = ({ onLogout }) => {
                     {form.adminComment && (
                       <div className="comment-section">
                         <strong>
-                          {form.adminApprovedBy ? `الموارد البشرية (${form.adminApprovedBy.name})` : 'الموارد البشرية'}:
+                          {form.adminApprovedBy
+                            ? t('managerDashboard.hrCommentWithName', { name: form.adminApprovedBy.name })
+                            : t('managerDashboard.hrComment')}:
                         </strong>
                         <p>{form.adminComment}</p>
                       </div>
@@ -1188,9 +1173,11 @@ const ManagerDashboard = ({ onLogout }) => {
       {/* Team Members */}
       <div className="section team-management-section">
         <div className="section-header">
-          <h2>👥 {t('myTeamMembers')}</h2>
+          <h2>{t('myTeamMembers')}</h2>
           <small className="section-subtitle">
-            {t('employeesFromYourManagedDepartments', { departments: user.managedDepartments?.join(', ') || 'None' })}
+            {t('managerDashboard.employeesFromYourManagedDepartments', {
+              departments: effectiveDeptList.length ? effectiveDeptList.join(', ') : t('managerDashboard.noDepartmentsAssigned')
+            })}
           </small>
         </div>
         {teamMembers.length > 0 ? (
@@ -1246,29 +1233,22 @@ const ManagerDashboard = ({ onLogout }) => {
 
       {/* Pending Requests */}
       <div ref={pendingApprovalsRef} className="section team-requests-section dashboard-section-anchor">
-        <div className="section-header">
-          <h2>⏳ {t('managerDashboard.pendingTeamRequests')} {refreshingPending ? `(${t('managerDashboard.refreshing')})` : ''}</h2>
-          <small className="section-subtitle">
-            {t('managerDashboard.employeeRequestsAwaitingYourApprovalFromManagedDepartments')}
-          </small>
-          <button 
-            className="btn-manager refresh-btn"
-            onClick={() => {
-              logger.log('Manual refresh pending forms');
-              fetchPendingForms();
-            }}
+        <div className="section-header section-header--with-actions">
+          <div className="section-header-text">
+            <h2>
+              {t('managerDashboard.pendingTeamRequests')}
+              {refreshingPending ? ` (${t('managerDashboard.refreshing')})` : ''}
+            </h2>
+            <small className="section-subtitle">
+              {t('managerDashboard.employeeRequestsAwaitingYourApprovalFromManagedDepartments')}
+            </small>
+          </div>
+          <button
+            type="button"
+            className="btn-manager manager-refresh-btn"
+            onClick={() => fetchPendingForms()}
             title={t('managerDashboard.refreshPendingRequests')}
             disabled={refreshingPending}
-            style={{ 
-              marginTop: '10px',
-              padding: '8px 16px',
-              fontSize: '0.9rem',
-              background: refreshingPending ? '#ccc' : 'linear-gradient(135deg, #667eea, #764ba2)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: refreshingPending ? 'not-allowed' : 'pointer'
-            }}
           >
             {refreshingPending ? t('managerDashboard.refreshing') : t('managerDashboard.refresh')}
           </button>
@@ -1442,11 +1422,11 @@ const ManagerDashboard = ({ onLogout }) => {
                 </div>
 
                 {formEditData && formEditData._id && (
-                  <div className="edit-before-submit-section" style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(102, 126, 234, 0.1)', borderRadius: '8px', border: '1px solid rgba(102, 126, 234, 0.3)' }}>
-                    <strong style={{ display: 'block', marginBottom: '0.75rem', color: '#667eea' }}>✏️ {t('edit') || 'Edit'} form before {actionType === 'approve' ? (t('approve') || 'approving') : (t('reject') || 'rejecting')}</strong>
+                  <div className="edit-before-submit-section" style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(201, 162, 39, 0.1)', borderRadius: '8px', border: '1px solid rgba(201, 162, 39, 0.3)' }}>
+                    <strong style={{ display: 'block', marginBottom: '0.75rem', color: '#c9a227' }}>✏️ {t('edit') || 'Edit'} form before {actionType === 'approve' ? (t('approve') || 'approving') : (t('reject') || 'rejecting')}</strong>
                     <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
                       <label className="form-label-elegant">{t('reason')}{fieldDirty('reason') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
-                      <textarea value={formEditData.reason || ''} onChange={(e) => setFormEditData({ ...formEditData, reason: e.target.value })} rows={2} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('reason') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
+                      <textarea value={formEditData.reason || ''} onChange={(e) => setFormEditData({ ...formEditData, reason: e.target.value })} rows={2} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('reason') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
                     </div>
                     {formEditData.type === 'vacation' && (
                       <>
@@ -1464,18 +1444,18 @@ const ManagerDashboard = ({ onLogout }) => {
                       <>
                         <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
                           <label className="form-label-elegant">{t('excuseDate')}{fieldDirty('excuseDate') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
-                          <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('excuseDate') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
+                          <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('excuseDate') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
                         </div>
                         <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
                           <label className="form-label-elegant">{t('timePeriod') || 'Time'}{fieldDirty('fromHour') || fieldDirty('toHour') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
                           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            <input type="time" value={formEditData.fromHour || ''} onChange={(e) => setFormEditData({ ...formEditData, fromHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('fromHour') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
-                            <input type="time" value={formEditData.toHour || ''} onChange={(e) => setFormEditData({ ...formEditData, toHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('toHour') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
+                            <input type="time" value={formEditData.fromHour || ''} onChange={(e) => setFormEditData({ ...formEditData, fromHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('fromHour') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
+                            <input type="time" value={formEditData.toHour || ''} onChange={(e) => setFormEditData({ ...formEditData, toHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('toHour') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
                           </div>
                         </div>
                         <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
                           <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}{fieldDirty('excuseType') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
-                          <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('excuseType') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }}>
+                          <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('excuseType') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }}>
                             <option value="paid">Paid</option>
                             <option value="unpaid">Unpaid</option>
                           </select>
@@ -1629,18 +1609,18 @@ const ManagerDashboard = ({ onLogout }) => {
                 <>
                   <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
                     <label className="form-label-elegant">{t('excuseDate')}{fieldDirty('excuseDate') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
-                    <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" style={{ boxShadow: fieldDirty('excuseDate') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
+                    <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" style={{ boxShadow: fieldDirty('excuseDate') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
                   </div>
                   <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
                     <label className="form-label-elegant">{t('timePeriod') || 'Time'}{fieldDirty('fromHour') || fieldDirty('toHour') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <input type="time" value={formEditData.fromHour || ''} onChange={(e) => setFormEditData({ ...formEditData, fromHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('fromHour') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
-                      <input type="time" value={formEditData.toHour || ''} onChange={(e) => setFormEditData({ ...formEditData, toHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('toHour') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }} />
+                      <input type="time" value={formEditData.fromHour || ''} onChange={(e) => setFormEditData({ ...formEditData, fromHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('fromHour') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
+                      <input type="time" value={formEditData.toHour || ''} onChange={(e) => setFormEditData({ ...formEditData, toHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('toHour') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
                     </div>
                   </div>
                   <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
                     <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}{fieldDirty('excuseType') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
-                    <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant" style={{ boxShadow: fieldDirty('excuseType') ? '0 0 0 2px rgba(102, 126, 234, 0.6)' : undefined }}>
+                    <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant" style={{ boxShadow: fieldDirty('excuseType') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }}>
                       <option value="paid">Paid</option>
                       <option value="unpaid">Unpaid</option>
                     </select>
@@ -1802,15 +1782,15 @@ const ManagerDashboard = ({ onLogout }) => {
       <style>{`
         .manager-dashboard {
           min-height: 100vh;
-          background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+          background: linear-gradient(165deg, #0c0a08 0%, #1a1610 50%, #12100c 100%);
           padding: 20px;
           color: #ffffff;
         }
 
         .dashboard-header {
-          background: rgba(0, 0, 0, 0.3);
+          background: rgba(12, 10, 8, 0.55);
           backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(201, 162, 39, 0.22);
           border-radius: 15px;
           padding: 20px;
           margin-bottom: 20px;
@@ -1826,6 +1806,10 @@ const ManagerDashboard = ({ onLogout }) => {
           font-size: 2rem;
           font-weight: 700;
           text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+          background: linear-gradient(135deg, #f5e6b8, #c9a227);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .user-info p {
@@ -1840,7 +1824,7 @@ const ManagerDashboard = ({ onLogout }) => {
         }
 
         .logout-btn {
-          background: linear-gradient(135deg, #667eea, #764ba2);
+          background: linear-gradient(135deg, #c9a227, #6b4f1e);
           color: white;
           border: 1px solid rgba(255, 255, 255, 0.3);
           padding: 10px 20px;
@@ -1851,9 +1835,9 @@ const ManagerDashboard = ({ onLogout }) => {
         }
 
         .logout-btn:hover {
-          background: linear-gradient(135deg, #764ba2, #667eea);
+          background: linear-gradient(135deg, #6b4f1e, #c9a227);
           transform: translateY(-2px);
-          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+          box-shadow: 0 4px 15px rgba(201, 162, 39, 0.3);
         }
 
         .message {
@@ -1901,14 +1885,14 @@ const ManagerDashboard = ({ onLogout }) => {
 
         .stat-card-clickable {
           cursor: pointer;
-          border: 2px solid rgba(6, 182, 212, 0.4);
-          background: rgba(6, 182, 212, 0.1);
+          border: 2px solid rgba(201, 162, 39, 0.4);
+          background: rgba(201, 162, 39, 0.1);
         }
 
         .stat-card-clickable:hover {
-          border-color: rgba(6, 182, 212, 0.8);
-          background: rgba(6, 182, 212, 0.2);
-          box-shadow: 0 12px 40px rgba(6, 182, 212, 0.2);
+          border-color: rgba(201, 162, 39, 0.8);
+          background: rgba(201, 162, 39, 0.2);
+          box-shadow: 0 12px 40px rgba(201, 162, 39, 0.2);
         }
 
         .stat-card-clickable.pending-approvals-stat {
@@ -1925,7 +1909,7 @@ const ManagerDashboard = ({ onLogout }) => {
         .stat-card h3 {
           font-size: 2.5rem;
           margin: 0 0 10px 0;
-          background: linear-gradient(135deg, #667eea, #764ba2);
+          background: linear-gradient(135deg, #c9a227, #6b4f1e);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -1974,7 +1958,7 @@ const ManagerDashboard = ({ onLogout }) => {
           border: 1px solid rgba(255, 255, 255, 0.2) !important;
           padding: 20px !important;
           border-radius: 10px !important;
-          border-left: 4px solid #667eea !important;
+          border-left: 4px solid #c9a227 !important;
           text-align: center !important;
           transition: all 0.3s ease !important;
         }
@@ -2014,7 +1998,7 @@ const ManagerDashboard = ({ onLogout }) => {
           backdrop-filter: blur(10px);
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 10px;
-          border-left: 4px solid #667eea;
+          border-left: 4px solid #c9a227;
           transition: all 0.3s ease;
         }
 
@@ -2210,9 +2194,9 @@ const ManagerDashboard = ({ onLogout }) => {
 
         .comment-section textarea:focus {
           outline: none;
-          border-color: #667eea;
+          border-color: #c9a227;
           background: rgba(0, 0, 0, 0.7);
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+          box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
         }
 
         .comment-section textarea::placeholder {
@@ -2249,9 +2233,9 @@ const ManagerDashboard = ({ onLogout }) => {
         select:focus,
         textarea:focus {
           outline: none !important;
-          border-color: #667eea !important;
+          border-color: #c9a227 !important;
           background: rgba(0, 0, 0, 0.8) !important;
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3) !important;
+          box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.3) !important;
         }
 
         input::placeholder,
@@ -2293,7 +2277,7 @@ const ManagerDashboard = ({ onLogout }) => {
 
         /* Button improvements */
         button:not(.logout-btn):not(.close-btn) {
-          background: linear-gradient(135deg, #667eea, #764ba2) !important;
+          background: linear-gradient(135deg, #c9a227, #6b4f1e) !important;
           color: white !important;
           border: none !important;
           padding: 12px 24px !important;
@@ -2304,9 +2288,9 @@ const ManagerDashboard = ({ onLogout }) => {
         }
 
         button:not(.logout-btn):not(.close-btn):hover {
-          background: linear-gradient(135deg, #764ba2, #667eea) !important;
+          background: linear-gradient(135deg, #6b4f1e, #c9a227) !important;
           transform: translateY(-2px) !important;
-          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+          box-shadow: 0 4px 15px rgba(201, 162, 39, 0.3) !important;
         }
 
         /* Search inputs specific styling */
@@ -2323,9 +2307,9 @@ const ManagerDashboard = ({ onLogout }) => {
 
         .search-input:focus,
         input[type="search"]:focus {
-          border-color: #667eea !important;
+          border-color: #c9a227 !important;
           background: rgba(0, 0, 0, 0.7) !important;
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
+          box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2) !important;
         }
 
         /* Card content text clarity */
@@ -2386,20 +2370,20 @@ const ManagerDashboard = ({ onLogout }) => {
         }
 
         input[type="file"]:hover {
-          border-color: #667eea !important;
+          border-color: #c9a227 !important;
           background: rgba(0, 0, 0, 0.8) !important;
         }
 
         input[type="file"]:focus {
           outline: none !important;
-          border-color: #667eea !important;
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
+          border-color: #c9a227 !important;
+          box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2) !important;
         }
 
         /* Radio buttons and checkboxes */
         input[type="radio"],
         input[type="checkbox"] {
-          accent-color: #667eea !important;
+          accent-color: #c9a227 !important;
           transform: scale(1.2) !important;
           margin-right: 8px !important;
         }
@@ -2551,7 +2535,7 @@ const ManagerDashboard = ({ onLogout }) => {
         .manager-dashboard [role="button"]:hover,
         .manager-dashboard .clickable:hover {
           background: rgba(0, 0, 0, 0.7) !important;
-          border-color: #667eea !important;
+          border-color: #c9a227 !important;
         }
 
         .comment-section textarea.required-field {
@@ -2625,11 +2609,11 @@ const ManagerDashboard = ({ onLogout }) => {
         }
 
         .view-btn {
-          background: linear-gradient(135deg, #2196F3, #1976D2);
+          background: linear-gradient(135deg, #c9a227, #6b4f1e);
         }
 
         .view-btn:hover {
-          background: linear-gradient(135deg, #1976D2, #1565C0);
+          background: linear-gradient(135deg, #6b4f1e, #5c4818);
           transform: translateY(-2px);
         }
 
@@ -2648,7 +2632,7 @@ const ManagerDashboard = ({ onLogout }) => {
           border-radius: 12px !important;
           padding: 20px !important;
           box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1) !important;
-          border-left: 4px solid #667eea !important;
+          border-left: 4px solid #c9a227 !important;
           transition: all 0.3s ease !important;
         }
 
@@ -2685,8 +2669,8 @@ const ManagerDashboard = ({ onLogout }) => {
         }
 
         .my-form-card .comment-section {
-          background: rgba(102, 126, 234, 0.2);
-          border: 1px solid rgba(102, 126, 234, 0.3);
+          background: rgba(201, 162, 39, 0.2);
+          border: 1px solid rgba(201, 162, 39, 0.3);
           padding: 10px;
           border-radius: 6px;
           margin-top: 10px;
@@ -2724,7 +2708,7 @@ const ManagerDashboard = ({ onLogout }) => {
         }
 
         .badge-info {
-          background: linear-gradient(135deg, #2196F3, #1976D2);
+          background: linear-gradient(135deg, #c9a227, #6b4f1e);
           color: white;
         }
 
@@ -2740,136 +2724,46 @@ const ManagerDashboard = ({ onLogout }) => {
 
         /* Manager Personal Section Styles */
         .manager-personal-section {
-          background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05));
-          border: 2px solid rgba(76, 175, 80, 0.3);
+          background: linear-gradient(135deg, rgba(201, 162, 39, 0.06), rgba(107, 79, 30, 0.03));
+          border: 2px solid rgba(201, 162, 39, 0.22);
           border-radius: 20px;
           position: relative;
-        }
-
-        .manager-personal-section::before {
-          content: "👤 PERSONAL";
-          position: absolute;
-          top: -12px;
-          left: 20px;
-          background: linear-gradient(135deg, #4CAF50, #45a049);
-          color: white;
-          padding: 4px 12px;
-          border-radius: 12px;
-          font-size: 0.7rem;
-          font-weight: bold;
-          letter-spacing: 1px;
-          box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
         }
 
         .manager-form-section {
-          background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05));
-          border: 2px solid rgba(76, 175, 80, 0.3);
+          background: linear-gradient(135deg, rgba(201, 162, 39, 0.06), rgba(107, 79, 30, 0.03));
+          border: 2px solid rgba(201, 162, 39, 0.22);
           border-radius: 20px;
           position: relative;
-        }
-
-        .manager-form-section::before {
-          content: "📝 PERSONAL FORM";
-          position: absolute;
-          top: -12px;
-          left: 20px;
-          background: linear-gradient(135deg, #4CAF50, #45a049);
-          color: white;
-          padding: 4px 12px;
-          border-radius: 12px;
-          font-size: 0.7rem;
-          font-weight: bold;
-          letter-spacing: 1px;
-          box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
         }
 
         .manager-forms-view-section {
-          background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05));
-          border: 2px solid rgba(76, 175, 80, 0.3);
+          background: linear-gradient(135deg, rgba(201, 162, 39, 0.06), rgba(107, 79, 30, 0.03));
+          border: 2px solid rgba(201, 162, 39, 0.22);
           border-radius: 20px;
           position: relative;
-        }
-
-        .manager-forms-view-section::before {
-          content: "📋 MY FORMS";
-          position: absolute;
-          top: -12px;
-          left: 20px;
-          background: linear-gradient(135deg, #4CAF50, #45a049);
-          color: white;
-          padding: 4px 12px;
-          border-radius: 12px;
-          font-size: 0.7rem;
-          font-weight: bold;
-          letter-spacing: 1px;
-          box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
         }
 
         /* Team Management Section Styles */
         .manager-team-attendance-section {
-          background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.05));
-          border: 2px solid rgba(6, 182, 212, 0.3);
+          background: linear-gradient(135deg, rgba(201, 162, 39, 0.1), rgba(201, 162, 39, 0.05));
+          border: 2px solid rgba(201, 162, 39, 0.3);
           border-radius: 20px;
           position: relative;
-        }
-
-        .manager-team-attendance-section::before {
-          content: "📊 TEAM ATTENDANCE";
-          position: absolute;
-          top: -12px;
-          left: 20px;
-          background: linear-gradient(135deg, #06b6d4, #0891b2);
-          color: white;
-          padding: 4px 12px;
-          border-radius: 12px;
-          font-size: 0.7rem;
-          font-weight: bold;
-          letter-spacing: 1px;
-          box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
         }
 
         .team-management-section {
-          background: linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(33, 150, 243, 0.05));
-          border: 2px solid rgba(33, 150, 243, 0.3);
+          background: linear-gradient(135deg, rgba(201, 162, 39, 0.08), rgba(107, 79, 30, 0.04));
+          border: 2px solid rgba(201, 162, 39, 0.28);
           border-radius: 20px;
           position: relative;
-        }
-
-        .team-management-section::before {
-          content: "👥 TEAM MANAGEMENT";
-          position: absolute;
-          top: -12px;
-          left: 20px;
-          background: linear-gradient(135deg, #2196F3, #1976D2);
-          color: white;
-          padding: 4px 12px;
-          border-radius: 12px;
-          font-size: 0.7rem;
-          font-weight: bold;
-          letter-spacing: 1px;
-          box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
         }
 
         .team-requests-section {
-          background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 152, 0, 0.05));
-          border: 2px solid rgba(255, 152, 0, 0.3);
+          background: linear-gradient(135deg, rgba(201, 162, 39, 0.1), rgba(107, 79, 30, 0.05));
+          border: 2px solid rgba(201, 162, 39, 0.32);
           border-radius: 20px;
           position: relative;
-        }
-
-        .team-requests-section::before {
-          content: "⏳ TEAM REQUESTS";
-          position: absolute;
-          top: -12px;
-          left: 20px;
-          background: linear-gradient(135deg, #FF9800, #F57C00);
-          color: white;
-          padding: 4px 12px;
-          border-radius: 12px;
-          font-size: 0.7rem;
-          font-weight: bold;
-          letter-spacing: 1px;
-          box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
         }
 
         /* Section Headers */
@@ -2893,6 +2787,36 @@ const ManagerDashboard = ({ onLogout }) => {
           line-height: 1.4;
         }
 
+        .section-header--with-actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1rem;
+        }
+
+        .section-header--with-actions .section-header-text {
+          flex: 1;
+          min-width: 200px;
+        }
+
+        .manager-refresh-btn {
+          padding: 10px 20px !important;
+          font-size: 0.9rem !important;
+          align-self: center;
+          background: linear-gradient(135deg, #c9a227, #6b4f1e) !important;
+          border: 1px solid rgba(201, 162, 39, 0.45) !important;
+        }
+
+        .manager-refresh-btn:hover:not(:disabled) {
+          filter: brightness(1.08);
+        }
+
+        .manager-refresh-btn:disabled {
+          opacity: 0.55;
+          cursor: not-allowed !important;
+        }
+
         /* Manager Buttons — base style for inline actions (edit, refresh, etc.) */
         .btn-manager {
           padding: 14px 28px;
@@ -2912,7 +2836,7 @@ const ManagerDashboard = ({ onLogout }) => {
         /* Manager Stats */
         .manager-stats .manager-stat-card {
           background: rgba(0, 0, 0, 0.7) !important;
-          border: 2px solid #4CAF50 !important;
+          border: 2px solid rgba(201, 162, 39, 0.45) !important;
           border-radius: 16px !important;
           position: relative !important;
           overflow: hidden !important;
@@ -2925,7 +2849,7 @@ const ManagerDashboard = ({ onLogout }) => {
           left: 0;
           right: 0;
           height: 4px;
-          background: linear-gradient(90deg, #4CAF50, #45a049);
+          background: linear-gradient(90deg, #e5c76b, #8b6914);
         }
 
         .stat-icon {
@@ -2936,7 +2860,7 @@ const ManagerDashboard = ({ onLogout }) => {
         /* Team Member Cards */
         .team-member-card {
           background: rgba(0, 0, 0, 0.7) !important;
-          border: 2px solid #2196F3 !important;
+          border: 2px solid #c9a227 !important;
           border-radius: 16px !important;
           text-align: center !important;
           position: relative !important;
@@ -2945,7 +2869,7 @@ const ManagerDashboard = ({ onLogout }) => {
 
         .team-member-card:hover {
           transform: translateY(-5px);
-          box-shadow: 0 8px 25px rgba(33, 150, 243, 0.3);
+          box-shadow: 0 8px 25px rgba(201, 162, 39, 0.35);
         }
 
         .member-avatar {
@@ -2954,13 +2878,13 @@ const ManagerDashboard = ({ onLogout }) => {
         }
 
         .member-department {
-          color: #2196F3;
+          color: #e5c76b;
           font-weight: 500;
           font-size: 0.9rem;
         }
 
         .team-stat {
-          background: linear-gradient(135deg, #2196F3, #1976D2);
+          background: linear-gradient(135deg, #c9a227, #6b4f1e);
           color: white;
           padding: 6px 12px;
           border-radius: 8px;
@@ -2973,22 +2897,22 @@ const ManagerDashboard = ({ onLogout }) => {
         /* Team Request Cards */
         .team-request-card {
           background: rgba(0, 0, 0, 0.7) !important;
-          border: 2px solid #FF9800 !important;
-          border-left: 6px solid #FF9800 !important;
+          border: 2px solid rgba(201, 162, 39, 0.5) !important;
+          border-left: 6px solid #c9a227 !important;
           border-radius: 12px !important;
           transition: all 0.3s ease !important;
         }
 
         .team-request-card:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(255, 152, 0, 0.2);
+          box-shadow: 0 8px 25px rgba(201, 162, 39, 0.22);
         }
 
         /* Manager's Own Form Cards */
         .manager-own-form {
           background: rgba(0, 0, 0, 0.7) !important;
-          border: 2px solid #4CAF50 !important;
-          border-left: 6px solid #4CAF50 !important;
+          border: 2px solid rgba(201, 162, 39, 0.45) !important;
+          border-left: 6px solid #c9a227 !important;
           border-radius: 12px !important;
         }
 
@@ -2999,7 +2923,7 @@ const ManagerDashboard = ({ onLogout }) => {
           border-radius: 16px;
           padding: 25px;
           margin-top: 20px;
-          border: 1px solid rgba(76, 175, 80, 0.3);
+          border: 1px solid rgba(201, 162, 39, 0.28);
         }
 
         /* No Content Styling */
@@ -3204,9 +3128,9 @@ const ManagerDashboard = ({ onLogout }) => {
 
         .flag-reason-section textarea:focus {
           outline: none;
-          border-color: #667eea;
+          border-color: #c9a227;
           background: rgba(0, 0, 0, 0.7);
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+          box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
         }
 
         .flag-submit-btn {

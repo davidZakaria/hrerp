@@ -7,6 +7,15 @@ const User = require('../models/User');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { createAuditLog } = require('./audit');
+const { getEffectiveManagedDepartments } = require('../utils/effectiveManagedDepartments');
+const { DEPARTMENT_GROUPS } = require('../config/departmentGroups');
+
+/** Allow only known group keys on self-registration */
+function sanitizeRegisterGroups(raw) {
+    if (!Array.isArray(raw)) return [];
+    const allowed = new Set(Object.keys(DEPARTMENT_GROUPS));
+    return [...new Set(raw.filter((g) => typeof g === 'string' && allowed.has(g.trim())).map((g) => g.trim()))];
+}
 
 // Allowed company email domains
 const ALLOWED_EMAIL_DOMAINS = ['@newjerseyegypt.com', '@gycegypt.com'];
@@ -19,7 +28,7 @@ function emailInsensitiveRegex(normalizedLowerEmail) {
 // Register User (Employee Registration)
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password, department, role, managedDepartments, employeeCode, workSchedule } = req.body;
+        const { name, email, password, department, role, managedDepartments, managedDepartmentGroups, employeeCode, workSchedule } = req.body;
 
         // Validate required fields
         if (!name || !email || !password || !department) {
@@ -55,6 +64,8 @@ router.post('/register', async (req, res) => {
             department,
             role: role || 'employee', // Default to employee
             managedDepartments: role === 'manager' ? (managedDepartments || []) : [],
+            managedDepartmentGroups:
+                role === 'manager' ? sanitizeRegisterGroups(managedDepartmentGroups || []) : [],
             status: 'pending', // New registrations are pending approval
             vacationDaysLeft: 21, // Default vacation days
             employeeCode: employeeCode || null,
@@ -179,13 +190,17 @@ router.post('/login', async (req, res) => {
             (err, token) => {
                 if (err) throw err;
                 // Send response with user details
+                const effectiveMd =
+                    user.role === 'manager' ? getEffectiveManagedDepartments(user) : [];
                 const response = {
                     token,
                     role: user.role,
                     userId: user.id,
                     name: user.name,
                     email: user.email,
-                    managedDepartments: user.managedDepartments || []
+                    managedDepartments: user.role === 'manager' ? effectiveMd : (user.managedDepartments || []),
+                    managedDepartmentGroups: user.managedDepartmentGroups || [],
+                    effectiveManagedDepartments: user.role === 'manager' ? effectiveMd : undefined
                 };
                 res.json(response);
             }
@@ -201,7 +216,11 @@ router.post('/login', async (req, res) => {
 router.get('/me', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
-        res.json(user);
+        const u = user.toObject ? user.toObject() : { ...user };
+        if (u.role === 'manager') {
+            u.effectiveManagedDepartments = getEffectiveManagedDepartments(user);
+        }
+        res.json(u);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server error');

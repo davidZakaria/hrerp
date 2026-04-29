@@ -195,7 +195,10 @@
     "formDeletedOk": "تم حذف النموذج.",
     "formUpdatedOk": "تم تحديث النموذج.",
     "refreshList": "تحديث",
-    "loadingForms": "جاري تحميل النماذج…"
+    "loadingForms": "جاري تحميل النماذج…",
+    "searchFormsList": "بحث في هذه القائمة (الاسم، البريد، القسم، النوع)",
+    "formTabAll": "كل الأنواع",
+    "pipelineHint": "أعداد مراحل الموافقة للمرشح الحالي (نوع النموذج + شهور التصفية)"
   },
   "forms": {
     "vacation": "إجازة",

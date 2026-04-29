@@ -387,6 +387,48 @@ body::after {
   cursor: not-allowed;
 }
 
+.super-admin-dashboard .super-admin-forms-shell {
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.04) 0%, rgba(234, 179, 8, 0.1) 100%);
+  border: 1px solid rgba(234, 179, 8, 0.38);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+}
+
+.super-admin-dashboard .super-admin-forms-shell .super-admin-pipeline-hint {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin: 0 0 1rem 0;
+  line-height: 1.45;
+}
+
+.super-admin-dashboard .super-admin-forms-search-row {
+  margin-bottom: 1rem;
+}
+
+.super-admin-dashboard .super-admin-forms-search-row label {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.super-admin-dashboard .super-admin-forms-search-input {
+  max-width: 28rem;
+  width: 100%;
+}
+
+.super-admin-dashboard .super-admin-forms-shell .form-type-navigation {
+  margin-bottom: 0.75rem;
+}
+
+.super-admin-dashboard .super-admin-pipeline-stats {
+  margin-bottom: 1.25rem !important;
+}
+
+.super-admin-dashboard .super-admin-forms-shell .forms-container {
+  margin-top: 0.5rem;
+}
+
 /* App Header Mobile */
 .app-header {
   padding: 1rem;

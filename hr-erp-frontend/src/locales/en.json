@@ -195,7 +195,10 @@
     "formDeletedOk": "Form deleted.",
     "formUpdatedOk": "Form updated.",
     "refreshList": "Refresh",
-    "loadingForms": "Loading forms…"
+    "loadingForms": "Loading forms…",
+    "searchFormsList": "Search this list (name, email, department, type)",
+    "formTabAll": "All types",
+    "pipelineHint": "Pipeline counts for the filter above (type tab + month filters)"
   },
   "forms": {
     "vacation": "Vacation",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import LogoutButton from './LogoutButton';
 import { useTranslation } from 'react-i18next';
@@ -93,6 +93,8 @@ const SuperAdminDashboard = () => {
   const [formsSuccess, setFormsSuccess] = useState('');
   const [formsError, setFormsError] = useState('');
   const [formMutating, setFormMutating] = useState(false);
+  const [superAdminFormType, setSuperAdminFormType] = useState('all');
+  const [superAdminFormsSearch, setSuperAdminFormsSearch] = useState('');
 
   // Available departments
   const availableDepartments = [
@@ -1090,14 +1092,30 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  const filteredSuperAdminForms = useMemo(() => {
+    const q = superAdminFormsSearch.toLowerCase().trim();
+    return forms.filter((form) => {
+      const typeOk = superAdminFormType === 'all' || form.type === superAdminFormType;
+      if (!typeOk) return false;
+      if (!q) return true;
+      return (
+        form.user?.name?.toLowerCase().includes(q) ||
+        form.user?.email?.toLowerCase().includes(q) ||
+        form.user?.department?.toLowerCase().includes(q) ||
+        form.type?.toLowerCase().includes(q)
+      );
+    });
+  }, [forms, superAdminFormType, superAdminFormsSearch]);
+
+  const superAdminPipelineForms = useMemo(() => (
+    superAdminFormType === 'all'
+      ? forms
+      : forms.filter((f) => f.type === superAdminFormType)
+  ), [forms, superAdminFormType]);
+
   const handleExportForms = () => {
     try {
-      const rowsForExport = forms.filter(form =>
-        form.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        form.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        form.user?.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        form.type?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const rowsForExport = filteredSuperAdminForms;
       // Create CSV content
       const headers = ['Employee', 'Email', 'Department', 'Form Type', 'Status', 'Start Date', 'End Date', 'Days', 'Reason', 'Submitted Date'];
       const csvContent = [
@@ -1784,15 +1802,97 @@ const SuperAdminDashboard = () => {
                 </div>
               )}
 
-              <div className="forms-container">
-                {forms
-                  .filter(form => 
-                    form.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    form.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    form.user?.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    form.type?.toLowerCase().includes(searchTerm.toLowerCase())
-                  )
-                  .map(form => {
+              <div className="super-admin-forms-shell elegant-card">
+                <p className="super-admin-pipeline-hint">{t('superAdminDashboard.pipelineHint')}</p>
+                <div className="super-admin-forms-search-row">
+                  <label className="form-label-elegant" htmlFor="super-admin-forms-search">{t('superAdminDashboard.searchFormsList')}</label>
+                  <input
+                    id="super-admin-forms-search"
+                    type="search"
+                    className="form-input-elegant super-admin-forms-search-input"
+                    value={superAdminFormsSearch}
+                    onChange={(e) => setSuperAdminFormsSearch(e.target.value)}
+                    autoComplete="off"
+                  />
+                </div>
+
+                <div className="form-type-navigation">
+                  <button
+                    type="button"
+                    className={`form-type-tab ${superAdminFormType === 'all' ? 'active' : ''}`}
+                    onClick={() => setSuperAdminFormType('all')}
+                  >
+                    📋 {t('superAdminDashboard.formTabAll')} ({forms.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`form-type-tab ${superAdminFormType === 'vacation' ? 'active' : ''}`}
+                    onClick={() => setSuperAdminFormType('vacation')}
+                  >
+                    🏖️ {t('forms.vacation')} ({forms.filter((f) => f.type === 'vacation').length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`form-type-tab ${superAdminFormType === 'excuse' ? 'active' : ''}`}
+                    onClick={() => setSuperAdminFormType('excuse')}
+                  >
+                    🕐 {t('forms.excuse')} ({forms.filter((f) => f.type === 'excuse').length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`form-type-tab ${superAdminFormType === 'wfh' ? 'active' : ''}`}
+                    onClick={() => setSuperAdminFormType('wfh')}
+                  >
+                    🏠 {t('forms.workFromHome')} ({forms.filter((f) => f.type === 'wfh').length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`form-type-tab ${superAdminFormType === 'sick_leave' ? 'active' : ''}`}
+                    onClick={() => setSuperAdminFormType('sick_leave')}
+                  >
+                    🏥 {t('forms.sickLeave')} ({forms.filter((f) => f.type === 'sick_leave').length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`form-type-tab ${superAdminFormType === 'extra_hours' ? 'active' : ''}`}
+                    onClick={() => setSuperAdminFormType('extra_hours')}
+                  >
+                    ⏱️ {t('forms.extra_hours')} ({forms.filter((f) => f.type === 'extra_hours').length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`form-type-tab ${superAdminFormType === 'mission' ? 'active' : ''}`}
+                    onClick={() => setSuperAdminFormType('mission')}
+                  >
+                    ✈️ {t('forms.mission')} ({forms.filter((f) => f.type === 'mission').length})
+                  </button>
+                </div>
+
+                <div className="grid-4 super-admin-pipeline-stats">
+                  <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #ff9800, #f57c00)' }}>
+                    <div className="stats-number">{superAdminPipelineForms.filter((f) => f.status === 'pending').length}</div>
+                    <div className="stats-label">{t('adminDashboard.summaryPendingManager')}</div>
+                  </div>
+                  <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #2196f3, #1976d2)' }}>
+                    <div className="stats-number">
+                      {superAdminPipelineForms.filter((f) => f.status === 'manager_approved' || f.status === 'manager_submitted').length}
+                    </div>
+                    <div className="stats-label">{t('adminDashboard.summaryAwaitingHr')}</div>
+                  </div>
+                  <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #4caf50, #388e3c)' }}>
+                    <div className="stats-number">{superAdminPipelineForms.filter((f) => f.status === 'approved').length}</div>
+                    <div className="stats-label">{t('adminDashboard.summaryApproved')}</div>
+                  </div>
+                  <div className="stats-card hover-lift" style={{ background: 'linear-gradient(135deg, #f44336, #c62828)' }}>
+                    <div className="stats-number">
+                      {superAdminPipelineForms.filter((f) => f.status === 'rejected' || f.status === 'manager_rejected').length}
+                    </div>
+                    <div className="stats-label">{t('adminDashboard.summaryRejected')}</div>
+                  </div>
+                </div>
+
+                <div className="forms-container">
+                {filteredSuperAdminForms.map(form => {
                     const getFormIcon = (type) => {
                       switch(type) {
                         case 'sick_leave': return '🏥';
@@ -2002,18 +2102,14 @@ const SuperAdminDashboard = () => {
                     );
                   })}
                   
-                {forms.filter(form => 
-                  form.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  form.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  form.user?.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  form.type?.toLowerCase().includes(searchTerm.toLowerCase())
-                ).length === 0 && (
+                {filteredSuperAdminForms.length === 0 && (
                   <div className="no-forms-message">
                     <div className="no-forms-icon">📋</div>
                     <h3>{t('superAdminDashboard.noFormsTitle')}</h3>
                     <p>{t('superAdminDashboard.noFormsBody')}</p>
                   </div>
                 )}
+              </div>
               </div>
             </div>
           )}

@@ -10,6 +10,10 @@ import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScr
 import { getEffectiveManagedDepartmentsClient } from '../utils/effectiveManagedDepartments';
 import { FRONTEND_UI_REVISION } from '../frontendUiRevision';
 import FormManagementMonthFilterBar from './forms/FormManagementMonthFilterBar';
+import {
+  filterFormsByManagementMonths,
+  currentYearMonth,
+} from '../utils/filterFormsByManagementMonths';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -377,6 +381,7 @@ const SuperAdminDashboard = () => {
       const params = new URLSearchParams();
       if (formsSubmittedMonth) params.set('submittedMonth', formsSubmittedMonth);
       if (formsEventMonth) params.set('eventMonth', formsEventMonth);
+      params.set('_', String(Date.now()));
       const qs = params.toString();
       const url = `${API_URL}/api/forms/all${qs ? `?${qs}` : ''}`;
       const res = await fetch(url, {
@@ -402,19 +407,21 @@ const SuperAdminDashboard = () => {
     const sub = formsSubmittedMonth;
     const ev = formsEventMonth;
     const keep = sub || ev;
+    const nowYm = currentYearMonth();
     setFormsMonthFilterKind(kind);
     if (kind === 'all') {
       setFormsSubmittedMonth('');
       setFormsEventMonth('');
     } else if (kind === 'submitted') {
       setFormsEventMonth('');
-      setFormsSubmittedMonth(sub || keep || '');
+      setFormsSubmittedMonth(sub || keep || nowYm);
     } else if (kind === 'event') {
       setFormsSubmittedMonth('');
-      setFormsEventMonth(ev || keep || '');
+      setFormsEventMonth(ev || keep || nowYm);
     } else if (kind === 'both') {
-      setFormsSubmittedMonth(sub || ev || '');
-      setFormsEventMonth(ev || sub || '');
+      const d = sub || ev || nowYm;
+      setFormsSubmittedMonth(d);
+      setFormsEventMonth(ev || sub || d);
     }
   }, [formsSubmittedMonth, formsEventMonth]);
 
@@ -1120,9 +1127,14 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  const superAdminFormsMonthFiltered = useMemo(
+    () => filterFormsByManagementMonths(forms, formsSubmittedMonth, formsEventMonth),
+    [forms, formsSubmittedMonth, formsEventMonth]
+  );
+
   const filteredSuperAdminForms = useMemo(() => {
     const q = superAdminFormsSearch.toLowerCase().trim();
-    return forms.filter((form) => {
+    return superAdminFormsMonthFiltered.filter((form) => {
       const typeOk = superAdminFormType === 'all' || form.type === superAdminFormType;
       if (!typeOk) return false;
       if (!q) return true;
@@ -1133,13 +1145,13 @@ const SuperAdminDashboard = () => {
         form.type?.toLowerCase().includes(q)
       );
     });
-  }, [forms, superAdminFormType, superAdminFormsSearch]);
+  }, [superAdminFormsMonthFiltered, superAdminFormType, superAdminFormsSearch]);
 
   const superAdminPipelineForms = useMemo(() => (
     superAdminFormType === 'all'
-      ? forms
-      : forms.filter((f) => f.type === superAdminFormType)
-  ), [forms, superAdminFormType]);
+      ? superAdminFormsMonthFiltered
+      : superAdminFormsMonthFiltered.filter((f) => f.type === superAdminFormType)
+  ), [superAdminFormsMonthFiltered, superAdminFormType]);
 
   const handleExportForms = () => {
     try {
@@ -1836,13 +1848,13 @@ const SuperAdminDashboard = () => {
                     value={superAdminFormType}
                     onChange={(e) => setSuperAdminFormType(e.target.value)}
                   >
-                    <option value="all">{t('superAdminDashboard.formTabAll')} ({forms.length})</option>
-                    <option value="vacation">{t('forms.vacation')} ({forms.filter((f) => f.type === 'vacation').length})</option>
-                    <option value="excuse">{t('forms.excuse')} ({forms.filter((f) => f.type === 'excuse').length})</option>
-                    <option value="wfh">{t('forms.workFromHome')} ({forms.filter((f) => f.type === 'wfh').length})</option>
-                    <option value="sick_leave">{t('forms.sickLeave')} ({forms.filter((f) => f.type === 'sick_leave').length})</option>
-                    <option value="extra_hours">{t('forms.extra_hours')} ({forms.filter((f) => f.type === 'extra_hours').length})</option>
-                    <option value="mission">{t('forms.mission')} ({forms.filter((f) => f.type === 'mission').length})</option>
+                    <option value="all">{t('superAdminDashboard.formTabAll')} ({superAdminFormsMonthFiltered.length})</option>
+                    <option value="vacation">{t('forms.vacation')} ({superAdminFormsMonthFiltered.filter((f) => f.type === 'vacation').length})</option>
+                    <option value="excuse">{t('forms.excuse')} ({superAdminFormsMonthFiltered.filter((f) => f.type === 'excuse').length})</option>
+                    <option value="wfh">{t('forms.workFromHome')} ({superAdminFormsMonthFiltered.filter((f) => f.type === 'wfh').length})</option>
+                    <option value="sick_leave">{t('forms.sickLeave')} ({superAdminFormsMonthFiltered.filter((f) => f.type === 'sick_leave').length})</option>
+                    <option value="extra_hours">{t('forms.extra_hours')} ({superAdminFormsMonthFiltered.filter((f) => f.type === 'extra_hours').length})</option>
+                    <option value="mission">{t('forms.mission')} ({superAdminFormsMonthFiltered.filter((f) => f.type === 'mission').length})</option>
                   </select>
                 </div>
 

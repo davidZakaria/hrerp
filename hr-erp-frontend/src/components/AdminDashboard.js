@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import ATSDashboard from './ATS/ATSDashboard';
@@ -13,6 +13,10 @@ import DashboardSectionNav from './layout/DashboardSectionNav';
 import { smoothScrollToElement } from '../utils/smoothScroll';
 import { getEffectiveManagedDepartmentsClient } from '../utils/effectiveManagedDepartments';
 import FormManagementMonthFilterBar from './forms/FormManagementMonthFilterBar';
+import {
+  filterFormsByManagementMonths,
+  currentYearMonth,
+} from '../utils/filterFormsByManagementMonths';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -196,7 +200,7 @@ const AdminDashboard = () => {
       if (formsEventMonth) params.eventMonth = formsEventMonth;
       const res = await axios.get(`${API_URL}/api/forms/admin`, {
         headers: { 'x-auth-token': token },
-        params
+        params: { ...params, _: Date.now() },
       });
       const data = res.data;
       setForms(data);
@@ -223,21 +227,28 @@ const AdminDashboard = () => {
     const sub = formsSubmittedMonth;
     const ev = formsEventMonth;
     const keep = sub || ev;
+    const nowYm = currentYearMonth();
     setFormsMonthFilterKind(kind);
     if (kind === 'all') {
       setFormsSubmittedMonth('');
       setFormsEventMonth('');
     } else if (kind === 'submitted') {
       setFormsEventMonth('');
-      setFormsSubmittedMonth(sub || keep || '');
+      setFormsSubmittedMonth(sub || keep || nowYm);
     } else if (kind === 'event') {
       setFormsSubmittedMonth('');
-      setFormsEventMonth(ev || keep || '');
+      setFormsEventMonth(ev || keep || nowYm);
     } else if (kind === 'both') {
-      setFormsSubmittedMonth(sub || ev || '');
-      setFormsEventMonth(ev || sub || '');
+      const d = sub || ev || nowYm;
+      setFormsSubmittedMonth(d);
+      setFormsEventMonth(ev || sub || d);
     }
   }, [formsSubmittedMonth, formsEventMonth]);
+
+  const formsForMonthFilter = useMemo(
+    () => filterFormsByManagementMonths(forms, formsSubmittedMonth, formsEventMonth),
+    [forms, formsSubmittedMonth, formsEventMonth]
+  );
 
   const fetchCurrentUser = useCallback(async () => {
     try {
@@ -1928,23 +1939,23 @@ const AdminDashboard = () => {
                   value={activeFormType}
                   onChange={(e) => setActiveFormType(e.target.value)}
                 >
-                  <option value="vacation">{t('forms.vacation')} ({forms.filter((f) => f.type === 'vacation').length})</option>
-                  <option value="excuse">{t('forms.excuse')} ({forms.filter((f) => f.type === 'excuse').length})</option>
-                  <option value="wfh">{t('forms.workFromHome')} ({forms.filter((f) => f.type === 'wfh').length})</option>
-                  <option value="sick_leave">{t('forms.sickLeave')} ({forms.filter((f) => f.type === 'sick_leave').length})</option>
-                  <option value="extra_hours">{t('forms.extra_hours')} ({forms.filter((f) => f.type === 'extra_hours').length})</option>
-                  <option value="mission">{t('forms.mission')} ({forms.filter((f) => f.type === 'mission').length})</option>
+                  <option value="vacation">{t('forms.vacation')} ({formsForMonthFilter.filter((f) => f.type === 'vacation').length})</option>
+                  <option value="excuse">{t('forms.excuse')} ({formsForMonthFilter.filter((f) => f.type === 'excuse').length})</option>
+                  <option value="wfh">{t('forms.workFromHome')} ({formsForMonthFilter.filter((f) => f.type === 'wfh').length})</option>
+                  <option value="sick_leave">{t('forms.sickLeave')} ({formsForMonthFilter.filter((f) => f.type === 'sick_leave').length})</option>
+                  <option value="extra_hours">{t('forms.extra_hours')} ({formsForMonthFilter.filter((f) => f.type === 'extra_hours').length})</option>
+                  <option value="mission">{t('forms.mission')} ({formsForMonthFilter.filter((f) => f.type === 'mission').length})</option>
                 </select>
               </div>
               <div className="form-mgmt-pipeline-inline" style={{ marginTop: '0.75rem', marginBottom: 0 }} aria-label={t('formManagement.pipelineSummary')}>
                 <strong className="form-mgmt-pipeline-strong">{t('formManagement.pipelineSummary')}</strong>
-                <span>{t('adminDashboard.summaryPendingManager')}: {forms.filter((f) => f.type === activeFormType && f.status === 'pending').length}</span>
+                <span>{t('adminDashboard.summaryPendingManager')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && f.status === 'pending').length}</span>
                 <span className="pipe-sep">|</span>
-                <span>{t('adminDashboard.summaryAwaitingHr')}: {forms.filter((f) => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length}</span>
+                <span>{t('adminDashboard.summaryAwaitingHr')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length}</span>
                 <span className="pipe-sep">|</span>
-                <span>{t('adminDashboard.summaryApproved')}: {forms.filter((f) => f.type === activeFormType && f.status === 'approved').length}</span>
+                <span>{t('adminDashboard.summaryApproved')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && f.status === 'approved').length}</span>
                 <span className="pipe-sep">|</span>
-                <span>{t('adminDashboard.summaryRejected')}: {forms.filter((f) => f.type === activeFormType && (f.status === 'rejected' || f.status === 'manager_rejected')).length}</span>
+                <span>{t('adminDashboard.summaryRejected')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && (f.status === 'rejected' || f.status === 'manager_rejected')).length}</span>
               </div>
             </div>
 
@@ -1956,17 +1967,17 @@ const AdminDashboard = () => {
             <div className="super-admin-section">
               <div className="section-title-container">
                 <h3 className="section-title" style={{ color: '#ff9800' }}>
-                  ⏳ Pending Manager Approval - {activeFormType.toUpperCase()} ({forms.filter(f => f.type === activeFormType && f.status === 'pending').length})
+                  ⏳ Pending Manager Approval - {activeFormType.toUpperCase()} ({formsForMonthFilter.filter(f => f.type === activeFormType && f.status === 'pending').length})
                 </h3>
                 <ExportPrintButtons 
-                  forms={forms}
+                  forms={formsForMonthFilter}
                   activeFormType={activeFormType}
                   sectionType="pending"
                   sectionTitle="Pending Manager Approval"
                 />
               </div>
               <div className="super-admin-card-grid">
-                {forms.filter(form => 
+                {formsForMonthFilter.filter(form => 
                   form.type === activeFormType &&
                   form.status === 'pending' && 
                   (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
@@ -2068,7 +2079,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 ))}
-                {forms.filter(f => f.type === activeFormType && f.status === 'pending').length === 0 && (
+                {formsForMonthFilter.filter(f => f.type === activeFormType && f.status === 'pending').length === 0 && (
                   <div className="no-items-message">
                     <div className="no-items-icon">📋</div>
                     <h3>No Pending Forms</h3>
@@ -2082,17 +2093,17 @@ const AdminDashboard = () => {
             <div className="super-admin-section">
               <div className="section-title-container">
                 <h3 className="section-title" style={{ color: '#2196f3' }}>
-                  👨‍💼 Awaiting HR Approval - {activeFormType.toUpperCase()} ({forms.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length})
+                  👨‍💼 Awaiting HR Approval - {activeFormType.toUpperCase()} ({formsForMonthFilter.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length})
                 </h3>
                 <ExportPrintButtons 
-                  forms={forms}
+                  forms={formsForMonthFilter}
                   activeFormType={activeFormType}
                   sectionType="awaiting"
                   sectionTitle="Awaiting HR Approval"
                 />
               </div>
               <div className="super-admin-card-grid">
-                {forms.filter(form => 
+                {formsForMonthFilter.filter(form => 
                   form.type === activeFormType &&
                   (form.status === 'manager_approved' || form.status === 'manager_submitted') && 
                   (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
@@ -2259,7 +2270,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 ))}
-                {forms.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length === 0 && (
+                {formsForMonthFilter.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length === 0 && (
                   <div className="no-items-message">
                     <div className="no-items-icon">👨‍💼</div>
                     <h3>No Forms Awaiting HR</h3>
@@ -2273,17 +2284,17 @@ const AdminDashboard = () => {
             <div className="super-admin-section">
               <div className="section-title-container">
                 <h3 className="section-title" style={{ color: '#666' }}>
-                  📋 {activeFormType.toUpperCase()} Forms History ({forms.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length})
+                  📋 {activeFormType.toUpperCase()} Forms History ({formsForMonthFilter.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length})
                 </h3>
                 <ExportPrintButtons 
-                  forms={forms}
+                  forms={formsForMonthFilter}
                   activeFormType={activeFormType}
                   sectionType="history"
                   sectionTitle="Forms History"
                 />
               </div>
               <div className="super-admin-card-grid">
-                {forms.filter(form => 
+                {formsForMonthFilter.filter(form => 
                   form.type === activeFormType &&
                   ['approved', 'rejected', 'manager_rejected'].includes(form.status) &&
                   (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
@@ -2438,7 +2449,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 ))}
-                {forms.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length === 0 && (
+                {formsForMonthFilter.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length === 0 && (
                   <div className="no-items-message">
                     <div className="no-items-icon">📋</div>
                     <h3>No Historical Forms</h3>

@@ -1,8 +1,9 @@
 /**
  * API Configuration
  * Centralizes the API URL configuration for the application.
- * Uses runtime detection: browser -> localhost:5001, Capacitor (emulator) -> 10.0.2.2:5001.
- * Set REACT_APP_API_URL for production builds (e.g. https://hr-njd.com).
+ * - Production browser: prefer REACT_APP_API_URL; if missing, use the page origin so /api hits Nginx.
+ * - Development browser: localhost:5001 (or set REACT_APP_API_URL).
+ * - Capacitor: production app URL or emulator host.
  */
 
 const getDefaultApiUrl = () => {
@@ -10,6 +11,9 @@ const getDefaultApiUrl = () => {
     return process.env.NODE_ENV === 'production'
       ? 'https://hr-njd.com'
       : 'http://10.0.2.2:5001';
+  }
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+    return window.location.origin;
   }
   return 'http://localhost:5001';
 };

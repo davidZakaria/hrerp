@@ -128,6 +128,7 @@
   "adminDashboard": {
     "title": "لوحة المدير العام",
     "navOverview": "نظرة عامة",
+    "navAttendance": "الحضور",
     "navAts": "نظام ATS",
     "statsActiveUsers": "مستخدمون نشطون",
     "statsPendingApprovals": "تسجيلات بانتظار الموافقة",
@@ -144,8 +145,10 @@
     "exportCsv": "تصدير CSV",
     "noInsightsData": "لا توجد بيانات بعد. ارفع بيانات الحضور لعرض الرؤى.",
     "usersSectionTitle": "إدارة المستخدمين",
+    "usersSectionDesc": "البحث والتصفية والموافقة على التسجيلات وإدارة الأدوار.",
     "searchUsersPlaceholder": "البحث بالاسم أو البريد أو القسم…",
     "formsSectionTitle": "إدارة النماذج",
+    "formsSectionDesc": "اختر الفترة الزمنية، ثم صفِّ حسب نوع الطلب والبحث، وتابع مسار الموافقة.",
     "formsRefreshing": "جاري التحديث…",
     "searchFormsPlaceholder": "البحث باسم الموظف أو البريد أو القسم…",
     "refresh": "تحديث",
@@ -165,7 +168,17 @@
     "approve": "موافقة",
     "reject": "رفض",
     "wantsToManage": "نطاق الإدارة المطلوب (الفعّال)",
-    "groupsLabel": "المجموعات"
+    "groupsLabel": "المجموعات",
+    "vacationCardManageTitle": "إدارة أيام الإجازة",
+    "vacationCardManageDesc": "تحديث أرصدة إجازات الموظفين.",
+    "vacationCardManageCta": "فتح الإدارة",
+    "vacationCardReportTitle": "تقرير الإجازات",
+    "vacationCardReportDesc": "تصدير ومراجعة استخدام الإجازات.",
+    "vacationCardReportCta": "إنشاء التقرير",
+    "vacationCardPersonalTitle": "تقديم طلبي",
+    "vacationCardPersonalDesc": "إجازاتك الشخصية والمرضية والمهام وغيرها.",
+    "vacationCardPersonalCtaOpen": "إظهار النموذج",
+    "vacationCardPersonalCtaClosed": "تقديم الطلب"
   },
   "userManagement": {
     "filterTypeLabel": "أسلوب التصفية",

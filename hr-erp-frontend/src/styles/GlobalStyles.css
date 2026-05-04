@@ -579,6 +579,129 @@ body::after {
   margin-top: 0.25rem;
 }
 
+/* Centered content column + nav alignment (reduces empty side gutters on wide screens) */
+.admin-dashboard .main-content.admin-dashboard-main {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+.admin-dashboard .dashboard-nav-sticky-wrapper {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+.admin-dashboard .dashboard-nav-shell.dashboard-nav-shell--fixed-dock {
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  width: min(1280px, calc(100vw - 24px)) !important;
+  max-width: min(1280px, calc(100vw - 24px)) !important;
+}
+
+.admin-dashboard .admin-dashboard-inline-status {
+  margin: 0.35rem 0 0 0;
+  font-size: 0.85rem;
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.admin-dashboard .admin-dashboard-toolbar-actions {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: min(100%, 320px);
+}
+
+.admin-dashboard .admin-dashboard-toolbar-search {
+  flex: 1 1 220px;
+  min-width: min(100%, 220px);
+  max-width: 420px;
+}
+
+.admin-dashboard .section-header-redesign .section-info {
+  flex: 1 1 260px;
+  min-width: min(100%, 260px);
+}
+
+.admin-dashboard .vacation-management-section {
+  margin: 1.25rem 0 1.75rem;
+  padding: 0;
+}
+
+.admin-dashboard .vacation-management-cards {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.admin-dashboard .vacation-action-card:hover {
+  transform: translateY(-4px) scale(1.01);
+}
+
+.admin-dashboard .vacation-action-card--personal {
+  border-left-color: #a78bfa;
+}
+
+.admin-dashboard .vacation-action-card--personal:hover {
+  border-left-color: #c4b5fd;
+  background: linear-gradient(145deg, rgba(124, 58, 237, 0.12), rgba(26, 26, 26, 0.9));
+}
+
+.admin-dashboard .vacation-card-icon--personal {
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  box-shadow:
+    0 8px 25px rgba(124, 58, 237, 0.35),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2);
+}
+
+.admin-dashboard .admin-form-type-pipeline-panel .form-mgmt-pipeline-inline {
+  margin-bottom: 0;
+  flex: 1 1 280px;
+  min-width: min(100%, 280px);
+}
+
+.admin-dashboard .admin-form-type-pipeline-panel__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem 1.25rem;
+}
+
+.admin-dashboard .admin-form-type-pipeline-panel__type {
+  margin-bottom: 0;
+  flex: 0 1 auto;
+}
+
+.admin-dashboard .admin-form-type-pipeline-panel__type .form-mgmt-select {
+  min-width: 14rem;
+}
+
+@media (max-width: 1100px) {
+  .admin-dashboard .vacation-management-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-dashboard .vacation-management-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dashboard .admin-dashboard-toolbar-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-dashboard .admin-dashboard-toolbar-search {
+    max-width: none;
+  }
+}
 /* App Header Mobile */
 .app-header {
   padding: 1rem;

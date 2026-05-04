@@ -128,6 +128,7 @@
   "adminDashboard": {
     "title": "Admin Dashboard",
     "navOverview": "Overview",
+    "navAttendance": "Attendance",
     "navAts": "ATS System",
     "statsActiveUsers": "Active users",
     "statsPendingApprovals": "Pending registrations",
@@ -144,8 +145,10 @@
     "exportCsv": "Export CSV",
     "noInsightsData": "No data yet. Upload attendance to see insights.",
     "usersSectionTitle": "User management",
+    "usersSectionDesc": "Search and filter accounts, approve registrations, and manage roles.",
     "searchUsersPlaceholder": "Search by name, email, or department…",
     "formsSectionTitle": "Forms management",
+    "formsSectionDesc": "Pick a time range, then filter by request type, search, and work through the pipeline.",
     "formsRefreshing": "Refreshing…",
     "searchFormsPlaceholder": "Search by employee name, email, or department…",
     "refresh": "Refresh",
@@ -165,7 +168,17 @@
     "approve": "Approve",
     "reject": "Reject",
     "wantsToManage": "Requested scope (effective)",
-    "groupsLabel": "Groups"
+    "groupsLabel": "Groups",
+    "vacationCardManageTitle": "Manage vacation days",
+    "vacationCardManageDesc": "Update and adjust employee vacation balances.",
+    "vacationCardManageCta": "Open manager",
+    "vacationCardReportTitle": "Vacation report",
+    "vacationCardReportDesc": "Export and review vacation usage across the team.",
+    "vacationCardReportCta": "Generate report",
+    "vacationCardPersonalTitle": "Submit my request",
+    "vacationCardPersonalDesc": "Your own time off, sick leave, mission, and other personal requests.",
+    "vacationCardPersonalCtaOpen": "Show form",
+    "vacationCardPersonalCtaClosed": "Submit request"
   },
   "userManagement": {
     "filterTypeLabel": "Filter style",

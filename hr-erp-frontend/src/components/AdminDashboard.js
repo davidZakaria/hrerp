@@ -1017,7 +1017,7 @@ const AdminDashboard = () => {
       </div>
 
       <DashboardSectionNav
-        variant="light"
+        variant="dark"
         role="admin"
         title={t('dashboard.nav.adminTitle')}
         description={t('dashboard.nav.adminDesc')}
@@ -1025,18 +1025,18 @@ const AdminDashboard = () => {
         activeId={activeTab}
         sections={[
           { id: 'overview', label: t('adminDashboard.navOverview'), icon: '📊', onSelect: () => setActiveTab('overview') },
-          { id: 'users', label: t('userManagement') || 'User Management', icon: '👥', onSelect: () => setActiveTab('users') },
-          { id: 'forms', label: t('formsManagement') || 'Forms Management', icon: '📋', onSelect: () => setActiveTab('forms') },
+          { id: 'users', label: t('adminDashboard.usersSectionTitle'), icon: '👥', onSelect: () => setActiveTab('users') },
+          { id: 'forms', label: t('adminDashboard.formsSectionTitle'), icon: '📋', onSelect: () => setActiveTab('forms') },
           { id: 'ats', label: t('adminDashboard.navAts'), icon: '🎯', onSelect: () => setActiveTab('ats') },
-          { id: 'attendance', label: t('attendance') || 'Attendance', icon: '📈', onSelect: () => setActiveTab('attendance') }
+          { id: 'attendance', label: t('adminDashboard.navAttendance'), icon: '📈', onSelect: () => setActiveTab('attendance') }
         ]}
       />
 
       {/* Main Content */}
-      <div className="main-content dashboard-section-anchor" ref={mainContentRef}>
+      <div className="main-content dashboard-section-anchor admin-dashboard-main" ref={mainContentRef}>
         {/* Overview Tab */}
         {activeTab === 'overview' && (
-          <div className="overview-section">
+          <div className="overview-section admin-dashboard-tab-panel">
             {/* Stats Cards */}
             <p className="admin-dashboard-stats-hint">{t('adminDashboard.statsHint')}</p>
             <div className="grid-4">
@@ -1576,18 +1576,22 @@ const AdminDashboard = () => {
 
         {/* User Management Tab */}
         {activeTab === 'users' && (
-          <div className="users-section">
-            <div className="section-header">
-              <h2 className="section-title">{t('adminDashboard.usersSectionTitle')}</h2>
-              <div className="section-actions">
+          <div className="users-section admin-dashboard-tab-panel">
+            <div className="section-header-redesign">
+              <div className="section-info">
+                <h3 className="text-gradient">{t('adminDashboard.usersSectionTitle')}</h3>
+                <p className="section-description">{t('adminDashboard.usersSectionDesc')}</p>
+              </div>
+              <div className="section-actions admin-dashboard-toolbar-actions">
                 <input
                   type="text"
                   placeholder={t('adminDashboard.searchUsersPlaceholder')}
                   value={usersSearch}
                   onChange={(e) => setUsersSearch(e.target.value)}
-                  className="search-input"
+                  className="search-input admin-dashboard-toolbar-search"
                 />
-                <button 
+                <button
+                  type="button"
                   className="btn-elegant btn-success"
                   onClick={() => setShowCreateUserModal(true)}
                 >
@@ -1895,21 +1899,27 @@ const AdminDashboard = () => {
 
         {/* Forms Management Tab */}
         {activeTab === 'forms' && (
-          <div className="forms-section">
-            <div className="section-header">
-              <h2 className="section-title">
-                {t('adminDashboard.formsSectionTitle')}
-                {refreshingForms ? ` (${t('adminDashboard.formsRefreshing')})` : ''}
-              </h2>
-              <div className="section-actions">
+          <div className="forms-section admin-dashboard-tab-panel admin-forms-workspace">
+            <div className="section-header-redesign">
+              <div className="section-info">
+                <h3 className="text-gradient">{t('adminDashboard.formsSectionTitle')}</h3>
+                <p className="section-description">{t('adminDashboard.formsSectionDesc')}</p>
+                {refreshingForms || formsLoading ? (
+                  <p className="admin-dashboard-inline-status" role="status">
+                    {t('adminDashboard.formsRefreshing')}
+                  </p>
+                ) : null}
+              </div>
+              <div className="section-actions admin-dashboard-toolbar-actions">
                 <input
-                  type="text"
+                  type="search"
                   placeholder={t('adminDashboard.searchFormsPlaceholder')}
                   value={formsSearch}
                   onChange={(e) => setFormsSearch(e.target.value)}
-                  className="search-input"
+                  className="search-input admin-dashboard-toolbar-search"
+                  autoComplete="off"
                 />
-                <button 
+                <button
                   className="btn-elegant admin-forms-refresh"
                   onClick={() => fetchForms()}
                   disabled={formsLoading || refreshingForms}
@@ -1933,11 +1943,20 @@ const AdminDashboard = () => {
             {/* Vacation Management Cards */}
             <div className="vacation-management-section">
               <div className="vacation-management-cards">
-                <div 
+                <div
+                  role="button"
+                  tabIndex={0}
                   className="vacation-action-card manage-card"
                   onClick={() => {
                     setShowVacationManager(true);
                     fetchAllEmployees();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setShowVacationManager(true);
+                      fetchAllEmployees();
+                    }
                   }}
                 >
                   <div className="vacation-card-header">
@@ -1945,50 +1964,68 @@ const AdminDashboard = () => {
                       🏖️
                     </div>
                     <div className="vacation-card-content">
-                      <h3 className="vacation-card-title">Manage Vacation Days</h3>
-                      <p className="vacation-card-description">Update and modify employee vacation balances</p>
+                      <h3 className="vacation-card-title">{t('adminDashboard.vacationCardManageTitle')}</h3>
+                      <p className="vacation-card-description">{t('adminDashboard.vacationCardManageDesc')}</p>
                     </div>
                   </div>
                   <div className="vacation-card-footer">
-                    <span className="vacation-card-action">Click to Manage →</span>
+                    <span className="vacation-card-action">{t('adminDashboard.vacationCardManageCta')} →</span>
                   </div>
                 </div>
 
-                <div 
+                <div
+                  role="button"
+                  tabIndex={0}
                   className="vacation-action-card report-card"
                   onClick={handleShowReport}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleShowReport();
+                    }
+                  }}
                 >
                   <div className="vacation-card-header">
                     <div className="vacation-card-icon report-icon">
                       📊
                     </div>
                     <div className="vacation-card-content">
-                      <h3 className="vacation-card-title">Vacation Report</h3>
-                      <p className="vacation-card-description">View comprehensive vacation days analytics</p>
+                      <h3 className="vacation-card-title">{t('adminDashboard.vacationCardReportTitle')}</h3>
+                      <p className="vacation-card-description">{t('adminDashboard.vacationCardReportDesc')}</p>
                     </div>
                   </div>
                   <div className="vacation-card-footer">
-                    <span className="vacation-card-action">Generate Report →</span>
+                    <span className="vacation-card-action">{t('adminDashboard.vacationCardReportCta')} →</span>
                   </div>
                 </div>
 
-                <div 
-                  className="vacation-action-card manage-card"
-                  onClick={() => {
-                    setShowAdminFormSubmission(!showAdminFormSubmission);
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className="vacation-action-card manage-card vacation-action-card--personal"
+                  onClick={() => setShowAdminFormSubmission(!showAdminFormSubmission)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setShowAdminFormSubmission(!showAdminFormSubmission);
+                    }
                   }}
                 >
                   <div className="vacation-card-header">
-                    <div className="vacation-card-icon manage-icon">
+                    <div className="vacation-card-icon manage-icon vacation-card-icon--personal">
                       ✈️
                     </div>
                     <div className="vacation-card-content">
-                      <h3 className="vacation-card-title">{t('managerDashboard.submitMyForm', 'Submit My Form')}</h3>
-                      <p className="vacation-card-description">{t('managerDashboard.thisIsForYourOwnPersonalRequestsVacationSickLeaveEtc', 'Submit vacation, mission, sick leave & more')}</p>
+                      <h3 className="vacation-card-title">{t('adminDashboard.vacationCardPersonalTitle')}</h3>
+                      <p className="vacation-card-description">{t('adminDashboard.vacationCardPersonalDesc')}</p>
                     </div>
                   </div>
                   <div className="vacation-card-footer">
-                    <span className="vacation-card-action">{showAdminFormSubmission ? 'Hide Form ▼' : 'Submit Request →'}</span>
+                    <span className="vacation-card-action">
+                      {showAdminFormSubmission
+                        ? `${t('adminDashboard.vacationCardPersonalCtaOpen')} ▼`
+                        : `${t('adminDashboard.vacationCardPersonalCtaClosed')} →`}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -2006,32 +2043,34 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            <div className="form-mgmt-filters-bar admin-form-type-shell" style={{ marginBottom: '1.25rem' }}>
-              <div className="form-mgmt-type-row" style={{ marginBottom: 0 }}>
-                <label htmlFor="admin-form-type">{t('formManagement.typeLabel')}</label>
-                <select
-                  id="admin-form-type"
-                  className="form-mgmt-select"
-                  value={activeFormType}
-                  onChange={(e) => setActiveFormType(e.target.value)}
-                >
-                  <option value="vacation">{t('forms.vacation')} ({formsForMonthFilter.filter((f) => f.type === 'vacation').length})</option>
-                  <option value="excuse">{t('forms.excuse')} ({formsForMonthFilter.filter((f) => f.type === 'excuse').length})</option>
-                  <option value="wfh">{t('forms.workFromHome')} ({formsForMonthFilter.filter((f) => f.type === 'wfh').length})</option>
-                  <option value="sick_leave">{t('forms.sickLeave')} ({formsForMonthFilter.filter((f) => f.type === 'sick_leave').length})</option>
-                  <option value="extra_hours">{t('forms.extra_hours')} ({formsForMonthFilter.filter((f) => f.type === 'extra_hours').length})</option>
-                  <option value="mission">{t('forms.mission')} ({formsForMonthFilter.filter((f) => f.type === 'mission').length})</option>
-                </select>
-              </div>
-              <div className="form-mgmt-pipeline-inline" style={{ marginTop: '0.75rem', marginBottom: 0 }} aria-label={t('formManagement.pipelineSummary')}>
-                <strong className="form-mgmt-pipeline-strong">{t('formManagement.pipelineSummary')}</strong>
-                <span>{t('adminDashboard.summaryPendingManager')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && f.status === 'pending').length}</span>
-                <span className="pipe-sep">|</span>
-                <span>{t('adminDashboard.summaryAwaitingHr')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length}</span>
-                <span className="pipe-sep">|</span>
-                <span>{t('adminDashboard.summaryApproved')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && f.status === 'approved').length}</span>
-                <span className="pipe-sep">|</span>
-                <span>{t('adminDashboard.summaryRejected')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && (f.status === 'rejected' || f.status === 'manager_rejected')).length}</span>
+            <div className="form-mgmt-filters-bar admin-form-type-shell admin-form-type-pipeline-panel">
+              <div className="admin-form-type-pipeline-panel__row">
+                <div className="form-mgmt-type-row admin-form-type-pipeline-panel__type">
+                  <label htmlFor="admin-form-type">{t('formManagement.typeLabel')}</label>
+                  <select
+                    id="admin-form-type"
+                    className="form-mgmt-select"
+                    value={activeFormType}
+                    onChange={(e) => setActiveFormType(e.target.value)}
+                  >
+                    <option value="vacation">{t('forms.vacation')} ({formsForMonthFilter.filter((f) => f.type === 'vacation').length})</option>
+                    <option value="excuse">{t('forms.excuse')} ({formsForMonthFilter.filter((f) => f.type === 'excuse').length})</option>
+                    <option value="wfh">{t('forms.workFromHome')} ({formsForMonthFilter.filter((f) => f.type === 'wfh').length})</option>
+                    <option value="sick_leave">{t('forms.sickLeave')} ({formsForMonthFilter.filter((f) => f.type === 'sick_leave').length})</option>
+                    <option value="extra_hours">{t('forms.extra_hours')} ({formsForMonthFilter.filter((f) => f.type === 'extra_hours').length})</option>
+                    <option value="mission">{t('forms.mission')} ({formsForMonthFilter.filter((f) => f.type === 'mission').length})</option>
+                  </select>
+                </div>
+                <div className="form-mgmt-pipeline-inline admin-form-type-pipeline-panel__pipeline" aria-label={t('formManagement.pipelineSummary')}>
+                  <strong className="form-mgmt-pipeline-strong">{t('formManagement.pipelineSummary')}</strong>
+                  <span>{t('adminDashboard.summaryPendingManager')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && f.status === 'pending').length}</span>
+                  <span className="pipe-sep">|</span>
+                  <span>{t('adminDashboard.summaryAwaitingHr')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length}</span>
+                  <span className="pipe-sep">|</span>
+                  <span>{t('adminDashboard.summaryApproved')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && f.status === 'approved').length}</span>
+                  <span className="pipe-sep">|</span>
+                  <span>{t('adminDashboard.summaryRejected')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && (f.status === 'rejected' || f.status === 'manager_rejected')).length}</span>
+                </div>
               </div>
             </div>
 
@@ -2539,14 +2578,14 @@ const AdminDashboard = () => {
 
         {/* ATS System Tab */}
         {activeTab === 'ats' && (
-          <div className="ats-section">
+          <div className="ats-section admin-dashboard-tab-panel">
             <ATSDashboard />
           </div>
         )}
 
         {/* Attendance Tab */}
         {activeTab === 'attendance' && (
-          <div className="attendance-section">
+          <div className="attendance-section admin-dashboard-tab-panel">
             <AttendanceManagement />
           </div>
         )}

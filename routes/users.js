@@ -15,7 +15,7 @@ const { createAuditLog } = require('./audit');
 const Audit = require('../models/Audit');
 const { validateObjectId } = require('../middleware/validateObjectId');
 const { DEPARTMENT_GROUPS } = require('../config/departmentGroups');
-const { getEffectiveManagedDepartments } = require('../utils/effectiveManagedDepartments');
+const { getEffectiveManagedDepartments, getEffectiveManagedDepartmentsForQueries } = require('../utils/effectiveManagedDepartments');
 
 function sanitizeManagedDepartmentGroups(raw) {
   if (!Array.isArray(raw)) return [];
@@ -1035,7 +1035,7 @@ router.get('/team-members', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Not authorized - Manager role required' });
         }
 
-        const effectiveDepts = getEffectiveManagedDepartments(manager);
+        const effectiveDepts = getEffectiveManagedDepartmentsForQueries(manager);
         if (effectiveDepts.length === 0) {
           return res.json([]);
         }

@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
-const { getEffectiveManagedDepartments } = require('../utils/effectiveManagedDepartments');
+const {
+  getEffectiveManagedDepartments,
+  getEffectiveManagedDepartmentsForQueries
+} = require('../utils/effectiveManagedDepartments');
 const { groupKeysCoveringDepartment } = require('../config/departmentGroups');
 
 const userSchema = new mongoose.Schema({
@@ -139,7 +142,7 @@ userSchema.methods.canManageDepartment = function(department) {
     return true;
   }
   if (this.role === 'manager') {
-    const effective = getEffectiveManagedDepartments(this);
+    const effective = getEffectiveManagedDepartmentsForQueries(this);
     return effective.includes(department);
   }
   return false;
@@ -187,10 +190,11 @@ userSchema.statics.findTeamMembers = function(managerId) {
   return this.findById(managerId)
     .then(manager => {
       if (!manager) return [];
-      const effective = getEffectiveManagedDepartments(manager);
+      const effective = getEffectiveManagedDepartmentsForQueries(manager);
       if (effective.length === 0) return [];
       return this.find({
         department: { $in: effective },
+        role: 'employee',
         status: 'active'
       }).select('-password');
     });

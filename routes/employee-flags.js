@@ -5,7 +5,7 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { validateObjectId } = require('../middleware/validateObjectId');
 const { createAuditLog } = require('./audit');
-const { getEffectiveManagedDepartments } = require('../utils/effectiveManagedDepartments');
+const { getEffectiveManagedDepartmentsForQueries } = require('../utils/effectiveManagedDepartments');
 
 // @route   POST /api/employee-flags
 // @desc    Create a new employee flag (Manager only for their team)
@@ -43,7 +43,7 @@ router.post('/', auth, async (req, res) => {
 
         // Managers can only flag employees in their managed departments
         if (currentUser.role === 'manager') {
-            const eff = getEffectiveManagedDepartments(currentUser);
+            const eff = getEffectiveManagedDepartmentsForQueries(currentUser);
             if (!eff.length || !eff.includes(employee.department)) {
                 return res.status(403).json({ msg: 'You can only flag employees in your managed departments' });
             }
@@ -129,7 +129,7 @@ router.get('/team', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Only managers can access team flags' });
         }
 
-        const eff = getEffectiveManagedDepartments(currentUser);
+        const eff = getEffectiveManagedDepartmentsForQueries(currentUser);
         if (!eff.length) {
             return res.json({
                 success: true,
@@ -223,7 +223,7 @@ router.get('/employee/:employeeId', auth, validateObjectId('employeeId'), async 
         // Check permissions
         const isAdmin = ['admin', 'super_admin'].includes(currentUser.role);
         const isManagerOfEmployee = currentUser.role === 'manager' &&
-            getEffectiveManagedDepartments(currentUser).includes(employee.department);
+            getEffectiveManagedDepartmentsForQueries(currentUser).includes(employee.department);
         const isSelf = req.user.id === employeeId;
 
         if (!isAdmin && !isManagerOfEmployee && !isSelf) {

@@ -1163,8 +1163,8 @@ const ManagerDashboard = ({ onLogout }) => {
           ) : (
             <div className="no-content">
               <span className="no-content-icon">👥</span>
-              <p>{t('noFormsFoundFromYourTeamMembers')}</p>
-              <small>{t('yourTeamMembersHaventSubmittedAnyFormsYetOrYouDontHaveAnyManagedDepartmentsAssigned')}</small>
+              <p>{t('managerDashboard.noFormsFoundFromYourTeamMembers')}</p>
+              <small>{t('managerDashboard.yourTeamMembersHaventSubmittedAnyFormsYetOrYouDontHaveAnyManagedDepartmentsAssigned')}</small>
             </div>
           )}
         </div>
@@ -1173,7 +1173,7 @@ const ManagerDashboard = ({ onLogout }) => {
       {/* Team Members */}
       <div className="section team-management-section">
         <div className="section-header">
-          <h2>{t('myTeamMembers')}</h2>
+          <h2>{t('managerDashboard.myTeamMembers')}</h2>
           <small className="section-subtitle">
             {t('managerDashboard.employeesFromYourManagedDepartments', {
               departments: effectiveDeptList.length ? effectiveDeptList.join(', ') : t('managerDashboard.noDepartmentsAssigned')
@@ -1226,7 +1226,7 @@ const ManagerDashboard = ({ onLogout }) => {
         ) : (
           <div className="no-content">
             <span className="no-content-icon">👥</span>
-            <p>{t('noTeamMembersFoundInYourManagedDepartments')}</p>
+            <p>{t('managerDashboard.noTeamMembersFoundInYourManagedDepartments')}</p>
           </div>
         )}
       </div>

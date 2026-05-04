@@ -16,7 +16,7 @@ const {
     getExcuseDurationHours,
     isPaidExcuseExactlyTwoHours
 } = require('../utils/excuseType');
-const { getEffectiveManagedDepartments } = require('../utils/effectiveManagedDepartments');
+const { getEffectiveManagedDepartmentsForQueries } = require('../utils/effectiveManagedDepartments');
 const { mergeFormMonthFilters } = require('../utils/formMonthFilters');
 
 /** Express can duplicate query keys; normalize to a single trimmed YYYY-MM string */
@@ -449,7 +449,7 @@ router.get('/manager/pending', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Not authorized - Manager role required' });
         }
 
-        const effectiveDepts = getEffectiveManagedDepartments(manager);
+        const effectiveDepts = getEffectiveManagedDepartmentsForQueries(manager);
         if (effectiveDepts.length === 0) {
             return res.json([]);
         }
@@ -592,7 +592,7 @@ router.get('/manager/team-forms', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Not authorized - Manager role required' });
         }
 
-        const effectiveDepts = getEffectiveManagedDepartments(manager);
+        const effectiveDepts = getEffectiveManagedDepartmentsForQueries(manager);
         if (effectiveDepts.length === 0) {
             return res.json([]);
         }
@@ -654,7 +654,7 @@ router.put('/manager/:id', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Not authorized - Manager role required' });
         }
 
-        const effectiveDepts = getEffectiveManagedDepartments(manager);
+        const effectiveDepts = getEffectiveManagedDepartmentsForQueries(manager);
         if (effectiveDepts.length === 0) {
             return res.status(403).json({ msg: 'No departments assigned to manage' });
         }
@@ -861,7 +861,7 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
         if (!manager || manager.role !== 'manager') {
             return res.status(403).json({ msg: 'Not authorized - Manager role required' });
         }
-        const effectiveDepts = getEffectiveManagedDepartments(manager);
+        const effectiveDepts = getEffectiveManagedDepartmentsForQueries(manager);
         if (effectiveDepts.length === 0) {
             return res.status(403).json({ msg: 'No departments assigned to manage' });
         }
@@ -1747,7 +1747,7 @@ router.get('/document/:filename', auth, async (req, res) => {
             // Super admins and admins can view all documents
             authorized = true;
         } else if (requestingUser.role === 'manager') {
-            const eff = getEffectiveManagedDepartments(requestingUser);
+            const eff = getEffectiveManagedDepartmentsForQueries(requestingUser);
             if (eff.length && eff.includes(form.user.department)) {
                 authorized = true;
             }
@@ -1807,7 +1807,7 @@ router.get('/document-info/:formId', auth, async (req, res) => {
         if (requestingUser.role === 'super_admin' || requestingUser.role === 'admin') {
             authorized = true;
         } else if (requestingUser.role === 'manager') {
-            const eff = getEffectiveManagedDepartments(requestingUser);
+            const eff = getEffectiveManagedDepartmentsForQueries(requestingUser);
             if (eff.length && eff.includes(form.user.department)) {
                 authorized = true;
             }

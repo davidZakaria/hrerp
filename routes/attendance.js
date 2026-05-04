@@ -22,6 +22,7 @@ const {
     aggregateOrgKpis,
     applyRecalcAttendance
 } = require('../utils/attendanceDetailBuilder');
+const { getEffectiveManagedDepartmentsForQueries } = require('../utils/effectiveManagedDepartments');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -316,12 +317,13 @@ async function buildTeamReportPayload(manager, rangeStart, rangeEnd) {
         pendingMissedPunches: 0
     };
 
-    if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
+    const effectiveManaged = getEffectiveManagedDepartmentsForQueries(manager);
+    if (effectiveManaged.length === 0) {
         return { report: [], overtimeSummary: emptyOvertime, kpi: emptyKpi };
     }
 
     const teamMembers = await User.find({
-        department: { $in: manager.managedDepartments },
+        department: { $in: effectiveManaged },
         role: 'employee',
         status: 'active'
     }).select('name email employeeCode department workSchedule');
@@ -1006,7 +1008,8 @@ router.get('/team-employee/:userId/detail', auth, validateObjectId('userId'), as
         if (!manager || manager.role !== 'manager') {
             return res.status(403).json({ msg: 'Access denied. Manager only.' });
         }
-        if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
+        const effectiveManaged = getEffectiveManagedDepartmentsForQueries(manager);
+        if (effectiveManaged.length === 0) {
             return res.status(403).json({ msg: 'No managed departments assigned.' });
         }
         const parsed = parseDateRangeQuery(req.query);
@@ -1019,7 +1022,7 @@ router.get('/team-employee/:userId/detail', auth, validateObjectId('userId'), as
         if (!user) {
             return res.status(404).json({ msg: 'User not found' });
         }
-        if (!manager.managedDepartments.includes(user.department) || user.role !== 'employee') {
+        if (!effectiveManaged.includes(user.department) || user.role !== 'employee') {
             return res.status(403).json({ msg: 'Employee is not in your managed departments.' });
         }
         const records = await Attendance.getAttendanceInDateRange(userId, rangeStart, rangeEnd);
@@ -1090,7 +1093,8 @@ router.get('/team-employee/:userId/:month', auth, validateObjectId('userId'), as
         if (!manager || manager.role !== 'manager') {
             return res.status(403).json({ msg: 'Access denied. Manager only.' });
         }
-        if (!manager.managedDepartments || manager.managedDepartments.length === 0) {
+        const effectiveManaged = getEffectiveManagedDepartmentsForQueries(manager);
+        if (effectiveManaged.length === 0) {
             return res.status(403).json({ msg: 'No managed departments assigned.' });
         }
 
@@ -1103,7 +1107,7 @@ router.get('/team-employee/:userId/:month', auth, validateObjectId('userId'), as
         if (!user) {
             return res.status(404).json({ msg: 'User not found' });
         }
-        if (!manager.managedDepartments.includes(user.department) || user.role !== 'employee') {
+        if (!effectiveManaged.includes(user.department) || user.role !== 'employee') {
             return res.status(403).json({ msg: 'Employee is not in your managed departments.' });
         }
 

@@ -160,11 +160,7 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             return res.status(400).json({ msg: 'Invalid form type' });
         }
 
-        // Extra Hours is only available for Marketing department
         if (type === 'extra_hours') {
-            if (user.department.toLowerCase() !== 'marketing') {
-                return res.status(403).json({ msg: 'Extra Hours reports are only available for the Marketing department' });
-            }
             if (!extraHoursDate) {
                 return res.status(400).json({ msg: 'Date is required for Extra Hours reports' });
             }
@@ -489,6 +485,7 @@ router.get('/manager/pending', auth, async (req, res) => {
                     wfhDescription: 1,
                     extraHoursDate: 1,
                     extraHoursWorked: 1,
+                    approvedHours: 1,
                     extraHoursDescription: 1,
                     missionStartDate: 1,
                     missionEndDate: 1,
@@ -659,7 +656,7 @@ router.put('/manager/:id', auth, async (req, res) => {
             return res.status(403).json({ msg: 'No departments assigned to manage' });
         }
 
-        const { action, managerComment, startDate, endDate, reason, excuseDate, excuseType, fromHour, toHour, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime } = req.body;
+        const { action, managerComment, startDate, endDate, reason, excuseDate, excuseType, fromHour, toHour, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, approvedHours, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime } = req.body;
         
         // Validate action parameter
         if (!action || !['approve', 'reject'].includes(action)) {
@@ -706,7 +703,9 @@ router.put('/manager/:id', auth, async (req, res) => {
         if (wfhDate) form.wfhDate = wfhDate;
         if (wfhWorkingOn) form.wfhWorkingOn = wfhWorkingOn;
         if (extraHoursDate) form.extraHoursDate = extraHoursDate;
-        if (extraHoursWorked !== undefined) form.extraHoursWorked = Number(extraHoursWorked);
+        if (form.type !== 'extra_hours' && extraHoursWorked !== undefined) {
+            form.extraHoursWorked = Number(extraHoursWorked);
+        }
         if (extraHoursDescription) form.extraHoursDescription = extraHoursDescription;
         if (missionStartDate) form.missionStartDate = missionStartDate;
         if (missionEndDate) form.missionEndDate = missionEndDate;
@@ -740,6 +739,16 @@ router.put('/manager/:id', auth, async (req, res) => {
         }
 
         if (action === 'approve') {
+            if (form.type === 'extra_hours') {
+                const hoursToApprove = approvedHours !== undefined
+                    ? Number(approvedHours)
+                    : (form.approvedHours ?? form.extraHoursWorked);
+                if (!hoursToApprove || hoursToApprove <= 0) {
+                    return res.status(400).json({ msg: 'Approved OT hours must be greater than 0' });
+                }
+                form.approvedHours = hoursToApprove;
+            }
+
             // For excuse forms, manager approval is final
             if (form.type === 'excuse') {
                 form.excuseType = normalizeExcuseType(form);
@@ -895,6 +904,7 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
             wfhWorkingOn: form.wfhWorkingOn,
             extraHoursDate: form.extraHoursDate,
             extraHoursWorked: form.extraHoursWorked,
+            approvedHours: form.approvedHours,
             extraHoursDescription: form.extraHoursDescription,
             missionStartDate: form.missionStartDate,
             missionEndDate: form.missionEndDate,
@@ -904,7 +914,7 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
             managerComment: form.managerComment
         };
 
-        const { startDate, endDate, reason, excuseDate, excuseType, fromHour, toHour, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime, managerComment } = req.body;
+        const { startDate, endDate, reason, excuseDate, excuseType, fromHour, toHour, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, approvedHours, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime, managerComment } = req.body;
 
         if (startDate) form.startDate = startDate;
         if (endDate) form.endDate = endDate;
@@ -918,7 +928,16 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
         if (wfhDate) form.wfhDate = wfhDate;
         if (wfhWorkingOn) form.wfhWorkingOn = wfhWorkingOn;
         if (extraHoursDate) form.extraHoursDate = extraHoursDate;
-        if (extraHoursWorked !== undefined) form.extraHoursWorked = Number(extraHoursWorked);
+        if (form.type !== 'extra_hours' && extraHoursWorked !== undefined) {
+            form.extraHoursWorked = Number(extraHoursWorked);
+        }
+        if (form.type === 'extra_hours' && approvedHours !== undefined) {
+            const hours = Number(approvedHours);
+            if (!hours || hours <= 0) {
+                return res.status(400).json({ msg: 'Approved OT hours must be greater than 0' });
+            }
+            form.approvedHours = hours;
+        }
         if (extraHoursDescription) form.extraHoursDescription = extraHoursDescription;
         if (missionStartDate) form.missionStartDate = missionStartDate;
         if (missionEndDate) form.missionEndDate = missionEndDate;
@@ -950,6 +969,7 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
             wfhWorkingOn: form.wfhWorkingOn,
             extraHoursDate: form.extraHoursDate,
             extraHoursWorked: form.extraHoursWorked,
+            approvedHours: form.approvedHours,
             extraHoursDescription: form.extraHoursDescription,
             missionStartDate: form.missionStartDate,
             missionEndDate: form.missionEndDate,
@@ -1084,7 +1104,7 @@ router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
         });
 
         // Check if this is a super admin form edit request
-        const { type, startDate, endDate, days, reason, status, adminComment } = req.body;
+        const { type, startDate, endDate, days, reason, status, adminComment, approvedHours } = req.body;
         
         // Super admin can edit form data directly
         if (user.role === 'super_admin' && (type || startDate || endDate || days || reason || status)) {
@@ -1254,6 +1274,20 @@ router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
                 });
             }
             // Note: Sick leave and WFH forms don't affect any day allowances
+
+            if (form.type === 'extra_hours' && approvedHours !== undefined) {
+                const hours = Number(approvedHours);
+                if (!hours || hours <= 0) {
+                    return res.status(400).json({ msg: 'Approved OT hours must be greater than 0' });
+                }
+                form.approvedHours = hours;
+            } else if (
+                form.type === 'extra_hours' &&
+                status === 'approved' &&
+                !form.approvedHours
+            ) {
+                form.approvedHours = form.extraHoursWorked;
+            }
 
             form.status = status;
             form.adminComment = adminComment;

@@ -109,7 +109,7 @@ const formSchema = new mongoose.Schema({
     // Legacy WFH fields (kept for backward compatibility)
     wfhDescription: String,
     wfhHours: Number,
-    // Extra Hours fields (for Marketing department - overtime reporting)
+    // Extra Hours / Overtime request fields
     extraHoursDate: {
         type: Date,
         required: function() {
@@ -117,10 +117,14 @@ const formSchema = new mongoose.Schema({
         }
     },
     extraHoursWorked: {
-        type: Number, // Number of extra hours worked
+        type: Number, // Employee-reported requested hours
         required: function() {
             return this.type === 'extra_hours';
         }
+    },
+    approvedHours: {
+        type: Number, // Manager/admin approved payable OT hours
+        required: false
     },
     extraHoursDescription: {
         type: String, // Description of work done during extra hours

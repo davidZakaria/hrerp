@@ -6,6 +6,7 @@ import LogoutButton from './LogoutButton';
 import ExportPrintButtons from './ExportPrintButtons';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import AttendanceManagement from './AttendanceManagement';
+import OtReconciliationReports from './OtReconciliationReports';
 import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
@@ -33,6 +34,7 @@ const AdminDashboard = () => {
   const [formsError, setFormsError] = useState('');
   const [formsSuccess, setFormsSuccess] = useState('');
   const [comments, setComments] = useState({});
+  const [approvedHoursEdits, setApprovedHoursEdits] = useState({});
   const [formsSearch, setFormsSearch] = useState('');
   const [vacationDaysMap, setVacationDaysMap] = useState({});
   const [activeFormType, setActiveFormType] = useState('vacation');
@@ -612,6 +614,10 @@ const AdminDashboard = () => {
     setComments({ ...comments, [id]: value });
   };
 
+  const handleApprovedHoursChange = (id, value) => {
+    setApprovedHoursEdits({ ...approvedHoursEdits, [id]: value });
+  };
+
   const handleFormAction = async (id, status) => {
     const token = localStorage.getItem('token');
     setFormsError('');
@@ -634,16 +640,24 @@ const AdminDashboard = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
+      const targetForm = forms.find((f) => f._id === id);
+      const requestBody = {
+        status,
+        adminComment: comments[id] || ''
+      };
+      if (targetForm?.type === 'extra_hours' && status === 'approved') {
+        requestBody.approvedHours = Number(
+          approvedHoursEdits[id] ?? targetForm.approvedHours ?? targetForm.extraHoursWorked
+        );
+      }
+
       const res = await fetch(`${API_URL}/api/forms/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'x-auth-token': token
         },
-        body: JSON.stringify({
-          status,
-          adminComment: comments[id] || ''
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal
       });
 
@@ -661,7 +675,10 @@ const AdminDashboard = () => {
                   status: status,
                   adminApprovedBy: currentUser,
                   adminApprovedAt: new Date().toISOString(),
-                  adminComment: comments[id] || ''
+                  adminComment: comments[id] || '',
+                  ...(form.type === 'extra_hours' && status === 'approved'
+                    ? { approvedHours: requestBody.approvedHours }
+                    : {})
                 }
               : form
           )
@@ -672,6 +689,11 @@ const AdminDashboard = () => {
         
         // Clear the comment for this form
         setComments(prev => {
+          const updated = { ...prev };
+          delete updated[id];
+          return updated;
+        });
+        setApprovedHoursEdits(prev => {
           const updated = { ...prev };
           delete updated[id];
           return updated;
@@ -2131,9 +2153,15 @@ const AdminDashboard = () => {
                             <span className="info-value">{form.extraHoursDate?.slice(0,10) || 'N/A'}</span>
                           </div>
                           <div className="info-row">
-                            <span className="info-label">Overtime Hours:</span>
+                            <span className="info-label">{t('forms.requestedOtHours')}:</span>
                             <span className="info-value" style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked || 0} hours</span>
                           </div>
+                          {form.approvedHours != null && (
+                            <div className="info-row">
+                              <span className="info-label">{t('forms.approvedOtHours')}:</span>
+                              <span className="info-value" style={{ color: '#2E7D32', fontWeight: 'bold' }}>{form.approvedHours} hours</span>
+                            </div>
+                          )}
                           <div className="info-row">
                             <span className="info-label">Work Done:</span>
                             <span className="info-value">{form.extraHoursDescription || 'N/A'}</span>
@@ -2277,9 +2305,15 @@ const AdminDashboard = () => {
                             <span className="info-value">{form.extraHoursDate?.slice(0,10) || 'N/A'}</span>
                           </div>
                           <div className="info-row">
-                            <span className="info-label">Overtime Hours:</span>
+                            <span className="info-label">{t('forms.requestedOtHours')}:</span>
                             <span className="info-value" style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked || 0} hours</span>
                           </div>
+                          {form.approvedHours != null && (
+                            <div className="info-row">
+                              <span className="info-label">{t('forms.approvedOtHours')}:</span>
+                              <span className="info-value" style={{ color: '#2E7D32', fontWeight: 'bold' }}>{form.approvedHours} hours</span>
+                            </div>
+                          )}
                           <div className="info-row">
                             <span className="info-label">Work Done:</span>
                             <span className="info-value">{form.extraHoursDescription || 'N/A'}</span>
@@ -2357,6 +2391,19 @@ const AdminDashboard = () => {
                       )}
                     </div>
                     <div className="card-actions hr-actions">
+                      {form.type === 'extra_hours' && (
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem', width: '100%' }}>
+                          <label className="form-label-elegant">{t('forms.approvedOtHours')}</label>
+                          <input
+                            type="number"
+                            min="0.5"
+                            step="0.5"
+                            className="form-input-elegant"
+                            value={approvedHoursEdits[form._id] ?? form.approvedHours ?? form.extraHoursWorked ?? ''}
+                            onChange={(e) => handleApprovedHoursChange(form._id, Number(e.target.value))}
+                          />
+                        </div>
+                      )}
                       <div className="action-buttons-section">
                         <button
                           onClick={() => handleFormAction(form._id, 'approved')}
@@ -2468,9 +2515,15 @@ const AdminDashboard = () => {
                             <span className="info-value">{form.extraHoursDate?.slice(0,10) || 'N/A'}</span>
                           </div>
                           <div className="info-row">
-                            <span className="info-label">Overtime Hours:</span>
+                            <span className="info-label">{t('forms.requestedOtHours')}:</span>
                             <span className="info-value" style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked || 0} hours</span>
                           </div>
+                          {form.approvedHours != null && (
+                            <div className="info-row">
+                              <span className="info-label">{t('forms.approvedOtHours')}:</span>
+                              <span className="info-value" style={{ color: '#2E7D32', fontWeight: 'bold' }}>{form.approvedHours} hours</span>
+                            </div>
+                          )}
                           <div className="info-row">
                             <span className="info-label">Work Done:</span>
                             <span className="info-value">{form.extraHoursDescription || 'N/A'}</span>
@@ -2587,6 +2640,7 @@ const AdminDashboard = () => {
         {activeTab === 'attendance' && (
           <div className="attendance-section admin-dashboard-tab-panel">
             <AttendanceManagement />
+            <OtReconciliationReports />
           </div>
         )}
       </div>

@@ -435,6 +435,7 @@ const ManagerDashboard = ({ onLogout }) => {
       wfhWorkingOn: form.wfhWorkingOn || form.wfhDescription || '',
       extraHoursDate: form.extraHoursDate?.toString().slice(0, 10) || '',
       extraHoursWorked: form.extraHoursWorked || 0,
+      approvedHours: form.approvedHours ?? form.extraHoursWorked ?? 0,
       extraHoursDescription: form.extraHoursDescription || '',
       missionStartDate: form.missionStartDate?.toString().slice(0, 10) || '',
       missionEndDate: form.missionEndDate?.toString().slice(0, 10) || '',
@@ -500,7 +501,7 @@ const ManagerDashboard = ({ onLogout }) => {
           wfhDate: formEditData.wfhDate || undefined,
           wfhWorkingOn: formEditData.wfhWorkingOn || undefined,
           extraHoursDate: formEditData.extraHoursDate || undefined,
-          extraHoursWorked: formEditData.extraHoursWorked,
+          approvedHours: formEditData.approvedHours,
           extraHoursDescription: formEditData.extraHoursDescription || undefined,
           missionStartDate: formEditData.missionStartDate || undefined,
           missionEndDate: formEditData.missionEndDate || undefined,
@@ -542,7 +543,7 @@ const ManagerDashboard = ({ onLogout }) => {
             wfhDate: formEditData.wfhDate || base.wfhDate,
             wfhWorkingOn: formEditData.wfhWorkingOn || base.wfhWorkingOn,
             extraHoursDate: formEditData.extraHoursDate || base.extraHoursDate,
-            extraHoursWorked: formEditData.extraHoursWorked !== undefined ? formEditData.extraHoursWorked : base.extraHoursWorked,
+            approvedHours: formEditData.approvedHours !== undefined ? formEditData.approvedHours : base.approvedHours,
             extraHoursDescription: formEditData.extraHoursDescription || base.extraHoursDescription,
             missionStartDate: formEditData.missionStartDate || base.missionStartDate,
             missionEndDate: formEditData.missionEndDate || base.missionEndDate,
@@ -663,6 +664,7 @@ const ManagerDashboard = ({ onLogout }) => {
       wfhWorkingOn: form.wfhWorkingOn || form.wfhDescription || '',
       extraHoursDate: form.extraHoursDate?.toString().slice(0, 10) || '',
       extraHoursWorked: form.extraHoursWorked || 0,
+      approvedHours: form.approvedHours ?? form.extraHoursWorked ?? 0,
       extraHoursDescription: form.extraHoursDescription || '',
       missionStartDate: form.missionStartDate?.toString().slice(0, 10) || '',
       missionEndDate: form.missionEndDate?.toString().slice(0, 10) || '',
@@ -938,7 +940,10 @@ const ManagerDashboard = ({ onLogout }) => {
                     {form.type === 'extra_hours' && (
                       <>
                         <p><strong>{t('forms.date')}:</strong> {formatDate(form.extraHoursDate)}</p>
-                        <p><strong>{t('forms.extraHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked} {t('forms.hours')}</span></p>
+                        <p><strong>{t('forms.requestedOtHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked} {t('forms.hours')}</span></p>
+                        {form.approvedHours != null && (
+                          <p><strong>{t('forms.approvedOtHours')}:</strong> <span style={{ color: '#2E7D32', fontWeight: 'bold' }}>{form.approvedHours} {t('forms.hours')}</span></p>
+                        )}
                         <p><strong>{t('forms.workDone')}:</strong> {form.extraHoursDescription?.substring(0, 50)}...</p>
                       </>
                     )}
@@ -1077,7 +1082,10 @@ const ManagerDashboard = ({ onLogout }) => {
                     {form.type === 'extra_hours' && (
                       <>
                         <p><strong>{t('forms.date')}:</strong> {formatDate(form.extraHoursDate)}</p>
-                        <p><strong>{t('forms.extraHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked} {t('forms.hours')}</span></p>
+                        <p><strong>{t('forms.requestedOtHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked} {t('forms.hours')}</span></p>
+                        {form.approvedHours != null && (
+                          <p><strong>{t('forms.approvedOtHours')}:</strong> <span style={{ color: '#2E7D32', fontWeight: 'bold' }}>{form.approvedHours} {t('forms.hours')}</span></p>
+                        )}
                         <p><strong>{t('forms.workDone')}:</strong> {form.extraHoursDescription?.substring(0, 50)}...</p>
                       </>
                     )}
@@ -1290,7 +1298,10 @@ const ManagerDashboard = ({ onLogout }) => {
                   {form.type === 'extra_hours' && (
                     <>
                       <p><strong>{t('forms.date')}:</strong> {form.extraHoursDate?.slice(0,10) || 'N/A'}</p>
-                      <p><strong>{t('forms.extraHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked} {t('forms.hours')}</span></p>
+                      <p><strong>{t('forms.requestedOtHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked} {t('forms.hours')}</span></p>
+                      {form.approvedHours != null && (
+                        <p><strong>{t('forms.approvedOtHours')}:</strong> <span style={{ color: '#2E7D32', fontWeight: 'bold' }}>{form.approvedHours} {t('forms.hours')}</span></p>
+                      )}
                       <p><strong>{t('forms.workDone')}:</strong> {form.extraHoursDescription}</p>
                     </>
                   )}
@@ -1405,7 +1416,7 @@ const ManagerDashboard = ({ onLogout }) => {
                   {selectedForm.type === 'extra_hours' && (
                     <>
                       <p><strong>{t('forms.date')}:</strong> {selectedForm.extraHoursDate?.slice(0,10) || 'N/A'}</p>
-                      <p><strong>{t('forms.extraHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{selectedForm.extraHoursWorked} {t('forms.hours')}</span></p>
+                      <p><strong>{t('forms.requestedOtHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{selectedForm.extraHoursWorked} {t('forms.hours')}</span></p>
                       <p><strong>{t('forms.workDone')}:</strong> {selectedForm.extraHoursDescription}</p>
                     </>
                   )}
@@ -1493,8 +1504,12 @@ const ManagerDashboard = ({ onLogout }) => {
                           <input type="date" value={formEditData.extraHoursDate || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
                         </div>
                         <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.extraHours')}</label>
-                          <input type="number" value={formEditData.extraHoursWorked ?? ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursWorked: Number(e.target.value) })} className="form-input-elegant" style={{ width: '100%' }} min="0" step="0.5" />
+                          <label className="form-label-elegant">{t('forms.requestedOtHours')}</label>
+                          <input type="number" value={formEditData.extraHoursWorked ?? ''} readOnly className="form-input-elegant" style={{ width: '100%', background: '#f5f5f5' }} />
+                        </div>
+                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                          <label className="form-label-elegant">{t('forms.approvedOtHours')}</label>
+                          <input type="number" value={formEditData.approvedHours ?? ''} onChange={(e) => setFormEditData({ ...formEditData, approvedHours: Number(e.target.value) })} className="form-input-elegant" style={{ width: '100%' }} min="0.5" step="0.5" />
                         </div>
                         <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
                           <label className="form-label-elegant">{t('forms.workDone')}</label>
@@ -1658,8 +1673,12 @@ const ManagerDashboard = ({ onLogout }) => {
                     <input type="date" value={formEditData.extraHoursDate || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDate: e.target.value })} className="form-input-elegant" />
                   </div>
                   <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.extraHours')}</label>
-                    <input type="number" value={formEditData.extraHoursWorked || 0} onChange={(e) => setFormEditData({ ...formEditData, extraHoursWorked: Number(e.target.value) })} className="form-input-elegant" min="0" step="0.5" />
+                    <label className="form-label-elegant">{t('forms.requestedOtHours')}</label>
+                    <input type="number" value={formEditData.extraHoursWorked || 0} readOnly className="form-input-elegant" style={{ background: '#f5f5f5' }} />
+                  </div>
+                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label-elegant">{t('forms.approvedOtHours')}</label>
+                    <input type="number" value={formEditData.approvedHours || 0} onChange={(e) => setFormEditData({ ...formEditData, approvedHours: Number(e.target.value) })} className="form-input-elegant" min="0.5" step="0.5" />
                   </div>
                   <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
                     <label className="form-label-elegant">{t('forms.workDone')}</label>

@@ -17,6 +17,7 @@ const {
     getDayName
 } = require('../utils/attendanceParser');
 const { parseDateRangeQuery, monthToRange } = require('../utils/attendanceDateRange');
+const { buildOtReconciliationRow } = require('../utils/otReconciliation');
 const {
     buildDateRangeDetailRows,
     aggregateOrgKpis,
@@ -744,6 +745,85 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
         }
         
         res.status(500).json({ msg: 'Server error during upload', error: error.message });
+    }
+});
+
+function otReconciliationDateKey(userId, date) {
+    const d = new Date(date);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${userId}_${y}-${m}-${day}`;
+}
+
+/**
+ * GET /api/attendance/ot-reconciliation
+ * Per-request OT variance report (admin/super_admin only).
+ * Query: startDate, endDate (ISO date strings).
+ */
+router.get('/ot-reconciliation', auth, async (req, res) => {
+    try {
+        const admin = await User.findById(req.user.id);
+        if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
+            return res.status(403).json({ msg: 'Access denied. Admin only.' });
+        }
+
+        const parsed = parseDateRangeQuery(req.query);
+        if (parsed.error) {
+            return res.status(400).json({ msg: parsed.error });
+        }
+        const { rangeStart, rangeEnd } = parsed;
+
+        const forms = await Form.find({
+            type: 'extra_hours',
+            status: 'approved',
+            extraHoursDate: { $gte: rangeStart, $lte: rangeEnd }
+        })
+            .populate('user', 'name department employeeCode')
+            .sort({ extraHoursDate: 1 });
+
+        const userIds = [...new Set(forms.map((f) => f.user?._id).filter(Boolean))];
+        const attendanceRecords = userIds.length
+            ? await Attendance.find({
+                user: { $in: userIds },
+                date: { $gte: rangeStart, $lte: rangeEnd }
+            })
+            : [];
+
+        const attendanceMap = new Map();
+        for (const att of attendanceRecords) {
+            attendanceMap.set(otReconciliationDateKey(att.user, att.date), att);
+        }
+
+        const detailed = forms.map((form) => {
+            const user = form.user;
+            const key = otReconciliationDateKey(user._id, form.extraHoursDate);
+            return buildOtReconciliationRow({
+                form,
+                attendanceRecord: attendanceMap.get(key),
+                user
+            });
+        });
+
+        const final = detailed.map((row) => ({
+            formId: row.formId,
+            employeeCode: row.employeeCode,
+            employeeName: row.employeeName,
+            department: row.department,
+            otDate: row.otDate,
+            finalPayableHours: row.finalPayableHours
+        }));
+
+        res.json({
+            startDate: rangeStart.toISOString(),
+            endDate: rangeEnd.toISOString(),
+            totalRequests: detailed.length,
+            detailed,
+            final
+        });
+    } catch (error) {
+        console.error('Error getting OT reconciliation report:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
     }
 });
 

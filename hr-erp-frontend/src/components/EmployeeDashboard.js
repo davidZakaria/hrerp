@@ -513,11 +513,19 @@ const EmployeeDashboard = () => {
                             <span className="text-elegant">{new Date(form.extraHoursDate).toLocaleDateString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.extraHoursWorked')}:</span>
+                            <span className="form-label-elegant">{t('forms.requestedOtHours')}:</span>
                             <span className="text-elegant" style={{ color: '#E65100', fontWeight: 'bold' }}>
                               ⏱️ {form.extraHoursWorked} {t('forms.hours')}
                             </span>
                           </div>
+                          {['manager_approved', 'approved'].includes(form.status) && form.approvedHours != null && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                              <span className="form-label-elegant">{t('forms.approvedOtHours')}:</span>
+                              <span className="text-elegant" style={{ color: '#2E7D32', fontWeight: 'bold' }}>
+                                ✅ {form.approvedHours} {t('forms.hours')}
+                              </span>
+                            </div>
+                          )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                             <span className="form-label-elegant">{t('forms.extraHoursDescription')}:</span>
                             <span className="text-elegant">{form.extraHoursDescription?.substring(0, 50)}...</span>

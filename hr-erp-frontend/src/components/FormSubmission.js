@@ -344,9 +344,7 @@ const FormSubmission = ({ onFormSubmitted }) => {
             {userInfo?.department === 'Marketing' && (
               <option value="wfh">🏠 {t('forms.wfhRequestOption')}</option>
             )}
-            {userInfo?.department === 'Marketing' && (
-              <option value="extra_hours">⏱️ {t('forms.extraHoursRequestOption')}</option>
-            )}
+            <option value="extra_hours">⏱️ {t('forms.extraHoursRequestOption')}</option>
           </select>
           <small className="input-helper" style={{ marginTop: '0.5rem', display: 'block' }}>
             {form.type === 'vacation' && t('forms.vacationRequestHelp')}

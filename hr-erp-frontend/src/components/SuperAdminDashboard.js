@@ -3,6 +3,7 @@ import axios from 'axios';
 import LogoutButton from './LogoutButton';
 import { useTranslation } from 'react-i18next';
 import AttendanceManagement from './AttendanceManagement';
+import OtReconciliationReports from './OtReconciliationReports';
 import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 import DashboardSectionNav from './layout/DashboardSectionNav';
@@ -2923,7 +2924,10 @@ const SuperAdminDashboard = () => {
 
       {/* Attendance Tab */}
       {activeTab === 'attendance' && (
-        <AttendanceManagement />
+        <>
+          <AttendanceManagement />
+          <OtReconciliationReports />
+        </>
       )}
 
       {/* Backup Management Tab */}

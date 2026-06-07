@@ -204,7 +204,22 @@ const OtReconciliationReports = () => {
         <div className="elegant-card" style={{ overflowX: 'auto' }}>
           <h3 style={{ marginBottom: '1rem', color: '#f1f5f9' }}>{t('otReports.detailedTitle')}</h3>
           {detailedRows.length === 0 ? (
-            <p style={{ color: '#94a3b8' }}>{t('otReports.noRows')}</p>
+            <div style={{ color: '#94a3b8' }}>
+              <p>{t('otReports.noRows')}</p>
+              {report.pendingHrApprovalCount > 0 && (
+                <p style={{ color: '#fbbf24', marginTop: '0.75rem' }}>
+                  {t('otReports.pendingHrCount', { count: report.pendingHrApprovalCount })}
+                </p>
+              )}
+              {report.totalOtRequestsInRange > 0 && report.pendingHrApprovalCount === 0 && (
+                <p style={{ marginTop: '0.75rem' }}>{t('otReports.otExistsNotApproved')}</p>
+              )}
+              <ul style={{ marginTop: '0.75rem', paddingLeft: '1.25rem' }}>
+                <li>{t('otReports.emptyHint1')}</li>
+                <li>{t('otReports.emptyHint2')}</li>
+                <li>{t('otReports.emptyHint3')}</li>
+              </ul>
+            </div>
           ) : (
             <table className="ot-reconciliation-table">
               <thead>
@@ -240,7 +255,14 @@ const OtReconciliationReports = () => {
         <div className="elegant-card" style={{ overflowX: 'auto' }}>
           <h3 style={{ marginBottom: '1rem', color: '#f1f5f9' }}>{t('otReports.finalTitle')}</h3>
           {finalRows.length === 0 ? (
-            <p style={{ color: '#94a3b8' }}>{t('otReports.noRows')}</p>
+            <div style={{ color: '#94a3b8' }}>
+              <p>{t('otReports.noRows')}</p>
+              {report.pendingHrApprovalCount > 0 && (
+                <p style={{ color: '#fbbf24', marginTop: '0.75rem' }}>
+                  {t('otReports.pendingHrCount', { count: report.pendingHrApprovalCount })}
+                </p>
+              )}
+            </div>
           ) : (
             <table className="ot-reconciliation-table">
               <thead>

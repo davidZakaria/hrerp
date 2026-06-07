@@ -774,13 +774,25 @@ router.get('/ot-reconciliation', auth, async (req, res) => {
         }
         const { rangeStart, rangeEnd } = parsed;
 
-        const forms = await Form.find({
-            type: 'extra_hours',
-            status: 'approved',
-            extraHoursDate: { $gte: rangeStart, $lte: rangeEnd }
-        })
-            .populate('user', 'name department employeeCode')
-            .sort({ extraHoursDate: 1 });
+        const dateFilter = { extraHoursDate: { $gte: rangeStart, $lte: rangeEnd } };
+        const [forms, pendingHrCount, totalOtInRange] = await Promise.all([
+            Form.find({
+                type: 'extra_hours',
+                status: 'approved',
+                ...dateFilter
+            })
+                .populate('user', 'name department employeeCode')
+                .sort({ extraHoursDate: 1 }),
+            Form.countDocuments({
+                type: 'extra_hours',
+                status: { $in: ['manager_approved', 'manager_submitted'] },
+                ...dateFilter
+            }),
+            Form.countDocuments({
+                type: 'extra_hours',
+                ...dateFilter
+            })
+        ]);
 
         const userIds = [...new Set(forms.map((f) => f.user?._id).filter(Boolean))];
         const attendanceRecords = userIds.length
@@ -818,6 +830,8 @@ router.get('/ot-reconciliation', auth, async (req, res) => {
             startDate: rangeStart.toISOString(),
             endDate: rangeEnd.toISOString(),
             totalRequests: detailed.length,
+            pendingHrApprovalCount: pendingHrCount,
+            totalOtRequestsInRange: totalOtInRange,
             detailed,
             final
         });

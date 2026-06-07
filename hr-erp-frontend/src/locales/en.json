@@ -672,6 +672,11 @@
     "finalOtHrs": "Final OT Hrs",
     "exportExcel": "Export to Excel",
     "noRows": "No approved overtime requests found for this date range.",
-    "noDataToExport": "No data to export"
+    "noDataToExport": "No data to export",
+    "pendingHrCount": "{{count}} overtime request(s) are awaiting HR final approval in this range.",
+    "otExistsNotApproved": "Overtime requests exist in this range but none have HR final approval yet.",
+    "emptyHint1": "Employee submits an Overtime Hours Report (any department).",
+    "emptyHint2": "Manager approves and sets Approved OT Hours.",
+    "emptyHint3": "Admin gives FINAL APPROVAL in Forms — only then it appears here."
   }
 } 

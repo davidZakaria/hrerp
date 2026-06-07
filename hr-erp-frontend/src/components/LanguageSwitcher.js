@@ -31,6 +31,7 @@ const LanguageSwitcher = () => {
       border: '1px solid rgba(255, 255, 255, 0.2)'
     }}>
       <button
+        aria-label="Switch to English"
         onClick={() => changeLanguage('en')}
         className={`lang-btn ${currentLanguage === 'en' ? 'active' : ''}`}
         style={{
@@ -63,6 +64,7 @@ const LanguageSwitcher = () => {
       </button>
       
       <button
+        aria-label="التبديل إلى العربية"
         onClick={() => changeLanguage('ar')}
         className={`lang-btn ${currentLanguage === 'ar' ? 'active' : ''}`}
         style={{

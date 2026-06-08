@@ -182,4 +182,9 @@ const formSchema = new mongoose.Schema({
     }]
 });
 
+// Add performance indexes for frequently queried fields
+formSchema.index({ user: 1, status: 1 }); // Used for checking user's approved forms
+formSchema.index({ status: 1, type: 1 }); // Used for fetching approved forms by type
+formSchema.index({ createdAt: -1 }); // Used for sorting form lists
+
 module.exports = mongoose.model('Form', formSchema); 

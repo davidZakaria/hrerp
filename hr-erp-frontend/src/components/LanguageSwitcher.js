@@ -33,6 +33,7 @@ const LanguageSwitcher = () => {
       <button
         onClick={() => changeLanguage('en')}
         className={`lang-btn ${currentLanguage === 'en' ? 'active' : ''}`}
+        aria-label="Switch to English"
         style={{
           padding: '8px 16px',
           borderRadius: '20px',
@@ -65,6 +66,7 @@ const LanguageSwitcher = () => {
       <button
         onClick={() => changeLanguage('ar')}
         className={`lang-btn ${currentLanguage === 'ar' ? 'active' : ''}`}
+        aria-label="Switch to Arabic"
         style={{
           padding: '8px 16px',
           borderRadius: '20px',

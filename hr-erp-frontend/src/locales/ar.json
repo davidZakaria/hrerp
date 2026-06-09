@@ -758,6 +758,11 @@
     "totalApprovedOt": "إجمالي OT المعتمد (ساعات)",
     "totalVariance": "إجمالي الفرق (ساعات)",
     "grandTotal": "الإجمالي الكلي ({{count}} موظف)",
-    "dailyBreakdownTitle": "التفاصيل اليومية"
+    "dailyBreakdownTitle": "التفاصيل اليومية",
+    "totalWorkdays": "أيام العمل",
+    "totalPunchedHours": "إجمالي ساعات البصمة",
+    "totalRequestedOt": "إجمالي OT المطلوب (ساعات)",
+    "daysWithForm": "أيام بنموذج معتمد",
+    "totalFinalOt": "إجمالي OT النهائي (ساعات)"
   }
 } 

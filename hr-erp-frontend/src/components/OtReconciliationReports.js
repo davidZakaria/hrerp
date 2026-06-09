@@ -190,16 +190,26 @@ const OtReconciliationReports = () => {
           employeeName: row.employeeName || '',
           department: row.department || '',
           days: 0,
+          workdays: 0,
+          totalPunched: 0,
           totalFingerprint: 0,
+          totalRequested: 0,
+          daysWithForm: 0,
           totalApproved: 0,
-          totalVariance: 0
+          totalVariance: 0,
+          totalFinalPayable: 0
         });
       }
       const agg = map.get(key);
       agg.days += 1;
+      if (row.isWorkday) agg.workdays += 1;
+      agg.totalPunched += Number(row.totalPunchedHours || 0);
       agg.totalFingerprint += Number(row.actualPunchingHours || 0);
+      agg.totalRequested += Number(row.requestedHours || 0);
+      if (row.hasApprovedForm) agg.daysWithForm += 1;
       agg.totalApproved += Number(row.approvedHours || 0);
       agg.totalVariance += Number(row.variance || 0);
+      agg.totalFinalPayable += Number(row.finalPayableHours || 0);
     });
     return Array.from(map.values()).sort((a, b) => b.totalVariance - a.totalVariance);
   }, [filteredDetailedRows]);
@@ -207,11 +217,19 @@ const OtReconciliationReports = () => {
   const grandTotals = useMemo(() => employeeTotals.reduce(
     (acc, emp) => ({
       days: acc.days + emp.days,
+      workdays: acc.workdays + emp.workdays,
+      totalPunched: acc.totalPunched + emp.totalPunched,
       totalFingerprint: acc.totalFingerprint + emp.totalFingerprint,
+      totalRequested: acc.totalRequested + emp.totalRequested,
+      daysWithForm: acc.daysWithForm + emp.daysWithForm,
       totalApproved: acc.totalApproved + emp.totalApproved,
-      totalVariance: acc.totalVariance + emp.totalVariance
+      totalVariance: acc.totalVariance + emp.totalVariance,
+      totalFinalPayable: acc.totalFinalPayable + emp.totalFinalPayable
     }),
-    { days: 0, totalFingerprint: 0, totalApproved: 0, totalVariance: 0 }
+    {
+      days: 0, workdays: 0, totalPunched: 0, totalFingerprint: 0, totalRequested: 0,
+      daysWithForm: 0, totalApproved: 0, totalVariance: 0, totalFinalPayable: 0
+    }
   ), [employeeTotals]);
 
   const hasActiveFilters = Boolean(
@@ -524,9 +542,24 @@ const OtReconciliationReports = () => {
                       <th>{t('otReports.employeeName')}</th>
                       <th>{t('otReports.department')}</th>
                       <th>{t('otReports.otDays')}</th>
+                      {showExtendedDetails && (
+                        <>
+                          <th>{t('otReports.totalWorkdays')}</th>
+                          <th>{t('otReports.totalPunchedHours')}</th>
+                        </>
+                      )}
                       <th>{t('otReports.totalFingerprintOt')}</th>
+                      {showExtendedDetails && (
+                        <>
+                          <th>{t('otReports.totalRequestedOt')}</th>
+                          <th>{t('otReports.daysWithForm')}</th>
+                        </>
+                      )}
                       <th>{t('otReports.totalApprovedOt')}</th>
                       <th>{t('otReports.totalVariance')}</th>
+                      {showExtendedDetails && (
+                        <th>{t('otReports.totalFinalOt')}</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -536,11 +569,26 @@ const OtReconciliationReports = () => {
                         <td>{emp.employeeName}</td>
                         <td>{emp.department}</td>
                         <td>{emp.days}</td>
+                        {showExtendedDetails && (
+                          <>
+                            <td>{emp.workdays}</td>
+                            <td>{formatHours(emp.totalPunched)}</td>
+                          </>
+                        )}
                         <td>{formatHours(emp.totalFingerprint)}</td>
+                        {showExtendedDetails && (
+                          <>
+                            <td>{formatHours(emp.totalRequested)}</td>
+                            <td>{emp.daysWithForm}</td>
+                          </>
+                        )}
                         <td>{formatHours(emp.totalApproved)}</td>
                         <td style={varianceTotalStyle(emp.totalVariance)}>
                           {emp.totalVariance > 0 ? '+' : ''}{formatHours(emp.totalVariance)}
                         </td>
+                        {showExtendedDetails && (
+                          <td style={{ color: '#4ade80', fontWeight: 600 }}>{formatHours(emp.totalFinalPayable)}</td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -550,11 +598,28 @@ const OtReconciliationReports = () => {
                         {t('otReports.grandTotal', { count: employeeTotals.length })}
                       </td>
                       <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{grandTotals.days}</td>
+                      {showExtendedDetails && (
+                        <>
+                          <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{grandTotals.workdays}</td>
+                          <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(grandTotals.totalPunched)}</td>
+                        </>
+                      )}
                       <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(grandTotals.totalFingerprint)}</td>
+                      {showExtendedDetails && (
+                        <>
+                          <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(grandTotals.totalRequested)}</td>
+                          <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{grandTotals.daysWithForm}</td>
+                        </>
+                      )}
                       <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(grandTotals.totalApproved)}</td>
                       <td style={{ ...varianceTotalStyle(grandTotals.totalVariance), background: 'rgba(30, 58, 95, 0.9)' }}>
                         {grandTotals.totalVariance > 0 ? '+' : ''}{formatHours(grandTotals.totalVariance)}
                       </td>
+                      {showExtendedDetails && (
+                        <td style={{ color: '#4ade80', fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>
+                          {formatHours(grandTotals.totalFinalPayable)}
+                        </td>
+                      )}
                     </tr>
                   </tfoot>
                 </table>

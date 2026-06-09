@@ -736,6 +736,11 @@
     "totalApprovedOt": "Total approved OT (hrs)",
     "totalVariance": "Total variance (hrs)",
     "grandTotal": "Grand total ({{count}} employees)",
-    "dailyBreakdownTitle": "Daily Breakdown"
+    "dailyBreakdownTitle": "Daily Breakdown",
+    "totalWorkdays": "Workdays",
+    "totalPunchedHours": "Total punched (hrs)",
+    "totalRequestedOt": "Total requested OT (hrs)",
+    "daysWithForm": "Days with form",
+    "totalFinalOt": "Total final OT (hrs)"
   }
 } 

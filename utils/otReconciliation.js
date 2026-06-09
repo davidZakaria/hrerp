@@ -97,12 +97,16 @@ function reconcileOvertime(actualPunchingHours, approvedHours) {
 function buildOtReconciliationRow({ form, attendanceRecord, user, actualHours, otDate, rowKey }) {
     const fp = attendanceRecord
         ? getFingerprintOtForAttendance(attendanceRecord)
-        : { hours: actualHours != null ? Number(actualHours) : 0 };
+        : { minutes: 0, hours: actualHours != null ? Number(actualHours) : 0 };
     const actual = actualHours != null ? Number(actualHours) : fp.hours;
     const approvedHours = form
         ? (form.approvedHours ?? form.extraHoursWorked ?? 0)
         : 0;
     const calc = reconcileOvertime(actual, approvedHours);
+
+    const totalPunchedMinutes = attendanceRecord
+        ? punchDurationMinutes(attendanceRecord.clockIn, attendanceRecord.clockOut)
+        : null;
 
     return {
         rowKey: rowKey || `${user._id}_${dateKeyFromDate(otDate)}`,
@@ -111,7 +115,16 @@ function buildOtReconciliationRow({ form, attendanceRecord, user, actualHours, o
         employeeName: user.name,
         department: user.department,
         otDate,
+        otDateKey: dateKeyFromDate(otDate),
         requestedHours: form?.extraHoursWorked ?? null,
+        hasApprovedForm: !!form,
+        clockIn: attendanceRecord?.clockIn || null,
+        clockOut: attendanceRecord?.clockOut || null,
+        totalPunchedHours: totalPunchedMinutes != null
+            ? roundHours(totalPunchedMinutes / 60)
+            : null,
+        otMinutes: fp.minutes,
+        isWorkday: isOvertimeEligibleWorkday(otDate),
         ...calc
     };
 }

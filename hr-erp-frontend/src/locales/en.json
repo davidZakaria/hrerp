@@ -683,6 +683,26 @@
     "otExistsNotApproved": "Overtime requests exist in this range but none have HR final approval yet.",
     "emptyHint1": "Upload attendance so fingerprint OT appears on workdays with more than 8 hours.",
     "emptyHint2": "Employee submits an Overtime Request when fingerprint shows OT > 0 on a working day.",
-    "emptyHint3": "Manager approves and Admin gives FINAL APPROVAL — approved rows appear in the Final report."
+    "emptyHint3": "Manager approves and Admin gives FINAL APPROVAL — approved rows appear in the Final report.",
+    "moreDetails": "More details",
+    "simpleView": "Simple view",
+    "clockIn": "Clock In",
+    "clockOut": "Clock Out",
+    "totalHours": "Total Hours",
+    "otMinutes": "OT (mins)",
+    "requestedOt": "Requested OT",
+    "finalOtPreview": "Final OT (preview)",
+    "hasForm": "OT Form",
+    "workday": "Workday",
+    "yes": "Yes",
+    "no": "No",
+    "finalStatusTitle": "Why is Final OT empty?",
+    "statFingerprintDays": "{{count}} workday(s) with fingerprint OT (see Detailed report)",
+    "statOtRequestsSubmitted": "{{count}} Overtime Request(s) submitted in this range",
+    "statPendingManager": "{{count}} awaiting manager approval",
+    "statPendingHr": "{{count}} awaiting HR final approval (Forms tab → Overtime Request)",
+    "statHrApproved": "{{count}} HR-final-approved form(s)",
+    "statNoFormsYet": "No Overtime Requests submitted yet — fingerprint OT alone does not populate Final OT.",
+    "statGoApprove": "Go to Forms → filter Overtime Request → give FINAL APPROVAL to populate this report."
   }
 } 

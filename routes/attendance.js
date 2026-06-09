@@ -799,7 +799,7 @@ router.get('/ot-reconciliation', auth, async (req, res) => {
         const { rangeStart, rangeEnd } = parsed;
 
         const dateFilter = { extraHoursDate: { $gte: rangeStart, $lte: rangeEnd } };
-        const [attendanceRecords, forms, pendingHrCount, totalOtInRange] = await Promise.all([
+        const [attendanceRecords, forms, pendingHrCount, pendingManagerCount, totalOtInRange] = await Promise.all([
             Attendance.find({
                 date: { $gte: rangeStart, $lte: rangeEnd },
                 clockIn: { $exists: true, $ne: '' },
@@ -815,6 +815,11 @@ router.get('/ot-reconciliation', auth, async (req, res) => {
             Form.countDocuments({
                 type: 'extra_hours',
                 status: { $in: ['manager_approved', 'manager_submitted'] },
+                ...dateFilter
+            }),
+            Form.countDocuments({
+                type: 'extra_hours',
+                status: 'pending',
                 ...dateFilter
             }),
             Form.countDocuments({
@@ -903,7 +908,9 @@ router.get('/ot-reconciliation', auth, async (req, res) => {
             endDate: rangeEnd.toISOString(),
             totalRequests: detailed.length,
             fingerprintOtDays: detailed.filter((r) => r.actualPunchingHours > 0).length,
+            pendingManagerCount: pendingManagerCount,
             pendingHrApprovalCount: pendingHrCount,
+            hrApprovedFormCount: forms.length,
             totalOtRequestsInRange: totalOtInRange,
             detailed,
             final

@@ -17,6 +17,15 @@ function formatOtDate(value) {
   return new Date(value).toLocaleDateString();
 }
 
+function formatOtDateDetailed(value) {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  const iso = d.toISOString().slice(0, 10);
+  const weekday = d.toLocaleDateString(undefined, { weekday: 'short' });
+  return `${iso} (${weekday})`;
+}
+
 function formatHours(value) {
   if (value == null || Number.isNaN(Number(value))) return '—';
   return Number(value).toFixed(2);
@@ -37,6 +46,7 @@ const OtReconciliationReports = () => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showExtendedDetails, setShowExtendedDetails] = useState(false);
 
   const fetchReport = useCallback(async () => {
     if (!rangeStart || !rangeEnd) return;
@@ -185,6 +195,15 @@ const OtReconciliationReports = () => {
         >
           {t('otReports.finalTab')}
         </button>
+        {activeView === 'detailed' && detailedRows.length > 0 && (
+          <button
+            type="button"
+            className={`btn-elegant ${showExtendedDetails ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setShowExtendedDetails((v) => !v)}
+          >
+            {showExtendedDetails ? t('otReports.simpleView') : t('otReports.moreDetails')}
+          </button>
+        )}
         {activeView === 'final' && (
           <button type="button" className="btn-elegant btn-success" onClick={exportFinalToCsv} disabled={!finalRows.length}>
             {t('otReports.exportExcel')}
@@ -231,9 +250,27 @@ const OtReconciliationReports = () => {
                   <th>{t('otReports.employeeName')}</th>
                   <th>{t('otReports.department')}</th>
                   <th>{t('otReports.otDate')}</th>
+                  {showExtendedDetails && (
+                    <>
+                      <th>{t('otReports.workday')}</th>
+                      <th>{t('otReports.clockIn')}</th>
+                      <th>{t('otReports.clockOut')}</th>
+                      <th>{t('otReports.totalHours')}</th>
+                      <th>{t('otReports.otMinutes')}</th>
+                    </>
+                  )}
                   <th>{t('otReports.fingerprintActuals')}</th>
+                  {showExtendedDetails && (
+                    <>
+                      <th>{t('otReports.requestedOt')}</th>
+                      <th>{t('otReports.hasForm')}</th>
+                    </>
+                  )}
                   <th>{t('otReports.approvedOt')}</th>
                   <th>{t('otReports.variance')}</th>
+                  {showExtendedDetails && (
+                    <th>{t('otReports.finalOtPreview')}</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -242,12 +279,30 @@ const OtReconciliationReports = () => {
                     <td>{row.employeeCode || '—'}</td>
                     <td>{row.employeeName}</td>
                     <td>{row.department}</td>
-                    <td>{formatOtDate(row.otDate)}</td>
+                    <td>{showExtendedDetails ? formatOtDateDetailed(row.otDate) : formatOtDate(row.otDate)}</td>
+                    {showExtendedDetails && (
+                      <>
+                        <td>{row.isWorkday ? t('otReports.yes') : t('otReports.no')}</td>
+                        <td>{row.clockIn || '—'}</td>
+                        <td>{row.clockOut || '—'}</td>
+                        <td>{row.totalPunchedHours != null ? formatHours(row.totalPunchedHours) : '—'}</td>
+                        <td>{row.clockIn && row.clockOut ? String(row.otMinutes ?? 0) : '—'}</td>
+                      </>
+                    )}
                     <td>{formatHours(row.actualPunchingHours)}</td>
+                    {showExtendedDetails && (
+                      <>
+                        <td>{row.requestedHours != null ? formatHours(row.requestedHours) : '—'}</td>
+                        <td>{row.hasApprovedForm ? t('otReports.yes') : t('otReports.no')}</td>
+                      </>
+                    )}
                     <td>{formatHours(row.approvedHours)}</td>
                     <td style={varianceStyle(row.varianceFlag)}>
                       {row.variance > 0 ? '+' : ''}{formatHours(row.variance)}
                     </td>
+                    {showExtendedDetails && (
+                      <td style={{ color: '#4ade80', fontWeight: 600 }}>{formatHours(row.finalPayableHours)}</td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -264,16 +319,38 @@ const OtReconciliationReports = () => {
           </h3>
           {finalRows.length === 0 ? (
             <div style={{ color: '#94a3b8' }}>
-              <p>{t('otReports.noFinalRows')}</p>
-              {detailedRows.length > 0 && (
-                <p style={{ marginTop: '0.75rem' }}>{t('otReports.finalNeedsApproval')}</p>
-              )}
-              {report.pendingHrApprovalCount > 0 && (
-                <p style={{ color: '#fbbf24', marginTop: '0.75rem' }}>
-                  {t('otReports.pendingHrCount', { count: report.pendingHrApprovalCount })}
-                </p>
-              )}
-              <ul style={{ marginTop: '0.75rem', paddingLeft: '1.25rem' }}>
+              <p style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: '1rem' }}>{t('otReports.noFinalRows')}</p>
+              <div style={{
+                background: 'rgba(30, 58, 95, 0.5)',
+                border: '1px solid #334155',
+                borderRadius: '8px',
+                padding: '1rem 1.25rem',
+                marginBottom: '1rem'
+              }}>
+                <p style={{ color: '#93c5fd', fontWeight: 600, marginBottom: '0.75rem' }}>{t('otReports.finalStatusTitle')}</p>
+                <ul style={{ margin: 0, paddingLeft: '1.25rem', lineHeight: 1.8 }}>
+                  {(report.fingerprintOtDays ?? 0) > 0 && (
+                    <li>{t('otReports.statFingerprintDays', { count: report.fingerprintOtDays })}</li>
+                  )}
+                  <li>{t('otReports.statOtRequestsSubmitted', { count: report.totalOtRequestsInRange ?? 0 })}</li>
+                  {(report.pendingManagerCount ?? 0) > 0 && (
+                    <li style={{ color: '#fbbf24' }}>{t('otReports.statPendingManager', { count: report.pendingManagerCount })}</li>
+                  )}
+                  {(report.pendingHrApprovalCount ?? 0) > 0 && (
+                    <li style={{ color: '#fbbf24' }}>{t('otReports.statPendingHr', { count: report.pendingHrApprovalCount })}</li>
+                  )}
+                  {(report.hrApprovedFormCount ?? 0) > 0 && (
+                    <li>{t('otReports.statHrApproved', { count: report.hrApprovedFormCount })}</li>
+                  )}
+                </ul>
+                {(report.totalOtRequestsInRange ?? 0) === 0 && (report.fingerprintOtDays ?? 0) > 0 && (
+                  <p style={{ color: '#fbbf24', marginTop: '0.75rem', marginBottom: 0 }}>{t('otReports.statNoFormsYet')}</p>
+                )}
+                {(report.pendingHrApprovalCount ?? 0) > 0 && (
+                  <p style={{ color: '#4ade80', marginTop: '0.75rem', marginBottom: 0 }}>{t('otReports.statGoApprove')}</p>
+                )}
+              </div>
+              <ul style={{ paddingLeft: '1.25rem' }}>
                 <li>{t('otReports.finalHint1')}</li>
                 <li>{t('otReports.finalHint2')}</li>
               </ul>

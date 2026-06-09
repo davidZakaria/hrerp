@@ -87,6 +87,24 @@ const OtReconciliationReports = () => {
     fetchReport();
   }, [fetchReport]);
 
+  const csvLine = (cells) => cells.map((cell) => {
+    const str = String(cell ?? '');
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  }).join(',');
+
+  const downloadCsv = (lines, filenamePrefix) => {
+    // BOM so Excel renders Arabic characters correctly
+    const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filenamePrefix}_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
   const exportFinalToCsv = () => {
     const rows = report?.final || [];
     if (!rows.length) {
@@ -110,25 +128,7 @@ const OtReconciliationReports = () => {
       formatHours(row.finalPayableHours)
     ]);
 
-    const csvContent = [
-      headers.join(','),
-      ...csvRows.map((row) =>
-        row.map((cell) => {
-          const str = String(cell ?? '');
-          if (str.includes(',') || str.includes('"')) {
-            return `"${str.replace(/"/g, '""')}"`;
-          }
-          return str;
-        }).join(',')
-      )
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `final_ot_report_${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+    downloadCsv([csvLine(headers), ...csvRows.map(csvLine)], 'final_ot_report');
   };
 
   const detailedRows = report?.detailed || [];
@@ -262,6 +262,113 @@ const OtReconciliationReports = () => {
     return { color: '#e2e8f0', fontWeight: 600 };
   };
 
+  const exportDetailedToCsv = () => {
+    if (!filteredDetailedRows.length) {
+      alert(t('otReports.noDataToExport'));
+      return;
+    }
+
+    const csvDateOf = (row) => {
+      if (row.otDateKey) return row.otDateKey;
+      if (!row.otDate) return '';
+      const d = new Date(row.otDate);
+      return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+    };
+
+    const yes = t('otReports.yes');
+    const no = t('otReports.no');
+
+    const dailyHeaders = [
+      t('otReports.employeeCode'),
+      t('otReports.employeeName'),
+      t('otReports.department'),
+      t('otReports.otDate'),
+      t('otReports.workday'),
+      t('otReports.clockIn'),
+      t('otReports.clockOut'),
+      t('otReports.totalHours'),
+      t('otReports.fingerprintActuals'),
+      t('otReports.requestedOt'),
+      t('otReports.hasForm'),
+      t('otReports.approvedOt'),
+      t('otReports.variance'),
+      t('otReports.finalOtPreview')
+    ];
+
+    const dailyLines = filteredDetailedRows.map((row) => csvLine([
+      row.employeeCode || '',
+      row.employeeName || '',
+      row.department || '',
+      csvDateOf(row),
+      row.isWorkday ? yes : no,
+      row.clockIn || '',
+      row.clockOut || '',
+      row.totalPunchedHours != null ? formatHours(row.totalPunchedHours) : '',
+      formatHours(row.actualPunchingHours),
+      row.requestedHours != null ? formatHours(row.requestedHours) : '',
+      row.hasApprovedForm ? yes : no,
+      formatHours(row.approvedHours),
+      formatHours(row.variance),
+      formatHours(row.finalPayableHours)
+    ]));
+
+    const totalsHeaders = [
+      t('otReports.employeeCode'),
+      t('otReports.employeeName'),
+      t('otReports.department'),
+      t('otReports.otDays'),
+      t('otReports.totalWorkdays'),
+      t('otReports.totalPunchedHours'),
+      t('otReports.totalFingerprintOt'),
+      t('otReports.totalRequestedOt'),
+      t('otReports.daysWithForm'),
+      t('otReports.totalApprovedOt'),
+      t('otReports.totalVariance'),
+      t('otReports.totalFinalOt')
+    ];
+
+    const totalsLines = employeeTotals.map((emp) => csvLine([
+      emp.employeeCode || '',
+      emp.employeeName || '',
+      emp.department || '',
+      emp.days,
+      emp.workdays,
+      formatHours(emp.totalPunched),
+      formatHours(emp.totalFingerprint),
+      formatHours(emp.totalRequested),
+      emp.daysWithForm,
+      formatHours(emp.totalApproved),
+      formatHours(emp.totalVariance),
+      formatHours(emp.totalFinalPayable)
+    ]));
+
+    const grandTotalLine = csvLine([
+      '',
+      t('otReports.grandTotal', { count: employeeTotals.length }),
+      '',
+      grandTotals.days,
+      grandTotals.workdays,
+      formatHours(grandTotals.totalPunched),
+      formatHours(grandTotals.totalFingerprint),
+      formatHours(grandTotals.totalRequested),
+      grandTotals.daysWithForm,
+      formatHours(grandTotals.totalApproved),
+      formatHours(grandTotals.totalVariance),
+      formatHours(grandTotals.totalFinalPayable)
+    ]);
+
+    downloadCsv([
+      t('otReports.dailyBreakdownTitle'),
+      csvLine(dailyHeaders),
+      ...dailyLines,
+      '',
+      t('otReports.employeeTotalsTitle'),
+      csvLine(totalsHeaders),
+      ...totalsLines,
+      grandTotalLine
+    ], 'detailed_ot_report');
+  };
+
   const toggleEmployeeExpanded = (key) => {
     setExpandedEmployees((prev) => {
       const next = new Set(prev);
@@ -356,6 +463,11 @@ const OtReconciliationReports = () => {
         >
           {t('otReports.finalTab')}
         </button>
+        {activeView === 'detailed' && (
+          <button type="button" className="btn-elegant btn-success" onClick={exportDetailedToCsv} disabled={!filteredDetailedRows.length}>
+            {t('otReports.exportExcel')}
+          </button>
+        )}
         {activeView === 'final' && (
           <button type="button" className="btn-elegant btn-success" onClick={exportFinalToCsv} disabled={!finalRows.length}>
             {t('otReports.exportExcel')}

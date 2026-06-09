@@ -1561,7 +1561,8 @@ router.get('/history/:formId', auth, validateObjectId('formId'), async (req, res
 // Serve uploaded medical documents (with proper authorization)
 router.get('/document/:filename', auth, async (req, res) => {
     try {
-        const filename = req.params.filename;
+        // Sanitize the filename to prevent path traversal vulnerabilities
+        const filename = path.basename(req.params.filename);
         const filePath = path.join(__dirname, '..', 'uploads', 'medical-documents', filename);
         const fs = require('fs');
         

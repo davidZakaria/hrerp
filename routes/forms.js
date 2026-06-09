@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const Form = require('../models/Form');
 const User = require('../models/User');
+const Attendance = require('../models/Attendance');
+const {
+    calculateFingerprintOtMinutes,
+    isOvertimeEligibleWorkday
+} = require('../utils/otReconciliation');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -90,6 +95,14 @@ const setCachedData = (key, data) => {
     });
 };
 
+/** Hide legacy excuse forms from all list APIs (data remains in DB). */
+function applyHideExcuseFilter(filter = {}) {
+    if (filter.type) {
+        return filter;
+    }
+    return { ...filter, type: { $ne: 'excuse' } };
+}
+
 // Custom multer error handler
 const handleMulterError = (err, req, res, next) => {
     if (err instanceof multer.MulterError) {
@@ -155,20 +168,54 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
         } = req.body;
 
         // Enhanced validation
-        const validFormTypes = ['vacation', 'excuse', 'wfh', 'sick_leave', 'extra_hours', 'mission'];
+        if (type === 'excuse') {
+            return res.status(400).json({ msg: 'Excuse requests are no longer available' });
+        }
+
+        const validFormTypes = ['vacation', 'wfh', 'sick_leave', 'extra_hours', 'mission'];
         if (!validFormTypes.includes(type)) {
             return res.status(400).json({ msg: 'Invalid form type' });
         }
 
         if (type === 'extra_hours') {
             if (!extraHoursDate) {
-                return res.status(400).json({ msg: 'Date is required for Extra Hours reports' });
+                return res.status(400).json({ msg: 'Date is required for Overtime Request' });
             }
             if (!extraHoursWorked || extraHoursWorked <= 0) {
-                return res.status(400).json({ msg: 'Number of extra hours worked is required' });
+                return res.status(400).json({ msg: 'Number of overtime hours is required' });
             }
             if (!extraHoursDescription || !extraHoursDescription.trim()) {
-                return res.status(400).json({ msg: 'Please describe the work done during extra hours' });
+                return res.status(400).json({ msg: 'Please describe the work done during overtime' });
+            }
+            if (!isOvertimeEligibleWorkday(extraHoursDate)) {
+                return res.status(400).json({ msg: 'Overtime is only allowed on working days' });
+            }
+            const otDayStart = new Date(extraHoursDate);
+            otDayStart.setHours(0, 0, 0, 0);
+            const otDayEnd = new Date(extraHoursDate);
+            otDayEnd.setHours(23, 59, 59, 999);
+            const attendance = await Attendance.findOne({
+                user: req.user.id,
+                date: { $gte: otDayStart, $lte: otDayEnd }
+            });
+            if (!attendance?.clockIn || !attendance?.clockOut) {
+                return res.status(400).json({ msg: 'No fingerprint punches found for this date' });
+            }
+            const fpMinutes = calculateFingerprintOtMinutes(
+                attendance.clockIn,
+                attendance.clockOut,
+                attendance.date
+            );
+            if (fpMinutes <= 0) {
+                return res.status(400).json({
+                    msg: 'Fingerprint data shows no overtime beyond 8 hours for this date'
+                });
+            }
+            const fpHours = Math.round((fpMinutes / 60) * 100) / 100;
+            if (Number(extraHoursWorked) > fpHours) {
+                return res.status(400).json({
+                    msg: `Requested hours cannot exceed fingerprint overtime (${fpHours} hours)`
+                });
             }
         }
 
@@ -208,58 +255,6 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             }
         }
 
-        if (type === 'excuse') {
-            if (!excuseDate || !fromHour || !toHour || !excuseType) {
-                return res.status(400).json({ msg: 'Date, from hour, to hour, and excuse type are required for excuse requests' });
-            }
-
-            const normalizedExcuseType = normalizeExcuseType({
-                type: 'excuse',
-                excuseType,
-                fromHour,
-                toHour
-            });
-            
-            // Get full user data including excuse requests
-            const fullUser = await User.findById(req.user.id);
-            
-            // Calculate hours requested
-            const hoursRequested = getExcuseDurationHours(fromHour, toHour);
-            if (hoursRequested === null || Number.isNaN(hoursRequested)) {
-                return res.status(400).json({ msg: 'Invalid from/to time for excuse request' });
-            }
-            
-            if (normalizedExcuseType === 'paid') {
-                // For paid excuses: must be exactly 2 hours
-                if (hoursRequested !== 2) {
-                    return res.status(400).json({ 
-                        msg: 'Paid excuse requests must be exactly 2 hours. You requested ' + hoursRequested.toFixed(1) + ' hours.' 
-                    });
-                }
-                
-                // Check if requests need to be reset (25th of each month)
-                if (shouldResetExcuseRequests(fullUser.excuseRequestsResetDate)) {
-                    fullUser.excuseRequestsLeft = 2;
-                    fullUser.excuseRequestsResetDate = new Date();
-                    await fullUser.save();
-                    console.log(`🔄 Excuse requests reset for ${fullUser.name} (monthly reset on 25th)`);
-                }
-                
-                if (fullUser.excuseRequestsLeft <= 0) {
-                    return res.status(400).json({ 
-                        msg: 'You have exhausted your 2 paid excuse requests for this month.' 
-                    });
-                }
-            } else if (normalizedExcuseType === 'unpaid') {
-                // For unpaid excuses: check if user has at least 0.5 vacation days
-                if (fullUser.vacationDaysLeft < 0.5) {
-                    return res.status(400).json({ 
-                        msg: `Insufficient vacation days for unpaid excuse. You need at least 0.5 days. Available: ${fullUser.vacationDaysLeft.toFixed(1)} days.`
-                    });
-                }
-            }
-        }
-
         if (type === 'sick_leave') {
             if (!sickLeaveStartDate || !sickLeaveEndDate) {
                 return res.status(400).json({ msg: 'Start and end dates are required for sick leave' });
@@ -295,17 +290,6 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
                 vacationType,
                 startDate: new Date(startDate),
                 endDate: new Date(endDate)
-            }),
-            ...(type === 'excuse' && {
-                excuseDate: new Date(excuseDate),
-                excuseType: normalizeExcuseType({
-                    type: 'excuse',
-                    excuseType,
-                    fromHour,
-                    toHour
-                }),
-                fromHour,
-                toHour
             }),
             ...(type === 'sick_leave' && {
                 sickLeaveStartDate: new Date(sickLeaveStartDate),
@@ -394,11 +378,11 @@ router.get('/admin', auth, async (req, res) => {
             baseFilter.user = { $in: users.map(u => u._id) };
         }
 
-        const filter = mergeFormMonthFilters(
+        const filter = applyHideExcuseFilter(mergeFormMonthFilters(
             baseFilter,
             submittedMonth,
             eventMonth
-        );
+        ));
 
         // Month-filtered lists must not use a stale short-TTL cache (easy to confuse with "all months")
         const cacheKey = `forms-admin-${JSON.stringify({
@@ -466,8 +450,9 @@ router.get('/manager/pending', auth, async (req, res) => {
             {
                 $match: {
                     status: 'pending',
+                    type: { $ne: 'excuse' },
                     'userInfo.department': { $in: effectiveDepts },
-                    'userInfo._id': { $ne: manager._id } // Exclude manager's own forms
+                    'userInfo._id': { $ne: manager._id }
                 }
             },
             {
@@ -508,11 +493,7 @@ router.get('/manager/pending', auth, async (req, res) => {
             { $sort: { createdAt: -1 } }
         ];
 
-        let forms = await Form.aggregate(pipeline);
-        forms = forms.map((f) => {
-            if (f.type !== 'excuse') return f;
-            return { ...f, excuseType: normalizeExcuseType(f) };
-        });
+        const forms = await Form.aggregate(pipeline);
 
         res.json(forms);
     } catch (err) {
@@ -545,40 +526,9 @@ router.get('/vacation-days', auth, async (req, res) => {
     }
 });
 
-// Optimized excuse hours endpoint with caching
+// Excuse requests removed — endpoint disabled
 router.get('/excuse-hours', auth, async (req, res) => {
-    try {
-        const cacheKey = `excuse-requests-${req.user.id}`;
-        const cachedData = getCachedData(cacheKey);
-        if (cachedData) {
-            return res.json(cachedData);
-        }
-
-        const user = await User.findById(req.user.id).select('excuseRequestsLeft excuseRequestsResetDate');
-        if (!user) {
-            return res.status(404).json({ msg: 'User not found' });
-        }
-
-        // Check if requests need to be reset (25th of each month)
-        if (shouldResetExcuseRequests(user.excuseRequestsResetDate)) {
-            user.excuseRequestsLeft = 2;
-            user.excuseRequestsResetDate = new Date();
-            await user.save();
-            console.log(`🔄 Excuse requests reset for user ${user._id} (monthly reset on 25th)`);
-        }
-
-        const result = { 
-            excuseRequestsLeft: user.excuseRequestsLeft || 0,
-            excuseRequestsResetDate: user.excuseRequestsResetDate,
-            nextResetDate: getNextResetDate()
-        };
-        setCachedData(cacheKey, result);
-        
-        res.json(result);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
-    }
+    return res.status(404).json({ msg: 'Excuse requests are no longer available' });
 });
 
 // Get all forms from manager's team (all statuses)
@@ -604,28 +554,20 @@ router.get('/manager/team-forms', auth, async (req, res) => {
         const teamMemberIds = teamMembers.map(member => member._id);
 
         // Find all forms from team members and manager's own forms
-        const forms = await Form.find({
+        const forms = await Form.find(applyHideExcuseFilter({
             $or: [
-                { user: { $in: teamMemberIds } }, // Team member forms
-                { user: manager._id, status: 'manager_submitted' }, // Manager's own submissions
-                { user: manager._id, status: 'approved' }, // Manager's approved forms
-                { user: manager._id, status: 'rejected' } // Manager's rejected forms
+                { user: { $in: teamMemberIds } },
+                { user: manager._id, status: 'manager_submitted' },
+                { user: manager._id, status: 'approved' },
+                { user: manager._id, status: 'rejected' }
             ]
-        })
+        }))
         .populate('user', 'name email department')
         .populate('managerApprovedBy', 'name')
         .populate('adminApprovedBy', 'name')
         .sort({ createdAt: -1 });
 
-        const formsOut = forms.map((f) => {
-            const o = typeof f.toObject === 'function' ? f.toObject() : f;
-            if (o.type === 'excuse') {
-                o.excuseType = normalizeExcuseType(o);
-            }
-            return o;
-        });
-
-        res.json(formsOut);
+        res.json(forms);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server error');
@@ -666,6 +608,10 @@ router.put('/manager/:id', auth, async (req, res) => {
         const form = await Form.findById(req.params.id).populate('user');
 
         if (!form) {
+            return res.status(404).json({ msg: 'Form not found' });
+        }
+
+        if (form.type === 'excuse') {
             return res.status(404).json({ msg: 'Form not found' });
         }
 
@@ -749,78 +695,10 @@ router.put('/manager/:id', auth, async (req, res) => {
                 form.approvedHours = hoursToApprove;
             }
 
-            // For excuse forms, manager approval is final
-            if (form.type === 'excuse') {
-                form.excuseType = normalizeExcuseType(form);
-                if (form.excuseType === 'paid' && !isPaidExcuseExactlyTwoHours(form)) {
-                    return res.status(400).json({
-                        msg: 'Cannot approve: paid excuse must be exactly 2 hours between from and to time.'
-                    });
-                }
-
-                const employee = await User.findById(form.user._id);
-                
-                // Log form details for debugging
-                console.log(`📋 Processing excuse form approval:`);
-                console.log(`   Form ID: ${form._id}`);
-                console.log(`   Employee: ${employee.name}`);
-                console.log(`   Excuse Type: ${form.excuseType}`);
-                console.log(`   Employee vacation balance: ${employee.vacationDaysLeft}`);
-                
-                // For paid excuse requests, deduct from monthly allowance
-                if (form.excuseType === 'paid') {
-                    // Check if requests need to be reset (25th of each month)
-                    if (shouldResetExcuseRequests(employee.excuseRequestsResetDate)) {
-                        employee.excuseRequestsLeft = 2;
-                        employee.excuseRequestsResetDate = new Date();
-                        console.log(`🔄 Excuse requests reset for ${employee.name} during approval (monthly reset on 25th)`);
-                    }
-                    
-                    // Check if employee has requests left
-                    if (employee.excuseRequestsLeft <= 0) {
-                        return res.status(400).json({ 
-                            msg: `Cannot approve: Employee has exhausted their 2 paid excuse requests for this month`
-                        });
-                    }
-                    
-                    // Deduct one request
-                    employee.excuseRequestsLeft = Math.max(0, employee.excuseRequestsLeft - 1);
-                    await employee.save();
-                } else if (form.excuseType === 'unpaid') {
-                    // For unpaid excuses, deduct 0.5 vacation days
-                    console.log(`🔍 Processing unpaid excuse for user ${employee.name}, current balance: ${employee.vacationDaysLeft}`);
-                    
-                    if (employee.vacationDaysLeft < 0.5) {
-                        return res.status(400).json({ 
-                            msg: `Cannot approve: Employee has insufficient vacation days. Available: ${employee.vacationDaysLeft}, Required: 0.5`
-                        });
-                    }
-                    
-                    // Store old balance for logging
-                    const oldBalance = employee.vacationDaysLeft;
-                    
-                    // Deduct 0.5 days from vacation
-                    employee.vacationDaysLeft = Math.max(0, employee.vacationDaysLeft - 0.5);
-                    await employee.save();
-                    
-                    console.log(`✅ Unpaid excuse approved - Deducted 0.5 days from ${employee.name}`);
-                    console.log(`   Old balance: ${oldBalance}, New balance: ${employee.vacationDaysLeft}`);
-                } else {
-                    // If excuseType is neither paid nor unpaid, log a warning
-                    console.warn(`⚠️ WARNING: Excuse form has unknown excuseType: ${form.excuseType}`);
-                }
-
-                form.status = 'approved'; // Final approval for excuse forms (no admin approval needed)
-                form.managerComment = managerComment || '';
-                form.managerApprovedBy = req.user.id;
-                form.managerApprovedAt = Date.now();
-            } else {
-                // For other form types (including sick_leave), manager approval still requires admin final approval
-                form.status = 'manager_approved';
-                form.managerComment = managerComment || '';
-                form.managerApprovedBy = req.user.id;
-                form.managerApprovedAt = Date.now();
-            }
+            form.status = 'manager_approved';
+            form.managerComment = managerComment || '';
+            form.managerApprovedBy = req.user.id;
+            form.managerApprovedAt = Date.now();
         } else if (action === 'reject') {
             form.status = 'manager_rejected';
             form.managerComment = managerComment || 'Rejected by manager';
@@ -877,6 +755,10 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
 
         const form = await Form.findById(req.params.id).populate('user');
         if (!form) {
+            return res.status(404).json({ msg: 'Form not found' });
+        }
+
+        if (form.type === 'excuse') {
             return res.status(404).json({ msg: 'Form not found' });
         }
 
@@ -1012,7 +894,7 @@ router.get('/my-forms', auth, async (req, res) => {
             userDepartments: currentUser?.managedDepartments
         });
 
-        const forms = await Form.find({ user: req.user.id })
+        const forms = await Form.find(applyHideExcuseFilter({ user: req.user.id }))
             .populate('managerApprovedBy', 'name')
             .populate('adminApprovedBy', 'name')
             .populate('user', 'name email department')
@@ -1047,9 +929,9 @@ router.get('/manager/personal-forms', auth, async (req, res) => {
         });
 
         // Get ONLY the manager's own submitted forms
-        const personalForms = await Form.find({ 
-            user: manager._id  // Only forms submitted by the manager themselves
-        })
+        const personalForms = await Form.find(applyHideExcuseFilter({
+            user: manager._id
+        }))
         .populate('managerApprovedBy', 'name')
         .populate('adminApprovedBy', 'name')
         .populate('user', 'name email department')
@@ -1263,17 +1145,12 @@ router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
                 return res.status(400).json({ 
                     msg: 'Unpaid vacation requests are no longer allowed. Only annual vacation leave is available.'
                 });
-            } else if (
-                form.type === 'excuse' &&
-                (status === 'approved' || status === 'rejected') &&
-                (form.status === 'pending' || form.status === 'manager_approved' || form.status === 'manager_submitted')
-            ) {
-                // Excuse forms should only be approved by managers, not admins
-                return res.status(400).json({ 
-                    msg: 'Excuse forms can only be approved or rejected by the employee\'s manager, not by admin. Please have the manager review this form.'
-                });
             }
             // Note: Sick leave and WFH forms don't affect any day allowances
+
+            if (form.type === 'excuse') {
+                return res.status(404).json({ msg: 'Form not found' });
+            }
 
             if (form.type === 'extra_hours' && approvedHours !== undefined) {
                 const hours = Number(approvedHours);
@@ -1401,20 +1278,6 @@ router.get('/vacation-days', auth, async (req, res) => {
     }
 });
 
-// Get current user's excuse hours left
-router.get('/excuse-hours', auth, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user) {
-            return res.status(404).json({ msg: 'User not found' });
-        }
-        res.json({ excuseHoursLeft: user.excuseHoursLeft });
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
-    }
-});
-
 // Get any user's vacation days left (admin only) - optimized with lean()
 router.get('/vacation-days/:userId', auth, validateObjectId('userId'), async (req, res) => {
     try {
@@ -1433,22 +1296,8 @@ router.get('/vacation-days/:userId', auth, validateObjectId('userId'), async (re
     }
 });
 
-// Get any user's excuse hours left (admin only) - optimized with lean()
 router.get('/excuse-hours/:userId', auth, validateObjectId('userId'), async (req, res) => {
-    try {
-        const admin = await User.findById(req.user.id).select('role').lean();
-        if (!admin || !['admin', 'super_admin'].includes(admin.role)) {
-            return res.status(403).json({ msg: 'Not authorized' });
-        }
-        const user = await User.findById(req.params.userId).select('excuseRequestsLeft').lean();
-        if (!user) {
-            return res.status(404).json({ msg: 'User not found' });
-        }
-        res.json({ excuseHoursLeft: user.excuseRequestsLeft });
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
-    }
+    return res.status(404).json({ msg: 'Excuse requests are no longer available' });
 });
 
 // Admin: Get report of all users and their vacation days left (optimized batch query)
@@ -1556,8 +1405,12 @@ router.get('/approved-by-range', auth, async (req, res) => {
                     sickLeaveEndDate: { $gte: rangeStart }
                 },
                 {
-                    type: 'excuse',
-                    excuseDate: { $gte: rangeStart, $lte: rangeEnd }
+                    type: 'wfh',
+                    wfhDate: { $gte: rangeStart, $lte: rangeEnd }
+                },
+                {
+                    type: 'extra_hours',
+                    extraHoursDate: { $gte: rangeStart, $lte: rangeEnd }
                 }
             ]
         })
@@ -1588,11 +1441,11 @@ router.get('/all', auth, async (req, res) => {
         }
         const submittedMonth = firstQueryParam(req.query.submittedMonth);
         const eventMonth = firstQueryParam(req.query.eventMonth);
-        const filter = mergeFormMonthFilters(
+        const filter = applyHideExcuseFilter(mergeFormMonthFilters(
             {},
             submittedMonth,
             eventMonth
-        );
+        ));
         const forms = await Form.find(filter)
             .populate('user', 'name email department')
             .sort({ createdAt: -1 });

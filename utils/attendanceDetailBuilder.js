@@ -233,7 +233,8 @@ function applyRecalcAttendance(att, user) {
         att.clockIn || '',
         att.clockOut || '',
         ws,
-        15
+        15,
+        att.date
     );
     att.status = calc.status;
     att.minutesLate = calc.minutesLate;

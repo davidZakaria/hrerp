@@ -348,8 +348,10 @@ function calculateMinutesEarlyExit(clockOut, scheduledEnd) {
     return diff > 0 ? diff : 0;
 }
 
+const { calculateFingerprintOtMinutes } = require('./otReconciliation');
+
 /**
- * Calculate overtime minutes (stayed after scheduled end time)
+ * Calculate overtime minutes (stayed after scheduled end time) — legacy helper.
  * @param {String} clockOut - Actual clock-out time (HH:MM)
  * @param {String} scheduledEnd - Scheduled end time (HH:MM)
  * @returns {Number} Minutes of overtime (0 if not overtime)
@@ -377,9 +379,12 @@ function calculateMinutesOvertime(clockOut, scheduledEnd) {
  * @param {String} clockOut - Clock-out time
  * @param {Object} workSchedule - Employee's work schedule {startTime, endTime}
  * @param {Number} gracePeriodMinutes - Grace period for being late
+ * @param {Date} [attendanceDate] - Calendar date for 8h fingerprint OT (workday-only)
  * @returns {Object} {status, minutesLate, minutesOvertime, missedClockIn, missedClockOut}
  */
-function calculateAttendanceStatus(clockIn, clockOut, workSchedule, gracePeriodMinutes = 15) {
+function calculateAttendanceStatus(clockIn, clockOut, workSchedule, gracePeriodMinutes = 15, attendanceDate = null) {
+    const fingerprintOt = (date) =>
+        calculateFingerprintOtMinutes(clockIn, clockOut, date);
     const missedClockIn = !clockIn;
     const missedClockOut = !clockOut;
     
@@ -397,19 +402,23 @@ function calculateAttendanceStatus(clockIn, clockOut, workSchedule, gracePeriodM
     // Case 2: Has clock-out but no clock-in = present but forgot to clock in
     // Treat as late (since we don't know actual arrival time, assume they were late)
     if (!clockIn && clockOut) {
-        const minutesOvertime = calculateMinutesOvertime(clockOut, workSchedule.endTime);
-        return { 
-            status: 'late', 
-            minutesLate: 0, // Can't calculate without clock-in
-            minutesOvertime: minutesOvertime,
+        const minutesOvertime = attendanceDate
+            ? 0
+            : calculateMinutesOvertime(clockOut, workSchedule.endTime);
+        return {
+            status: 'late',
+            minutesLate: 0,
+            minutesOvertime,
             missedClockIn: true,
             missedClockOut: false
         };
     }
-    
+
     // Case 3: Has clock-in (with or without clock-out)
     const minutesLate = calculateMinutesLate(clockIn, workSchedule.startTime, gracePeriodMinutes);
-    const minutesOvertime = calculateMinutesOvertime(clockOut, workSchedule.endTime);
+    const minutesOvertime = attendanceDate
+        ? fingerprintOt(attendanceDate)
+        : calculateMinutesOvertime(clockOut, workSchedule.endTime);
     
     const status = minutesLate > 0 ? 'late' : 'present';
     

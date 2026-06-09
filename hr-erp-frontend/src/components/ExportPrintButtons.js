@@ -82,7 +82,6 @@ const ExportPrintButtons = ({
       if (activeFormType === 'vacation') return form.vacationType || '';
       if (activeFormType === 'wfh') return `${form.wfhHours || 0} hours`;
       if (activeFormType === 'sick_leave') return `${Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} days`;
-      if (activeFormType === 'excuse') return 'Excuse Request';
       return '';
     };
 
@@ -92,9 +91,6 @@ const ExportPrintButtons = ({
       }
       if (activeFormType === 'sick_leave') {
         return `${form.sickLeaveStartDate?.slice(0,10)} to ${form.sickLeaveEndDate?.slice(0,10)}`;
-      }
-      if (activeFormType === 'excuse') {
-        return `${form.excuseDate?.slice(0,10)} (${form.fromHour} - ${form.toHour})`;
       }
       if (activeFormType === 'wfh') {
         return `${form.wfhHours || 0} hours`;

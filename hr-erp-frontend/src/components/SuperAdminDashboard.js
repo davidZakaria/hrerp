@@ -1922,7 +1922,6 @@ const SuperAdminDashboard = () => {
                   >
                     <option value="all">{t('superAdminDashboard.formTabAll')} ({superAdminFormsMonthFiltered.length})</option>
                     <option value="vacation">{t('forms.vacation')} ({superAdminFormsMonthFiltered.filter((f) => f.type === 'vacation').length})</option>
-                    <option value="excuse">{t('forms.excuse')} ({superAdminFormsMonthFiltered.filter((f) => f.type === 'excuse').length})</option>
                     <option value="wfh">{t('forms.workFromHome')} ({superAdminFormsMonthFiltered.filter((f) => f.type === 'wfh').length})</option>
                     <option value="sick_leave">{t('forms.sickLeave')} ({superAdminFormsMonthFiltered.filter((f) => f.type === 'sick_leave').length})</option>
                     <option value="extra_hours">{t('forms.extra_hours')} ({superAdminFormsMonthFiltered.filter((f) => f.type === 'extra_hours').length})</option>

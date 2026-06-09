@@ -29,7 +29,6 @@ const ManagerDashboard = ({ onLogout }) => {
   const [myForms, setMyForms] = useState([]);
   const [teamForms, setTeamForms] = useState([]);
   const [vacationDaysLeft, setVacationDaysLeft] = useState(null);
-  const [excuseRequestsLeft, setExcuseRequestsLeft] = useState(null);
   
   // Comment modal state
   const [showCommentModal, setShowCommentModal] = useState(false);
@@ -83,7 +82,6 @@ const ManagerDashboard = ({ onLogout }) => {
     fetchPendingForms();
     fetchTeamMembers();
     fetchVacationDays();
-    fetchExcuseHours();
     fetchTeamFlags();
   }, []);
 
@@ -142,21 +140,6 @@ const ManagerDashboard = ({ onLogout }) => {
       const data = await res.json();
       if (res.ok) {
         setVacationDaysLeft(data.vacationDaysLeft);
-      }
-    } catch (err) {
-      // ignore
-    }
-  };
-
-  const fetchExcuseHours = async () => {
-    const token = localStorage.getItem('token');
-    try {
-      const res = await fetch(`${API_URL}/api/forms/excuse-hours`, {
-        headers: { 'x-auth-token': token }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setExcuseRequestsLeft(data.excuseRequestsLeft ?? data.excuseHoursLeft ?? 0);
       }
     } catch (err) {
       // ignore
@@ -844,19 +827,12 @@ const ManagerDashboard = ({ onLogout }) => {
           <h2>{t('managerDashboard.myPersonalFormsAndRequests')}</h2>
         </div>
         
-        {/* Vacation and Excuse Days Cards */}
         <div className="stats-section manager-stats" style={{ marginBottom: '20px' }}>
           <div className="stat-card manager-stat-card">
             <div className="stat-icon">🏖️</div>
             <h3>{vacationDaysLeft !== null ? vacationDaysLeft : '...'}</h3>
             <p>{t('managerDashboard.vacationDaysLeft')}</p>
             <small>{t('managerDashboard.yourAnnualAllowanceRemaining')}</small>
-          </div>
-          <div className="stat-card manager-stat-card">
-            <div className="stat-icon">⏰</div>
-            <h3>{excuseRequestsLeft !== null ? excuseRequestsLeft : '...'}</h3>
-            <p>{t('managerDashboard.excuseHoursLeft')}</p>
-            <small>{t('managerDashboard.yourMonthlyAllowanceRemaining')}</small>
           </div>
         </div>
       </div>

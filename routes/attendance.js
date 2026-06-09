@@ -17,7 +17,11 @@ const {
     getDayName
 } = require('../utils/attendanceParser');
 const { parseDateRangeQuery, monthToRange } = require('../utils/attendanceDateRange');
-const { buildOtReconciliationRow } = require('../utils/otReconciliation');
+const {
+    buildOtReconciliationRow,
+    getFingerprintOtForAttendance,
+    otReconciliationDateKey
+} = require('../utils/otReconciliation');
 const {
     buildDateRangeDetailRows,
     aggregateOrgKpis,
@@ -166,21 +170,6 @@ async function crossReferenceWithForms(date, userId) {
         
         if (sickLeaveForm) {
             return { form: sickLeaveForm, status: 'on_leave' };
-        }
-        
-        // Check excuse forms (for the specific date)
-        const excuseForm = await Form.findOne({
-            user: userId,
-            type: 'excuse',
-            status: { $in: approvedStatuses },
-            excuseDate: {
-                $gte: startOfDay,
-                $lte: endOfDay
-            }
-        });
-        
-        if (excuseForm) {
-            return { form: excuseForm, status: 'excused' };
         }
         
         // Check WFH (Work From Home) forms for Marketing department
@@ -611,7 +600,8 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                             record.clockIn,
                             record.clockOut,
                             workSchedule,
-                            15 // 15-minute grace period
+                            15,
+                            record.date
                         );
                         status = attendanceStatus.status;
                         minutesLate = attendanceStatus.minutesLate;
@@ -748,18 +738,52 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
     }
 });
 
-function otReconciliationDateKey(userId, date) {
-    const d = new Date(date);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${userId}_${y}-${m}-${day}`;
-}
+/**
+ * POST /api/attendance/recalc-overtime
+ * Recompute minutesOvertime using 8h workday fingerprint rule (admin/super_admin).
+ */
+router.post('/recalc-overtime', auth, async (req, res) => {
+    try {
+        const admin = await User.findById(req.user.id);
+        if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
+            return res.status(403).json({ msg: 'Access denied. Admin only.' });
+        }
+
+        const parsed = parseDateRangeQuery(req.query);
+        if (parsed.error) {
+            return res.status(400).json({ msg: parsed.error });
+        }
+        const { rangeStart, rangeEnd } = parsed;
+
+        const records = await Attendance.find({
+            date: { $gte: rangeStart, $lte: rangeEnd },
+            clockIn: { $exists: true, $ne: '' },
+            clockOut: { $exists: true, $ne: '' }
+        }).populate('user', 'workSchedule');
+
+        let updated = 0;
+        for (const att of records) {
+            if (!att.user) continue;
+            applyRecalcAttendance(att, att.user);
+            await att.save();
+            updated++;
+        }
+
+        res.json({
+            msg: 'Overtime recalculated',
+            startDate: rangeStart.toISOString(),
+            endDate: rangeEnd.toISOString(),
+            recordsUpdated: updated
+        });
+    } catch (error) {
+        console.error('Error recalculating overtime:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+});
 
 /**
  * GET /api/attendance/ot-reconciliation
- * Per-request OT variance report (admin/super_admin only).
- * Query: startDate, endDate (ISO date strings).
+ * Fingerprint OT (8h workday) merged with approved Overtime Request forms.
  */
 router.get('/ot-reconciliation', auth, async (req, res) => {
     try {
@@ -775,7 +799,12 @@ router.get('/ot-reconciliation', auth, async (req, res) => {
         const { rangeStart, rangeEnd } = parsed;
 
         const dateFilter = { extraHoursDate: { $gte: rangeStart, $lte: rangeEnd } };
-        const [forms, pendingHrCount, totalOtInRange] = await Promise.all([
+        const [attendanceRecords, forms, pendingHrCount, totalOtInRange] = await Promise.all([
+            Attendance.find({
+                date: { $gte: rangeStart, $lte: rangeEnd },
+                clockIn: { $exists: true, $ne: '' },
+                clockOut: { $exists: true, $ne: '' }
+            }).populate('user', 'name department employeeCode'),
             Form.find({
                 type: 'extra_hours',
                 status: 'approved',
@@ -794,42 +823,68 @@ router.get('/ot-reconciliation', auth, async (req, res) => {
             })
         ]);
 
-        const userIds = [...new Set(forms.map((f) => f.user?._id).filter(Boolean))];
-        const attendanceRecords = userIds.length
-            ? await Attendance.find({
-                user: { $in: userIds },
-                date: { $gte: rangeStart, $lte: rangeEnd }
-            })
-            : [];
-
-        const attendanceMap = new Map();
-        for (const att of attendanceRecords) {
-            attendanceMap.set(otReconciliationDateKey(att.user, att.date), att);
+        const formMap = new Map();
+        for (const form of forms) {
+            if (!form.user?._id) continue;
+            formMap.set(
+                otReconciliationDateKey(form.user._id, form.extraHoursDate),
+                form
+            );
         }
 
-        const detailed = forms.map((form) => {
-            const user = form.user;
-            const key = otReconciliationDateKey(user._id, form.extraHoursDate);
-            return buildOtReconciliationRow({
-                form,
-                attendanceRecord: attendanceMap.get(key),
-                user
-            });
-        });
+        const rowMap = new Map();
 
-        const final = detailed.map((row) => ({
-            formId: row.formId,
-            employeeCode: row.employeeCode,
-            employeeName: row.employeeName,
-            department: row.department,
-            otDate: row.otDate,
-            finalPayableHours: row.finalPayableHours
-        }));
+        for (const att of attendanceRecords) {
+            if (!att.user?._id) continue;
+            const fp = getFingerprintOtForAttendance(att);
+            if (fp.hours <= 0) continue;
+
+            const key = otReconciliationDateKey(att.user._id, att.date);
+            const form = formMap.get(key) || null;
+            rowMap.set(key, buildOtReconciliationRow({
+                form,
+                attendanceRecord: att,
+                user: att.user,
+                otDate: att.date,
+                rowKey: key
+            }));
+        }
+
+        for (const form of forms) {
+            if (!form.user?._id) continue;
+            const key = otReconciliationDateKey(form.user._id, form.extraHoursDate);
+            if (rowMap.has(key)) continue;
+            rowMap.set(key, buildOtReconciliationRow({
+                form,
+                attendanceRecord: null,
+                user: form.user,
+                actualHours: 0,
+                otDate: form.extraHoursDate,
+                rowKey: key
+            }));
+        }
+
+        const detailed = Array.from(rowMap.values()).sort(
+            (a, b) => new Date(a.otDate) - new Date(b.otDate)
+        );
+
+        const final = detailed
+            .filter((row) => row.approvedHours > 0)
+            .map((row) => ({
+                rowKey: row.rowKey,
+                formId: row.formId,
+                employeeCode: row.employeeCode,
+                employeeName: row.employeeName,
+                department: row.department,
+                otDate: row.otDate,
+                finalPayableHours: row.finalPayableHours
+            }));
 
         res.json({
             startDate: rangeStart.toISOString(),
             endDate: rangeEnd.toISOString(),
             totalRequests: detailed.length,
+            fingerprintOtDays: detailed.filter((r) => r.actualPunchingHours > 0).length,
             pendingHrApprovalCount: pendingHrCount,
             totalOtRequestsInRange: totalOtInRange,
             detailed,

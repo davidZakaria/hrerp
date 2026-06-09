@@ -224,6 +224,7 @@ const OtReconciliationReports = () => {
             <table className="ot-reconciliation-table">
               <thead>
                 <tr>
+                  <th>{t('otReports.employeeCode')}</th>
                   <th>{t('otReports.employeeName')}</th>
                   <th>{t('otReports.department')}</th>
                   <th>{t('otReports.otDate')}</th>
@@ -234,7 +235,8 @@ const OtReconciliationReports = () => {
               </thead>
               <tbody>
                 {detailedRows.map((row) => (
-                  <tr key={row.formId}>
+                  <tr key={row.rowKey || row.formId}>
+                    <td>{row.employeeCode || '—'}</td>
                     <td>{row.employeeName}</td>
                     <td>{row.department}</td>
                     <td>{formatOtDate(row.otDate)}</td>
@@ -276,7 +278,7 @@ const OtReconciliationReports = () => {
               </thead>
               <tbody>
                 {finalRows.map((row) => (
-                  <tr key={row.formId}>
+                  <tr key={row.rowKey || row.formId}>
                     <td>{row.employeeCode || '—'}</td>
                     <td>{row.employeeName}</td>
                     <td>{row.department}</td>

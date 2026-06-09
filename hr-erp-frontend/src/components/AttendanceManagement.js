@@ -693,7 +693,7 @@ const AttendanceManagement = () => {
               </div>
               {approvedForms.length > 0 && (
                 <span style={{ background: '#bfdbfe', color: '#0f172a', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #3b82f6' }}>
-                  📝 {approvedForms.length} approved leave/excuse forms in range
+                  📝 {approvedForms.length} approved leave forms in range
                 </span>
               )}
             </div>
@@ -917,14 +917,13 @@ const AttendanceManagement = () => {
                             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
                               {employeeForms.map((form, fIdx) => (
                                 <span key={fIdx} style={{ 
-                                  background: form.type === 'vacation' ? '#9C27B0' : form.type === 'excuse' ? '#1976D2' : '#FF9800',
+                                  background: form.type === 'vacation' ? '#9C27B0' : '#FF9800',
                                   color: 'white',
                                   padding: '4px 10px',
                                   borderRadius: '4px',
                                   fontSize: '0.8rem'
                                 }}>
                                   {form.type === 'vacation' && `🏖️ Vacation: ${new Date(form.startDate).toLocaleDateString()} - ${new Date(form.endDate).toLocaleDateString()}`}
-                                  {form.type === 'excuse' && `⏰ Excuse: ${new Date(form.excuseDate).toLocaleDateString()} (${form.fromHour}-${form.toHour})`}
                                   {form.type === 'sick_leave' && `🏥 Sick: ${new Date(form.sickLeaveStartDate).toLocaleDateString()} - ${new Date(form.sickLeaveEndDate).toLocaleDateString()}`}
                                 </span>
                               ))}

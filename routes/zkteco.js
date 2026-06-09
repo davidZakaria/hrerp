@@ -75,14 +75,6 @@ async function crossReferenceWithForms(date, userId) {
         });
         if (sickLeaveForm) return { form: sickLeaveForm, status: 'on_leave' };
 
-        const excuseForm = await Form.findOne({
-            user: userId,
-            type: 'excuse',
-            status: { $in: approvedStatuses },
-            excuseDate: { $gte: startOfDay, $lte: endOfDay }
-        });
-        if (excuseForm) return { form: excuseForm, status: 'excused' };
-
         const wfhForm = await Form.findOne({
             user: userId,
             type: 'wfh',
@@ -177,7 +169,8 @@ async function processAttlogBatch(punches, deviceSN) {
                 rec.clockIn,
                 rec.clockOut,
                 workSchedule,
-                15
+                15,
+                rec.date
             );
 
             let status = attendanceStatus.status;

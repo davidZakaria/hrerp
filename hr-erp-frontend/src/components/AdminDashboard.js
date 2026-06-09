@@ -2076,7 +2076,6 @@ const AdminDashboard = () => {
                     onChange={(e) => setActiveFormType(e.target.value)}
                   >
                     <option value="vacation">{t('forms.vacation')} ({formsForMonthFilter.filter((f) => f.type === 'vacation').length})</option>
-                    <option value="excuse">{t('forms.excuse')} ({formsForMonthFilter.filter((f) => f.type === 'excuse').length})</option>
                     <option value="wfh">{t('forms.workFromHome')} ({formsForMonthFilter.filter((f) => f.type === 'wfh').length})</option>
                     <option value="sick_leave">{t('forms.sickLeave')} ({formsForMonthFilter.filter((f) => f.type === 'sick_leave').length})</option>
                     <option value="extra_hours">{t('forms.extra_hours')} ({formsForMonthFilter.filter((f) => f.type === 'extra_hours').length})</option>
@@ -2141,7 +2140,7 @@ const AdminDashboard = () => {
                         <span className="info-value">
                           {form.type === 'vacation' ? 'Annual Vacation' :
                            form.type === 'wfh' ? '🏠 Work From Home' :
-                           form.type === 'extra_hours' ? '⏱️ Overtime Hours' :
+                           form.type === 'extra_hours' ? `⏱️ ${t('forms.extra_hours')}` :
                            form.type === 'mission' ? '✈️ Mission' :
                            form.type}
                         </span>
@@ -2275,7 +2274,7 @@ const AdminDashboard = () => {
                            form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
                            form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
                            form.type === 'wfh' ? '🏠 Work From Home' :
-                           form.type === 'extra_hours' ? '⏱️ Overtime Hours' :
+                           form.type === 'extra_hours' ? `⏱️ ${t('forms.extra_hours')}` :
                            form.type === 'mission' ? '✈️ Mission' :
                            form.type}
                         </span>
@@ -2485,7 +2484,7 @@ const AdminDashboard = () => {
                            form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
                            form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
                            form.type === 'wfh' ? '🏠 Work From Home' :
-                           form.type === 'extra_hours' ? '⏱️ Overtime Hours' :
+                           form.type === 'extra_hours' ? `⏱️ ${t('forms.extra_hours')}` :
                            form.type === 'mission' ? '✈️ Mission' :
                            form.type}
                         </span>

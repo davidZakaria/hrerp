@@ -16,8 +16,6 @@ const EmployeeDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [vacationDaysLeft, setVacationDaysLeft] = useState(null);
-  const [excuseRequestsLeft, setExcuseRequestsLeft] = useState(null);
-  const [nextResetDate, setNextResetDate] = useState(null);
   const [user, setUser] = useState(null);
   const [myFlags, setMyFlags] = useState([]);
   const overviewRef = useRef(null);
@@ -56,24 +54,6 @@ const EmployeeDashboard = () => {
     }
   };
 
-  const fetchExcuseRequests = async () => {
-    const token = localStorage.getItem('token');
-    try {
-      const res = await fetch(`${API_URL}/api/forms/excuse-hours`, {
-        headers: { 'x-auth-token': token }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setExcuseRequestsLeft(data.excuseRequestsLeft);
-        if (data.nextResetDate) {
-          setNextResetDate(new Date(data.nextResetDate));
-        }
-      }
-    } catch (err) {
-      // ignore
-    }
-  };
-
   const fetchMyFlags = async () => {
     const token = localStorage.getItem('token');
     try {
@@ -92,7 +72,6 @@ const EmployeeDashboard = () => {
   useEffect(() => {
     fetchUserData();
     fetchVacationDays();
-    fetchExcuseRequests();
     fetchMyFlags();
   }, []);
 
@@ -140,7 +119,6 @@ const EmployeeDashboard = () => {
     setShowForm(false);
     fetchForms();
     fetchVacationDays();
-    fetchExcuseRequests();
     setTimeout(() => smoothScrollToElement(previewRef.current, DEFAULT_SCROLL_OFFSET), 80);
   };
 
@@ -148,7 +126,6 @@ const EmployeeDashboard = () => {
     setShowForm(true);
     setShowPreview(false);
     fetchVacationDays();
-    fetchExcuseRequests();
     setTimeout(() => smoothScrollToElement(submitRef.current, DEFAULT_SCROLL_OFFSET), 80);
   };
 
@@ -164,7 +141,6 @@ const EmployeeDashboard = () => {
 
   const handleFormSubmitted = () => {
     fetchVacationDays();
-    fetchExcuseRequests();
     setShowForm(false);
     setShowPreview(true);
     fetchForms();
@@ -350,30 +326,6 @@ const EmployeeDashboard = () => {
             {vacationDaysLeft !== null ? Number(vacationDaysLeft).toFixed(1) : '...'}
           </div>
           <div className="stats-label">{t('dashboard.daysRemaining')}</div>
-          <small style={{ fontSize: '0.85rem', opacity: 0.7, display: 'block', marginTop: '0.5rem' }}>
-            💡 {t('dashboard.unpaidExcuseDeduct')}
-          </small>
-        </div>
-
-        {/* Excuse Requests Card */}
-        <div className="elegant-card hover-lift" style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
-            ⏰ {t('dashboard.paidExcuseRequests')}
-          </h2>
-          <div className="stats-number" style={{ fontSize: '3rem', marginBottom: '0.5rem', color: excuseRequestsLeft > 0 ? '#4caf50' : '#ff9800' }}>
-            {excuseRequestsLeft !== null ? `${excuseRequestsLeft} / 2` : '...'}
-          </div>
-          <div className="stats-label">{t('dashboard.currentPeriod')}</div>
-          <small style={{ fontSize: '0.85rem', opacity: 0.7, display: 'block', marginTop: '0.5rem' }}>
-            {excuseRequestsLeft > 0 ? t('dashboard.canSubmitPaidExcuse') : t('dashboard.submitUnpaidInstead')}
-          </small>
-          {nextResetDate && (
-            <small style={{ fontSize: '0.8rem', opacity: 0.6, display: 'block', marginTop: '0.5rem', color: '#64b5f6' }}>
-              🔄 {t('dashboard.resetsMonthly')}
-              <br />
-              {t('dashboard.nextReset')}: {nextResetDate.toLocaleDateString(t('common.locale'), { month: 'long', day: 'numeric', year: 'numeric' })}
-            </small>
-          )}
         </div>
 
         {/* Action Buttons */}
@@ -466,29 +418,6 @@ const EmployeeDashboard = () => {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                             <span className="form-label-elegant">{t('forms.days')}:</span>
                             <span className="text-elegant">{form.days}</span>
-                          </div>
-                        </>
-                      )}
-                      
-                      {form.type === 'excuse' && (
-                        <>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">Excuse Type:</span>
-                            <span className="text-elegant" style={{ fontWeight: 'bold', color: form.excuseType === 'paid' ? '#4caf50' : '#ff9800' }}>
-                              {form.excuseType === 'paid' ? '💰 Paid' : '📝 Unpaid'}
-                            </span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.excuseDate')}:</span>
-                            <span className="text-elegant">{new Date(form.excuseDate).toLocaleDateString()}</span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.timePeriod')}:</span>
-                            <span className="text-elegant">{form.fromHour} - {form.toHour}</span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.duration')}:</span>
-                            <span className="text-elegant">{((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('forms.hours')}</span>
                           </div>
                         </>
                       )}

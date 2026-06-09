@@ -725,6 +725,21 @@
     "statPendingHr": "{{count}} بانتظار الاعتماد النهائي من الموارد البشرية (تبويب النماذج → طلب عمل إضافي)",
     "statHrApproved": "{{count}} نموذج(ات) معتمد(ة) نهائياً من الموارد البشرية",
     "statNoFormsYet": "لم يُقدّم أي طلب عمل إضافي بعد — البصمة وحدها لا تملأ التقرير النهائي.",
-    "statGoApprove": "اذهب إلى النماذج → رشّح طلب عمل إضافي → اعتماد نهائي لملء هذا التقرير."
+    "statGoApprove": "اذهب إلى النماذج → رشّح طلب عمل إضافي → اعتماد نهائي لملء هذا التقرير.",
+    "filterSearch": "بحث عن موظف",
+    "filterSearchPlaceholder": "الاسم أو رمز الموظف...",
+    "filterDepartment": "القسم",
+    "filterAllDepartments": "كل الأقسام",
+    "filterVariance": "الفرق",
+    "filterForm": "نموذج OT",
+    "filterAll": "الكل",
+    "filterVariancePositive": "البصمة > المعتمد (أخضر)",
+    "filterVarianceNegative": "البصمة < المعتمد (أحمر)",
+    "filterVarianceNeutral": "متطابق (صفر)",
+    "filterWithForm": "لديه نموذج معتمد من الموارد البشرية",
+    "filterWithoutForm": "البصمة فقط (بدون نموذج)",
+    "clearFilters": "مسح الفلاتر",
+    "filterShowing": "عرض {{shown}} من {{total}} صف",
+    "noFilterResults": "لا توجد صفوف تطابق الفلاتر الحالية."
   }
 } 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import API_URL from '../config/api';
 
@@ -47,6 +47,10 @@ const OtReconciliationReports = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showExtendedDetails, setShowExtendedDetails] = useState(false);
+  const [filterSearch, setFilterSearch] = useState('');
+  const [filterDepartment, setFilterDepartment] = useState('');
+  const [filterVariance, setFilterVariance] = useState('all');
+  const [filterForm, setFilterForm] = useState('all');
 
   const fetchReport = useCallback(async () => {
     if (!rangeStart || !rangeEnd) return;
@@ -122,6 +126,41 @@ const OtReconciliationReports = () => {
   const detailedRows = report?.detailed || [];
   const finalRows = report?.final || [];
 
+  const departmentOptions = useMemo(() => {
+    const depts = new Set();
+    detailedRows.forEach((row) => {
+      if (row.department) depts.add(row.department);
+    });
+    return Array.from(depts).sort((a, b) => a.localeCompare(b));
+  }, [detailedRows]);
+
+  const filteredDetailedRows = useMemo(() => {
+    const q = filterSearch.trim().toLowerCase();
+    return detailedRows.filter((row) => {
+      if (filterDepartment && row.department !== filterDepartment) return false;
+      if (filterVariance === 'positive' && row.varianceFlag !== 'positive') return false;
+      if (filterVariance === 'negative' && row.varianceFlag !== 'negative') return false;
+      if (filterVariance === 'neutral' && row.varianceFlag !== 'neutral') return false;
+      if (filterForm === 'with' && !row.hasApprovedForm) return false;
+      if (filterForm === 'without' && row.hasApprovedForm) return false;
+      if (q) {
+        const code = String(row.employeeCode || '').toLowerCase();
+        const name = String(row.employeeName || '').toLowerCase();
+        if (!code.includes(q) && !name.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [detailedRows, filterSearch, filterDepartment, filterVariance, filterForm]);
+
+  const hasActiveFilters = filterSearch || filterDepartment || filterVariance !== 'all' || filterForm !== 'all';
+
+  const clearDetailedFilters = () => {
+    setFilterSearch('');
+    setFilterDepartment('');
+    setFilterVariance('all');
+    setFilterForm('all');
+  };
+
   return (
     <div style={{ marginTop: '2rem' }}>
       <style>{`
@@ -195,15 +234,6 @@ const OtReconciliationReports = () => {
         >
           {t('otReports.finalTab')}
         </button>
-        {activeView === 'detailed' && detailedRows.length > 0 && (
-          <button
-            type="button"
-            className={`btn-elegant ${showExtendedDetails ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setShowExtendedDetails((v) => !v)}
-          >
-            {showExtendedDetails ? t('otReports.simpleView') : t('otReports.moreDetails')}
-          </button>
-        )}
         {activeView === 'final' && (
           <button type="button" className="btn-elegant btn-success" onClick={exportFinalToCsv} disabled={!finalRows.length}>
             {t('otReports.exportExcel')}
@@ -221,10 +251,83 @@ const OtReconciliationReports = () => {
 
       {report && activeView === 'detailed' && (
         <div className="elegant-card" style={{ overflowX: 'auto', opacity: loading ? 0.6 : 1 }}>
-          <h3 style={{ marginBottom: '1rem', color: '#f1f5f9' }}>
-            {t('otReports.detailedTitle')}
-            {loading && <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem', color: '#94a3b8' }}>{t('otReports.loading')}</span>}
-          </h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, color: '#f1f5f9' }}>
+              {t('otReports.detailedTitle')}
+              {loading && <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem', color: '#94a3b8' }}>{t('otReports.loading')}</span>}
+            </h3>
+            {detailedRows.length > 0 && (
+              <button
+                type="button"
+                className={`btn-elegant ${showExtendedDetails ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setShowExtendedDetails((v) => !v)}
+              >
+                {showExtendedDetails ? t('otReports.simpleView') : t('otReports.moreDetails')}
+              </button>
+            )}
+          </div>
+          {detailedRows.length > 0 && (
+            <div className="elegant-card" style={{ marginBottom: '1rem', padding: '1rem', background: 'rgba(15, 23, 42, 0.6)' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
+                <div style={{ minWidth: '160px', flex: '1 1 160px' }}>
+                  <label className="form-label-elegant">{t('otReports.filterSearch')}</label>
+                  <input
+                    type="text"
+                    className="form-input-elegant"
+                    placeholder={t('otReports.filterSearchPlaceholder')}
+                    value={filterSearch}
+                    onChange={(e) => setFilterSearch(e.target.value)}
+                  />
+                </div>
+                <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
+                  <label className="form-label-elegant">{t('otReports.filterDepartment')}</label>
+                  <select
+                    className="form-input-elegant"
+                    value={filterDepartment}
+                    onChange={(e) => setFilterDepartment(e.target.value)}
+                  >
+                    <option value="">{t('otReports.filterAllDepartments')}</option>
+                    {departmentOptions.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
+                  <label className="form-label-elegant">{t('otReports.filterVariance')}</label>
+                  <select
+                    className="form-input-elegant"
+                    value={filterVariance}
+                    onChange={(e) => setFilterVariance(e.target.value)}
+                  >
+                    <option value="all">{t('otReports.filterAll')}</option>
+                    <option value="positive">{t('otReports.filterVariancePositive')}</option>
+                    <option value="negative">{t('otReports.filterVarianceNegative')}</option>
+                    <option value="neutral">{t('otReports.filterVarianceNeutral')}</option>
+                  </select>
+                </div>
+                <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
+                  <label className="form-label-elegant">{t('otReports.filterForm')}</label>
+                  <select
+                    className="form-input-elegant"
+                    value={filterForm}
+                    onChange={(e) => setFilterForm(e.target.value)}
+                  >
+                    <option value="all">{t('otReports.filterAll')}</option>
+                    <option value="with">{t('otReports.filterWithForm')}</option>
+                    <option value="without">{t('otReports.filterWithoutForm')}</option>
+                  </select>
+                </div>
+                {hasActiveFilters && (
+                  <button type="button" className="btn-elegant btn-secondary" onClick={clearDetailedFilters}>
+                    {t('otReports.clearFilters')}
+                  </button>
+                )}
+              </div>
+              <p style={{ margin: '0.75rem 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
+                {t('otReports.filterShowing', { shown: filteredDetailedRows.length, total: detailedRows.length })}
+              </p>
+            </div>
+          )}
           {detailedRows.length === 0 ? (
             <div style={{ color: '#94a3b8' }}>
               <p>{t('otReports.noRows')}</p>
@@ -241,6 +344,13 @@ const OtReconciliationReports = () => {
                 <li>{t('otReports.emptyHint2')}</li>
                 <li>{t('otReports.emptyHint3')}</li>
               </ul>
+            </div>
+          ) : filteredDetailedRows.length === 0 ? (
+            <div style={{ color: '#94a3b8' }}>
+              <p>{t('otReports.noFilterResults')}</p>
+              <button type="button" className="btn-elegant btn-secondary" onClick={clearDetailedFilters}>
+                {t('otReports.clearFilters')}
+              </button>
             </div>
           ) : (
             <table className="ot-reconciliation-table">
@@ -274,7 +384,7 @@ const OtReconciliationReports = () => {
                 </tr>
               </thead>
               <tbody>
-                {detailedRows.map((row) => (
+                {filteredDetailedRows.map((row) => (
                   <tr key={row.rowKey || row.formId}>
                     <td>{row.employeeCode || '—'}</td>
                     <td>{row.employeeName}</td>

@@ -703,6 +703,21 @@
     "statPendingHr": "{{count}} awaiting HR final approval (Forms tab → Overtime Request)",
     "statHrApproved": "{{count}} HR-final-approved form(s)",
     "statNoFormsYet": "No Overtime Requests submitted yet — fingerprint OT alone does not populate Final OT.",
-    "statGoApprove": "Go to Forms → filter Overtime Request → give FINAL APPROVAL to populate this report."
+    "statGoApprove": "Go to Forms → filter Overtime Request → give FINAL APPROVAL to populate this report.",
+    "filterSearch": "Employee search",
+    "filterSearchPlaceholder": "Name or employee code...",
+    "filterDepartment": "Department",
+    "filterAllDepartments": "All departments",
+    "filterVariance": "Variance",
+    "filterForm": "OT form",
+    "filterAll": "All",
+    "filterVariancePositive": "FP > Approved (green)",
+    "filterVarianceNegative": "FP < Approved (red)",
+    "filterVarianceNeutral": "Matched (zero)",
+    "filterWithForm": "Has HR-approved form",
+    "filterWithoutForm": "Fingerprint only (no form)",
+    "clearFilters": "Clear filters",
+    "filterShowing": "Showing {{shown}} of {{total}} rows",
+    "noFilterResults": "No rows match the current filters."
   }
 } 

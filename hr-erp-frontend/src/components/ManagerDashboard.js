@@ -180,7 +180,6 @@ const ManagerDashboard = ({ onLogout }) => {
     setShowATS(false);
     setShowTeamAttendance(false);
     fetchVacationDays();
-    fetchExcuseHours();
     scrollToManagerSection(managerFormRef);
   };
 
@@ -193,7 +192,6 @@ const ManagerDashboard = ({ onLogout }) => {
     setShowTeamAttendance(false);
     fetchMyForms();
     fetchVacationDays();
-    fetchExcuseHours();
     scrollToManagerSection(managerMyFormsRef);
   };
 
@@ -262,7 +260,6 @@ const ManagerDashboard = ({ onLogout }) => {
 
   const handleFormSubmitted = () => {
     fetchVacationDays();
-    fetchExcuseHours();
     setShowForm(false);
     setShowMyForms(true);
     setManagerNavActiveId('myForms');

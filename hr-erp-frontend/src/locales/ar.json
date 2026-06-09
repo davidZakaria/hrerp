@@ -740,6 +740,24 @@
     "filterWithoutForm": "البصمة فقط (بدون نموذج)",
     "clearFilters": "مسح الفلاتر",
     "filterShowing": "عرض {{shown}} من {{total}} صف",
-    "noFilterResults": "لا توجد صفوف تطابق الفلاتر الحالية."
+    "noFilterResults": "لا توجد صفوف تطابق الفلاتر الحالية.",
+    "advancedFilters": "فلاتر متقدمة",
+    "hideAdvancedFilters": "إخفاء الفلاتر المتقدمة",
+    "filterDateFrom": "من تاريخ",
+    "filterDateTo": "إلى تاريخ",
+    "filterMinFp": "حد أدنى لبصمة OT (ساعات)",
+    "filterMinVariance": "حد أدنى للفرق (ساعات، ±)",
+    "filterWorkday": "نوع اليوم",
+    "filterWorkdayOnly": "أيام العمل فقط",
+    "filterNonWorkday": "غير أيام العمل فقط",
+    "employeeTotals": "إجماليات الموظفين",
+    "employeeTotalsTitle": "إجماليات الموظفين (فرق العمل الإضافي)",
+    "employeeTotalsFiltered": "(حسب الفلاتر الحالية)",
+    "otDays": "أيام OT",
+    "totalFingerprintOt": "إجمالي بصمة OT (ساعات)",
+    "totalApprovedOt": "إجمالي OT المعتمد (ساعات)",
+    "totalVariance": "إجمالي الفرق (ساعات)",
+    "grandTotal": "الإجمالي الكلي ({{count}} موظف)",
+    "dailyBreakdownTitle": "التفاصيل اليومية"
   }
 } 

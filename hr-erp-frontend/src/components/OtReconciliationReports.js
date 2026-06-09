@@ -51,6 +51,13 @@ const OtReconciliationReports = () => {
   const [filterDepartment, setFilterDepartment] = useState('');
   const [filterVariance, setFilterVariance] = useState('all');
   const [filterForm, setFilterForm] = useState('all');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [filterMinFp, setFilterMinFp] = useState('');
+  const [filterMinVariance, setFilterMinVariance] = useState('');
+  const [filterWorkday, setFilterWorkday] = useState('all');
+  const [showEmployeeTotals, setShowEmployeeTotals] = useState(true);
 
   const fetchReport = useCallback(async () => {
     if (!rangeStart || !rangeEnd) return;
@@ -136,6 +143,14 @@ const OtReconciliationReports = () => {
 
   const filteredDetailedRows = useMemo(() => {
     const q = filterSearch.trim().toLowerCase();
+    const minFp = filterMinFp === '' ? null : Number(filterMinFp);
+    const minVariance = filterMinVariance === '' ? null : Number(filterMinVariance);
+    const rowDateKey = (row) => {
+      if (row.otDateKey) return row.otDateKey;
+      if (!row.otDate) return '';
+      const d = new Date(row.otDate);
+      return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+    };
     return detailedRows.filter((row) => {
       if (filterDepartment && row.department !== filterDepartment) return false;
       if (filterVariance === 'positive' && row.varianceFlag !== 'positive') return false;
@@ -143,6 +158,15 @@ const OtReconciliationReports = () => {
       if (filterVariance === 'neutral' && row.varianceFlag !== 'neutral') return false;
       if (filterForm === 'with' && !row.hasApprovedForm) return false;
       if (filterForm === 'without' && row.hasApprovedForm) return false;
+      if (filterDateFrom || filterDateTo) {
+        const key = rowDateKey(row);
+        if (filterDateFrom && (!key || key < filterDateFrom)) return false;
+        if (filterDateTo && (!key || key > filterDateTo)) return false;
+      }
+      if (minFp != null && !Number.isNaN(minFp) && Number(row.actualPunchingHours || 0) < minFp) return false;
+      if (minVariance != null && !Number.isNaN(minVariance) && Math.abs(Number(row.variance || 0)) < minVariance) return false;
+      if (filterWorkday === 'workday' && !row.isWorkday) return false;
+      if (filterWorkday === 'nonworkday' && row.isWorkday) return false;
       if (q) {
         const code = String(row.employeeCode || '').toLowerCase();
         const name = String(row.employeeName || '').toLowerCase();
@@ -150,15 +174,67 @@ const OtReconciliationReports = () => {
       }
       return true;
     });
-  }, [detailedRows, filterSearch, filterDepartment, filterVariance, filterForm]);
+  }, [
+    detailedRows, filterSearch, filterDepartment, filterVariance, filterForm,
+    filterDateFrom, filterDateTo, filterMinFp, filterMinVariance, filterWorkday
+  ]);
 
-  const hasActiveFilters = filterSearch || filterDepartment || filterVariance !== 'all' || filterForm !== 'all';
+  const employeeTotals = useMemo(() => {
+    const map = new Map();
+    filteredDetailedRows.forEach((row) => {
+      const key = row.employeeCode || row.employeeId || row.employeeName;
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          employeeCode: row.employeeCode || '',
+          employeeName: row.employeeName || '',
+          department: row.department || '',
+          days: 0,
+          totalFingerprint: 0,
+          totalApproved: 0,
+          totalVariance: 0
+        });
+      }
+      const agg = map.get(key);
+      agg.days += 1;
+      agg.totalFingerprint += Number(row.actualPunchingHours || 0);
+      agg.totalApproved += Number(row.approvedHours || 0);
+      agg.totalVariance += Number(row.variance || 0);
+    });
+    return Array.from(map.values()).sort((a, b) => b.totalVariance - a.totalVariance);
+  }, [filteredDetailedRows]);
+
+  const grandTotals = useMemo(() => employeeTotals.reduce(
+    (acc, emp) => ({
+      days: acc.days + emp.days,
+      totalFingerprint: acc.totalFingerprint + emp.totalFingerprint,
+      totalApproved: acc.totalApproved + emp.totalApproved,
+      totalVariance: acc.totalVariance + emp.totalVariance
+    }),
+    { days: 0, totalFingerprint: 0, totalApproved: 0, totalVariance: 0 }
+  ), [employeeTotals]);
+
+  const hasActiveFilters = Boolean(
+    filterSearch || filterDepartment || filterVariance !== 'all' || filterForm !== 'all' ||
+    filterDateFrom || filterDateTo || filterMinFp !== '' || filterMinVariance !== '' || filterWorkday !== 'all'
+  );
 
   const clearDetailedFilters = () => {
     setFilterSearch('');
     setFilterDepartment('');
     setFilterVariance('all');
     setFilterForm('all');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+    setFilterMinFp('');
+    setFilterMinVariance('');
+    setFilterWorkday('all');
+  };
+
+  const varianceTotalStyle = (value) => {
+    if (value > 0.004) return { color: '#4ade80', fontWeight: 700 };
+    if (value < -0.004) return { color: '#f87171', fontWeight: 700 };
+    return { color: '#e2e8f0', fontWeight: 600 };
   };
 
   return (
@@ -257,13 +333,22 @@ const OtReconciliationReports = () => {
               {loading && <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem', color: '#94a3b8' }}>{t('otReports.loading')}</span>}
             </h3>
             {detailedRows.length > 0 && (
-              <button
-                type="button"
-                className={`btn-elegant ${showExtendedDetails ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => setShowExtendedDetails((v) => !v)}
-              >
-                {showExtendedDetails ? t('otReports.simpleView') : t('otReports.moreDetails')}
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={`btn-elegant ${showEmployeeTotals ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setShowEmployeeTotals((v) => !v)}
+                >
+                  {t('otReports.employeeTotals')}
+                </button>
+                <button
+                  type="button"
+                  className={`btn-elegant ${showExtendedDetails ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setShowExtendedDetails((v) => !v)}
+                >
+                  {showExtendedDetails ? t('otReports.simpleView') : t('otReports.moreDetails')}
+                </button>
+              </div>
             )}
           </div>
           {detailedRows.length > 0 && (
@@ -317,12 +402,80 @@ const OtReconciliationReports = () => {
                     <option value="without">{t('otReports.filterWithoutForm')}</option>
                   </select>
                 </div>
+                <button
+                  type="button"
+                  className={`btn-elegant ${showAdvancedFilters ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setShowAdvancedFilters((v) => !v)}
+                >
+                  {showAdvancedFilters ? t('otReports.hideAdvancedFilters') : t('otReports.advancedFilters')}
+                </button>
                 {hasActiveFilters && (
                   <button type="button" className="btn-elegant btn-secondary" onClick={clearDetailedFilters}>
                     {t('otReports.clearFilters')}
                   </button>
                 )}
               </div>
+              {showAdvancedFilters && (
+                <div style={{
+                  display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end',
+                  marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #334155'
+                }}>
+                  <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
+                    <label className="form-label-elegant">{t('otReports.filterDateFrom')}</label>
+                    <input
+                      type="date"
+                      className="form-input-elegant"
+                      value={filterDateFrom}
+                      onChange={(e) => setFilterDateFrom(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
+                    <label className="form-label-elegant">{t('otReports.filterDateTo')}</label>
+                    <input
+                      type="date"
+                      className="form-input-elegant"
+                      value={filterDateTo}
+                      onChange={(e) => setFilterDateTo(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
+                    <label className="form-label-elegant">{t('otReports.filterMinFp')}</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.25"
+                      className="form-input-elegant"
+                      placeholder="0.00"
+                      value={filterMinFp}
+                      onChange={(e) => setFilterMinFp(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
+                    <label className="form-label-elegant">{t('otReports.filterMinVariance')}</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.25"
+                      className="form-input-elegant"
+                      placeholder="0.00"
+                      value={filterMinVariance}
+                      onChange={(e) => setFilterMinVariance(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
+                    <label className="form-label-elegant">{t('otReports.filterWorkday')}</label>
+                    <select
+                      className="form-input-elegant"
+                      value={filterWorkday}
+                      onChange={(e) => setFilterWorkday(e.target.value)}
+                    >
+                      <option value="all">{t('otReports.filterAll')}</option>
+                      <option value="workday">{t('otReports.filterWorkdayOnly')}</option>
+                      <option value="nonworkday">{t('otReports.filterNonWorkday')}</option>
+                    </select>
+                  </div>
+                </div>
+              )}
               <p style={{ margin: '0.75rem 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
                 {t('otReports.filterShowing', { shown: filteredDetailedRows.length, total: detailedRows.length })}
               </p>
@@ -353,6 +506,61 @@ const OtReconciliationReports = () => {
               </button>
             </div>
           ) : (
+            <>
+            {showEmployeeTotals && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ margin: '0 0 0.75rem', color: '#93c5fd' }}>
+                  {t('otReports.employeeTotalsTitle')}
+                  {hasActiveFilters && (
+                    <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: '#94a3b8', fontWeight: 400 }}>
+                      {t('otReports.employeeTotalsFiltered')}
+                    </span>
+                  )}
+                </h4>
+                <table className="ot-reconciliation-table">
+                  <thead>
+                    <tr>
+                      <th>{t('otReports.employeeCode')}</th>
+                      <th>{t('otReports.employeeName')}</th>
+                      <th>{t('otReports.department')}</th>
+                      <th>{t('otReports.otDays')}</th>
+                      <th>{t('otReports.totalFingerprintOt')}</th>
+                      <th>{t('otReports.totalApprovedOt')}</th>
+                      <th>{t('otReports.totalVariance')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {employeeTotals.map((emp) => (
+                      <tr key={emp.key}>
+                        <td>{emp.employeeCode || '—'}</td>
+                        <td>{emp.employeeName}</td>
+                        <td>{emp.department}</td>
+                        <td>{emp.days}</td>
+                        <td>{formatHours(emp.totalFingerprint)}</td>
+                        <td>{formatHours(emp.totalApproved)}</td>
+                        <td style={varianceTotalStyle(emp.totalVariance)}>
+                          {emp.totalVariance > 0 ? '+' : ''}{formatHours(emp.totalVariance)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={3} style={{ fontWeight: 700, color: '#93c5fd', background: 'rgba(30, 58, 95, 0.9)' }}>
+                        {t('otReports.grandTotal', { count: employeeTotals.length })}
+                      </td>
+                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{grandTotals.days}</td>
+                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(grandTotals.totalFingerprint)}</td>
+                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(grandTotals.totalApproved)}</td>
+                      <td style={{ ...varianceTotalStyle(grandTotals.totalVariance), background: 'rgba(30, 58, 95, 0.9)' }}>
+                        {grandTotals.totalVariance > 0 ? '+' : ''}{formatHours(grandTotals.totalVariance)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+                <h4 style={{ margin: '1.5rem 0 0.75rem', color: '#93c5fd' }}>{t('otReports.dailyBreakdownTitle')}</h4>
+              </div>
+            )}
             <table className="ot-reconciliation-table">
               <thead>
                 <tr>
@@ -417,6 +625,7 @@ const OtReconciliationReports = () => {
                 ))}
               </tbody>
             </table>
+            </>
           )}
         </div>
       )}

@@ -718,6 +718,24 @@
     "filterWithoutForm": "Fingerprint only (no form)",
     "clearFilters": "Clear filters",
     "filterShowing": "Showing {{shown}} of {{total}} rows",
-    "noFilterResults": "No rows match the current filters."
+    "noFilterResults": "No rows match the current filters.",
+    "advancedFilters": "Advanced filters",
+    "hideAdvancedFilters": "Hide advanced filters",
+    "filterDateFrom": "Date from",
+    "filterDateTo": "Date to",
+    "filterMinFp": "Min fingerprint OT (hrs)",
+    "filterMinVariance": "Min variance (hrs, ±)",
+    "filterWorkday": "Day type",
+    "filterWorkdayOnly": "Workdays only",
+    "filterNonWorkday": "Non-workdays only",
+    "employeeTotals": "Employee totals",
+    "employeeTotalsTitle": "Employee Totals (OT Variance)",
+    "employeeTotalsFiltered": "(based on current filters)",
+    "otDays": "OT days",
+    "totalFingerprintOt": "Total fingerprint OT (hrs)",
+    "totalApprovedOt": "Total approved OT (hrs)",
+    "totalVariance": "Total variance (hrs)",
+    "grandTotal": "Grand total ({{count}} employees)",
+    "dailyBreakdownTitle": "Daily Breakdown"
   }
 } 

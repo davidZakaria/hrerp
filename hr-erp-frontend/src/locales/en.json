@@ -741,6 +741,10 @@
     "totalPunchedHours": "Total punched (hrs)",
     "totalRequestedOt": "Total requested OT (hrs)",
     "daysWithForm": "Days with form",
-    "totalFinalOt": "Total final OT (hrs)"
+    "totalFinalOt": "Total final OT (hrs)",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "clickEmployeeHint": "Click an employee row to see their day-by-day OT sequence.",
+    "subtotal": "Subtotal — {{name}} ({{count}} days)"
   }
 } 

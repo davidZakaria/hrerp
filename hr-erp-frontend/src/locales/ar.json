@@ -763,6 +763,10 @@
     "totalPunchedHours": "إجمالي ساعات البصمة",
     "totalRequestedOt": "إجمالي OT المطلوب (ساعات)",
     "daysWithForm": "أيام بنموذج معتمد",
-    "totalFinalOt": "إجمالي OT النهائي (ساعات)"
+    "totalFinalOt": "إجمالي OT النهائي (ساعات)",
+    "expandAll": "توسيع الكل",
+    "collapseAll": "طي الكل",
+    "clickEmployeeHint": "اضغط على صف الموظف لعرض تسلسل العمل الإضافي يوماً بيوم.",
+    "subtotal": "الإجمالي الفرعي — {{name}} ({{count}} يوم)"
   }
 } 

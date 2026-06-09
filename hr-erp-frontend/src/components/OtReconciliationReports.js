@@ -58,6 +58,7 @@ const OtReconciliationReports = () => {
   const [filterMinVariance, setFilterMinVariance] = useState('');
   const [filterWorkday, setFilterWorkday] = useState('all');
   const [showEmployeeTotals, setShowEmployeeTotals] = useState(true);
+  const [expandedEmployees, setExpandedEmployees] = useState(() => new Set());
 
   const fetchReport = useCallback(async () => {
     if (!rangeStart || !rangeEnd) return;
@@ -197,10 +198,12 @@ const OtReconciliationReports = () => {
           daysWithForm: 0,
           totalApproved: 0,
           totalVariance: 0,
-          totalFinalPayable: 0
+          totalFinalPayable: 0,
+          rows: []
         });
       }
       const agg = map.get(key);
+      agg.rows.push(row);
       agg.days += 1;
       if (row.isWorkday) agg.workdays += 1;
       agg.totalPunched += Number(row.totalPunchedHours || 0);
@@ -211,7 +214,11 @@ const OtReconciliationReports = () => {
       agg.totalVariance += Number(row.variance || 0);
       agg.totalFinalPayable += Number(row.finalPayableHours || 0);
     });
-    return Array.from(map.values()).sort((a, b) => b.totalVariance - a.totalVariance);
+    const list = Array.from(map.values()).sort((a, b) => b.totalVariance - a.totalVariance);
+    list.forEach((emp) => {
+      emp.rows.sort((a, b) => new Date(a.otDate) - new Date(b.otDate));
+    });
+    return list;
   }, [filteredDetailedRows]);
 
   const grandTotals = useMemo(() => employeeTotals.reduce(
@@ -254,6 +261,27 @@ const OtReconciliationReports = () => {
     if (value < -0.004) return { color: '#f87171', fontWeight: 700 };
     return { color: '#e2e8f0', fontWeight: 600 };
   };
+
+  const toggleEmployeeExpanded = (key) => {
+    setExpandedEmployees((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const allExpanded = employeeTotals.length > 0 && employeeTotals.every((emp) => expandedEmployees.has(emp.key));
+
+  const toggleExpandAll = () => {
+    if (allExpanded) {
+      setExpandedEmployees(new Set());
+    } else {
+      setExpandedEmployees(new Set(employeeTotals.map((emp) => emp.key)));
+    }
+  };
+
+  const totalsColSpan = showExtendedDetails ? 12 : 7;
 
   return (
     <div style={{ marginTop: '2rem' }}>
@@ -527,14 +555,22 @@ const OtReconciliationReports = () => {
             <>
             {showEmployeeTotals && (
               <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ margin: '0 0 0.75rem', color: '#93c5fd' }}>
-                  {t('otReports.employeeTotalsTitle')}
-                  {hasActiveFilters && (
-                    <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: '#94a3b8', fontWeight: 400 }}>
-                      {t('otReports.employeeTotalsFiltered')}
-                    </span>
-                  )}
-                </h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <h4 style={{ margin: 0, color: '#93c5fd' }}>
+                    {t('otReports.employeeTotalsTitle')}
+                    {hasActiveFilters && (
+                      <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: '#94a3b8', fontWeight: 400 }}>
+                        {t('otReports.employeeTotalsFiltered')}
+                      </span>
+                    )}
+                  </h4>
+                  <button type="button" className="btn-elegant btn-secondary" onClick={toggleExpandAll}>
+                    {allExpanded ? t('otReports.collapseAll') : t('otReports.expandAll')}
+                  </button>
+                </div>
+                <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+                  {t('otReports.clickEmployeeHint')}
+                </p>
                 <table className="ot-reconciliation-table">
                   <thead>
                     <tr>
@@ -563,34 +599,108 @@ const OtReconciliationReports = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {employeeTotals.map((emp) => (
-                      <tr key={emp.key}>
-                        <td>{emp.employeeCode || '—'}</td>
-                        <td>{emp.employeeName}</td>
-                        <td>{emp.department}</td>
-                        <td>{emp.days}</td>
-                        {showExtendedDetails && (
-                          <>
-                            <td>{emp.workdays}</td>
-                            <td>{formatHours(emp.totalPunched)}</td>
-                          </>
-                        )}
-                        <td>{formatHours(emp.totalFingerprint)}</td>
-                        {showExtendedDetails && (
-                          <>
-                            <td>{formatHours(emp.totalRequested)}</td>
-                            <td>{emp.daysWithForm}</td>
-                          </>
-                        )}
-                        <td>{formatHours(emp.totalApproved)}</td>
-                        <td style={varianceTotalStyle(emp.totalVariance)}>
-                          {emp.totalVariance > 0 ? '+' : ''}{formatHours(emp.totalVariance)}
-                        </td>
-                        {showExtendedDetails && (
-                          <td style={{ color: '#4ade80', fontWeight: 600 }}>{formatHours(emp.totalFinalPayable)}</td>
-                        )}
-                      </tr>
-                    ))}
+                    {employeeTotals.map((emp) => {
+                      const isExpanded = expandedEmployees.has(emp.key);
+                      return (
+                        <React.Fragment key={emp.key}>
+                          <tr
+                            onClick={() => toggleEmployeeExpanded(emp.key)}
+                            style={{ cursor: 'pointer' }}
+                            title={t('otReports.clickEmployeeHint')}
+                          >
+                            <td>
+                              <span style={{ marginRight: '0.5rem', color: '#60a5fa', fontWeight: 700 }}>
+                                {isExpanded ? '▾' : '▸'}
+                              </span>
+                              {emp.employeeCode || '—'}
+                            </td>
+                            <td style={{ color: '#93c5fd', fontWeight: 600 }}>{emp.employeeName}</td>
+                            <td>{emp.department}</td>
+                            <td>{emp.days}</td>
+                            {showExtendedDetails && (
+                              <>
+                                <td>{emp.workdays}</td>
+                                <td>{formatHours(emp.totalPunched)}</td>
+                              </>
+                            )}
+                            <td>{formatHours(emp.totalFingerprint)}</td>
+                            {showExtendedDetails && (
+                              <>
+                                <td>{formatHours(emp.totalRequested)}</td>
+                                <td>{emp.daysWithForm}</td>
+                              </>
+                            )}
+                            <td>{formatHours(emp.totalApproved)}</td>
+                            <td style={varianceTotalStyle(emp.totalVariance)}>
+                              {emp.totalVariance > 0 ? '+' : ''}{formatHours(emp.totalVariance)}
+                            </td>
+                            {showExtendedDetails && (
+                              <td style={{ color: '#4ade80', fontWeight: 600 }}>{formatHours(emp.totalFinalPayable)}</td>
+                            )}
+                          </tr>
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan={totalsColSpan} style={{ padding: '0.75rem 1rem 1rem', background: 'rgba(15, 23, 42, 0.9)' }}>
+                                <table className="ot-reconciliation-table" style={{ fontSize: '0.85rem' }}>
+                                  <thead>
+                                    <tr>
+                                      <th>{t('otReports.otDate')}</th>
+                                      <th>{t('otReports.workday')}</th>
+                                      <th>{t('otReports.clockIn')}</th>
+                                      <th>{t('otReports.clockOut')}</th>
+                                      <th>{t('otReports.totalHours')}</th>
+                                      <th>{t('otReports.fingerprintActuals')}</th>
+                                      <th>{t('otReports.requestedOt')}</th>
+                                      <th>{t('otReports.hasForm')}</th>
+                                      <th>{t('otReports.approvedOt')}</th>
+                                      <th>{t('otReports.variance')}</th>
+                                      <th>{t('otReports.finalOtPreview')}</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {emp.rows.map((row) => (
+                                      <tr key={row.rowKey || row.formId}>
+                                        <td>{formatOtDateDetailed(row.otDate)}</td>
+                                        <td>{row.isWorkday ? t('otReports.yes') : t('otReports.no')}</td>
+                                        <td>{row.clockIn || '—'}</td>
+                                        <td>{row.clockOut || '—'}</td>
+                                        <td>{row.totalPunchedHours != null ? formatHours(row.totalPunchedHours) : '—'}</td>
+                                        <td>{formatHours(row.actualPunchingHours)}</td>
+                                        <td>{row.requestedHours != null ? formatHours(row.requestedHours) : '—'}</td>
+                                        <td>{row.hasApprovedForm ? t('otReports.yes') : t('otReports.no')}</td>
+                                        <td>{formatHours(row.approvedHours)}</td>
+                                        <td style={varianceStyle(row.varianceFlag)}>
+                                          {row.variance > 0 ? '+' : ''}{formatHours(row.variance)}
+                                        </td>
+                                        <td style={{ color: '#4ade80', fontWeight: 600 }}>{formatHours(row.finalPayableHours)}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                  <tfoot>
+                                    <tr>
+                                      <td colSpan={4} style={{ fontWeight: 700, color: '#93c5fd', background: 'rgba(30, 58, 95, 0.9)' }}>
+                                        {t('otReports.subtotal', { name: emp.employeeName, count: emp.days })}
+                                      </td>
+                                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(emp.totalPunched)}</td>
+                                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(emp.totalFingerprint)}</td>
+                                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(emp.totalRequested)}</td>
+                                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{emp.daysWithForm}</td>
+                                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(emp.totalApproved)}</td>
+                                      <td style={{ ...varianceTotalStyle(emp.totalVariance), background: 'rgba(30, 58, 95, 0.9)' }}>
+                                        {emp.totalVariance > 0 ? '+' : ''}{formatHours(emp.totalVariance)}
+                                      </td>
+                                      <td style={{ color: '#4ade80', fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>
+                                        {formatHours(emp.totalFinalPayable)}
+                                      </td>
+                                    </tr>
+                                  </tfoot>
+                                </table>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </tbody>
                   <tfoot>
                     <tr>

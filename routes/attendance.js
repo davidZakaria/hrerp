@@ -868,17 +868,35 @@ router.get('/ot-reconciliation', auth, async (req, res) => {
             (a, b) => new Date(a.otDate) - new Date(b.otDate)
         );
 
-        const final = detailed
-            .filter((row) => row.approvedHours > 0)
-            .map((row) => ({
-                rowKey: row.rowKey,
-                formId: row.formId,
-                employeeCode: row.employeeCode,
-                employeeName: row.employeeName,
-                department: row.department,
-                otDate: row.otDate,
-                finalPayableHours: row.finalPayableHours
-            }));
+        // Build Final from HR-approved forms (merged with fingerprint when available)
+        const final = forms
+            .filter((form) => form.user?._id)
+            .map((form) => {
+                const key = otReconciliationDateKey(form.user._id, form.extraHoursDate);
+                const row = rowMap.get(key) || buildOtReconciliationRow({
+                    form,
+                    attendanceRecord: null,
+                    user: form.user,
+                    actualHours: 0,
+                    otDate: form.extraHoursDate,
+                    rowKey: key
+                });
+                const approved = Number(row.approvedHours) || 0;
+                if (approved <= 0) return null;
+                return {
+                    rowKey: row.rowKey,
+                    formId: row.formId,
+                    employeeCode: row.employeeCode,
+                    employeeName: row.employeeName,
+                    department: row.department,
+                    otDate: row.otDate,
+                    approvedHours: approved,
+                    actualPunchingHours: row.actualPunchingHours,
+                    finalPayableHours: row.finalPayableHours
+                };
+            })
+            .filter(Boolean)
+            .sort((a, b) => new Date(a.otDate) - new Date(b.otDate));
 
         res.json({
             startDate: rangeStart.toISOString(),

@@ -17,6 +17,9 @@ function roundHours(hours) {
 
 function dateKeyFromDate(date) {
     const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return '';
+    // Noon local avoids UTC midnight shifting the calendar day across timezones
+    d.setHours(12, 0, 0, 0);
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');

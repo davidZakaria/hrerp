@@ -27,6 +27,13 @@ const {
     aggregateOrgKpis,
     applyRecalcAttendance
 } = require('../utils/attendanceDetailBuilder');
+const {
+    fingerprintDeductionDays,
+    missingPunchPenalty,
+    buildDeductionReport,
+    APPROVED_WAIVER_STATUSES,
+    WAIVER_FORM_TYPES
+} = require('../utils/deductionCalculator');
 const { getEffectiveManagedDepartmentsForQueries } = require('../utils/effectiveManagedDepartments');
 
 // Configure multer for file uploads
@@ -61,21 +68,11 @@ const upload = multer({
 });
 
 /**
- * Calculate fingerprint deduction based on the number of misses
- * Progressive deduction system:
- * - 1st miss: 0.25 day
- * - 2nd miss: 0.5 day
- * - 3rd miss: 0.75 day
- * - 4th+ miss: 1 full day each
- * @param {Number} missCount - Total number of misses (1-based)
- * @returns {Number} Deduction amount in days
+ * Calculate fingerprint deduction based on the number of misses (new 3-pillar tiers).
+ * 1st/2nd = warning (0), 3rd = 0.25, 4th = 0.50, 5th = 0.75, 6th+ = 1.0
  */
 function calculateFingerprintDeduction(missCount) {
-    if (missCount <= 0) return 0;
-    if (missCount === 1) return 0.25;
-    if (missCount === 2) return 0.5;
-    if (missCount === 3) return 0.75;
-    return 1; // 4th and beyond: 1 full day each
+    return fingerprintDeductionDays(missCount);
 }
 
 /**
@@ -104,28 +101,31 @@ async function checkAndResetFingerprintCount(user, currentMonth) {
  * @returns {Object} {deduction, missCount}
  */
 async function processFingerprintMiss(user, missType, currentMonth) {
-    // Ensure count is reset for new month
-    await checkAndResetFingerprintCount(user, currentMonth);
-    
-    // Each miss (clock_in or clock_out) counts as one occurrence
-    const missesToAdd = missType === 'both' ? 2 : 1;
-    let totalDeduction = 0;
-    
-    for (let i = 0; i < missesToAdd; i++) {
-        user.fingerprintMissCount += 1;
-        const deduction = calculateFingerprintDeduction(user.fingerprintMissCount);
-        totalDeduction += deduction;
-        user.totalFingerprintDeduction += deduction;
+    if (missType === 'both') {
+        return {
+            deduction: 0,
+            missCount: user.fingerprintMissCount,
+            totalMonthlyDeduction: user.totalFingerprintDeduction,
+            label: 'Full absence (Pillar C)'
+        };
     }
-    
+
+    await checkAndResetFingerprintCount(user, currentMonth);
+
+    user.fingerprintMissCount += 1;
+    const penalty = missingPunchPenalty(user.fingerprintMissCount);
+    const deduction = penalty.days;
+    user.totalFingerprintDeduction += deduction;
+
     await user.save();
-    
-    console.log(`  Fingerprint miss for ${user.name}: type=${missType}, count=${user.fingerprintMissCount}, deduction=${totalDeduction} days`);
-    
+
+    console.log(`  Fingerprint miss for ${user.name}: type=${missType}, count=${user.fingerprintMissCount}, deduction=${deduction} days (${penalty.label})`);
+
     return {
-        deduction: totalDeduction,
+        deduction,
         missCount: user.fingerprintMissCount,
-        totalMonthlyDeduction: user.totalFingerprintDeduction
+        totalMonthlyDeduction: user.totalFingerprintDeduction,
+        label: penalty.label
     };
 }
 
@@ -186,7 +186,19 @@ async function crossReferenceWithForms(date, userId) {
         if (wfhForm) {
             return { form: wfhForm, status: 'wfh' };
         }
-        
+
+        const missionForm = await Form.findOne({
+            user: userId,
+            type: 'mission',
+            status: { $in: approvedStatuses },
+            missionStartDate: { $lte: endOfDay },
+            missionEndDate: { $gte: startOfDay }
+        });
+
+        if (missionForm) {
+            return { form: missionForm, status: 'on_leave' };
+        }
+
         return null;
     } catch (error) {
         console.error('Error cross-referencing with forms:', error);
@@ -630,9 +642,12 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                             fingerprintMissType = 'clock_out';
                         }
                         
-                        // Apply deduction if there was a fingerprint miss
-                        // SKIP deduction for WFH days - employee working from home doesn't need to clock in/out
-                        if (fingerprintMissType !== 'none' && status !== 'wfh') {
+                        // Apply deduction for single missing punch only (both missing = Pillar C absence)
+                        if (
+                            (fingerprintMissType === 'clock_in' || fingerprintMissType === 'clock_out') &&
+                            status !== 'wfh' &&
+                            !isExcused
+                        ) {
                             const missResult = await processFingerprintMiss(user, fingerprintMissType, month);
                             fingerprintDeduction = missResult.deduction;
                         } else if (status === 'wfh') {
@@ -917,6 +932,69 @@ router.get('/ot-reconciliation', auth, async (req, res) => {
         });
     } catch (error) {
         console.error('Error getting OT reconciliation report:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+});
+
+/**
+ * GET /api/attendance/deduction-report
+ * 3-pillar deduction report: missing punches, time shortfall, full absence.
+ */
+router.get('/deduction-report', auth, async (req, res) => {
+    try {
+        const admin = await User.findById(req.user.id);
+        if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
+            return res.status(403).json({ msg: 'Access denied. Admin only.' });
+        }
+
+        const parsed = parseDateRangeQuery(req.query);
+        if (parsed.error) {
+            return res.status(400).json({ msg: parsed.error });
+        }
+        const { rangeStart, rangeEnd } = parsed;
+
+        const extendedStart = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1, 0, 0, 0, 0);
+
+        const [users, attendanceRecords, waiverForms, otForms] = await Promise.all([
+            User.find({ employeeCode: { $exists: true, $ne: '' } })
+                .select('name department employeeCode workSchedule')
+                .sort({ name: 1 }),
+            Attendance.find({
+                date: { $gte: extendedStart, $lte: rangeEnd }
+            }).populate('user', 'name department employeeCode workSchedule'),
+            Form.find({
+                type: { $in: WAIVER_FORM_TYPES },
+                status: { $in: APPROVED_WAIVER_STATUSES },
+                $or: [
+                    { type: 'vacation', endDate: { $gte: extendedStart }, startDate: { $lte: rangeEnd } },
+                    { type: 'sick_leave', sickLeaveEndDate: { $gte: extendedStart }, sickLeaveStartDate: { $lte: rangeEnd } },
+                    { type: 'wfh', wfhDate: { $gte: extendedStart, $lte: rangeEnd } },
+                    { type: 'mission', missionEndDate: { $gte: extendedStart }, missionStartDate: { $lte: rangeEnd } }
+                ]
+            }).populate('user', 'name department employeeCode'),
+            Form.find({
+                type: 'extra_hours',
+                status: 'approved',
+                extraHoursDate: { $gte: rangeStart, $lte: rangeEnd }
+            }).populate('user', 'name department employeeCode')
+        ]);
+
+        const report = buildDeductionReport({
+            users,
+            attendanceRecords,
+            waiverForms,
+            otForms,
+            rangeStart,
+            rangeEnd
+        });
+
+        res.json({
+            startDate: rangeStart.toISOString(),
+            endDate: rangeEnd.toISOString(),
+            ...report
+        });
+    } catch (error) {
+        console.error('Error getting deduction report:', error);
         res.status(500).json({ msg: 'Server error', error: error.message });
     }
 });

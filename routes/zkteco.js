@@ -83,6 +83,15 @@ async function crossReferenceWithForms(date, userId) {
         });
         if (wfhForm) return { form: wfhForm, status: 'wfh' };
 
+        const missionForm = await Form.findOne({
+            user: userId,
+            type: 'mission',
+            status: { $in: approvedStatuses },
+            missionStartDate: { $lte: endOfDay },
+            missionEndDate: { $gte: startOfDay }
+        });
+        if (missionForm) return { form: missionForm, status: 'on_leave' };
+
         return null;
     } catch (err) {
         console.error('[zkteco] crossReferenceWithForms error:', err);

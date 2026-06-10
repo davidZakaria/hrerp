@@ -7,6 +7,7 @@ import ExportPrintButtons from './ExportPrintButtons';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import AttendanceManagement from './AttendanceManagement';
 import OtReconciliationReports from './OtReconciliationReports';
+import DeductionReports from './DeductionReports';
 import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
@@ -2640,6 +2641,7 @@ const AdminDashboard = () => {
           <div className="attendance-section admin-dashboard-tab-panel">
             <AttendanceManagement />
             <OtReconciliationReports />
+            <DeductionReports />
           </div>
         )}
       </div>

@@ -4,6 +4,7 @@ import LogoutButton from './LogoutButton';
 import { useTranslation } from 'react-i18next';
 import AttendanceManagement from './AttendanceManagement';
 import OtReconciliationReports from './OtReconciliationReports';
+import DeductionReports from './DeductionReports';
 import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 import DashboardSectionNav from './layout/DashboardSectionNav';
@@ -2926,6 +2927,7 @@ const SuperAdminDashboard = () => {
         <>
           <AttendanceManagement />
           <OtReconciliationReports />
+          <DeductionReports />
         </>
       )}
 

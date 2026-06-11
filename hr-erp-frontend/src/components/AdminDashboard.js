@@ -1581,14 +1581,26 @@ const AdminDashboard = () => {
                   {(employeeSummary.summary.lowVacationCount > 0 || 
                     employeeSummary.summary.highAbsenceCount > 0 || 
                     employeeSummary.summary.deductionCount > 0) && (
-                    <div style={{ 
+                    <>
+                    <style>{`
+                      #employee-insights-alerts,
+                      #employee-insights-alerts .insights-alert-text,
+                      #employee-insights-alerts .insights-alert-text * {
+                        color: #000000 !important;
+                        text-shadow: none !important;
+                      }
+                    `}</style>
+                    <div
+                      id="employee-insights-alerts"
+                      className="insights-alert-text"
+                      style={{
                       display: 'flex',
                       gap: '1rem',
                       marginTop: '1.5rem',
                       flexWrap: 'wrap'
                     }}>
                       {employeeSummary.summary.lowVacationCount > 0 && (
-                        <div style={{ 
+                        <div className="insights-alert-text" style={{ 
                           flex: '1',
                           minWidth: '200px',
                           background: '#FFF8E1',
@@ -1599,15 +1611,19 @@ const AdminDashboard = () => {
                           alignItems: 'center',
                           gap: '0.75rem'
                         }}>
-                          <span style={{ fontSize: '1.5rem' }}>⚠️</span>
-                          <div>
-                            <div style={{ fontWeight: '600', color: '#E65100' }}>{employeeSummary.summary.lowVacationCount} employees</div>
-                            <div style={{ fontSize: '0.85rem', color: '#666' }}>with low vacation days (&lt;5)</div>
+                          <span style={{ fontSize: '1.5rem' }} aria-hidden="true">⚠️</span>
+                          <div className="insights-alert-text">
+                            <div className="insights-alert-text" style={{ fontWeight: 600, fontSize: '1rem' }}>
+                              {employeeSummary.summary.lowVacationCount} {t('adminDashboard.insightsAlertEmployees')}
+                            </div>
+                            <div className="insights-alert-text" style={{ fontSize: '0.85rem', marginTop: '0.15rem' }}>
+                              {t('adminDashboard.insightsAlertLowVacation')}
+                            </div>
                           </div>
                         </div>
                       )}
                       {employeeSummary.summary.highAbsenceCount > 0 && (
-                        <div style={{ 
+                        <div className="insights-alert-text" style={{ 
                           flex: '1',
                           minWidth: '200px',
                           background: '#FFEBEE',
@@ -1618,15 +1634,19 @@ const AdminDashboard = () => {
                           alignItems: 'center',
                           gap: '0.75rem'
                         }}>
-                          <span style={{ fontSize: '1.5rem' }}>🚨</span>
-                          <div>
-                            <div style={{ fontWeight: '600', color: '#C62828' }}>{employeeSummary.summary.highAbsenceCount} employees</div>
-                            <div style={{ fontSize: '0.85rem', color: '#666' }}>with high absences (3+)</div>
+                          <span style={{ fontSize: '1.5rem' }} aria-hidden="true">🚨</span>
+                          <div className="insights-alert-text">
+                            <div className="insights-alert-text" style={{ fontWeight: 600, fontSize: '1rem' }}>
+                              {employeeSummary.summary.highAbsenceCount} {t('adminDashboard.insightsAlertEmployees')}
+                            </div>
+                            <div className="insights-alert-text" style={{ fontSize: '0.85rem', marginTop: '0.15rem' }}>
+                              {t('adminDashboard.insightsAlertHighAbsence')}
+                            </div>
                           </div>
                         </div>
                       )}
                       {employeeSummary.summary.deductionCount > 0 && (
-                        <div style={{ 
+                        <div className="insights-alert-text" style={{ 
                           flex: '1',
                           minWidth: '200px',
                           background: '#F3E5F5',
@@ -1637,14 +1657,19 @@ const AdminDashboard = () => {
                           alignItems: 'center',
                           gap: '0.75rem'
                         }}>
-                          <span style={{ fontSize: '1.5rem' }}>⚡</span>
-                          <div>
-                            <div style={{ fontWeight: '600', color: '#7B1FA2' }}>{employeeSummary.summary.deductionCount} employees</div>
-                            <div style={{ fontSize: '0.85rem', color: '#666' }}>with fingerprint deductions</div>
+                          <span style={{ fontSize: '1.5rem' }} aria-hidden="true">⚡</span>
+                          <div className="insights-alert-text">
+                            <div className="insights-alert-text" style={{ fontWeight: 600, fontSize: '1rem' }}>
+                              {employeeSummary.summary.deductionCount} {t('adminDashboard.insightsAlertEmployees')}
+                            </div>
+                            <div className="insights-alert-text" style={{ fontSize: '0.85rem', marginTop: '0.15rem' }}>
+                              {t('adminDashboard.insightsAlertDeductions')}
+                            </div>
                           </div>
                         </div>
                       )}
                     </div>
+                    </>
                   )}
                 </>
               )}

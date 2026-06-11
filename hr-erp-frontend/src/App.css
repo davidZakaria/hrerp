@@ -2679,3 +2679,16 @@
 .elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value--missed {
   color: #581c87 !important;
 }
+
+/* Employee insights alert cards — black text on light backgrounds */
+.insights-alert-text,
+.insights-alert-text * {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.elegant-card #employee-insights-alerts,
+.elegant-card #employee-insights-alerts * {
+  color: #000000 !important;
+  text-shadow: none !important;
+}

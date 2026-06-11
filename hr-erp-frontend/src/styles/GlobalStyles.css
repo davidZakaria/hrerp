@@ -2078,7 +2078,7 @@ h1, h2, h3, h4, h5, h6 {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
 }
 
-p, span, div:not(.modal-overlay) {
+p, span, div:not(.modal-overlay):not(.insights-alert-text) {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
@@ -2425,6 +2425,13 @@ form select:focus {
 }
 .main-content .attendance-kpi-grid .attendance-kpi-card .kpi-value--missed {
   color: #581c87 !important;
+  text-shadow: none !important;
+}
+
+/* Light pastel insight alert cards: force black text */
+.main-content #employee-insights-alerts,
+.main-content #employee-insights-alerts * {
+  color: #000000 !important;
   text-shadow: none !important;
 }
 
@@ -5954,6 +5961,13 @@ form select:focus {
 
 /* Badge spans inside table - preserve their colors */
 #employee-insights-table td span[style*="background"] {
+  text-shadow: none !important;
+}
+
+/* Employee insights attention alerts — light cards need dark text (override global white div rule) */
+#employee-insights-alerts,
+#employee-insights-alerts * {
+  color: #000000 !important;
   text-shadow: none !important;
 }
 

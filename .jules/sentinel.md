@@ -1,0 +1,4 @@
+## 2024-05-18 - Path Traversal in File and Backup Handlers
+**Vulnerability:** Path traversal vulnerabilities were found in routes (`routes/backup.js`, `routes/forms.js`) that directly pass unvalidated `req.params` (like `backupId` or `filename`) to `path.join()`. This could allow attackers to access or delete files outside intended directories (e.g., `../../../../etc/passwd`).
+**Learning:** Even though basic directory checks exist in `server.js` (`protectedFileAccess`), APIs dealing directly with parameter-based paths must strictly sanitize those parameters before feeding them into file system functions like `fs.existsSync` and `path.join`.
+**Prevention:** Use route parameter validation middlewares (`router.param()`) or inline checks to reject requests containing directory traversal sequences (`..`, `/`, `\`) early in the request lifecycle.

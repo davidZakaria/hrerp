@@ -1,16 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import API_URL from '../config/api';
-
-function getDefaultDateRange() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  return {
-    startDate: start.toISOString().slice(0, 10),
-    endDate: end.toISOString().slice(0, 10)
-  };
-}
+import { ReportPeriodFilter, useReportPeriodRange } from './ReportPeriodFilter';
 
 function formatOtDate(value) {
   if (!value) return '—';
@@ -39,9 +30,14 @@ function varianceStyle(flag) {
 
 const OtReconciliationReports = () => {
   const { t } = useTranslation();
-  const defaults = getDefaultDateRange();
-  const [rangeStart, setRangeStart] = useState(defaults.startDate);
-  const [rangeEnd, setRangeEnd] = useState(defaults.endDate);
+  const {
+    rangeStart,
+    rangeEnd,
+    selectedPeriod,
+    applyPeriod,
+    setRangeStart,
+    setRangeEnd
+  } = useReportPeriodRange();
   const [activeView, setActiveView] = useState('detailed');
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -422,31 +418,17 @@ const OtReconciliationReports = () => {
       <h2 className="text-gradient" style={{ marginBottom: '1rem' }}>{t('otReports.title')}</h2>
       <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>{t('otReports.subtitle')}</p>
 
-      <div className="elegant-card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
-          <div>
-            <label className="form-label-elegant">{t('otReports.startDate')}</label>
-            <input
-              type="date"
-              className="form-input-elegant"
-              value={rangeStart}
-              onChange={(e) => setRangeStart(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="form-label-elegant">{t('otReports.endDate')}</label>
-            <input
-              type="date"
-              className="form-input-elegant"
-              value={rangeEnd}
-              onChange={(e) => setRangeEnd(e.target.value)}
-            />
-          </div>
-          <button type="button" className="btn-elegant btn-primary" onClick={fetchReport} disabled={loading}>
-            {loading ? t('otReports.loading') : t('otReports.refresh')}
-          </button>
-        </div>
-      </div>
+      <ReportPeriodFilter
+        i18nPrefix="otReports"
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
+        selectedPeriod={selectedPeriod}
+        applyPeriod={applyPeriod}
+        setRangeStart={setRangeStart}
+        setRangeEnd={setRangeEnd}
+        onRefresh={fetchReport}
+        loading={loading}
+      />
 
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
         <button

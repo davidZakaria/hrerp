@@ -2,6 +2,15 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import API_URL from '../config/api';
 import { ReportPeriodFilter, useReportPeriodRange } from './ReportPeriodFilter';
+import {
+  REPORT_SCROLL_TABLE_CSS,
+  ReportNestedTable,
+  ReportPaginationBar,
+  ReportScrollTable,
+  ReportViewModeToggle,
+  useAutoExpandSingleEmployee,
+  useReportPagination
+} from './ReportTableNav';
 
 function formatOtDate(value) {
   if (!value) return '—';
@@ -53,7 +62,7 @@ const OtReconciliationReports = () => {
   const [filterMinFp, setFilterMinFp] = useState('');
   const [filterMinVariance, setFilterMinVariance] = useState('');
   const [filterWorkday, setFilterWorkday] = useState('all');
-  const [showEmployeeTotals, setShowEmployeeTotals] = useState(true);
+  const [detailViewMode, setDetailViewMode] = useState('employees');
   const [expandedEmployees, setExpandedEmployees] = useState(() => new Set());
 
   const fetchReport = useCallback(async () => {
@@ -235,6 +244,11 @@ const OtReconciliationReports = () => {
     }
   ), [employeeTotals]);
 
+  const empPagination = useReportPagination(employeeTotals, 15);
+  const dailyPagination = useReportPagination(filteredDetailedRows, 25);
+
+  useAutoExpandSingleEmployee(employeeTotals, filterSearch, expandedEmployees, setExpandedEmployees);
+
   const hasActiveFilters = Boolean(
     filterSearch || filterDepartment || filterVariance !== 'all' || filterForm !== 'all' ||
     filterDateFrom || filterDateTo || filterMinFp !== '' || filterMinVariance !== '' || filterWorkday !== 'all'
@@ -389,6 +403,7 @@ const OtReconciliationReports = () => {
   return (
     <div style={{ marginTop: '2rem' }}>
       <style>{`
+        ${REPORT_SCROLL_TABLE_CSS}
         .ot-reconciliation-table {
           width: 100%;
           border-collapse: separate;
@@ -473,14 +488,13 @@ const OtReconciliationReports = () => {
               {loading && <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem', color: '#94a3b8' }}>{t('otReports.loading')}</span>}
             </h3>
             {detailedRows.length > 0 && (
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className={`btn-elegant ${showEmployeeTotals ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => setShowEmployeeTotals((v) => !v)}
-                >
-                  {t('otReports.employeeTotals')}
-                </button>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <ReportViewModeToggle
+                  viewMode={detailViewMode}
+                  setViewMode={setDetailViewMode}
+                  i18nPrefix="otReports"
+                  t={t}
+                />
                 <button
                   type="button"
                   className={`btn-elegant ${showExtendedDetails ? 'btn-primary' : 'btn-secondary'}`}
@@ -647,7 +661,7 @@ const OtReconciliationReports = () => {
             </div>
           ) : (
             <>
-            {showEmployeeTotals && (
+            {detailViewMode === 'employees' && (
               <div style={{ marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
                   <h4 style={{ margin: 0, color: '#93c5fd' }}>
@@ -665,6 +679,7 @@ const OtReconciliationReports = () => {
                 <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: '#94a3b8' }}>
                   {t('otReports.clickEmployeeHint')}
                 </p>
+                <ReportScrollTable maxHeight={560}>
                 <table className="ot-reconciliation-table">
                   <thead>
                     <tr>
@@ -693,7 +708,7 @@ const OtReconciliationReports = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {employeeTotals.map((emp) => {
+                    {empPagination.pageItems.map((emp) => {
                       const isExpanded = expandedEmployees.has(emp.key);
                       return (
                         <React.Fragment key={emp.key}>
@@ -735,6 +750,7 @@ const OtReconciliationReports = () => {
                           {isExpanded && (
                             <tr>
                               <td colSpan={totalsColSpan} style={{ padding: '0.75rem 1rem 1rem', background: 'rgba(15, 23, 42, 0.9)' }}>
+                                <ReportNestedTable>
                                 <table className="ot-reconciliation-table" style={{ fontSize: '0.85rem' }}>
                                   <thead>
                                     <tr>
@@ -789,6 +805,7 @@ const OtReconciliationReports = () => {
                                     </tr>
                                   </tfoot>
                                 </table>
+                                </ReportNestedTable>
                               </td>
                             </tr>
                           )}
@@ -827,9 +844,18 @@ const OtReconciliationReports = () => {
                     </tr>
                   </tfoot>
                 </table>
-                <h4 style={{ margin: '1.5rem 0 0.75rem', color: '#93c5fd' }}>{t('otReports.dailyBreakdownTitle')}</h4>
+                </ReportScrollTable>
+                <ReportPaginationBar
+                  {...empPagination}
+                  i18nPrefix="otReports"
+                  t={t}
+                />
               </div>
             )}
+            {detailViewMode === 'allRows' && (
+              <div>
+                <h4 style={{ margin: '0 0 0.75rem', color: '#93c5fd' }}>{t('otReports.dailyBreakdownTitle')}</h4>
+                <ReportScrollTable maxHeight={560}>
             <table className="ot-reconciliation-table">
               <thead>
                 <tr>
@@ -861,7 +887,7 @@ const OtReconciliationReports = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredDetailedRows.map((row) => (
+                {dailyPagination.pageItems.map((row) => (
                   <tr key={row.rowKey || row.formId}>
                     <td>{row.employeeCode || '—'}</td>
                     <td>{row.employeeName}</td>
@@ -894,6 +920,14 @@ const OtReconciliationReports = () => {
                 ))}
               </tbody>
             </table>
+                </ReportScrollTable>
+                <ReportPaginationBar
+                  {...dailyPagination}
+                  i18nPrefix="otReports"
+                  t={t}
+                />
+              </div>
+            )}
             </>
           )}
         </div>

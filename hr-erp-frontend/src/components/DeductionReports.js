@@ -2,6 +2,15 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import API_URL from '../config/api';
 import { ReportPeriodFilter, useReportPeriodRange } from './ReportPeriodFilter';
+import {
+  REPORT_SCROLL_TABLE_CSS,
+  ReportNestedTable,
+  ReportPaginationBar,
+  ReportScrollTable,
+  ReportViewModeToggle,
+  useAutoExpandSingleEmployee,
+  useReportPagination
+} from './ReportTableNav';
 
 function formatDate(value) {
   if (!value) return '—';
@@ -39,6 +48,7 @@ const DeductionReports = () => {
   const [filterSearch, setFilterSearch] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('');
   const [filterPillar, setFilterPillar] = useState('all');
+  const [detailViewMode, setDetailViewMode] = useState('employees');
   const [expandedEmployees, setExpandedEmployees] = useState(() => new Set());
 
   const fetchReport = useCallback(async () => {
@@ -150,6 +160,12 @@ const DeductionReports = () => {
     }),
     { days: 0, pillarADays: 0, pillarBDays: 0, pillarCDays: 0, totalDeductionDays: 0 }
   ), [employeeTotalsFromFiltered]);
+
+  const empPagination = useReportPagination(employeeTotalsFromFiltered, 15);
+  const dailyPagination = useReportPagination(filteredDetailedRows, 25);
+  const summaryPagination = useReportPagination(filteredEmployees, 20);
+
+  useAutoExpandSingleEmployee(employeeTotalsFromFiltered, filterSearch, expandedEmployees, setExpandedEmployees);
 
   const hasActiveFilters = Boolean(filterSearch || filterDepartment || filterPillar !== 'all');
 
@@ -276,6 +292,7 @@ const DeductionReports = () => {
   return (
     <div style={{ marginTop: '2rem' }}>
       <style>{`
+        ${REPORT_SCROLL_TABLE_CSS}
         .deduction-table {
           width: 100%;
           border-collapse: separate;
@@ -388,11 +405,19 @@ const DeductionReports = () => {
         <div className="elegant-card" style={{ overflowX: 'auto', opacity: loading ? 0.6 : 1 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0, color: '#f1f5f9' }}>{t('deductionReports.detailedTitle')}</h3>
-            {employeeTotalsFromFiltered.length > 0 && (
-              <button type="button" className="btn-elegant btn-secondary" onClick={toggleExpandAll}>
-                {allExpanded ? t('deductionReports.collapseAll') : t('deductionReports.expandAll')}
-              </button>
-            )}
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <ReportViewModeToggle
+                viewMode={detailViewMode}
+                setViewMode={setDetailViewMode}
+                i18nPrefix="deductionReports"
+                t={t}
+              />
+              {detailViewMode === 'employees' && employeeTotalsFromFiltered.length > 0 && (
+                <button type="button" className="btn-elegant btn-secondary" onClick={toggleExpandAll}>
+                  {allExpanded ? t('deductionReports.collapseAll') : t('deductionReports.expandAll')}
+                </button>
+              )}
+            </div>
           </div>
 
           {detailedRows.length === 0 ? (
@@ -404,9 +429,10 @@ const DeductionReports = () => {
             </div>
           ) : (
             <>
-              {employeeTotalsFromFiltered.length > 0 && (
+              {detailViewMode === 'employees' && employeeTotalsFromFiltered.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: '#94a3b8' }}>{t('deductionReports.clickEmployeeHint')}</p>
+                  <ReportScrollTable maxHeight={560}>
                   <table className="deduction-table">
                     <thead>
                       <tr>
@@ -421,7 +447,7 @@ const DeductionReports = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {employeeTotalsFromFiltered.map((emp) => {
+                      {empPagination.pageItems.map((emp) => {
                         const isExpanded = expandedEmployees.has(emp.key);
                         return (
                           <React.Fragment key={emp.key}>
@@ -438,6 +464,7 @@ const DeductionReports = () => {
                             {isExpanded && (
                               <tr>
                                 <td colSpan={8} style={{ padding: '0.75rem 1rem 1rem', background: 'rgba(15, 23, 42, 0.9)' }}>
+                                  <ReportNestedTable>
                                   <table className="deduction-table" style={{ fontSize: '0.85rem' }}>
                                     <thead>
                                       <tr>
@@ -474,6 +501,7 @@ const DeductionReports = () => {
                                       </tr>
                                     </tfoot>
                                   </table>
+                                  </ReportNestedTable>
                                 </td>
                               </tr>
                             )}
@@ -494,10 +522,19 @@ const DeductionReports = () => {
                       </tr>
                     </tfoot>
                   </table>
+                  </ReportScrollTable>
+                  <ReportPaginationBar
+                    {...empPagination}
+                    i18nPrefix="deductionReports"
+                    t={t}
+                  />
                 </div>
               )}
 
+              {detailViewMode === 'allRows' && (
+              <div>
               <h4 style={{ margin: '0 0 0.75rem', color: '#fca5a5' }}>{t('deductionReports.dailyBreakdownTitle')}</h4>
+              <ReportScrollTable maxHeight={560}>
               <table className="deduction-table">
                 <thead>
                   <tr>
@@ -513,7 +550,7 @@ const DeductionReports = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredDetailedRows.map((row) => (
+                  {dailyPagination.pageItems.map((row) => (
                     <tr key={row.rowKey}>
                       <td>{row.employeeCode || '—'}</td>
                       <td>{row.employeeName}</td>
@@ -530,6 +567,14 @@ const DeductionReports = () => {
                   ))}
                 </tbody>
               </table>
+              </ReportScrollTable>
+              <ReportPaginationBar
+                {...dailyPagination}
+                i18nPrefix="deductionReports"
+                t={t}
+              />
+              </div>
+              )}
             </>
           )}
         </div>
@@ -541,6 +586,8 @@ const DeductionReports = () => {
           {filteredEmployees.length === 0 ? (
             <div style={{ color: '#94a3b8' }}><p>{t('deductionReports.noRows')}</p></div>
           ) : (
+            <>
+            <ReportScrollTable maxHeight={520}>
             <table className="deduction-table">
               <thead>
                 <tr>
@@ -556,7 +603,7 @@ const DeductionReports = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredEmployees.map((emp) => (
+                {summaryPagination.pageItems.map((emp) => (
                   <tr key={emp.employeeId}>
                     <td>{emp.employeeCode || '—'}</td>
                     <td>{emp.employeeName}</td>
@@ -571,6 +618,13 @@ const DeductionReports = () => {
                 ))}
               </tbody>
             </table>
+            </ReportScrollTable>
+            <ReportPaginationBar
+              {...summaryPagination}
+              i18nPrefix="deductionReports"
+              t={t}
+            />
+            </>
           )}
         </div>
       )}

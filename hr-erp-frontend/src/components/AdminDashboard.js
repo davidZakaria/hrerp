@@ -21,9 +21,17 @@ import {
   filterFormsByManagementMonths,
   currentYearMonth,
 } from '../utils/filterFormsByManagementMonths';
+import {
+  getCurrentPeriodClosingMonthKey,
+  listPeriodMonthOptions
+} from '../utils/formSubmissionMonthBounds';
 
 const AdminDashboard = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const insightsPeriodOptions = useMemo(
+    () => listPeriodMonthOptions(18, i18n.language),
+    [i18n.language]
+  );
   const mainContentRef = useRef(null);
   const skipMainScrollRef = useRef(true);
   // Navigation state
@@ -71,6 +79,7 @@ const AdminDashboard = () => {
   // Employee Summary state (for Overview insights)
   const [employeeSummary, setEmployeeSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
+  const [insightsPeriodMonth, setInsightsPeriodMonth] = useState(() => getCurrentPeriodClosingMonthKey());
   
   // Vacation Manager state
   const [allEmployees, setAllEmployees] = useState([]);
@@ -181,7 +190,8 @@ const AdminDashboard = () => {
     setSummaryLoading(true);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${API_URL}/api/users/employee-summary`, {
+      const qs = new URLSearchParams({ periodMonth: insightsPeriodMonth }).toString();
+      const res = await fetch(`${API_URL}/api/users/employee-summary?${qs}`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
@@ -195,7 +205,7 @@ const AdminDashboard = () => {
     } finally {
       setSummaryLoading(false);
     }
-  }, []);
+  }, [insightsPeriodMonth]);
 
   // Fetch all forms
   const fetchForms = useCallback(async () => {
@@ -987,7 +997,7 @@ const AdminDashboard = () => {
       fetchUsers();
       fetchAllFlags();
     }
-  }, [activeTab, fetchUsers, fetchEmployeeSummary, fetchForms, fetchAllFlags]);
+  }, [activeTab, fetchUsers, fetchEmployeeSummary, fetchForms, fetchAllFlags, insightsPeriodMonth]);
 
   useEffect(() => {
     if (activeTab !== 'forms') return;
@@ -1209,17 +1219,41 @@ const AdminDashboard = () => {
 
             {/* Employee Insights Section */}
             <div className="elegant-card" style={{ marginTop: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <h2 className="section-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {t('adminDashboard.employeeInsights')}
-                  {summaryLoading && <span style={{ fontSize: '0.8rem', color: '#666', fontWeight: 'normal' }}>({t('adminDashboard.insightsLoading')})</span>}
-                </h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h2 className="section-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {t('adminDashboard.employeeInsights')}
+                    {summaryLoading && <span style={{ fontSize: '0.8rem', color: '#666', fontWeight: 'normal' }}>({t('adminDashboard.insightsLoading')})</span>}
+                  </h2>
+                  {employeeSummary?.periodLabel && (
+                    <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
+                      {t('adminDashboard.insightsPeriod')}: {employeeSummary.periodLabel}
+                    </p>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'flex-end' }}>
+                  <div>
+                    <label className="form-label-elegant">{t('adminDashboard.insightsPayPeriod')}</label>
+                    <select
+                      className="form-input-elegant"
+                      value={insightsPeriodMonth}
+                      onChange={(e) => setInsightsPeriodMonth(e.target.value)}
+                    >
+                      {insightsPeriodOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label} ({opt.startDate} → {opt.endDate})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button type="button" className="btn-elegant btn-primary" onClick={fetchEmployeeSummary} disabled={summaryLoading}>
+                    {summaryLoading ? t('adminDashboard.insightsLoading') : t('adminDashboard.refresh')}
+                  </button>
                 {employeeSummary && (
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button
                       onClick={() => {
-                        // Export to CSV
-                        const headers = ['Name', 'Email', 'Department', 'Role', 'Vacation Days', 'Present Days', 'Absent Days', 'Late Days', 'Deductions', 'Attendance %'];
+                        const headers = ['Name', 'Email', 'Department', 'Role', 'Vacation Days', 'Present', 'Absent', 'Late', 'Deduction Days', 'OT Hours', 'Attendance %'];
                         const csvContent = [
                           headers.join(','),
                           ...employeeSummary.allEmployees.map(emp => [
@@ -1232,14 +1266,15 @@ const AdminDashboard = () => {
                             emp.absentDays,
                             emp.lateDays,
                             emp.deductions,
+                            emp.totalOtHours ?? 0,
                             emp.attendanceRate
                           ].join(','))
                         ].join('\n');
                         
-                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
                         const link = document.createElement('a');
                         link.href = URL.createObjectURL(blob);
-                        link.download = `employee_insights_${employeeSummary.currentMonth}.csv`;
+                        link.download = `employee_insights_${employeeSummary.periodStart || employeeSummary.currentMonth}.csv`;
                         link.click();
                       }}
                       className="btn-elegant"
@@ -1249,40 +1284,39 @@ const AdminDashboard = () => {
                     </button>
                     <button
                       onClick={() => {
-                        // Print functionality
                         const printContent = document.getElementById('employee-insights-table');
                         const printWindow = window.open('', '_blank');
                         printWindow.document.write(`
                           <html>
                             <head>
-                              <title>Employee Insights - ${employeeSummary.currentMonth}</title>
+                              <title>Employee Insights - ${employeeSummary.periodLabel || employeeSummary.currentMonth}</title>
                               <style>
                                 body { font-family: Arial, sans-serif; padding: 20px; }
                                 h1 { color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
-                                .stats-row { display: flex; gap: 20px; margin-bottom: 20px; }
-                                .stat-card { background: #f5f5f5; padding: 15px; border-radius: 8px; text-align: center; flex: 1; }
+                                .stats-row { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+                                .stat-card { background: #f5f5f5; padding: 15px; border-radius: 8px; text-align: center; flex: 1; min-width: 120px; }
                                 .stat-value { font-size: 24px; font-weight: bold; color: #667eea; }
                                 .stat-label { color: #666; font-size: 12px; }
                                 table { width: 100%; border-collapse: collapse; margin-top: 20px; }
                                 th { background: #667eea; color: white; padding: 12px 8px; text-align: left; font-size: 12px; }
                                 td { padding: 10px 8px; border-bottom: 1px solid #eee; font-size: 12px; }
                                 tr:nth-child(even) { background: #f9f9f9; }
-                                .warning { color: #E65100; font-weight: bold; }
-                                .danger { color: #C62828; font-weight: bold; }
                                 .footer { margin-top: 20px; text-align: right; color: #999; font-size: 12px; }
                                 @media print { body { -webkit-print-color-adjust: exact; } }
                               </style>
                             </head>
                             <body>
                               <h1>📈 Employee Insights Report</h1>
+                              <p>Period: ${employeeSummary.periodLabel || employeeSummary.currentMonth}</p>
                               <div class="stats-row">
                                 <div class="stat-card"><div class="stat-value">${employeeSummary.totalEmployees}</div><div class="stat-label">Total Employees</div></div>
                                 <div class="stat-card"><div class="stat-value">${employeeSummary.averageVacationDays}</div><div class="stat-label">Avg Vacation Days</div></div>
                                 <div class="stat-card"><div class="stat-value">${employeeSummary.attendanceRate}%</div><div class="stat-label">Attendance Rate</div></div>
-                                <div class="stat-card"><div class="stat-value">${employeeSummary.totalDeductions}</div><div class="stat-label">Total Deductions</div></div>
+                                <div class="stat-card"><div class="stat-value">${employeeSummary.totalDeductions}</div><div class="stat-label">Total Deduction Days</div></div>
+                                <div class="stat-card"><div class="stat-value">${employeeSummary.totalOtHours ?? 0}</div><div class="stat-label">Total OT Hours</div></div>
                               </div>
                               ${printContent.outerHTML}
-                              <div class="footer">Generated on ${new Date().toLocaleString()} | Data for: ${employeeSummary.currentMonth}</div>
+                              <div class="footer">Generated on ${new Date().toLocaleString()} | Period: ${employeeSummary.periodLabel || employeeSummary.currentMonth}</div>
                             </body>
                           </html>
                         `);
@@ -1296,6 +1330,7 @@ const AdminDashboard = () => {
                     </button>
                   </div>
                 )}
+                </div>
               </div>
               
               {employeeSummary && (
@@ -1303,7 +1338,7 @@ const AdminDashboard = () => {
                   {/* Summary Stats Cards */}
                   <div style={{ 
                     display: 'grid', 
-                    gridTemplateColumns: 'repeat(4, 1fr)', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', 
                     gap: '1rem', 
                     marginBottom: '1.5rem' 
                   }}>
@@ -1353,7 +1388,18 @@ const AdminDashboard = () => {
                         : '0 4px 15px rgba(168, 237, 234, 0.3)'
                     }}>
                       <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{employeeSummary.totalDeductions}</div>
-                      <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '0.25rem' }}>Total Deductions</div>
+                      <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '0.25rem' }}>{t('adminDashboard.insightsTotalDeductionDays')}</div>
+                    </div>
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                      padding: '1.5rem',
+                      borderRadius: '12px',
+                      color: '#1a1a2e',
+                      textAlign: 'center',
+                      boxShadow: '0 4px 15px rgba(67, 233, 123, 0.3)'
+                    }}>
+                      <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{employeeSummary.totalOtHours ?? 0}</div>
+                      <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '0.25rem' }}>{t('adminDashboard.insightsTotalOtHours')}</div>
                     </div>
                   </div>
 
@@ -1375,7 +1421,7 @@ const AdminDashboard = () => {
                         👥 All Employees Data
                       </h3>
                       <span style={{ color: '#a0aec0', fontSize: '0.85rem' }}>
-                        {employeeSummary.allEmployees?.length || 0} employees | {employeeSummary.currentMonth}
+                        {employeeSummary.allEmployees?.length || 0} employees | {employeeSummary.periodLabel || employeeSummary.currentMonth}
                       </span>
                     </div>
                     
@@ -1393,7 +1439,8 @@ const AdminDashboard = () => {
                             <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Present</th>
                             <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Absent</th>
                             <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Late</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Deductions</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>{t('adminDashboard.insightsColDeductionDays')}</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>{t('adminDashboard.insightsColOtHours')}</th>
                             <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Attendance %</th>
                           </tr>
                         </thead>
@@ -1481,8 +1528,23 @@ const AdminDashboard = () => {
                                   fontWeight: '600',
                                   fontSize: '0.85rem',
                                   display: 'inline-block'
+                                }}
+                                title={emp.deductions > 0 ? `A: ${emp.pillarADays} | B: ${emp.pillarBDays} | C: ${emp.pillarCDays}` : ''}
+                                >
+                                  {emp.deductions > 0 ? Number(emp.deductions).toFixed(4) : '0'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
+                                <span style={{ 
+                                  background: (emp.totalOtHours ?? 0) > 0 ? '#E8F5E9' : '#f5f5f5',
+                                  color: (emp.totalOtHours ?? 0) > 0 ? '#1B5E20' : '#333',
+                                  padding: '4px 12px',
+                                  borderRadius: '20px',
+                                  fontWeight: '600',
+                                  fontSize: '0.85rem',
+                                  display: 'inline-block'
                                 }}>
-                                  {emp.deductions > 0 ? `-${emp.deductions}` : '0'}
+                                  {Number(emp.totalOtHours ?? 0).toFixed(2)}
                                 </span>
                               </td>
                               <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>

@@ -70,7 +70,7 @@ router.get('/employee-summary', auth, async (req, res) => {
       ? { status: 'active' }
       : { status: 'active', role: { $ne: 'super_admin' } };
 
-    const employees = await User.find(employeeFilter).select('-password');
+    const employees = await User.find(employeeFilter).select('-password').lean();
 
     const insights = await buildEmployeeInsights({
       employees,

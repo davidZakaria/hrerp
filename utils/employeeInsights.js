@@ -49,7 +49,7 @@ async function loadDeductionInputs(rangeStart, rangeEnd) {
     const [attendanceRecords, waiverForms, otForms] = await Promise.all([
         Attendance.find({
             date: { $gte: extendedStart, $lte: rangeEnd }
-        }).populate('user', 'name department employeeCode workSchedule'),
+        }).populate('user', 'name department employeeCode workSchedule').lean(),
         Form.find({
             type: { $in: WAIVER_FORM_TYPES },
             status: { $in: APPROVED_WAIVER_STATUSES },
@@ -59,12 +59,12 @@ async function loadDeductionInputs(rangeStart, rangeEnd) {
                 { type: 'wfh', wfhDate: { $gte: extendedStart, $lte: rangeEnd } },
                 { type: 'mission', missionEndDate: { $gte: extendedStart }, missionStartDate: { $lte: rangeEnd } }
             ]
-        }).populate('user', 'name department employeeCode'),
+        }).populate('user', 'name department employeeCode').lean(),
         Form.find({
             type: 'extra_hours',
             status: 'approved',
             extraHoursDate: { $gte: rangeStart, $lte: rangeEnd }
-        }).populate('user', 'name department employeeCode')
+        }).populate('user', 'name department employeeCode').lean()
     ]);
 
     return { attendanceRecords, waiverForms, otForms, extendedStart };

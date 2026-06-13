@@ -1,0 +1,3 @@
+## 2026-06-13 - Proper form label associations and aria-live regions
+**Learning:** In generic React forms without a comprehensive component library, standard input labels must manually map `htmlFor` to the input's `id`. Missing these creates significant barriers for screen reader navigation. Furthermore, status messages like 'Login successful' or error messages require `aria-live="polite"` so screen readers will automatically announce them upon rendering.
+**Action:** When implementing basic forms and dynamic status text, always ensure proper `htmlFor`/`id` pairing and attach `aria-live` to message alert divs.

@@ -842,6 +842,12 @@ router.get('/history/:userId', auth, validateObjectId('userId'), async (req, res
 // Create Super Admin (Initial Setup)
 router.post('/create-super-admin', async (req, res) => {
     try {
+        // Security check: require setup token if configured in environment
+        if (process.env.SETUP_TOKEN && req.headers['x-setup-token'] !== process.env.SETUP_TOKEN) {
+            console.warn('Unauthorized attempt to create super admin: invalid or missing setup token');
+            return res.status(403).json({ msg: 'Not authorized: invalid setup token' });
+        }
+
         const { email, password, name } = req.body;
 
         // Check if a super admin already exists

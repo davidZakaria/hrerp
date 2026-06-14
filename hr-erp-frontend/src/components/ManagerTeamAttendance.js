@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import API_URL from '../config/api';
 import EmployeeAttendanceDetailModal from './EmployeeAttendanceDetailModal';
@@ -77,7 +77,10 @@ const ManagerTeamAttendance = () => {
     }
   };
 
-  const filterReport = (report) => {
+  // Only recalculate filteredReport if report data or searchQuery changes.
+  // This avoids re-filtering a potentially large array of team members on every component re-render.
+  const filteredReport = useMemo(() => {
+    const report = attendanceReport?.report || [];
     if (!report) return [];
     const q = searchQuery.toLowerCase().trim();
     if (!q) return report;
@@ -86,9 +89,7 @@ const ManagerTeamAttendance = () => {
       (emp.user.employeeCode || '').toLowerCase().includes(q) ||
       (emp.user.department || '').toLowerCase().includes(q)
     );
-  };
-
-  const filteredReport = filterReport(attendanceReport?.report || []);
+  }, [attendanceReport?.report, searchQuery]);
 
   return (
     <div className="manager-team-attendance section">

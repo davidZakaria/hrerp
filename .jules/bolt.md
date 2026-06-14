@@ -1,0 +1,3 @@
+## 2024-06-14 - [Memoizing Frequent Array Methods in React]
+**Learning:** In the `ManagerTeamAttendance` component, the `filter()` method for filtering the list of employees was running unnecessarily on every component re-render. Since large teams can result in a large array of objects, this unoptimized array filter operation caused redundant array traversals on the main thread, lowering UI responsiveness.
+**Action:** Always wrap expensive, repetitive filter operations within `useMemo` specifically referencing the dependent array and query state, thereby mitigating repeated CPU costs when toggling state entirely unrelated to the search parameter or underlying report.

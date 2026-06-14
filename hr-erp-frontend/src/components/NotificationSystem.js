@@ -242,7 +242,12 @@ const NotificationItem = ({ notification, onRemove }) => {
       </div>
 
       {notification.closable !== false && (
-        <button className="close-btn" onClick={handleRemove}>
+        <button
+          className="close-btn"
+          onClick={handleRemove}
+          aria-label="Close notification"
+          title="Close notification"
+        >
           ×
         </button>
       )}
@@ -256,7 +261,7 @@ const NotificationItem = ({ notification, onRemove }) => {
 
 const NotificationContainer = ({ notifications, removeNotification }) => {
   return (
-    <div className="notification-container">
+    <div className="notification-container" aria-live="polite" aria-atomic="true">
       <style>{`
         .notification-container {
           position: fixed;

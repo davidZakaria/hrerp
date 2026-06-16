@@ -510,7 +510,9 @@
     "Architectural Engineer": "المهندس المعماري",
     "Technical Office Engineer": "مهندس المكتب الفني",
     "Personal Assistant": "المساعد الشخصي",
-    "Service": "الخدمات",
+    "Administration": "الإدارة",
+    "Supply Chain Department": "قسم سلسلة الإمداد",
+    "Service": "الإدارة",
     "Site Service": "خدمات المواقع",
     "Driver": "السائق",
     "Other": "أخرى"

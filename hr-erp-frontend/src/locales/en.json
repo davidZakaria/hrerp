@@ -511,7 +511,9 @@
     "Architectural Engineer": "Architectural Engineer",
     "Technical Office Engineer": "Technical Office Engineer",
     "Personal Assistant": "Personal Assistant",
-    "Service": "Service",
+    "Administration": "Administration",
+    "Supply Chain Department": "Supply Chain Department",
+    "Service": "Administration",
     "Site Service": "Site Service",
     "Driver": "Driver",
     "Other": "Other"

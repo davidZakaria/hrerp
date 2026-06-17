@@ -1768,7 +1768,7 @@ const SuperAdminDashboard = () => {
                                       className="flag-remove-btn-admin"
                                       onClick={(e) => { e.stopPropagation(); handleRemoveFlag(flag._id); }}
                                       title="Remove flag"
-                                    >×</button>
+                                     aria-label="Close">×</button>
                                   </span>
                                 ))}
                               </div>
@@ -2464,7 +2464,8 @@ const SuperAdminDashboard = () => {
             <div className="modal-header">
               <h2 className="text-gradient">Edit User: {selectedUser.name}</h2>
               <button 
-                className="close-btn" 
+                className="close-btn"
+                aria-label="Close"
                 onClick={() => setSelectedUser(null)}
                 style={{
                   background: 'rgba(255, 255, 255, 0.2)',
@@ -2731,7 +2732,8 @@ const SuperAdminDashboard = () => {
                 }
               </h2>
               <button 
-                className="close-btn" 
+                className="close-btn"
+                aria-label="Close"
                 onClick={() => setShowFormModal(false)}
                 style={{
                   background: 'rgba(255, 255, 255, 0.2)',
@@ -3479,7 +3481,8 @@ const SuperAdminDashboard = () => {
             <div className="modal-header">
               <h2 className="text-gradient">Confirm Delete</h2>
               <button 
-                className="close-btn" 
+                className="close-btn"
+                aria-label="Close"
                 onClick={() => setShowDeleteConfirm(null)}
                 style={{
                   background: 'rgba(255, 255, 255, 0.2)',
@@ -3614,7 +3617,8 @@ const SuperAdminDashboard = () => {
             <div className="modal-header" style={{ position: 'relative', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 className="text-gradient" style={{ margin: 0 }}>Create New User</h2>
               <button 
-                className="close-btn" 
+                className="close-btn"
+                aria-label="Close"
                 onClick={() => setShowCreateUserModal(false)}
                 style={{
                   background: 'rgba(255, 255, 255, 0.2)',
@@ -3869,7 +3873,8 @@ const SuperAdminDashboard = () => {
             <div className="modal-header">
               <h2 className="text-gradient">⚠️ Clear Old Audit Logs</h2>
               <button 
-                className="close-btn" 
+                className="close-btn"
+                aria-label="Close"
                 onClick={() => setShowClearModal(false)}
                 style={{
                   background: 'rgba(255, 255, 255, 0.2)',

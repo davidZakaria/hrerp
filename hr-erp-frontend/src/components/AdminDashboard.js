@@ -1988,7 +1988,7 @@ const AdminDashboard = () => {
                                   className="flag-remove-btn-admin"
                                   onClick={(e) => { e.stopPropagation(); handleRemoveFlag(flag._id); }}
                                   title="Remove flag"
-                                >×</button>
+                                 aria-label="Close">×</button>
                               </span>
                             ))}
                           </div>
@@ -3510,6 +3510,7 @@ const AdminDashboard = () => {
           <button 
             onClick={() => setMessage('')}
             className="notification-close"
+            aria-label="Close message"
           >
             ×
           </button>

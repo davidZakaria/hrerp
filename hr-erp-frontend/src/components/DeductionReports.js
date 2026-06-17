@@ -31,6 +31,18 @@ function formatHours(value) {
   return Number(value).toFixed(2);
 }
 
+function formatAbsenceCell(row, t) {
+  if (!row.absenceDays) return '—';
+  if (row.absenceDays === 0.5) return t('deductionReports.halfDayAbsence');
+  return t('deductionReports.yes');
+}
+
+function formatWaivedCell(row, t) {
+  if (row.waived) return t('deductionReports.yes');
+  if (row.halfDayVacation) return t('deductionReports.halfDayLeave');
+  return t('deductionReports.no');
+}
+
 const DeductionReports = () => {
   const { t } = useTranslation();
   const {
@@ -264,8 +276,8 @@ const DeductionReports = () => {
       row.dateKey,
       row.missLabel || '',
       row.shortfallMinutes || 0,
-      row.absenceDays ? '1' : '',
-      row.waived ? t('deductionReports.yes') : t('deductionReports.no'),
+      row.absenceDays === 0.5 ? t('deductionReports.halfDayAbsence') : (row.absenceDays ? t('deductionReports.yes') : ''),
+      formatWaivedCell(row, t),
       formatDays(row.pillarADays),
       formatDays(row.pillarBDays),
       formatDays(row.pillarCDays),
@@ -492,8 +504,8 @@ const DeductionReports = () => {
                                           <td>{formatDate(row.date)}</td>
                                           <td>{row.missLabel || '—'}</td>
                                           <td>{row.shortfallMinutes > 0 ? row.shortfallMinutes : '—'}</td>
-                                          <td>{row.absenceDays ? t('deductionReports.yes') : '—'}</td>
-                                          <td>{row.waived ? t('deductionReports.yes') : t('deductionReports.no')}</td>
+                                          <td>{formatAbsenceCell(row, t)}</td>
+                                          <td>{formatWaivedCell(row, t)}</td>
                                           <td style={{ color: row.deductionDays > 0 ? '#f87171' : '#e2e8f0', fontWeight: row.deductionDays > 0 ? 700 : 400 }}>
                                             {formatDays(row.deductionDays)}
                                           </td>
@@ -572,8 +584,8 @@ const DeductionReports = () => {
                       <td>{formatDate(row.date)}</td>
                       <td>{row.missLabel || '—'}</td>
                       <td>{row.shortfallMinutes > 0 ? `${row.shortfallMinutes} (${row.minutesLate || 0}+${row.minutesEarly || 0})` : '—'}</td>
-                      <td>{row.absenceDays ? t('deductionReports.yes') : '—'}</td>
-                      <td>{row.waived ? t('deductionReports.yes') : t('deductionReports.no')}</td>
+                      <td>{formatAbsenceCell(row, t)}</td>
+                      <td>{formatWaivedCell(row, t)}</td>
                       <td style={{ color: row.deductionDays > 0 ? '#f87171' : '#e2e8f0', fontWeight: row.deductionDays > 0 ? 700 : 400 }}>
                         {formatDays(row.deductionDays)}
                       </td>

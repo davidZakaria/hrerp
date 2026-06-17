@@ -8,6 +8,7 @@ import MedicalDocumentViewer from './MedicalDocumentViewer';
 import EmployeeOtReport from './EmployeeOtReport';
 import API_URL from '../config/api';
 import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
+import { formatVacationDeductionDays } from '../utils/vacationDays';
 
 const EmployeeDashboard = () => {
   const { t } = useTranslation();
@@ -377,16 +378,21 @@ const EmployeeDashboard = () => {
                       {form.type === 'vacation' && (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.startDate')}:</span>
+                            <span className="form-label-elegant">{form.isHalfDay ? t('forms.date') : t('forms.startDate')}:</span>
                             <span className="text-elegant">{new Date(form.startDate).toLocaleDateString()}</span>
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.endDate')}:</span>
-                            <span className="text-elegant">{new Date(form.endDate).toLocaleDateString()}</span>
-                          </div>
+                          {!form.isHalfDay && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                              <span className="form-label-elegant">{t('forms.endDate')}:</span>
+                              <span className="text-elegant">{new Date(form.endDate).toLocaleDateString()}</span>
+                            </div>
+                          )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                             <span className="form-label-elegant">{t('forms.days')}:</span>
-                            <span className="text-elegant">{form.days}</span>
+                            <span className="text-elegant">
+                              {formatVacationDeductionDays(form)} {t('forms.days')}
+                              {form.isHalfDay ? ` (${t('forms.halfDay')})` : ''}
+                            </span>
                           </div>
                         </>
                       )}

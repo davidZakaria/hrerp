@@ -13,6 +13,7 @@ import API_URL from '../config/api';
 import logger from '../utils/logger';
 import DashboardSectionNav from './layout/DashboardSectionNav';
 import { smoothScrollToElement } from '../utils/smoothScroll';
+import { formatVacationDeductionDays, formatVacationDateRange } from '../utils/vacationDays';
 import { getEffectiveManagedDepartmentsClient } from '../utils/effectiveManagedDepartments';
 import FormManagementMonthFilterBar from './forms/FormManagementMonthFilterBar';
 import UserManagementToolbar from './users/UserManagementToolbar';
@@ -2305,7 +2306,7 @@ const AdminDashboard = () => {
                         <span className="info-label">Duration:</span>
                         <span className="info-value">
                           {form.type === 'vacation' ? (
-                            `${form.startDate?.slice(0,10)} to ${form.endDate?.slice(0,10)}`
+                            `${formatVacationDateRange(form)} (${formatVacationDeductionDays(form)} days${form.isHalfDay ? ', half day' : ''})`
                           ) : form.type === 'wfh' ? (
                             form.wfhDate?.slice(0,10) || 'N/A'
                           ) : form.type === 'extra_hours' ? (
@@ -2445,7 +2446,7 @@ const AdminDashboard = () => {
                         <span className="info-label">Duration:</span>
                         <span className="info-value">
                           {form.type === 'vacation' ? (
-                            `${form.startDate?.slice(0,10)} to ${form.endDate?.slice(0,10)}`
+                            `${formatVacationDateRange(form)} (${formatVacationDeductionDays(form)} days${form.isHalfDay ? ', half day' : ''})`
                           ) : form.type === 'excuse' ? (
                             <>
                               {form.fromHour || 'N/A'} to {form.toHour || 'N/A'}
@@ -2655,7 +2656,7 @@ const AdminDashboard = () => {
                         <span className="info-label">Duration:</span>
                         <span className="info-value">
                           {form.type === 'vacation' ? (
-                            `${form.startDate?.slice(0,10)} to ${form.endDate?.slice(0,10)}`
+                            `${formatVacationDateRange(form)} (${formatVacationDeductionDays(form)} days${form.isHalfDay ? ', half day' : ''})`
                           ) : form.type === 'excuse' ? (
                             <>
                               {form.fromHour || 'N/A'} to {form.toHour || 'N/A'}

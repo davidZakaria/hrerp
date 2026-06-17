@@ -4,6 +4,7 @@ import logo from '../assets/njd-logo.png';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
 import { getSubmissionPeriodBounds } from '../utils/formSubmissionMonthBounds';
+import { formatVacationDeductionDays } from '../utils/vacationDays';
 
 const FormSubmission = ({ onFormSubmitted }) => {
   const { t } = useTranslation();
@@ -13,6 +14,7 @@ const FormSubmission = ({ onFormSubmitted }) => {
     vacationType: 'annual', // Default to annual (unpaid vacation removed)
     startDate: '',
     endDate: '',
+    isHalfDay: false,
     excuseDate: '',
     excuseType: 'paid',
     sickLeaveStartDate: '',
@@ -61,7 +63,20 @@ const FormSubmission = ({ onFormSubmitted }) => {
   }, []);
 
   const handleChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    if (name === 'isHalfDay') {
+      setForm(prev => ({
+        ...prev,
+        isHalfDay: checked,
+        endDate: checked && prev.startDate ? prev.startDate : prev.endDate
+      }));
+      return;
+    }
+    if (name === 'startDate' && form.isHalfDay) {
+      setForm(prev => ({ ...prev, startDate: value, endDate: value }));
+      return;
+    }
+    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const handleFileChange = e => {
@@ -87,7 +102,8 @@ const FormSubmission = ({ onFormSubmitted }) => {
         type: 'vacation',
         vacationType: form.vacationType,
         startDate: form.startDate,
-        endDate: form.endDate,
+        endDate: form.isHalfDay ? form.startDate : form.endDate,
+        isHalfDay: form.isHalfDay,
         reason: form.reason
       };
     } else if (form.type === 'sick_leave') {
@@ -153,7 +169,8 @@ const FormSubmission = ({ onFormSubmitted }) => {
           type: 'vacation', 
           vacationType: '', 
           startDate: '', 
-          endDate: '', 
+          endDate: '',
+          isHalfDay: false,
           excuseDate: '', 
           excuseType: 'paid',
           sickLeaveStartDate: '', 
@@ -311,11 +328,28 @@ const FormSubmission = ({ onFormSubmitted }) => {
         {form.type === 'vacation' ? (
           <div className="date-selection-section">
             <h4 className="form-section-title">📅 {t('forms.selectVacationDates')}</h4>
-            <div className="grid-2">
+            <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
+                <input
+                  name="isHalfDay"
+                  type="checkbox"
+                  checked={form.isHalfDay}
+                  onChange={handleChange}
+                  style={{ marginTop: '0.25rem', width: '18px', height: '18px', accentColor: '#4caf50' }}
+                />
+                <span>
+                  <strong style={{ color: '#4caf50' }}>{t('forms.halfDay')}</strong>
+                  <small className="input-helper" style={{ display: 'block', marginTop: '0.25rem' }}>
+                    {t('forms.halfDayHelp')}
+                  </small>
+                </span>
+              </label>
+            </div>
+            <div className={form.isHalfDay ? '' : 'grid-2'}>
               <div className="form-group-elegant">
                 <label className="form-label-elegant">
                   <span className="label-icon">📅</span>
-                  {t('forms.startDate')}
+                  {form.isHalfDay ? t('forms.date') : t('forms.startDate')}
                 </label>
                 <input 
                   name="startDate" 
@@ -326,45 +360,61 @@ const FormSubmission = ({ onFormSubmitted }) => {
                   min={periodBounds.first}
                   max={periodBounds.last}
                   required 
-                  title={t('forms.selectFirstDayVacation')}
+                  title={form.isHalfDay ? t('forms.selectHalfDayDate') : t('forms.selectFirstDayVacation')}
                 />
-                <small className="input-helper">{t('forms.selectFirstDayVacation')} ({t('forms.submissionMonthRangeHelp')})</small>
+                <small className="input-helper">
+                  {form.isHalfDay ? t('forms.selectHalfDayDate') : t('forms.selectFirstDayVacation')} ({t('forms.submissionMonthRangeHelp')})
+                </small>
               </div>
-              <div className="form-group-elegant">
-                <label className="form-label-elegant">
-                  <span className="label-icon">📅</span>
-                  {t('forms.endDate')}
-                </label>
-                <input 
-                  name="endDate"
-                  type="date" 
-                  value={form.endDate} 
-                  onChange={handleChange} 
-                  className="form-input-elegant date-input"
-                  min={form.startDate || periodBounds.first}
-                  max={periodBounds.last}
-                  required 
-                  title={t('forms.selectLastDayVacation')}
-                />
-                <small className="input-helper">{t('forms.selectLastDayVacation')} ({t('forms.submissionMonthRangeHelp')})</small>
-              </div>
+              {!form.isHalfDay && (
+                <div className="form-group-elegant">
+                  <label className="form-label-elegant">
+                    <span className="label-icon">📅</span>
+                    {t('forms.endDate')}
+                  </label>
+                  <input 
+                    name="endDate"
+                    type="date" 
+                    value={form.endDate} 
+                    onChange={handleChange} 
+                    className="form-input-elegant date-input"
+                    min={form.startDate || periodBounds.first}
+                    max={periodBounds.last}
+                    required 
+                    title={t('forms.selectLastDayVacation')}
+                  />
+                  <small className="input-helper">{t('forms.selectLastDayVacation')} ({t('forms.submissionMonthRangeHelp')})</small>
+                </div>
+              )}
             </div>
-            {form.startDate && form.endDate && (
+            {form.startDate && (form.isHalfDay || form.endDate) && (
               <div className="date-summary">
                 <div className="summary-card">
                   <h5>📊 {t('forms.vacationSummary')}</h5>
                   <div className="summary-details">
-                    <div className="summary-item">
-                      <span className="summary-label">{t('forms.from')}:</span>
-                      <span className="summary-value">{new Date(form.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </div>
-                    <div className="summary-item">
-                      <span className="summary-label">{t('forms.to')}:</span>
-                      <span className="summary-value">{new Date(form.endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </div>
+                    {form.isHalfDay ? (
+                      <div className="summary-item">
+                        <span className="summary-label">{t('forms.date')}:</span>
+                        <span className="summary-value">{new Date(form.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="summary-item">
+                          <span className="summary-label">{t('forms.from')}:</span>
+                          <span className="summary-value">{new Date(form.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                        </div>
+                        <div className="summary-item">
+                          <span className="summary-label">{t('forms.to')}:</span>
+                          <span className="summary-value">{new Date(form.endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                        </div>
+                      </>
+                    )}
                     <div className="summary-item total-days">
                       <span className="summary-label">{t('forms.totalDays')}:</span>
-                      <span className="summary-value">{Math.ceil((new Date(form.endDate) - new Date(form.startDate)) / (1000 * 60 * 60 * 24)) + 1} {t('forms.days')}</span>
+                      <span className="summary-value">
+                        {formatVacationDeductionDays(form)} {t('forms.days')}
+                        {form.isHalfDay && ` (${t('forms.halfDay')})`}
+                      </span>
                     </div>
                   </div>
                 </div>

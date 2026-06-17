@@ -9,6 +9,7 @@ import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 import DashboardSectionNav from './layout/DashboardSectionNav';
 import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
+import { formatVacationDeductionDays, formatVacationDateRange } from '../utils/vacationDays';
 import { getEffectiveManagedDepartmentsClient } from '../utils/effectiveManagedDepartments';
 import { FRONTEND_UI_REVISION } from '../frontendUiRevision';
 import FormManagementMonthFilterBar from './forms/FormManagementMonthFilterBar';
@@ -1074,7 +1075,7 @@ const SuperAdminDashboard = () => {
       type: form.type,
       startDate: form.startDate ? new Date(form.startDate).toISOString().split('T')[0] : '',
       endDate: form.endDate ? new Date(form.endDate).toISOString().split('T')[0] : '',
-      days: form.days || '',
+      isHalfDay: !!form.isHalfDay,
       reason: form.reason || '',
       status: form.status
     });
@@ -2068,15 +2069,13 @@ const SuperAdminDashboard = () => {
                                 <div className="info-item">
                                   <span className="info-label">Duration:</span>
                                   <span className="info-value">
-                                    {form.startDate && form.endDate ? 
-                                      `${new Date(form.startDate).toLocaleDateString()} - ${new Date(form.endDate).toLocaleDateString()}` : 
-                                      'N/A'
-                                    }
+                                    {form.startDate ? formatVacationDateRange(form) : 'N/A'}
+                                    {form.isHalfDay ? ' (Half day)' : ''}
                                   </span>
                                 </div>
                                 <div className="info-item">
                                   <span className="info-label">Days Requested:</span>
-                                  <span className="info-value">{form.days || 'N/A'} days</span>
+                                  <span className="info-value">{formatVacationDeductionDays(form)} days</span>
                                 </div>
                               </>
                             )}
@@ -2772,29 +2771,51 @@ const SuperAdminDashboard = () => {
                   <input
                     type="date"
                     value={formEditData.startDate}
-                    onChange={(e) => setFormEditData({...formEditData, startDate: e.target.value})}
+                    onChange={(e) => setFormEditData({
+                      ...formEditData,
+                      startDate: e.target.value,
+                      ...(formEditData.isHalfDay ? { endDate: e.target.value } : {})
+                    })}
                     className="form-input-elegant"
                   />
                 </div>
                 
-                <div className="form-group-elegant">
-                  <label className="form-label-elegant">End Date</label>
-                  <input
-                    type="date"
-                    value={formEditData.endDate}
-                    onChange={(e) => setFormEditData({...formEditData, endDate: e.target.value})}
-                    className="form-input-elegant"
-                  />
-                </div>
+                {!formEditData.isHalfDay && (
+                  <div className="form-group-elegant">
+                    <label className="form-label-elegant">End Date</label>
+                    <input
+                      type="date"
+                      value={formEditData.endDate}
+                      onChange={(e) => setFormEditData({...formEditData, endDate: e.target.value})}
+                      className="form-input-elegant"
+                    />
+                  </div>
+                )}
+
+                {formEditData.type === 'vacation' && (
+                  <div className="form-group-elegant">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!formEditData.isHalfDay}
+                        onChange={(e) => setFormEditData({
+                          ...formEditData,
+                          isHalfDay: e.target.checked,
+                          endDate: e.target.checked ? formEditData.startDate : formEditData.endDate
+                        })}
+                      />
+                      <span>Half day (deducts 0.5 days)</span>
+                    </label>
+                  </div>
+                )}
                 
                 <div className="form-group-elegant">
-                  <label className="form-label-elegant">Days</label>
+                  <label className="form-label-elegant">Days (calculated)</label>
                   <input
-                    type="number"
-                    value={formEditData.days}
-                    onChange={(e) => setFormEditData({...formEditData, days: parseInt(e.target.value) || ''})}
+                    type="text"
+                    value={formatVacationDeductionDays(formEditData)}
                     className="form-input-elegant"
-                    min="1"
+                    readOnly
                   />
                 </div>
                 

@@ -83,6 +83,33 @@ const waived = classifyDay({
 });
 assert('Vacation day → waived, 0 deduction', waived.waived && waived.deductionDays === 0);
 
+console.log('\nWaiver — half-day vacation, no punches');
+const halfDayVacation = {
+    type: 'vacation',
+    isHalfDay: true,
+    startDate: new Date('2026-04-10'),
+    endDate: new Date('2026-04-10')
+};
+const halfDayAbsent = classifyDay({
+    date: new Date('2026-04-10T12:00:00'),
+    record: null,
+    user,
+    waiverForms: [halfDayVacation],
+    missOccurrence: null
+});
+assert('Half-day leave + no punches → 0.5 absence', halfDayAbsent.pillar === 'C' && halfDayAbsent.deductionDays === 0.5);
+assert('Half-day leave + no punches → not fully waived', !halfDayAbsent.waived && halfDayAbsent.halfDayVacation);
+
+const halfDayWorked = classifyDay({
+    date: new Date('2026-04-10T12:00:00'),
+    record: { clockIn: '10:30', clockOut: '19:00', status: 'late' },
+    user,
+    waiverForms: [halfDayVacation],
+    missOccurrence: null
+});
+assert('Half-day leave + punches → shortfall applies', halfDayWorked.pillar === 'B' && halfDayWorked.deductionDays === 0.0625);
+assert('Half-day leave + punches → not waived', !halfDayWorked.waived);
+
 console.log('\nPillar A — single miss');
 const missIn = classifyDay({
     date: new Date('2026-04-03T12:00:00'),

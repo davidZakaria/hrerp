@@ -11,6 +11,7 @@ import API_URL from '../config/api';
 import logger from '../utils/logger';
 import { normalizeExcuseType, isPaidExcuse } from '../utils/excuseType';
 import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
+import { formatVacationDeductionDays } from '../utils/vacationDays';
 
 const ManagerDashboard = ({ onLogout }) => {
   const { t } = useTranslation();
@@ -406,6 +407,7 @@ const ManagerDashboard = ({ onLogout }) => {
       type: form.type,
       startDate: form.startDate?.toString().slice(0, 10) || '',
       endDate: form.endDate?.toString().slice(0, 10) || '',
+      isHalfDay: !!form.isHalfDay,
       excuseDate: form.excuseDate?.toString().slice(0, 10) || '',
       excuseType: et || 'paid',
       fromHour: form.fromHour || '',
@@ -472,6 +474,7 @@ const ManagerDashboard = ({ onLogout }) => {
         Object.assign(payload, {
           startDate: formEditData.startDate || undefined,
           endDate: formEditData.endDate || undefined,
+          isHalfDay: formEditData.isHalfDay,
           reason: formEditData.reason || undefined,
           excuseDate: formEditData.excuseDate || undefined,
           excuseType: formEditData.excuseType || undefined,
@@ -514,6 +517,7 @@ const ManagerDashboard = ({ onLogout }) => {
             ...base,
             startDate: formEditData.startDate || base.startDate,
             endDate: formEditData.endDate || base.endDate,
+            isHalfDay: formEditData.isHalfDay !== undefined ? formEditData.isHalfDay : base.isHalfDay,
             reason: formEditData.reason !== undefined ? formEditData.reason : base.reason,
             excuseDate: formEditData.excuseDate || base.excuseDate,
             excuseType: formEditData.excuseType || base.excuseType,
@@ -635,6 +639,7 @@ const ManagerDashboard = ({ onLogout }) => {
       type: form.type,
       startDate: form.startDate?.toString().slice(0, 10) || '',
       endDate: form.endDate?.toString().slice(0, 10) || '',
+      isHalfDay: !!form.isHalfDay,
       excuseDate: form.excuseDate?.toString().slice(0, 10) || '',
       excuseType: et || 'paid',
       fromHour: form.fromHour || '',
@@ -711,12 +716,18 @@ const ManagerDashboard = ({ onLogout }) => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const calculateDays = (startDate, endDate) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+  const calculateDays = (startDate, endDate, isHalfDay = false) => {
+    return formatVacationDeductionDays({ startDate, endDate, isHalfDay });
+  };
+
+  const updateVacationEdit = (updates) => {
+    setFormEditData(prev => {
+      const next = { ...prev, ...updates };
+      if (next.isHalfDay && next.startDate) {
+        next.endDate = next.startDate;
+      }
+      return next;
+    });
   };
 
   if (loading || !user) {
@@ -893,7 +904,7 @@ const ManagerDashboard = ({ onLogout }) => {
                     {form.type === 'vacation' && (
                       <>
                         <p><strong>{t('dates')}:</strong> {formatDate(form.startDate)} - {formatDate(form.endDate)}</p>
-                        <p><strong>{t('duration')}:</strong> {calculateDays(form.startDate, form.endDate)} {t('days')}</p>
+                        <p><strong>{t('duration')}:</strong> {calculateDays(form.startDate, form.endDate, form.isHalfDay)} {t('days')}</p>
                         {form.vacationType && <p><strong>{t('type')}:</strong> {form.vacationType}</p>}
                       </>
                     )}
@@ -1035,7 +1046,7 @@ const ManagerDashboard = ({ onLogout }) => {
                     {form.type === 'vacation' && (
                       <>
                         <p><strong>{t('dates')}:</strong> {formatDate(form.startDate)} - {formatDate(form.endDate)}</p>
-                        <p><strong>{t('duration')}:</strong> {calculateDays(form.startDate, form.endDate)} {t('days')}</p>
+                        <p><strong>{t('duration')}:</strong> {calculateDays(form.startDate, form.endDate, form.isHalfDay)} {t('days')}</p>
                         {form.vacationType && <p><strong>{t('type')}:</strong> {form.vacationType}</p>}
                       </>
                     )}
@@ -1251,7 +1262,7 @@ const ManagerDashboard = ({ onLogout }) => {
                   {form.type === 'vacation' && (
                     <>
                       <p><strong>{t('dates')}:</strong> {formatDate(form.startDate)} - {formatDate(form.endDate)}</p>
-                      <p><strong>{t('duration')}:</strong> {calculateDays(form.startDate, form.endDate)} {t('days')}</p>
+                      <p><strong>{t('duration')}:</strong> {calculateDays(form.startDate, form.endDate, form.isHalfDay)} {t('days')}</p>
                       {form.vacationType && <p><strong>{t('type')}:</strong> {form.vacationType}</p>}
                     </>
                   )}
@@ -1364,8 +1375,8 @@ const ManagerDashboard = ({ onLogout }) => {
                   {/* Display different information based on form type */}
                   {selectedForm.type === 'vacation' && (
                     <>
-                      <p><strong>{t('dates')}:</strong> {formatDate(selectedForm.startDate)} - {formatDate(selectedForm.endDate)}</p>
-                      <p><strong>{t('duration')}:</strong> {calculateDays(selectedForm.startDate, selectedForm.endDate)} {t('days')}</p>
+                      <p><strong>{t('dates')}:</strong> {formatDate(selectedForm.startDate)}{selectedForm.isHalfDay ? '' : ` - ${formatDate(selectedForm.endDate)}`}{selectedForm.isHalfDay ? ` (${t('forms.halfDay')})` : ''}</p>
+                      <p><strong>{t('duration')}:</strong> {calculateDays(selectedForm.startDate, selectedForm.endDate, selectedForm.isHalfDay)} {t('days')}</p>
                       {selectedForm.vacationType && <p><strong>{t('type')}:</strong> {selectedForm.vacationType}</p>}
                     </>
                   )}
@@ -1419,13 +1430,25 @@ const ManagerDashboard = ({ onLogout }) => {
                     {formEditData.type === 'vacation' && (
                       <>
                         <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.startDate')}</label>
-                          <input type="date" value={formEditData.startDate || ''} onChange={(e) => setFormEditData({ ...formEditData, startDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={!!formEditData.isHalfDay}
+                              onChange={(e) => updateVacationEdit({ isHalfDay: e.target.checked, endDate: e.target.checked ? formEditData.startDate : formEditData.endDate })}
+                            />
+                            <span>{t('forms.halfDay')}</span>
+                          </label>
                         </div>
                         <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.endDate')}</label>
-                          <input type="date" value={formEditData.endDate || ''} onChange={(e) => setFormEditData({ ...formEditData, endDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                          <label className="form-label-elegant">{formEditData.isHalfDay ? t('forms.date') : t('forms.startDate')}</label>
+                          <input type="date" value={formEditData.startDate || ''} onChange={(e) => updateVacationEdit({ startDate: e.target.value, ...(formEditData.isHalfDay ? { endDate: e.target.value } : {}) })} className="form-input-elegant" style={{ width: '100%' }} />
                         </div>
+                        {!formEditData.isHalfDay && (
+                          <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
+                            <label className="form-label-elegant">{t('forms.endDate')}</label>
+                            <input type="date" value={formEditData.endDate || ''} onChange={(e) => updateVacationEdit({ endDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                          </div>
+                        )}
                       </>
                     )}
                     {formEditData.type === 'excuse' && (
@@ -1588,13 +1611,25 @@ const ManagerDashboard = ({ onLogout }) => {
               {formEditData.type === 'vacation' && (
                 <>
                   <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.startDate')}</label>
-                    <input type="date" value={formEditData.startDate || ''} onChange={(e) => setFormEditData({ ...formEditData, startDate: e.target.value })} className="form-input-elegant" />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!formEditData.isHalfDay}
+                        onChange={(e) => updateVacationEdit({ isHalfDay: e.target.checked, endDate: e.target.checked ? formEditData.startDate : formEditData.endDate })}
+                      />
+                      <span>{t('forms.halfDay')}</span>
+                    </label>
                   </div>
                   <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.endDate')}</label>
-                    <input type="date" value={formEditData.endDate || ''} onChange={(e) => setFormEditData({ ...formEditData, endDate: e.target.value })} className="form-input-elegant" />
+                    <label className="form-label-elegant">{formEditData.isHalfDay ? t('forms.date') : t('forms.startDate')}</label>
+                    <input type="date" value={formEditData.startDate || ''} onChange={(e) => updateVacationEdit({ startDate: e.target.value, ...(formEditData.isHalfDay ? { endDate: e.target.value } : {}) })} className="form-input-elegant" />
                   </div>
+                  {!formEditData.isHalfDay && (
+                    <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
+                      <label className="form-label-elegant">{t('forms.endDate')}</label>
+                      <input type="date" value={formEditData.endDate || ''} onChange={(e) => updateVacationEdit({ endDate: e.target.value })} className="form-input-elegant" />
+                    </div>
+                  )}
                 </>
               )}
               {formEditData.type === 'excuse' && (

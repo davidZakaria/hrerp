@@ -23,6 +23,11 @@ const {
 } = require('../utils/excuseType');
 const { getEffectiveManagedDepartmentsForQueries } = require('../utils/effectiveManagedDepartments');
 const { mergeFormMonthFilters } = require('../utils/formMonthFilters');
+const {
+    calculateVacationDeductionDays,
+    parseIsHalfDay,
+    validateHalfDayVacation
+} = require('../utils/vacationDays');
 
 /** Express can duplicate query keys; normalize to a single trimmed YYYY-MM string */
 function firstQueryParam(val) {
@@ -146,6 +151,7 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             vacationType,
             startDate,
             endDate,
+            isHalfDay,
             excuseDate,
             excuseType,
             sickLeaveStartDate,
@@ -253,6 +259,10 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
                     msg: `Vacation dates must fall within the current submission period (${first} through ${last}).`
                 });
             }
+            const halfDayError = validateHalfDayVacation({ startDate, endDate, isHalfDay });
+            if (halfDayError) {
+                return res.status(400).json({ msg: halfDayError });
+            }
         }
 
         if (type === 'sick_leave') {
@@ -289,7 +299,8 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             ...(type === 'vacation' && {
                 vacationType,
                 startDate: new Date(startDate),
-                endDate: new Date(endDate)
+                endDate: new Date(endDate),
+                isHalfDay: parseIsHalfDay(isHalfDay)
             }),
             ...(type === 'sick_leave' && {
                 sickLeaveStartDate: new Date(sickLeaveStartDate),
@@ -598,7 +609,7 @@ router.put('/manager/:id', auth, async (req, res) => {
             return res.status(403).json({ msg: 'No departments assigned to manage' });
         }
 
-        const { action, managerComment, startDate, endDate, reason, excuseDate, excuseType, fromHour, toHour, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, approvedHours, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime } = req.body;
+        const { action, managerComment, startDate, endDate, isHalfDay, reason, excuseDate, excuseType, fromHour, toHour, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, approvedHours, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime } = req.body;
         
         // Validate action parameter
         if (!action || !['approve', 'reject'].includes(action)) {
@@ -639,6 +650,17 @@ router.put('/manager/:id', auth, async (req, res) => {
         // Apply form edits before approval/rejection (all managers with team scope)
         if (startDate) form.startDate = startDate;
         if (endDate) form.endDate = endDate;
+        if (isHalfDay !== undefined) form.isHalfDay = parseIsHalfDay(isHalfDay);
+        if (form.type === 'vacation' && form.isHalfDay) {
+            const halfDayError = validateHalfDayVacation({
+                startDate: form.startDate,
+                endDate: form.endDate,
+                isHalfDay: true
+            });
+            if (halfDayError) {
+                return res.status(400).json({ msg: halfDayError });
+            }
+        }
         if (reason) form.reason = reason;
         if (excuseDate) form.excuseDate = excuseDate;
         if (excuseType && ['paid', 'unpaid'].includes(excuseType)) form.excuseType = excuseType;
@@ -796,10 +818,21 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
             managerComment: form.managerComment
         };
 
-        const { startDate, endDate, reason, excuseDate, excuseType, fromHour, toHour, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, approvedHours, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime, managerComment } = req.body;
+        const { startDate, endDate, isHalfDay, reason, excuseDate, excuseType, fromHour, toHour, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, approvedHours, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime, managerComment } = req.body;
 
         if (startDate) form.startDate = startDate;
         if (endDate) form.endDate = endDate;
+        if (isHalfDay !== undefined) form.isHalfDay = parseIsHalfDay(isHalfDay);
+        if (form.type === 'vacation' && form.isHalfDay) {
+            const halfDayError = validateHalfDayVacation({
+                startDate: form.startDate,
+                endDate: form.endDate,
+                isHalfDay: true
+            });
+            if (halfDayError) {
+                return res.status(400).json({ msg: halfDayError });
+            }
+        }
         if (reason) form.reason = reason;
         if (excuseDate) form.excuseDate = excuseDate;
         if (excuseType && ['paid', 'unpaid'].includes(excuseType)) form.excuseType = excuseType;
@@ -1010,10 +1043,11 @@ router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
             ) {
                 const employee = await User.findById(form.user._id || form.user);
                 if (employee) {
-                    // Calculate number of days (inclusive)
-                    const start = new Date(form.startDate);
-                    const end = new Date(form.endDate);
-                    const calculatedDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                    const calculatedDays = calculateVacationDeductionDays({
+                        startDate: form.startDate,
+                        endDate: form.endDate,
+                        isHalfDay: form.isHalfDay
+                    });
                     
                     // Check if employee has enough vacation days
                     if ((employee.vacationDaysLeft || 0) < calculatedDays) {
@@ -1084,10 +1118,11 @@ router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
                 status === 'approved' &&
                 (form.status === 'pending' || form.status === 'manager_approved' || form.status === 'manager_submitted')
             ) {
-                // Calculate number of days (inclusive)
-                const start = new Date(form.startDate);
-                const end = new Date(form.endDate);
-                const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                const days = calculateVacationDeductionDays({
+                    startDate: form.startDate,
+                    endDate: form.endDate,
+                    isHalfDay: form.isHalfDay
+                });
                 const employee = await User.findById(form.user);
                 
                 // Check if employee has enough vacation days
@@ -1474,6 +1509,7 @@ router.put('/super/:formId', auth, async (req, res) => {
             vacationType,
             startDate,
             endDate,
+            isHalfDay,
             reason,
             status,
             fromHour,
@@ -1489,6 +1525,7 @@ router.put('/super/:formId', auth, async (req, res) => {
         if (vacationType) form.vacationType = vacationType;
         if (startDate) form.startDate = startDate;
         if (endDate) form.endDate = endDate;
+        if (isHalfDay !== undefined) form.isHalfDay = parseIsHalfDay(isHalfDay);
         if (reason) form.reason = reason;
         if (status) form.status = status;
         if (fromHour) form.fromHour = fromHour;
@@ -1498,9 +1535,11 @@ router.put('/super/:formId', auth, async (req, res) => {
         if (form.type === 'vacation' && form.vacationType === 'annual' && status === 'approved') {
             const employee = await User.findById(form.user);
             if (employee) {
-                const start = new Date(form.startDate);
-                const end = new Date(form.endDate);
-                const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                const days = calculateVacationDeductionDays({
+                    startDate: form.startDate,
+                    endDate: form.endDate,
+                    isHalfDay: form.isHalfDay
+                });
                 
                 // Add modification to employee history
                 employee.modificationHistory.push({

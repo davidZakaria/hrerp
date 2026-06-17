@@ -13,6 +13,7 @@ const {
     getFingerprintOtForAttendance,
     reconcileOvertime
 } = require('./otReconciliation');
+const { parseIsHalfDay } = require('./vacationDays');
 
 const GRACE_MINUTES = 15;
 const STANDARD_SHIFT_MINUTES = 8 * 60;
@@ -142,7 +143,9 @@ function formCoversDate(form, date) {
     dayEnd.setHours(23, 59, 59, 999);
 
     if (form.type === 'vacation') {
-        return form.startDate <= dayEnd && form.endDate >= dayStart;
+        if (!(form.startDate <= dayEnd && form.endDate >= dayStart)) return false;
+        // Half-day vacation is partial coverage only (handled in getWaiverCoverage).
+        return !parseIsHalfDay(form.isHalfDay);
     }
     if (form.type === 'sick_leave') {
         return form.sickLeaveStartDate <= dayEnd && form.sickLeaveEndDate >= dayStart;
@@ -157,8 +160,30 @@ function formCoversDate(form, date) {
     return false;
 }
 
+function vacationHalfDayOnDate(form, date) {
+    if (form.type !== 'vacation' || !parseIsHalfDay(form.isHalfDay)) return false;
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+    return form.startDate <= dayEnd && form.endDate >= dayStart;
+}
+
+/** Full waiver vs approved half-day annual leave on this date. */
+function getWaiverCoverage(forms, date) {
+    let halfDayVacation = false;
+    for (const form of forms) {
+        if (vacationHalfDayOnDate(form, date)) {
+            halfDayVacation = true;
+        } else if (formCoversDate(form, date)) {
+            return { fullWaiver: true, halfDayVacation: false };
+        }
+    }
+    return { fullWaiver: false, halfDayVacation };
+}
+
 function isWaivedByForms(forms, date) {
-    return forms.some((f) => formCoversDate(f, date));
+    return getWaiverCoverage(forms, date).fullWaiver;
 }
 
 function isWaivedByAttendance(record) {
@@ -191,15 +216,18 @@ function buildMissOccurrenceMap(recordsByUserId) {
 
 function classifyDay({ date, record, user, waiverForms, missOccurrence }) {
     const workSchedule = getWorkSchedule(user);
-    const waivedByForm = isWaivedByForms(waiverForms, date);
+    const coverage = getWaiverCoverage(waiverForms, date);
     const waivedByAtt = isWaivedByAttendance(record);
-    const waived = waivedByForm || waivedByAtt;
+    const fullyWaived = coverage.fullWaiver || waivedByAtt;
 
     const base = {
         date,
         dateKey: dateKeyFromDate(date),
-        waived,
-        waiverReason: waivedByForm ? 'form' : (waivedByAtt ? 'attendance' : null),
+        waived: fullyWaived,
+        halfDayVacation: coverage.halfDayVacation,
+        waiverReason: fullyWaived
+            ? (coverage.fullWaiver ? 'form' : 'attendance')
+            : (coverage.halfDayVacation ? 'half_day_vacation' : null),
         pillar: 'none',
         missLabel: '',
         missOccurrence: null,
@@ -212,7 +240,7 @@ function classifyDay({ date, record, user, waiverForms, missOccurrence }) {
         deductionDays: 0
     };
 
-    if (waived) {
+    if (fullyWaived) {
         return base;
     }
 
@@ -220,11 +248,12 @@ function classifyDay({ date, record, user, waiverForms, missOccurrence }) {
     const hasOut = record ? hasPunch(record.clockOut) : false;
 
     if (!hasIn && !hasOut) {
+        const absenceDays = coverage.halfDayVacation ? 0.5 : 1;
         return {
             ...base,
             pillar: 'C',
-            pillarCDays: 1,
-            deductionDays: 1
+            pillarCDays: absenceDays,
+            deductionDays: absenceDays
         };
     }
 
@@ -279,6 +308,8 @@ function buildDeductionDayRow({ user, classification, record }) {
         minutesEarly: classification.minutesEarly,
         absenceDays: classification.pillarCDays,
         waived: classification.waived,
+        halfDayVacation: classification.halfDayVacation || false,
+        waiverReason: classification.waiverReason || null,
         pillarADays: classification.pillarADays,
         pillarBDays: classification.pillarBDays,
         pillarCDays: classification.pillarCDays,
@@ -453,7 +484,8 @@ function buildDeductionReport({
                 classification.pillar === 'A' ||
                 classification.pillar === 'C' ||
                 classification.shortfallMinutes > 0 ||
-                (classification.waived && record);
+                (classification.waived && record) ||
+                (classification.halfDayVacation && classification.deductionDays > 0);
 
             if (!shouldInclude) return;
 
@@ -492,6 +524,8 @@ module.exports = {
     classifyDay,
     buildDeductionReport,
     buildMissOccurrenceMap,
+    getWaiverCoverage,
+    formCoversDate,
     isSingleMissRecord,
     isFullAbsenceRecord,
     hasPunch,

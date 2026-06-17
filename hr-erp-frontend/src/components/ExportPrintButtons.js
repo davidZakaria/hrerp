@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatVacationDeductionDays, formatVacationDateRange } from '../utils/vacationDays';
 
 const ExportPrintButtons = ({ 
   forms, 
@@ -57,6 +58,8 @@ const ExportPrintButtons = ({
       'Department': form.user?.department || '',
       'Form Type': form.type,
       'Vacation Type': form.vacationType || '',
+      'Half Day': form.isHalfDay ? 'Yes' : 'No',
+      'Days': form.type === 'vacation' ? formatVacationDeductionDays(form) : '',
       'Start Date': form.startDate?.slice(0,10) || form.sickLeaveStartDate?.slice(0,10) || form.excuseDate?.slice(0,10) || '',
       'End Date': form.endDate?.slice(0,10) || form.sickLeaveEndDate?.slice(0,10) || '',
       'From Time': form.fromHour || '',
@@ -87,7 +90,7 @@ const ExportPrintButtons = ({
 
     const getFormDatesTime = (form) => {
       if (activeFormType === 'vacation') {
-        return `${form.startDate?.slice(0,10)} to ${form.endDate?.slice(0,10)}`;
+        return formatVacationDateRange(form);
       }
       if (activeFormType === 'sick_leave') {
         return `${form.sickLeaveStartDate?.slice(0,10)} to ${form.sickLeaveEndDate?.slice(0,10)}`;

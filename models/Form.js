@@ -30,6 +30,10 @@ const formSchema = new mongoose.Schema({
             return this.type === 'vacation';
         }
     },
+    isHalfDay: {
+        type: Boolean,
+        default: false
+    },
     excuseDate: {
         type: Date,
         required: function() {

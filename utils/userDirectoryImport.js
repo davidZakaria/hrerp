@@ -112,6 +112,7 @@ function parseImportBuffer(buffer) {
     name: normalizeWhitespace(row['English Name']),
     nameArabic: normalizeWhitespace(row['Arabic Name']),
     jobTitle: normalizeWhitespace(row['Job Title']),
+    departmentRaw: normalizeWhitespace(row['Department']),
     department: normalizeDepartment(row['Department']),
     location: normalizeWhitespace(row['Location'])
   }));
@@ -214,7 +215,7 @@ function buildImportPreview(fileRows, users) {
 
     const current = snapshotUser(user);
     const changes = {};
-    const fields = ['name', 'nameArabic', 'jobTitle', 'department', 'location', 'employeeCode', 'nationalId'];
+    const fields = ['name', 'nameArabic', 'jobTitle', 'location', 'employeeCode', 'nationalId'];
     for (const field of fields) {
       const diff = diffField(current[field], row[field]);
       if (diff) changes[field] = diff;
@@ -246,7 +247,8 @@ function snapshotUser(user) {
   };
 }
 
-const APPLY_FIELDS = ['name', 'nameArabic', 'jobTitle', 'department', 'location', 'employeeCode', 'nationalId'];
+const APPLY_FIELDS = ['name', 'nameArabic', 'jobTitle', 'location', 'employeeCode', 'nationalId'];
+// Department is NOT applied via directory import — use Department Repair tool with Excel mapping instead.
 
 async function applyImportRows({ rows, usersById, modifiedBy, modificationReason }) {
   const results = { updated: 0, skipped: 0, errors: [] };

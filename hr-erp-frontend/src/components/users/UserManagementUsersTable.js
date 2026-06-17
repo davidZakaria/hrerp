@@ -41,6 +41,8 @@ export default function UserManagementUsersTable({
             <th>{t('adminDashboard.roleLabel')}</th>
             <th>{t('common.status')}</th>
             <th>{t('common.department')}</th>
+            <th>{t('userManagement.colJobTitle')}</th>
+            <th>{t('userManagement.colLocation')}</th>
             <th className="user-mgmt-sheet-num">{t('userManagement.colVacation')}</th>
             <th>{t('userManagement.colJoined')}</th>
             <th>{t('userManagement.colLastLogin')}</th>
@@ -61,6 +63,8 @@ export default function UserManagementUsersTable({
                 <td>{String(user.role || '').replace(/_/g, ' ')}</td>
                 <td>{user.status || '—'}</td>
                 <td>{user.department || '—'}</td>
+                <td className="user-mgmt-sheet-clip" title={user.jobTitle || ''}>{user.jobTitle || '—'}</td>
+                <td className="user-mgmt-sheet-clip" title={user.location || ''}>{user.location || '—'}</td>
                 <td className="user-mgmt-sheet-num">{Number(user.vacationDaysLeft ?? 0).toFixed(1)}</td>
                 <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}</td>
                 <td>{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : t('userManagement.never')}</td>

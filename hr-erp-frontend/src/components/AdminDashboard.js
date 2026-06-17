@@ -18,6 +18,8 @@ import FormManagementMonthFilterBar from './forms/FormManagementMonthFilterBar';
 import UserManagementToolbar from './users/UserManagementToolbar';
 import UserManagementUsersTable from './users/UserManagementUsersTable';
 import UserTitleLocationImportModal from './users/UserTitleLocationImportModal';
+import UserProfileChips from './users/UserProfileChips';
+import UserCardDetails from './users/UserCardDetails';
 import {
   filterFormsByManagementMonths,
   currentYearMonth,
@@ -1079,6 +1081,26 @@ const AdminDashboard = () => {
           <div className="overview-section admin-dashboard-tab-panel">
             {/* Stats Cards */}
             <p className="admin-dashboard-stats-hint">{t('adminDashboard.statsHint')}</p>
+
+            {currentUser && (
+              <div
+                className="elegant-card hover-lift"
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  textAlign: 'center',
+                  padding: '1.75rem',
+                  marginBottom: '1.5rem',
+                  borderRadius: '16px'
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 600 }}>
+                  👋 {t('dashboard.welcome')}, {currentUser.name}
+                </h2>
+                <UserProfileChips user={currentUser} />
+              </div>
+            )}
+
             <div className="grid-4">
               <div className="stats-card hover-lift">
                 <div className="stats-number">
@@ -1920,6 +1942,7 @@ const AdminDashboard = () => {
                         <span className="info-label">Department:</span>
                         <span className="info-value">{user.department}</span>
                       </div>
+                      <UserCardDetails user={user} />
                       <div className="info-row">
                         <span className="info-label">Last Login:</span>
                         <span className="info-value">

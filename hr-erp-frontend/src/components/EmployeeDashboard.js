@@ -3,6 +3,7 @@ import DashboardSectionNav from './layout/DashboardSectionNav';
 import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
 import LogoutButton from './LogoutButton';
+import UserProfileChips from './users/UserProfileChips';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import EmployeeAttendance from './EmployeeAttendance';
 import API_URL from '../config/api';
@@ -190,36 +191,7 @@ const EmployeeDashboard = () => {
           }}>
             👋 {t('dashboard.welcome')}, {user.name}!
           </h2>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            gap: '2rem',
-            flexWrap: 'wrap',
-            marginTop: '1rem'
-          }}>
-            <div style={{ 
-              background: 'rgba(255,255,255,0.2)', 
-              padding: '0.75rem 1.5rem', 
-              borderRadius: '12px',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <span style={{ opacity: 0.9, fontSize: '0.9rem' }}>🏢 {t('common.department')}</span>
-              <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginTop: '0.25rem' }}>
-                {t(`departments.${user.department}`) || user.department}
-              </div>
-            </div>
-            <div style={{ 
-              background: 'rgba(255,255,255,0.2)', 
-              padding: '0.75rem 1.5rem', 
-              borderRadius: '12px',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <span style={{ opacity: 0.9, fontSize: '0.9rem' }}>🆔 {t('common.employeeCode')}</span>
-              <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginTop: '0.25rem' }}>
-                {user.employeeCode || t('common.notAssigned')}
-              </div>
-            </div>
-          </div>
+          <UserProfileChips user={user} />
         </div>
       )}
 

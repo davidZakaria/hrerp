@@ -19,6 +19,7 @@ import {
 import UserManagementToolbar from './users/UserManagementToolbar';
 import UserManagementUsersTable from './users/UserManagementUsersTable';
 import UserTitleLocationImportModal from './users/UserTitleLocationImportModal';
+import UserCardDetails from './users/UserCardDetails';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -1717,6 +1718,7 @@ const SuperAdminDashboard = () => {
                               <span className="info-label">Department:</span>
                               <span className="info-value">{user.department || 'Not assigned'}</span>
                             </div>
+                            <UserCardDetails user={user} layout="grid" />
                             <div className="info-item">
                               <span className="info-label">Vacation Days:</span>
                               <span className="info-value vacation-days">{Number(user.vacationDaysLeft || 0).toFixed(1)} days</span>

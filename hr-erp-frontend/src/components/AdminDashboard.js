@@ -17,7 +17,6 @@ import { getEffectiveManagedDepartmentsClient } from '../utils/effectiveManagedD
 import FormManagementMonthFilterBar from './forms/FormManagementMonthFilterBar';
 import UserManagementToolbar from './users/UserManagementToolbar';
 import UserManagementUsersTable from './users/UserManagementUsersTable';
-import UserDirectoryImportModal from './users/UserDirectoryImportModal';
 import {
   filterFormsByManagementMonths,
   currentYearMonth,
@@ -69,7 +68,6 @@ const AdminDashboard = () => {
   
   // Modals state
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
-  const [showUserImportModal, setShowUserImportModal] = useState(false);
   const [showVacationManager, setShowVacationManager] = useState(false);
   const [showReport, setShowReport] = useState(false);
   
@@ -1705,13 +1703,6 @@ const AdminDashboard = () => {
                 />
                 <button
                   type="button"
-                  className="btn-elegant"
-                  onClick={() => setShowUserImportModal(true)}
-                >
-                  {t('userImport.openButton')}
-                </button>
-                <button
-                  type="button"
                   className="btn-elegant btn-success"
                   onClick={() => setShowCreateUserModal(true)}
                 >
@@ -2742,16 +2733,6 @@ const AdminDashboard = () => {
           </div>
         )}
       </div>
-
-      <UserDirectoryImportModal
-        open={showUserImportModal}
-        onClose={() => setShowUserImportModal(false)}
-        allUsers={users}
-        onApplied={() => {
-          fetchUsers();
-          setMessage(t('userImport.applySuccess'));
-        }}
-      />
 
       {/* Create User Modal */}
       {showCreateUserModal && (

@@ -36,14 +36,11 @@ export default function UserManagementUsersTable({
           <tr>
             <th className="user-mgmt-sheet-col-idx">#</th>
             <th>{t('common.name')}</th>
-            <th>{t('userImport.nameAr')}</th>
-            <th>{t('userImport.jobTitle')}</th>
             <th>{t('common.email')}</th>
             <th>{t('common.employeeCode')}</th>
             <th>{t('adminDashboard.roleLabel')}</th>
             <th>{t('common.status')}</th>
             <th>{t('common.department')}</th>
-            <th>{t('userImport.location')}</th>
             <th className="user-mgmt-sheet-num">{t('userManagement.colVacation')}</th>
             <th>{t('userManagement.colJoined')}</th>
             <th>{t('userManagement.colLastLogin')}</th>
@@ -59,14 +56,11 @@ export default function UserManagementUsersTable({
               <tr key={user._id} className="user-mgmt-sheet-row">
                 <td className="user-mgmt-sheet-num">{idx + 1}</td>
                 <td className="user-mgmt-sheet-strong">{user.name || '—'}</td>
-                <td>{user.nameArabic || '—'}</td>
-                <td>{user.jobTitle || '—'}</td>
                 <td>{user.email || '—'}</td>
                 <td>{user.employeeCode || '—'}</td>
                 <td>{String(user.role || '').replace(/_/g, ' ')}</td>
                 <td>{user.status || '—'}</td>
                 <td>{user.department || '—'}</td>
-                <td>{user.location || '—'}</td>
                 <td className="user-mgmt-sheet-num">{Number(user.vacationDaysLeft ?? 0).toFixed(1)}</td>
                 <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}</td>
                 <td>{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : t('userManagement.never')}</td>

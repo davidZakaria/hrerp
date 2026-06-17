@@ -18,7 +18,6 @@ import {
 } from '../utils/filterFormsByManagementMonths';
 import UserManagementToolbar from './users/UserManagementToolbar';
 import UserManagementUsersTable from './users/UserManagementUsersTable';
-import UserDirectoryImportModal from './users/UserDirectoryImportModal';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -72,7 +71,6 @@ const SuperAdminDashboard = () => {
 
   // Create User state
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
-  const [showUserImportModal, setShowUserImportModal] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -1434,12 +1432,6 @@ const SuperAdminDashboard = () => {
                   <p className="section-description">{t('superAdminDashboard.userMgmtDesc')}</p>
                 </div>
                 <div className="section-actions">
-                  <button
-                    className="btn-elegant"
-                    onClick={() => setShowUserImportModal(true)}
-                  >
-                    {t('userImport.openButton')}
-                  </button>
                   <button 
                     className="btn-elegant btn-create-user"
                     onClick={() => setShowCreateUserModal(true)}
@@ -3551,17 +3543,6 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
       )}
-
-      <UserDirectoryImportModal
-        open={showUserImportModal}
-        onClose={() => setShowUserImportModal(false)}
-        allUsers={users}
-        onApplied={() => {
-          fetchUsers();
-          setSuccess(t('userImport.applySuccess'));
-          setTimeout(() => setSuccess(''), 3000);
-        }}
-      />
 
       {/* Create User Modal */}
       {showCreateUserModal && (

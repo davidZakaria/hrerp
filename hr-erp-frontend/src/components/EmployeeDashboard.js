@@ -5,7 +5,7 @@ import FormSubmission from './FormSubmission';
 import LogoutButton from './LogoutButton';
 import UserProfileChips from './users/UserProfileChips';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
-import EmployeeAttendance from './EmployeeAttendance';
+import EmployeeOtReport from './EmployeeOtReport';
 import API_URL from '../config/api';
 import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
 
@@ -22,7 +22,7 @@ const EmployeeDashboard = () => {
   const overviewRef = useRef(null);
   const previewRef = useRef(null);
   const submitRef = useRef(null);
-  const attendanceRef = useRef(null);
+  const otReportRef = useRef(null);
   const [scrollSpySection, setScrollSpySection] = useState('overview');
 
   const fetchUserData = async () => {
@@ -84,12 +84,12 @@ const EmployeeDashboard = () => {
         if (intersecting.length === 0) return;
         intersecting.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
         const id = intersecting[0].target.getAttribute('data-nav-section');
-        if (id === 'overview' || id === 'attendance') setScrollSpySection(id);
+        if (id === 'overview' || id === 'ot-report') setScrollSpySection(id);
       },
       { threshold: [0, 0.1, 0.25, 0.45], rootMargin: '-88px 0px -35% 0px' }
     );
     const o = overviewRef.current;
-    const a = attendanceRef.current;
+    const a = otReportRef.current;
     if (o) obs.observe(o);
     if (a) obs.observe(a);
     return () => obs.disconnect();
@@ -136,8 +136,8 @@ const EmployeeDashboard = () => {
     setTimeout(() => smoothScrollToElement(overviewRef.current, DEFAULT_SCROLL_OFFSET), 50);
   };
 
-  const scrollToAttendance = () => {
-    smoothScrollToElement(attendanceRef.current, DEFAULT_SCROLL_OFFSET);
+  const scrollToOtReport = () => {
+    smoothScrollToElement(otReportRef.current, DEFAULT_SCROLL_OFFSET);
   };
 
   const handleFormSubmitted = () => {
@@ -280,7 +280,7 @@ const EmployeeDashboard = () => {
             { id: 'overview', label: t('dashboard.overview', 'Overview'), icon: '🏠', onSelect: goOverview },
             { id: 'preview', label: t('dashboard.previewForms'), icon: '📋', onSelect: handlePreview },
             { id: 'submit', label: t('dashboard.submitNewForm'), icon: '📝', onSelect: handleShowForm },
-            { id: 'attendance', label: t('dashboard.attendance', 'Attendance'), icon: '📊', onSelect: scrollToAttendance }
+            { id: 'ot-report', label: t('dashboard.otReport', 'My OT Report'), icon: '⏱️', onSelect: scrollToOtReport }
           ]}
         />
 
@@ -587,13 +587,13 @@ const EmployeeDashboard = () => {
           </div>
         )}
 
-        {/* Employee Attendance Section */}
+        {/* Employee OT Report */}
         <div
-          ref={attendanceRef}
+          ref={otReportRef}
           className="dashboard-section-anchor"
-          data-nav-section="attendance"
+          data-nav-section="ot-report"
         >
-          <EmployeeAttendance />
+          <EmployeeOtReport />
         </div>
       </div>
     </div>

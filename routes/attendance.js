@@ -17,11 +17,7 @@ const {
     getDayName
 } = require('../utils/attendanceParser');
 const { parseDateRangeQuery, monthToRange } = require('../utils/attendanceDateRange');
-const {
-    buildOtReconciliationRow,
-    getFingerprintOtForAttendance,
-    otReconciliationDateKey
-} = require('../utils/otReconciliation');
+const { buildOtReconciliationPayload } = require('../utils/buildOtReconciliationPayload');
 const {
     buildDateRangeDetailRows,
     aggregateOrgKpis,
@@ -812,126 +808,8 @@ router.get('/ot-reconciliation', auth, async (req, res) => {
             return res.status(400).json({ msg: parsed.error });
         }
         const { rangeStart, rangeEnd } = parsed;
-
-        const dateFilter = { extraHoursDate: { $gte: rangeStart, $lte: rangeEnd } };
-        const [attendanceRecords, forms, pendingHrCount, pendingManagerCount, totalOtInRange] = await Promise.all([
-            Attendance.find({
-                date: { $gte: rangeStart, $lte: rangeEnd },
-                clockIn: { $exists: true, $ne: '' },
-                clockOut: { $exists: true, $ne: '' }
-            }).populate('user', 'name department employeeCode jobTitle location'),
-            Form.find({
-                type: 'extra_hours',
-                status: 'approved',
-                ...dateFilter
-            })
-                .populate('user', 'name department employeeCode jobTitle location')
-                .sort({ extraHoursDate: 1 }),
-            Form.countDocuments({
-                type: 'extra_hours',
-                status: { $in: ['manager_approved', 'manager_submitted'] },
-                ...dateFilter
-            }),
-            Form.countDocuments({
-                type: 'extra_hours',
-                status: 'pending',
-                ...dateFilter
-            }),
-            Form.countDocuments({
-                type: 'extra_hours',
-                ...dateFilter
-            })
-        ]);
-
-        const formMap = new Map();
-        for (const form of forms) {
-            if (!form.user?._id) continue;
-            formMap.set(
-                otReconciliationDateKey(form.user._id, form.extraHoursDate),
-                form
-            );
-        }
-
-        const rowMap = new Map();
-
-        for (const att of attendanceRecords) {
-            if (!att.user?._id) continue;
-            const fp = getFingerprintOtForAttendance(att);
-            if (fp.hours <= 0) continue;
-
-            const key = otReconciliationDateKey(att.user._id, att.date);
-            const form = formMap.get(key) || null;
-            rowMap.set(key, buildOtReconciliationRow({
-                form,
-                attendanceRecord: att,
-                user: att.user,
-                otDate: att.date,
-                rowKey: key
-            }));
-        }
-
-        for (const form of forms) {
-            if (!form.user?._id) continue;
-            const key = otReconciliationDateKey(form.user._id, form.extraHoursDate);
-            if (rowMap.has(key)) continue;
-            rowMap.set(key, buildOtReconciliationRow({
-                form,
-                attendanceRecord: null,
-                user: form.user,
-                actualHours: 0,
-                otDate: form.extraHoursDate,
-                rowKey: key
-            }));
-        }
-
-        const detailed = Array.from(rowMap.values()).sort(
-            (a, b) => new Date(a.otDate) - new Date(b.otDate)
-        );
-
-        // Build Final from HR-approved forms (merged with fingerprint when available)
-        const final = forms
-            .filter((form) => form.user?._id)
-            .map((form) => {
-                const key = otReconciliationDateKey(form.user._id, form.extraHoursDate);
-                const row = rowMap.get(key) || buildOtReconciliationRow({
-                    form,
-                    attendanceRecord: null,
-                    user: form.user,
-                    actualHours: 0,
-                    otDate: form.extraHoursDate,
-                    rowKey: key
-                });
-                const approved = Number(row.approvedHours) || 0;
-                if (approved <= 0) return null;
-                return {
-                    rowKey: row.rowKey,
-                    formId: row.formId,
-                    employeeCode: row.employeeCode,
-                    employeeName: row.employeeName,
-                    department: row.department,
-                    jobTitle: row.jobTitle,
-                    location: row.location,
-                    otDate: row.otDate,
-                    approvedHours: approved,
-                    actualPunchingHours: row.actualPunchingHours,
-                    finalPayableHours: row.finalPayableHours
-                };
-            })
-            .filter(Boolean)
-            .sort((a, b) => new Date(a.otDate) - new Date(b.otDate));
-
-        res.json({
-            startDate: rangeStart.toISOString(),
-            endDate: rangeEnd.toISOString(),
-            totalRequests: detailed.length,
-            fingerprintOtDays: detailed.filter((r) => r.actualPunchingHours > 0).length,
-            pendingManagerCount: pendingManagerCount,
-            pendingHrApprovalCount: pendingHrCount,
-            hrApprovedFormCount: forms.length,
-            totalOtRequestsInRange: totalOtInRange,
-            detailed,
-            final
-        });
+        const payload = await buildOtReconciliationPayload(rangeStart, rangeEnd);
+        res.json(payload);
     } catch (error) {
         console.error('Error getting OT reconciliation report:', error);
         res.status(500).json({ msg: 'Server error', error: error.message });
@@ -1323,6 +1201,27 @@ async function sendMyAttendanceDateRange(req, res) {
         res.status(500).json({ msg: 'Server error', error: error.message });
     }
 }
+
+/**
+ * GET /api/attendance/my-ot-report?startDate=&endDate=
+ * Logged-in user — own OT reconciliation rows for the selected range.
+ */
+router.get('/my-ot-report', auth, async (req, res) => {
+    try {
+        const parsed = parseDateRangeQuery(req.query);
+        if (parsed.error) {
+            return res.status(400).json({ msg: parsed.error });
+        }
+        const { rangeStart, rangeEnd } = parsed;
+        const payload = await buildOtReconciliationPayload(rangeStart, rangeEnd, {
+            userId: req.user.id
+        });
+        res.json(payload);
+    } catch (error) {
+        console.error('Error getting employee OT report:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+});
 
 /**
  * GET /api/attendance/my-attendance?startDate=&endDate=

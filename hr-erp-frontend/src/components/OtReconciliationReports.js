@@ -338,7 +338,6 @@ const OtReconciliationReports = () => {
       t('otReports.jobTitle'),
       t('otReports.location'),
       t('otReports.department'),
-      t('otReports.otDays'),
       t('otReports.totalWorkdays'),
       t('otReports.totalPunchedHours'),
       t('otReports.totalFingerprintOt'),
@@ -355,7 +354,6 @@ const OtReconciliationReports = () => {
       emp.jobTitle || '',
       emp.location || '',
       emp.department || '',
-      emp.days,
       emp.workdays,
       formatHours(emp.totalPunched),
       formatHours(emp.totalFingerprint),
@@ -368,9 +366,10 @@ const OtReconciliationReports = () => {
 
     const grandTotalLine = csvLine([
       '',
-      t('otReports.grandTotal', { count: employeeTotals.length }),
       '',
-      grandTotals.days,
+      '',
+      '',
+      t('otReports.grandTotal', { count: employeeTotals.length }),
       grandTotals.workdays,
       formatHours(grandTotals.totalPunched),
       formatHours(grandTotals.totalFingerprint),
@@ -412,7 +411,7 @@ const OtReconciliationReports = () => {
     }
   };
 
-  const totalsColSpan = showExtendedDetails ? 12 : 7;
+  const totalsColSpan = showExtendedDetails ? 13 : 9;
 
   return (
     <div style={{ marginTop: '2rem' }}>
@@ -702,7 +701,6 @@ const OtReconciliationReports = () => {
                       <th>{t('otReports.jobTitle')}</th>
                       <th>{t('otReports.location')}</th>
                       <th>{t('otReports.department')}</th>
-                      <th>{t('otReports.otDays')}</th>
                       {showExtendedDetails && (
                         <>
                           <th>{t('otReports.totalWorkdays')}</th>
@@ -718,9 +716,7 @@ const OtReconciliationReports = () => {
                       )}
                       <th>{t('otReports.totalApprovedOt')}</th>
                       <th>{t('otReports.totalVariance')}</th>
-                      {showExtendedDetails && (
-                        <th>{t('otReports.totalFinalOt')}</th>
-                      )}
+                      <th>{t('otReports.totalFinalOt')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -743,7 +739,6 @@ const OtReconciliationReports = () => {
                             <td>{emp.jobTitle || '—'}</td>
                             <td>{emp.location || '—'}</td>
                             <td>{emp.department}</td>
-                            <td>{emp.days}</td>
                             {showExtendedDetails && (
                               <>
                                 <td>{emp.workdays}</td>
@@ -761,9 +756,7 @@ const OtReconciliationReports = () => {
                             <td style={varianceTotalStyle(emp.totalVariance)}>
                               {emp.totalVariance > 0 ? '+' : ''}{formatHours(emp.totalVariance)}
                             </td>
-                            {showExtendedDetails && (
-                              <td style={{ color: '#4ade80', fontWeight: 600 }}>{formatHours(emp.totalFinalPayable)}</td>
-                            )}
+                            <td style={{ color: '#4ade80', fontWeight: 600 }}>{formatHours(emp.totalFinalPayable)}</td>
                           </tr>
                           {isExpanded && (
                             <tr>
@@ -833,10 +826,9 @@ const OtReconciliationReports = () => {
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td colSpan={3} style={{ fontWeight: 700, color: '#93c5fd', background: 'rgba(30, 58, 95, 0.9)' }}>
+                      <td colSpan={5} style={{ fontWeight: 700, color: '#93c5fd', background: 'rgba(30, 58, 95, 0.9)' }}>
                         {t('otReports.grandTotal', { count: employeeTotals.length })}
                       </td>
-                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{grandTotals.days}</td>
                       {showExtendedDetails && (
                         <>
                           <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{grandTotals.workdays}</td>
@@ -854,11 +846,9 @@ const OtReconciliationReports = () => {
                       <td style={{ ...varianceTotalStyle(grandTotals.totalVariance), background: 'rgba(30, 58, 95, 0.9)' }}>
                         {grandTotals.totalVariance > 0 ? '+' : ''}{formatHours(grandTotals.totalVariance)}
                       </td>
-                      {showExtendedDetails && (
-                        <td style={{ color: '#4ade80', fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>
-                          {formatHours(grandTotals.totalFinalPayable)}
-                        </td>
-                      )}
+                      <td style={{ color: '#4ade80', fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>
+                        {formatHours(grandTotals.totalFinalPayable)}
+                      </td>
                     </tr>
                   </tfoot>
                 </table>
@@ -901,9 +891,7 @@ const OtReconciliationReports = () => {
                   )}
                   <th>{t('otReports.approvedOt')}</th>
                   <th>{t('otReports.variance')}</th>
-                  {showExtendedDetails && (
-                    <th>{t('otReports.finalOtPreview')}</th>
-                  )}
+                  <th>{t('otReports.finalOtPreview')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -935,9 +923,7 @@ const OtReconciliationReports = () => {
                     <td style={varianceStyle(row.varianceFlag)}>
                       {row.variance > 0 ? '+' : ''}{formatHours(row.variance)}
                     </td>
-                    {showExtendedDetails && (
-                      <td style={{ color: '#4ade80', fontWeight: 600 }}>{formatHours(row.finalPayableHours)}</td>
-                    )}
+                    <td style={{ color: '#4ade80', fontWeight: 600 }}>{formatHours(row.finalPayableHours)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import DashboardSectionNav from './layout/DashboardSectionNav';
+import LanguageSwitcher from './LanguageSwitcher';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
@@ -764,7 +765,10 @@ const ManagerDashboard = ({ onLogout }) => {
             })}
           </p>
         </div>
-        <button onClick={onLogout} className="logout-btn">{t('common.logout')}</button>
+        <div className="manager-header-actions">
+          <LanguageSwitcher compact />
+          <button type="button" onClick={onLogout} className="logout-btn">{t('common.logout')}</button>
+        </div>
       </div>
 
       {/* Message */}

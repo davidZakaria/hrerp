@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import ATSDashboard from './ATS/ATSDashboard';
-import LogoutButton from './LogoutButton';
+import DashboardAppHeader from './layout/DashboardAppHeader';
 import ExportPrintButtons from './ExportPrintButtons';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import AttendanceManagement from './AttendanceManagement';
@@ -1053,10 +1053,7 @@ const AdminDashboard = () => {
   return (
     <div className="dashboard-container admin-dashboard fade-in">
       {/* Header */}
-      <div className="app-header">
-        <h1 className="app-title">{t('adminDashboard.title')}</h1>
-        <LogoutButton />
-      </div>
+      <DashboardAppHeader title={t('adminDashboard.title')} />
 
       <DashboardSectionNav
         variant="dark"

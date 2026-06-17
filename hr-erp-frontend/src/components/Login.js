@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import LanguageSwitcher from './LanguageSwitcher';
 import './Login.css';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
@@ -72,7 +73,11 @@ const Login = () => {
     };
 
     return (
-        <div className="njd-card">
+        <div className="login-page">
+            <div className="login-lang-bar">
+                <LanguageSwitcher compact />
+            </div>
+            <div className="njd-card">
             <div className="njd-title">NEW JERSEY DEVELOPMENTS</div>
             <div className="njd-subtitle">It's all about The Experience</div>
             <form className="njd-form" onSubmit={handleSubmit}>
@@ -115,6 +120,7 @@ const Login = () => {
                     {message}
                 </div>
             )}
+            </div>
         </div>
     );
 };

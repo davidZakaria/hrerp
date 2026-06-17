@@ -71,6 +71,13 @@
     justify-content: center;
   }
 
+  /* Keep header controls inline — never full width */
+  .app-header .btn-elegant,
+  .app-header-actions .btn-elegant,
+  .app-header .app-header-logout {
+    width: auto !important;
+  }
+
   .main-content {
     padding: 0.75rem !important;
     max-width: 100% !important;

@@ -10,8 +10,7 @@
 
 @media (max-width: 768px) {
   :root {
-    /* Match compact sticky .app-header row + safe area */
-    --dashboard-nav-sticky-top: calc(3.35rem + env(safe-area-inset-top, 0px));
+    --dashboard-nav-sticky-top: calc(2.75rem + env(safe-area-inset-top, 0px));
   }
 }
 

@@ -11,15 +11,16 @@ const LogoutButton = () => {
   };
 
   return (
-    <button 
+    <button
       type="button"
       onClick={handleLogout}
       className="btn-elegant app-header-logout"
       aria-label={t('common.logout')}
     >
-      {t('common.logout')}
+      <span className="app-header-logout-text">{t('common.logout')}</span>
+      <span className="app-header-logout-icon" aria-hidden="true">🚪</span>
     </button>
   );
 };
 
-export default LogoutButton; 
+export default LogoutButton;

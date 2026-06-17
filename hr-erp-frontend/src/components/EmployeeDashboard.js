@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import DashboardSectionNav from './layout/DashboardSectionNav';
 import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
-import LogoutButton from './LogoutButton';
+import DashboardAppHeader from './layout/DashboardAppHeader';
 import UserProfileChips from './users/UserProfileChips';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import EmployeeOtReport from './EmployeeOtReport';
@@ -167,10 +167,7 @@ const EmployeeDashboard = () => {
   return (
     <div className="dashboard-container fade-in">
       {/* Header */}
-      <div className="app-header">
-        <h1 className="app-title">{t('dashboard.employee')}</h1>
-        <LogoutButton />
-      </div>
+      <DashboardAppHeader title={t('dashboard.employee')} />
 
       {/* Welcome Message */}
       {user && (

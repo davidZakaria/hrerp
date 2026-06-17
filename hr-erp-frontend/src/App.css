@@ -165,13 +165,136 @@
   direction: rtl;
 }
 
-/* Language switcher positioning for RTL */
+/* Language switcher */
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.language-switcher .lang-btn {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+  min-width: 2.25rem;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.language-switcher .lang-btn--active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+}
+
+.language-switcher--compact .lang-btn {
+  padding: 5px 8px;
+  font-size: 0.6875rem;
+  min-width: 2rem;
+}
+
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.app-header-logout-icon {
+  display: none;
+}
+
+[dir="rtl"] .language-switcher {
+  direction: ltr;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  position: relative;
+}
+
+.login-lang-bar {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  right: max(12px, env(safe-area-inset-right, 0px));
+  z-index: 10;
+}
+
+[dir="rtl"] .login-lang-bar {
+  right: auto;
+  left: max(12px, env(safe-area-inset-left, 0px));
+}
+
+.login-lang-bar .language-switcher {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.login-lang-bar .language-switcher .lang-btn {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.login-lang-bar .language-switcher .lang-btn--active {
+  color: #fff;
+}
+
+.manager-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .manager-header-actions {
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .manager-dashboard .dashboard-header {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px !important;
+  }
+
+  .manager-dashboard .dashboard-header .user-info h1 {
+    font-size: 0.95rem !important;
+  }
+
+  .manager-dashboard .dashboard-header .user-info p {
+    display: none;
+  }
+
+  .manager-dashboard .logout-btn {
+    min-height: 32px;
+    padding: 5px 8px !important;
+    font-size: 0.6875rem !important;
+  }
+}
+
+/* Language switcher positioning for RTL — legacy fixed wrapper removed */
 .language-switcher {
   transition: all 0.3s ease;
 }
 
 [dir="rtl"] .language-switcher {
-  left: 20px !important;
+  left: auto !important;
   right: auto !important;
 }
 
@@ -208,51 +331,59 @@
 .app-header {
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(20px);
-  border-radius: 15px;
-  padding: 20px;
-  margin-bottom: 20px;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
+  gap: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.app-title {
+  color: #ffffff;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-shadow: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: start;
+}
+
+/* Logout in dashboard header — compact, never full-width like other .btn-elegant on mobile */
+.app-header .app-header-logout {
+  flex-shrink: 0;
+  width: auto !important;
+  margin: 0;
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.app-header .app-header-logout:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: none;
 }
 
 .app-logo {
   height: 50px;
   width: auto;
   filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.1));
-}
-
-.app-title {
-  color: #ffffff;
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 700;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-/* Logout in dashboard header — compact, never full-width like other .btn-elegant on mobile */
-.app-header .app-header-logout {
-  flex-shrink: 0;
-  width: auto;
-  margin: 0;
-  min-height: 44px;
-  padding: 8px 16px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.95);
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-}
-
-.app-header .app-header-logout:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.35);
-  transform: translateY(-1px);
 }
 
 /* Content Area - Dark Theme */
@@ -2525,18 +2656,16 @@
   }
 }
 
-/* Dashboard sticky top bar — minimal, readable, edge-to-edge on small screens */
+/* Dashboard sticky top bar — slim single row on mobile */
 @media (max-width: 768px) {
   .dashboard-container {
     padding-top: 0;
-    padding-left: max(12px, env(safe-area-inset-left, 0px));
-    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    padding-left: max(10px, env(safe-area-inset-left, 0px));
+    padding-right: max(10px, env(safe-area-inset-right, 0px));
     padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
   }
 
   .dashboard-container > .app-header {
-    --bar-bleed-l: max(12px, env(safe-area-inset-left, 0px));
-    --bar-bleed-r: max(12px, env(safe-area-inset-right, 0px));
     position: sticky;
     top: 0;
     z-index: 1020;
@@ -2545,48 +2674,54 @@
     flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    text-align: left;
-    width: calc(100% + var(--bar-bleed-l) + var(--bar-bleed-r));
-    max-width: none;
-    margin-left: calc(-1 * var(--bar-bleed-l));
-    margin-right: calc(-1 * var(--bar-bleed-r));
-    margin-bottom: 12px;
-    padding: max(10px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 10px max(14px, env(safe-area-inset-left, 0px));
-    border-radius: 0;
-    border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
-    background: rgba(8, 8, 10, 0.92);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 8px;
+    padding: 8px 10px;
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    background: rgba(12, 12, 16, 0.96);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
   }
 
   .dashboard-container > .app-header .app-title {
     flex: 1 1 auto;
     min-width: 0;
-    font-size: clamp(0.9375rem, 3.8vw, 1.125rem);
+    font-size: 0.875rem;
     font-weight: 600;
-    line-height: 1.25;
-    letter-spacing: -0.02em;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
     text-shadow: none;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  }
+
+  .dashboard-container > .app-header .app-header-actions {
+    gap: 6px;
   }
 
   .dashboard-container > .app-header .app-header-logout {
-    width: auto;
-    max-width: none;
-    min-height: 40px;
-    padding: 8px 12px;
-    font-size: 0.8125rem;
+    min-height: 32px;
+    padding: 5px 8px;
+    font-size: 0.6875rem;
+  }
+
+  .dashboard-container > .app-header .app-header-logout-text {
+    display: none;
+  }
+
+  .dashboard-container > .app-header .app-header-logout-icon {
+    display: inline;
+    font-size: 1rem;
+    line-height: 1;
   }
 }
 
 @media (max-width: 480px) {
   .dashboard-container > .app-header .app-title {
-    font-size: clamp(0.875rem, 3.6vw, 1rem);
+    font-size: 0.8125rem;
   }
 }
 

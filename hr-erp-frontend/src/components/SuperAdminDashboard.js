@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import axios from 'axios';
-import LogoutButton from './LogoutButton';
+import DashboardAppHeader from './layout/DashboardAppHeader';
 import { useTranslation } from 'react-i18next';
 import AttendanceManagement from './AttendanceManagement';
 import OtReconciliationReports from './OtReconciliationReports';
@@ -1335,10 +1335,7 @@ const SuperAdminDashboard = () => {
 
   return (
     <div className="dashboard-container super-admin-dashboard fade-in">
-      <div className="app-header">
-        <h1 className="app-title">{t('superAdminDashboard.title')}</h1>
-        <LogoutButton />
-      </div>
+      <DashboardAppHeader title={t('superAdminDashboard.title')} />
 
       <div className="main-content">
         <p className="super-admin-stats-hint">{t('superAdminDashboard.statsHint')}</p>

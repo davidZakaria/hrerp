@@ -1,13 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-const LanguageSwitcher = () => {
+const LanguageSwitcher = ({ compact = false }) => {
   const { i18n } = useTranslation();
+  const currentLanguage = i18n.language?.startsWith('ar') ? 'ar' : 'en';
 
   const changeLanguage = (lng) => {
     i18n.changeLanguage(lng);
-    
-    // Set document direction for RTL support
     if (lng === 'ar') {
       document.documentElement.setAttribute('dir', 'rtl');
       document.documentElement.setAttribute('lang', 'ar');
@@ -17,79 +16,25 @@ const LanguageSwitcher = () => {
     }
   };
 
-  const currentLanguage = i18n.language || 'en';
-
   return (
-    <div className="language-switcher" style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      background: 'rgba(255, 255, 255, 0.1)',
-      borderRadius: '25px',
-      padding: '5px',
-      backdropFilter: 'blur(10px)',
-      border: '1px solid rgba(255, 255, 255, 0.2)'
-    }}>
+    <div
+      className={`language-switcher${compact ? ' language-switcher--compact' : ''}`}
+      role="group"
+      aria-label="Language"
+    >
       <button
+        type="button"
         onClick={() => changeLanguage('en')}
-        className={`lang-btn ${currentLanguage === 'en' ? 'active' : ''}`}
-        style={{
-          padding: '8px 16px',
-          borderRadius: '20px',
-          border: 'none',
-          background: currentLanguage === 'en' 
-            ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-            : 'transparent',
-          color: currentLanguage === 'en' ? 'white' : 'rgba(255, 255, 255, 0.8)',
-          fontSize: '0.9rem',
-          fontWeight: currentLanguage === 'en' ? 'bold' : 'normal',
-          cursor: 'pointer',
-          transition: 'all 0.3s ease',
-          textShadow: currentLanguage === 'en' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
-          minWidth: '60px'
-        }}
-        onMouseOver={(e) => {
-          if (currentLanguage !== 'en') {
-            e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-          }
-        }}
-        onMouseOut={(e) => {
-          if (currentLanguage !== 'en') {
-            e.target.style.background = 'transparent';
-          }
-        }}
+        className={`lang-btn${currentLanguage === 'en' ? ' lang-btn--active' : ''}`}
+        aria-pressed={currentLanguage === 'en'}
       >
         EN
       </button>
-      
       <button
+        type="button"
         onClick={() => changeLanguage('ar')}
-        className={`lang-btn ${currentLanguage === 'ar' ? 'active' : ''}`}
-        style={{
-          padding: '8px 16px',
-          borderRadius: '20px',
-          border: 'none',
-          background: currentLanguage === 'ar' 
-            ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-            : 'transparent',
-          color: currentLanguage === 'ar' ? 'white' : 'rgba(255, 255, 255, 0.8)',
-          fontSize: '0.9rem',
-          fontWeight: currentLanguage === 'ar' ? 'bold' : 'normal',
-          cursor: 'pointer',
-          transition: 'all 0.3s ease',
-          textShadow: currentLanguage === 'ar' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
-          minWidth: '60px'
-        }}
-        onMouseOver={(e) => {
-          if (currentLanguage !== 'ar') {
-            e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-          }
-        }}
-        onMouseOut={(e) => {
-          if (currentLanguage !== 'ar') {
-            e.target.style.background = 'transparent';
-          }
-        }}
+        className={`lang-btn${currentLanguage === 'ar' ? ' lang-btn--active' : ''}`}
+        aria-pressed={currentLanguage === 'ar'}
       >
         عر
       </button>
@@ -97,4 +42,4 @@ const LanguageSwitcher = () => {
   );
 };
 
-export default LanguageSwitcher; 
+export default LanguageSwitcher;

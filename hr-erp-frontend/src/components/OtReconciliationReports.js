@@ -11,6 +11,7 @@ import {
   useAutoExpandSingleEmployee,
   useReportPagination
 } from './ReportTableNav';
+import { varianceStyle, varianceTotalStyle } from '../utils/otVarianceStyle';
 
 function formatOtDate(value) {
   if (!value) return '—';
@@ -29,12 +30,6 @@ function formatOtDateDetailed(value) {
 function formatHours(value) {
   if (value == null || Number.isNaN(Number(value))) return '—';
   return Number(value).toFixed(2);
-}
-
-function varianceStyle(flag) {
-  if (flag === 'positive') return { color: '#4ade80', fontWeight: 700 };
-  if (flag === 'negative') return { color: '#f87171', fontWeight: 700 };
-  return { color: '#e2e8f0', fontWeight: 600 };
 }
 
 const OtReconciliationReports = () => {
@@ -270,12 +265,6 @@ const OtReconciliationReports = () => {
     setFilterMinFp('');
     setFilterMinVariance('');
     setFilterWorkday('all');
-  };
-
-  const varianceTotalStyle = (value) => {
-    if (value > 0.004) return { color: '#4ade80', fontWeight: 700 };
-    if (value < -0.004) return { color: '#f87171', fontWeight: 700 };
-    return { color: '#e2e8f0', fontWeight: 600 };
   };
 
   const exportDetailedToCsv = () => {

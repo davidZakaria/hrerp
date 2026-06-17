@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import API_URL from '../config/api';
 import { ReportPeriodFilter, useReportPeriodRange } from './ReportPeriodFilter';
 import { REPORT_SCROLL_TABLE_CSS, ReportScrollTable } from './ReportTableNav';
+import { varianceStyle, varianceTotalStyle, varianceMobileClass } from '../utils/otVarianceStyle';
 
 function formatOtDate(value) {
   if (!value) return '—';
@@ -16,12 +17,6 @@ function formatOtDate(value) {
 function formatHours(value) {
   if (value == null || Number.isNaN(Number(value))) return '—';
   return Number(value).toFixed(2);
-}
-
-function varianceStyle(flag) {
-  if (flag === 'positive') return { color: '#4ade80', fontWeight: 700 };
-  if (flag === 'negative') return { color: '#f87171', fontWeight: 700 };
-  return { color: '#e2e8f0', fontWeight: 600 };
 }
 
 const STAT_CARD = {
@@ -248,7 +243,7 @@ const EmployeeOtReport = () => {
                         </div>
                         <div className="mobile-data-card-row">
                           <span>{t('employeeOtReport.colVariance')}</span>
-                          <span className={row.varianceFlag === 'positive' ? 'value-positive' : row.varianceFlag === 'negative' ? 'value-negative' : ''}>
+                          <span className={varianceMobileClass(row.varianceFlag)}>
                             {row.variance > 0 ? '+' : ''}{formatHours(row.variance)}
                           </span>
                         </div>
@@ -298,7 +293,7 @@ const EmployeeOtReport = () => {
                         <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>
                           {formatHours(summary.totalApproved)}
                         </td>
-                        <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>
+                        <td style={{ ...varianceTotalStyle(summary.totalVariance), fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>
                           {summary.totalVariance > 0 ? '+' : ''}{formatHours(summary.totalVariance)}
                         </td>
                         <td style={{ color: '#4ade80', fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>

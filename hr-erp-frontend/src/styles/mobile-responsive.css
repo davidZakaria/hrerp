@@ -334,13 +334,18 @@
     flex-shrink: 0;
   }
 
-  .mobile-data-card-row .value-positive {
+  .mobile-data-card-row .value-variance-match {
     color: #4ade80;
     font-weight: 600;
   }
 
-  .mobile-data-card-row .value-negative {
+  .mobile-data-card-row .value-variance-over {
     color: #f87171;
+    font-weight: 600;
+  }
+
+  .mobile-data-card-row .value-variance-under {
+    color: #fb923c;
     font-weight: 600;
   }
 

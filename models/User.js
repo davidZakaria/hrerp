@@ -10,6 +10,23 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    nameArabic: {
+        type: String,
+        required: false
+    },
+    jobTitle: {
+        type: String,
+        required: false
+    },
+    location: {
+        type: String,
+        required: false
+    },
+    nationalId: {
+        type: String,
+        required: false,
+        sparse: true
+    },
     email: {
         type: String,
         required: true,

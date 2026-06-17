@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs').promises;
+const multer = require('multer');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const Form = require('../models/Form');
@@ -18,6 +19,28 @@ const { DEPARTMENT_GROUPS } = require('../config/departmentGroups');
 const { getEffectiveManagedDepartments, getEffectiveManagedDepartmentsForQueries } = require('../utils/effectiveManagedDepartments');
 const { parsePeriodQuery } = require('../utils/formSubmissionMonthBounds');
 const { buildEmployeeInsights } = require('../utils/employeeInsights');
+const {
+  parseImportBuffer,
+  buildImportPreview,
+  applyImportRows,
+  normalizeEmployeeCode
+} = require('../utils/userDirectoryImport');
+
+const directoryImportUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (/\.(xlsx|xls)$/i.test(file.originalname || '')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .xlsx or .xls files are allowed'));
+    }
+  }
+});
+
+function requireAdminOrSuperAdmin(user) {
+  return user && (user.role === 'admin' || user.role === 'super_admin');
+}
 
 function sanitizeManagedDepartmentGroups(raw) {
   if (!Array.isArray(raw)) return [];
@@ -53,6 +76,96 @@ router.get('/department-group-catalog', auth, async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ msg: 'Server error' });
+  }
+});
+
+// Preview employee directory import from Excel (admin / super_admin)
+router.post('/import/preview', auth, directoryImportUpload.single('file'), async (req, res) => {
+  try {
+    const requester = await User.findById(req.user.id);
+    if (!requireAdminOrSuperAdmin(requester)) {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({ msg: 'Please upload an Excel file (.xlsx or .xls)' });
+    }
+
+    const fileRows = parseImportBuffer(req.file.buffer);
+    const users = await User.find().select('-password');
+    const rows = buildImportPreview(fileRows, users);
+
+    const summary = {
+      total: rows.length,
+      matched: rows.filter((r) => r.status === 'matched').length,
+      unchanged: rows.filter((r) => r.status === 'unchanged').length,
+      unmatched: rows.filter((r) => r.status === 'unmatched').length,
+      skipped: rows.filter((r) => r.status === 'skipped').length,
+      duplicate: rows.filter((r) => r.status === 'duplicate').length
+    };
+
+    res.json({ summary, rows, fileName: req.file.originalname });
+  } catch (err) {
+    console.error('Import preview error:', err.message);
+    res.status(400).json({ msg: err.message || 'Failed to parse import file' });
+  }
+});
+
+// Apply reviewed employee directory import rows
+router.post('/import/apply', auth, async (req, res) => {
+  try {
+    const requester = await User.findById(req.user.id);
+    if (!requireAdminOrSuperAdmin(requester)) {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+
+    const { rows, modificationReason } = req.body || {};
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(400).json({ msg: 'No import rows provided' });
+    }
+
+    const userIds = [...new Set(rows.filter((r) => r.apply && r.userId).map((r) => String(r.userId)))];
+    const users = await User.find({ _id: { $in: userIds } });
+    const usersById = new Map(users.map((u) => [String(u._id), u]));
+
+    for (const row of rows.filter((r) => r.apply && r.userId)) {
+      const user = usersById.get(String(row.userId));
+      if (!user) continue;
+      if (row.employeeCode) {
+        const code = normalizeEmployeeCode(row.employeeCode);
+        const existing = await User.findOne({
+          employeeCode: { $in: [code, code.replace(/^0+/, '') || '0', String(parseInt(code, 10))] },
+          _id: { $ne: user._id }
+        });
+        if (existing) {
+          return res.status(400).json({
+            msg: `Employee code ${row.employeeCode} is already used by ${existing.name}`
+          });
+        }
+      }
+    }
+
+    const results = await applyImportRows({
+      rows,
+      usersById,
+      modifiedBy: requester._id,
+      modificationReason: modificationReason || 'Employee directory import'
+    });
+
+    await createAuditLog({
+      action: 'USER_DIRECTORY_IMPORT',
+      performedBy: requester._id,
+      targetResource: 'user',
+      description: `${requester.name} applied employee directory import (${results.updated} updated, ${results.skipped} skipped)`,
+      details: { results, rowCount: rows.length },
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      severity: 'HIGH'
+    });
+
+    res.json({ msg: 'Import applied', results });
+  } catch (err) {
+    console.error('Import apply error:', err.message);
+    res.status(500).json({ msg: err.message || 'Failed to apply import' });
   }
 });
 
@@ -263,6 +376,10 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
 
     const {
       name,
+      nameArabic,
+      jobTitle,
+      location,
+      nationalId,
       email,
       department,
       role,
@@ -313,6 +430,10 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     // Create modification history entry
     const modifications = [];
     if (name !== undefined && name !== user.name) modifications.push({ field: 'name', oldValue: user.name, newValue: name });
+    if (nameArabic !== undefined && nameArabic !== (user.nameArabic || '')) modifications.push({ field: 'nameArabic', oldValue: user.nameArabic || '', newValue: nameArabic });
+    if (jobTitle !== undefined && jobTitle !== (user.jobTitle || '')) modifications.push({ field: 'jobTitle', oldValue: user.jobTitle || '', newValue: jobTitle });
+    if (location !== undefined && location !== (user.location || '')) modifications.push({ field: 'location', oldValue: user.location || '', newValue: location });
+    if (nationalId !== undefined && nationalId !== (user.nationalId || '')) modifications.push({ field: 'nationalId', oldValue: user.nationalId || '', newValue: nationalId });
     if (email !== undefined && email !== user.email) modifications.push({ field: 'email', oldValue: user.email, newValue: email });
     if (department !== undefined && department !== user.department) modifications.push({ field: 'department', oldValue: user.department, newValue: department });
     if (role !== undefined && role !== user.role) modifications.push({ field: 'role', oldValue: user.role, newValue: role });
@@ -323,6 +444,10 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
 
     // Update user fields - only update if provided
     if (name !== undefined) user.name = name;
+    if (nameArabic !== undefined) user.nameArabic = nameArabic || '';
+    if (jobTitle !== undefined) user.jobTitle = jobTitle || '';
+    if (location !== undefined) user.location = location || '';
+    if (nationalId !== undefined) user.nationalId = nationalId || '';
     if (email !== undefined) user.email = email;
     if (department !== undefined) user.department = department;
     if (role !== undefined) user.role = role;
@@ -468,7 +593,7 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
-    const { name, email, department, role, managedDepartments, managedDepartmentGroups, password, status, employeeCode, modificationReason } = req.body;
+    const { name, nameArabic, jobTitle, location, nationalId, email, department, role, managedDepartments, managedDepartmentGroups, password, status, employeeCode, modificationReason } = req.body;
 
     const user = await User.findById(req.params.userId);
     if (!user) {
@@ -476,6 +601,10 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     }
     const oldRoleBeforeUpdate = user.role;
     const oldName = user.name;
+    const oldNameArabic = user.nameArabic || '';
+    const oldJobTitle = user.jobTitle || '';
+    const oldLocation = user.location || '';
+    const oldNationalId = user.nationalId || '';
     const oldEmail = user.email;
     const oldDepartmentBefore = user.department;
     const oldStatusBefore = user.status;
@@ -518,6 +647,10 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
 
     // Only patch fields that are present — partial updates (e.g. password reset) must not wipe other data
     if (name !== undefined) user.name = name;
+    if (nameArabic !== undefined) user.nameArabic = nameArabic || '';
+    if (jobTitle !== undefined) user.jobTitle = jobTitle || '';
+    if (location !== undefined) user.location = location || '';
+    if (nationalId !== undefined) user.nationalId = nationalId || '';
     if (email !== undefined) user.email = email;
     if (department !== undefined) user.department = department;
     if (role !== undefined) user.role = role;
@@ -588,6 +721,18 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     const modifications = [];
     if (name !== undefined && user.name !== oldName) {
       modifications.push({ field: 'name', oldValue: oldName, newValue: user.name });
+    }
+    if (nameArabic !== undefined && (user.nameArabic || '') !== oldNameArabic) {
+      modifications.push({ field: 'nameArabic', oldValue: oldNameArabic, newValue: user.nameArabic || '' });
+    }
+    if (jobTitle !== undefined && (user.jobTitle || '') !== oldJobTitle) {
+      modifications.push({ field: 'jobTitle', oldValue: oldJobTitle, newValue: user.jobTitle || '' });
+    }
+    if (location !== undefined && (user.location || '') !== oldLocation) {
+      modifications.push({ field: 'location', oldValue: oldLocation, newValue: user.location || '' });
+    }
+    if (nationalId !== undefined && (user.nationalId || '') !== oldNationalId) {
+      modifications.push({ field: 'nationalId', oldValue: oldNationalId, newValue: user.nationalId || '' });
     }
     if (email !== undefined && user.email !== oldEmail) {
       modifications.push({ field: 'email', oldValue: oldEmail, newValue: user.email });

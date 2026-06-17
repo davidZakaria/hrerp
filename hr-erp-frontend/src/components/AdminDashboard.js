@@ -18,7 +18,6 @@ import FormManagementMonthFilterBar from './forms/FormManagementMonthFilterBar';
 import UserManagementToolbar from './users/UserManagementToolbar';
 import UserManagementUsersTable from './users/UserManagementUsersTable';
 import UserDirectoryImportModal from './users/UserDirectoryImportModal';
-import UserDepartmentRepairModal from './users/UserDepartmentRepairModal';
 import {
   filterFormsByManagementMonths,
   currentYearMonth,
@@ -71,7 +70,6 @@ const AdminDashboard = () => {
   // Modals state
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [showUserImportModal, setShowUserImportModal] = useState(false);
-  const [showDeptRepairModal, setShowDeptRepairModal] = useState(false);
   const [showVacationManager, setShowVacationManager] = useState(false);
   const [showReport, setShowReport] = useState(false);
   
@@ -1707,13 +1705,6 @@ const AdminDashboard = () => {
                 />
                 <button
                   type="button"
-                  className="btn-elegant btn-warn"
-                  onClick={() => setShowDeptRepairModal(true)}
-                >
-                  {t('deptRepair.openButton')}
-                </button>
-                <button
-                  type="button"
                   className="btn-elegant"
                   onClick={() => setShowUserImportModal(true)}
                 >
@@ -2751,16 +2742,6 @@ const AdminDashboard = () => {
           </div>
         )}
       </div>
-
-      <UserDepartmentRepairModal
-        open={showDeptRepairModal}
-        onClose={() => setShowDeptRepairModal(false)}
-        isSuperAdmin={false}
-        onApplied={() => {
-          fetchUsers();
-          setMessage(t('deptRepair.applySuccess'));
-        }}
-      />
 
       <UserDirectoryImportModal
         open={showUserImportModal}

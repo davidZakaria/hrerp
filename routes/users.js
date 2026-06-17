@@ -25,11 +25,6 @@ const {
   applyImportRows,
   normalizeEmployeeCode
 } = require('../utils/userDirectoryImport');
-const {
-  buildDepartmentCompareReport,
-  applyDepartmentFixes,
-  resetAllManagerScopes
-} = require('../utils/departmentCompare');
 
 const directoryImportUpload = multer({
   storage: multer.memoryStorage(),
@@ -171,104 +166,6 @@ router.post('/import/apply', auth, async (req, res) => {
   } catch (err) {
     console.error('Import apply error:', err.message);
     res.status(500).json({ msg: err.message || 'Failed to apply import' });
-  }
-});
-
-// Compare Excel departments vs system users (repair after bad import)
-router.post('/import/department-compare', auth, directoryImportUpload.single('file'), async (req, res) => {
-  try {
-    const requester = await User.findById(req.user.id);
-    if (!requireAdminOrSuperAdmin(requester)) {
-      return res.status(403).json({ msg: 'Not authorized' });
-    }
-    if (!req.file?.buffer) {
-      return res.status(400).json({ msg: 'Please upload an Excel file' });
-    }
-    let departmentMapping = {};
-    if (req.body?.departmentMapping) {
-      try {
-        departmentMapping = JSON.parse(req.body.departmentMapping);
-      } catch {
-        departmentMapping = {};
-      }
-    }
-    const fileRows = parseImportBuffer(req.file.buffer);
-    const users = await User.find().select('-password');
-    const report = buildDepartmentCompareReport(fileRows, users, departmentMapping);
-    res.json({ ...report, fileName: req.file.originalname });
-  } catch (err) {
-    console.error('Department compare error:', err.message);
-    res.status(400).json({ msg: err.message || 'Compare failed' });
-  }
-});
-
-// Apply department fixes from compare review
-router.post('/import/fix-departments', auth, async (req, res) => {
-  try {
-    const requester = await User.findById(req.user.id);
-    if (!requireAdminOrSuperAdmin(requester)) {
-      return res.status(403).json({ msg: 'Not authorized' });
-    }
-    const { rows, modificationReason } = req.body || {};
-    if (!Array.isArray(rows) || !rows.length) {
-      return res.status(400).json({ msg: 'No rows to fix' });
-    }
-    const userIds = [...new Set(rows.filter((r) => r.apply && r.userId).map((r) => String(r.userId)))];
-    const users = await User.find({ _id: { $in: userIds } });
-    const usersById = new Map(users.map((u) => [String(u._id), u]));
-    const results = await applyDepartmentFixes({
-      rows,
-      usersById,
-      modifiedBy: requester._id,
-      modificationReason: modificationReason || 'Department repair'
-    });
-    await createAuditLog({
-      action: 'DEPARTMENT_REPAIR',
-      performedBy: requester._id,
-      targetResource: 'user',
-      description: `${requester.name} repaired departments (${results.updated} updated)`,
-      details: { results },
-      ipAddress: req.ip || req.connection.remoteAddress,
-      userAgent: req.get('User-Agent'),
-      severity: 'HIGH'
-    });
-    res.json({ msg: 'Departments updated', results });
-  } catch (err) {
-    console.error('Fix departments error:', err.message);
-    res.status(500).json({ msg: err.message || 'Fix failed' });
-  }
-});
-
-// Clear all manager department scopes so super admin can reassign from scratch
-router.post('/managers/reset-scopes', auth, async (req, res) => {
-  try {
-    const requester = await User.findById(req.user.id);
-    if (!requester || requester.role !== 'super_admin') {
-      return res.status(403).json({ msg: 'Super admin only' });
-    }
-    const { confirm, modificationReason } = req.body || {};
-    if (confirm !== 'RESET_MANAGERS') {
-      return res.status(400).json({ msg: 'Send confirm: "RESET_MANAGERS" to proceed' });
-    }
-    const results = await resetAllManagerScopes({
-      User,
-      modifiedBy: requester._id,
-      reason: modificationReason || 'Reset manager scopes for reassignment'
-    });
-    await createAuditLog({
-      action: 'MANAGER_SCOPES_RESET',
-      performedBy: requester._id,
-      targetResource: 'user',
-      description: `${requester.name} reset manager scopes (${results.updated} managers cleared)`,
-      details: results,
-      ipAddress: req.ip || req.connection.remoteAddress,
-      userAgent: req.get('User-Agent'),
-      severity: 'HIGH'
-    });
-    res.json({ msg: 'Manager scopes cleared', results });
-  } catch (err) {
-    console.error('Reset manager scopes error:', err.message);
-    res.status(500).json({ msg: err.message || 'Reset failed' });
   }
 });
 

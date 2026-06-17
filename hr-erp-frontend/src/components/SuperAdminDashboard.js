@@ -19,7 +19,6 @@ import {
 import UserManagementToolbar from './users/UserManagementToolbar';
 import UserManagementUsersTable from './users/UserManagementUsersTable';
 import UserDirectoryImportModal from './users/UserDirectoryImportModal';
-import UserDepartmentRepairModal from './users/UserDepartmentRepairModal';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -74,7 +73,6 @@ const SuperAdminDashboard = () => {
   // Create User state
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [showUserImportModal, setShowUserImportModal] = useState(false);
-  const [showDeptRepairModal, setShowDeptRepairModal] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -141,8 +139,6 @@ const SuperAdminDashboard = () => {
     'Green Avenue Engineer',
     'Architectural Engineer',
     'Technical Office Engineer',
-    'Executive',
-    'Security',
     'Other'
   ];
 
@@ -1438,12 +1434,6 @@ const SuperAdminDashboard = () => {
                   <p className="section-description">{t('superAdminDashboard.userMgmtDesc')}</p>
                 </div>
                 <div className="section-actions">
-                  <button
-                    className="btn-elegant btn-warn"
-                    onClick={() => setShowDeptRepairModal(true)}
-                  >
-                    {t('deptRepair.openButton')}
-                  </button>
                   <button
                     className="btn-elegant"
                     onClick={() => setShowUserImportModal(true)}
@@ -3561,17 +3551,6 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
       )}
-
-      <UserDepartmentRepairModal
-        open={showDeptRepairModal}
-        onClose={() => setShowDeptRepairModal(false)}
-        isSuperAdmin
-        onApplied={() => {
-          fetchUsers();
-          setSuccess(t('deptRepair.applySuccess'));
-          setTimeout(() => setSuccess(''), 3000);
-        }}
-      />
 
       <UserDirectoryImportModal
         open={showUserImportModal}

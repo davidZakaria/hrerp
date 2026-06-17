@@ -819,13 +819,13 @@ router.get('/ot-reconciliation', auth, async (req, res) => {
                 date: { $gte: rangeStart, $lte: rangeEnd },
                 clockIn: { $exists: true, $ne: '' },
                 clockOut: { $exists: true, $ne: '' }
-            }).populate('user', 'name department employeeCode'),
+            }).populate('user', 'name department employeeCode jobTitle location'),
             Form.find({
                 type: 'extra_hours',
                 status: 'approved',
                 ...dateFilter
             })
-                .populate('user', 'name department employeeCode')
+                .populate('user', 'name department employeeCode jobTitle location')
                 .sort({ extraHoursDate: 1 }),
             Form.countDocuments({
                 type: 'extra_hours',
@@ -909,6 +909,8 @@ router.get('/ot-reconciliation', auth, async (req, res) => {
                     employeeCode: row.employeeCode,
                     employeeName: row.employeeName,
                     department: row.department,
+                    jobTitle: row.jobTitle,
+                    location: row.location,
                     otDate: row.otDate,
                     approvedHours: approved,
                     actualPunchingHours: row.actualPunchingHours,
@@ -957,11 +959,11 @@ router.get('/deduction-report', auth, async (req, res) => {
 
         const [users, attendanceRecords, waiverForms, otForms] = await Promise.all([
             User.find({ employeeCode: { $exists: true, $ne: '' } })
-                .select('name department employeeCode workSchedule')
+                .select('name department employeeCode workSchedule jobTitle location')
                 .sort({ name: 1 }),
             Attendance.find({
                 date: { $gte: extendedStart, $lte: rangeEnd }
-            }).populate('user', 'name department employeeCode workSchedule'),
+            }).populate('user', 'name department employeeCode workSchedule jobTitle location'),
             Form.find({
                 type: { $in: WAIVER_FORM_TYPES },
                 status: { $in: APPROVED_WAIVER_STATUSES },

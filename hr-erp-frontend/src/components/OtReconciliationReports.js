@@ -120,6 +120,8 @@ const OtReconciliationReports = () => {
     const headers = [
       t('otReports.employeeCode'),
       t('otReports.employeeName'),
+      t('otReports.jobTitle'),
+      t('otReports.location'),
       t('otReports.department'),
       t('otReports.otDate'),
       t('otReports.finalOtHrs')
@@ -128,6 +130,8 @@ const OtReconciliationReports = () => {
     const csvRows = rows.map((row) => [
       row.employeeCode || '',
       row.employeeName || '',
+      row.jobTitle || '',
+      row.location || '',
       row.department || '',
       formatOtDate(row.otDate),
       formatHours(row.finalPayableHours)
@@ -195,6 +199,8 @@ const OtReconciliationReports = () => {
           employeeCode: row.employeeCode || '',
           employeeName: row.employeeName || '',
           department: row.department || '',
+          jobTitle: row.jobTitle || '',
+          location: row.location || '',
           days: 0,
           workdays: 0,
           totalPunched: 0,
@@ -291,6 +297,8 @@ const OtReconciliationReports = () => {
     const dailyHeaders = [
       t('otReports.employeeCode'),
       t('otReports.employeeName'),
+      t('otReports.jobTitle'),
+      t('otReports.location'),
       t('otReports.department'),
       t('otReports.otDate'),
       t('otReports.workday'),
@@ -308,6 +316,8 @@ const OtReconciliationReports = () => {
     const dailyLines = filteredDetailedRows.map((row) => csvLine([
       row.employeeCode || '',
       row.employeeName || '',
+      row.jobTitle || '',
+      row.location || '',
       row.department || '',
       csvDateOf(row),
       row.isWorkday ? yes : no,
@@ -325,6 +335,8 @@ const OtReconciliationReports = () => {
     const totalsHeaders = [
       t('otReports.employeeCode'),
       t('otReports.employeeName'),
+      t('otReports.jobTitle'),
+      t('otReports.location'),
       t('otReports.department'),
       t('otReports.otDays'),
       t('otReports.totalWorkdays'),
@@ -340,6 +352,8 @@ const OtReconciliationReports = () => {
     const totalsLines = employeeTotals.map((emp) => csvLine([
       emp.employeeCode || '',
       emp.employeeName || '',
+      emp.jobTitle || '',
+      emp.location || '',
       emp.department || '',
       emp.days,
       emp.workdays,
@@ -685,6 +699,8 @@ const OtReconciliationReports = () => {
                     <tr>
                       <th>{t('otReports.employeeCode')}</th>
                       <th>{t('otReports.employeeName')}</th>
+                      <th>{t('otReports.jobTitle')}</th>
+                      <th>{t('otReports.location')}</th>
                       <th>{t('otReports.department')}</th>
                       <th>{t('otReports.otDays')}</th>
                       {showExtendedDetails && (
@@ -724,6 +740,8 @@ const OtReconciliationReports = () => {
                               {emp.employeeCode || '—'}
                             </td>
                             <td style={{ color: '#93c5fd', fontWeight: 600 }}>{emp.employeeName}</td>
+                            <td>{emp.jobTitle || '—'}</td>
+                            <td>{emp.location || '—'}</td>
                             <td>{emp.department}</td>
                             <td>{emp.days}</td>
                             {showExtendedDetails && (
@@ -861,6 +879,8 @@ const OtReconciliationReports = () => {
                 <tr>
                   <th>{t('otReports.employeeCode')}</th>
                   <th>{t('otReports.employeeName')}</th>
+                  <th>{t('otReports.jobTitle')}</th>
+                  <th>{t('otReports.location')}</th>
                   <th>{t('otReports.department')}</th>
                   <th>{t('otReports.otDate')}</th>
                   {showExtendedDetails && (
@@ -891,6 +911,8 @@ const OtReconciliationReports = () => {
                   <tr key={row.rowKey || row.formId}>
                     <td>{row.employeeCode || '—'}</td>
                     <td>{row.employeeName}</td>
+                    <td>{row.jobTitle || '—'}</td>
+                    <td>{row.location || '—'}</td>
                     <td>{row.department}</td>
                     <td>{showExtendedDetails ? formatOtDateDetailed(row.otDate) : formatOtDate(row.otDate)}</td>
                     {showExtendedDetails && (
@@ -983,6 +1005,8 @@ const OtReconciliationReports = () => {
                 <tr>
                   <th>{t('otReports.employeeCode')}</th>
                   <th>{t('otReports.employeeName')}</th>
+                  <th>{t('otReports.jobTitle')}</th>
+                  <th>{t('otReports.location')}</th>
                   <th>{t('otReports.department')}</th>
                   <th>{t('otReports.otDate')}</th>
                   <th>{t('otReports.finalOtHrs')}</th>
@@ -993,6 +1017,8 @@ const OtReconciliationReports = () => {
                   <tr key={row.rowKey || row.formId}>
                     <td>{row.employeeCode || '—'}</td>
                     <td>{row.employeeName}</td>
+                    <td>{row.jobTitle || '—'}</td>
+                    <td>{row.location || '—'}</td>
                     <td>{row.department}</td>
                     <td>{formatOtDate(row.otDate)}</td>
                     <td style={{ color: '#4ade80', fontWeight: 700 }}>{formatHours(row.finalPayableHours)}</td>

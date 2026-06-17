@@ -17,6 +17,7 @@ import { getEffectiveManagedDepartmentsClient } from '../utils/effectiveManagedD
 import FormManagementMonthFilterBar from './forms/FormManagementMonthFilterBar';
 import UserManagementToolbar from './users/UserManagementToolbar';
 import UserManagementUsersTable from './users/UserManagementUsersTable';
+import UserTitleLocationImportModal from './users/UserTitleLocationImportModal';
 import {
   filterFormsByManagementMonths,
   currentYearMonth,
@@ -68,6 +69,7 @@ const AdminDashboard = () => {
   
   // Modals state
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [showTitleLocationImport, setShowTitleLocationImport] = useState(false);
   const [showVacationManager, setShowVacationManager] = useState(false);
   const [showReport, setShowReport] = useState(false);
   
@@ -125,6 +127,8 @@ const AdminDashboard = () => {
     managedDepartments: [],
     managedDepartmentGroups: [],
     employeeCode: '',
+    jobTitle: '',
+    location: '',
     password: '',
     status: 'active'
   });
@@ -413,6 +417,8 @@ const AdminDashboard = () => {
         ? [...user.managedDepartmentGroups]
         : [],
       employeeCode: user.employeeCode || '',
+      jobTitle: user.jobTitle || '',
+      location: user.location || '',
       password: '', // Empty - only fill if admin wants to change password
       status: user.status || 'active'
     });
@@ -1703,6 +1709,13 @@ const AdminDashboard = () => {
                 />
                 <button
                   type="button"
+                  className="btn-elegant"
+                  onClick={() => setShowTitleLocationImport(true)}
+                >
+                  {t('userTitleImport.openButton')}
+                </button>
+                <button
+                  type="button"
                   className="btn-elegant btn-success"
                   onClick={() => setShowCreateUserModal(true)}
                 >
@@ -2734,6 +2747,16 @@ const AdminDashboard = () => {
         )}
       </div>
 
+      <UserTitleLocationImportModal
+        open={showTitleLocationImport}
+        onClose={() => setShowTitleLocationImport(false)}
+        allUsers={users}
+        onApplied={() => {
+          fetchUsers();
+          setMessage(t('userTitleImport.applySuccess'));
+        }}
+      />
+
       {/* Create User Modal */}
       {showCreateUserModal && (
         <div className="modal-elegant">
@@ -2946,6 +2969,24 @@ const AdminDashboard = () => {
                     <option key={dept} value={dept}>{dept}</option>
                   ))}
                 </select>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">{t('userTitleImport.jobTitle')}</label>
+                <input
+                  type="text"
+                  value={editUserData.jobTitle}
+                  onChange={(e) => setEditUserData({ ...editUserData, jobTitle: e.target.value })}
+                  className="form-input-elegant"
+                />
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">{t('userTitleImport.location')}</label>
+                <input
+                  type="text"
+                  value={editUserData.location}
+                  onChange={(e) => setEditUserData({ ...editUserData, location: e.target.value })}
+                  className="form-input-elegant"
+                />
               </div>
               <div className="form-group-elegant">
                 <label className="form-label-elegant">Role</label>

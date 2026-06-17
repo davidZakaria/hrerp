@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs').promises;
+const multer = require('multer');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const Form = require('../models/Form');
@@ -18,6 +19,23 @@ const { DEPARTMENT_GROUPS } = require('../config/departmentGroups');
 const { getEffectiveManagedDepartments, getEffectiveManagedDepartmentsForQueries } = require('../utils/effectiveManagedDepartments');
 const { parsePeriodQuery } = require('../utils/formSubmissionMonthBounds');
 const { buildEmployeeInsights } = require('../utils/employeeInsights');
+const {
+  parseTitleLocationBuffer,
+  buildTitleLocationPreview,
+  applyTitleLocationRows
+} = require('../utils/userTitleLocationImport');
+
+const titleLocationUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    cb(null, /\.(xlsx|xls)$/i.test(file.originalname || ''));
+  }
+});
+
+function requireAdminOrSuperAdmin(user) {
+  return user && (user.role === 'admin' || user.role === 'super_admin');
+}
 
 function sanitizeManagedDepartmentGroups(raw) {
   if (!Array.isArray(raw)) return [];
@@ -53,6 +71,80 @@ router.get('/department-group-catalog', auth, async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ msg: 'Server error' });
+  }
+});
+
+// Preview job title + location import (never changes department)
+router.post('/import/title-location/preview', auth, titleLocationUpload.single('file'), async (req, res) => {
+  try {
+    const requester = await User.findById(req.user.id);
+    if (!requireAdminOrSuperAdmin(requester)) {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+    if (!req.file?.buffer) {
+      return res.status(400).json({ msg: 'Please upload an Excel file (.xlsx or .xls)' });
+    }
+
+    const fileRows = parseTitleLocationBuffer(req.file.buffer);
+    const users = await User.find().select('-password');
+    const rows = buildTitleLocationPreview(fileRows, users);
+
+    res.json({
+      fileName: req.file.originalname,
+      summary: {
+        total: rows.length,
+        matched: rows.filter((r) => r.status === 'matched').length,
+        unchanged: rows.filter((r) => r.status === 'unchanged').length,
+        unmatched: rows.filter((r) => r.status === 'unmatched').length,
+        skipped: rows.filter((r) => r.status === 'skipped').length,
+        duplicate: rows.filter((r) => r.status === 'duplicate').length
+      },
+      rows
+    });
+  } catch (err) {
+    console.error('Title/location import preview error:', err.message);
+    res.status(400).json({ msg: err.message || 'Failed to parse file' });
+  }
+});
+
+router.post('/import/title-location/apply', auth, async (req, res) => {
+  try {
+    const requester = await User.findById(req.user.id);
+    if (!requireAdminOrSuperAdmin(requester)) {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+
+    const { rows, modificationReason } = req.body || {};
+    if (!Array.isArray(rows) || !rows.length) {
+      return res.status(400).json({ msg: 'No rows to apply' });
+    }
+
+    const userIds = [...new Set(rows.filter((r) => r.apply && r.userId).map((r) => String(r.userId)))];
+    const users = await User.find({ _id: { $in: userIds } });
+    const usersById = new Map(users.map((u) => [String(u._id), u]));
+
+    const results = await applyTitleLocationRows({
+      rows,
+      usersById,
+      modifiedBy: requester._id,
+      modificationReason: modificationReason || 'Job title & location import'
+    });
+
+    await createAuditLog({
+      action: 'USER_TITLE_LOCATION_IMPORT',
+      performedBy: requester._id,
+      targetResource: 'user',
+      description: `${requester.name} updated job title/location for ${results.updated} user(s)`,
+      details: { results, rowCount: rows.length },
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      severity: 'MEDIUM'
+    });
+
+    res.json({ msg: 'Title and location updated', results });
+  } catch (err) {
+    console.error('Title/location import apply error:', err.message);
+    res.status(500).json({ msg: err.message || 'Failed to apply import' });
   }
 });
 
@@ -265,6 +357,8 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
       name,
       email,
       department,
+      jobTitle,
+      location,
       role,
       vacationDaysLeft,
       status,
@@ -315,6 +409,8 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     if (name !== undefined && name !== user.name) modifications.push({ field: 'name', oldValue: user.name, newValue: name });
     if (email !== undefined && email !== user.email) modifications.push({ field: 'email', oldValue: user.email, newValue: email });
     if (department !== undefined && department !== user.department) modifications.push({ field: 'department', oldValue: user.department, newValue: department });
+    if (jobTitle !== undefined && jobTitle !== (user.jobTitle || '')) modifications.push({ field: 'jobTitle', oldValue: user.jobTitle || '', newValue: jobTitle });
+    if (location !== undefined && location !== (user.location || '')) modifications.push({ field: 'location', oldValue: user.location || '', newValue: location });
     if (role !== undefined && role !== user.role) modifications.push({ field: 'role', oldValue: user.role, newValue: role });
     if (vacationDaysLeft !== undefined && vacationDaysLeft !== user.vacationDaysLeft) modifications.push({ field: 'vacationDaysLeft', oldValue: user.vacationDaysLeft, newValue: vacationDaysLeft });
     if (status !== undefined && status !== user.status) modifications.push({ field: 'status', oldValue: user.status, newValue: status });
@@ -325,6 +421,8 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     if (name !== undefined) user.name = name;
     if (email !== undefined) user.email = email;
     if (department !== undefined) user.department = department;
+    if (jobTitle !== undefined) user.jobTitle = jobTitle || '';
+    if (location !== undefined) user.location = location || '';
     if (role !== undefined) user.role = role;
     const oldVacationDays = user.vacationDaysLeft;
     if (vacationDaysLeft !== undefined) user.vacationDaysLeft = vacationDaysLeft;
@@ -468,7 +566,7 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
-    const { name, email, department, role, managedDepartments, managedDepartmentGroups, password, status, employeeCode, modificationReason } = req.body;
+    const { name, email, department, jobTitle, location, role, managedDepartments, managedDepartmentGroups, password, status, employeeCode, modificationReason } = req.body;
 
     const user = await User.findById(req.params.userId);
     if (!user) {
@@ -478,6 +576,8 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     const oldName = user.name;
     const oldEmail = user.email;
     const oldDepartmentBefore = user.department;
+    const oldJobTitle = user.jobTitle || '';
+    const oldLocation = user.location || '';
     const oldStatusBefore = user.status;
     const oldEmployeeCodeBefore = user.employeeCode;
     const previousManagedDepartments = Array.isArray(user.managedDepartments)
@@ -520,6 +620,8 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     if (name !== undefined) user.name = name;
     if (email !== undefined) user.email = email;
     if (department !== undefined) user.department = department;
+    if (jobTitle !== undefined) user.jobTitle = jobTitle || '';
+    if (location !== undefined) user.location = location || '';
     if (role !== undefined) user.role = role;
 
     const targetRole = user.role;
@@ -594,6 +696,12 @@ router.put('/:userId', auth, validateObjectId('userId'), async (req, res) => {
     }
     if (department !== undefined && user.department !== oldDepartmentBefore) {
       modifications.push({ field: 'department', oldValue: oldDepartmentBefore, newValue: user.department });
+    }
+    if (jobTitle !== undefined && (user.jobTitle || '') !== oldJobTitle) {
+      modifications.push({ field: 'jobTitle', oldValue: oldJobTitle, newValue: user.jobTitle || '' });
+    }
+    if (location !== undefined && (user.location || '') !== oldLocation) {
+      modifications.push({ field: 'location', oldValue: oldLocation, newValue: user.location || '' });
     }
     if (role !== undefined && user.role !== oldRoleBeforeUpdate) {
       modifications.push({ field: 'role', oldValue: oldRoleBeforeUpdate, newValue: user.role });

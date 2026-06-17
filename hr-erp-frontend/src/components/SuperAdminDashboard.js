@@ -18,6 +18,7 @@ import {
 } from '../utils/filterFormsByManagementMonths';
 import UserManagementToolbar from './users/UserManagementToolbar';
 import UserManagementUsersTable from './users/UserManagementUsersTable';
+import UserTitleLocationImportModal from './users/UserTitleLocationImportModal';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -63,6 +64,8 @@ const SuperAdminDashboard = () => {
     managedDepartmentGroups: [],
     password: '',
     employeeCode: '',
+    jobTitle: '',
+    location: '',
     permissions: { canEditDepartmentForms: false }
   });
 
@@ -71,6 +74,7 @@ const SuperAdminDashboard = () => {
 
   // Create User state
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [showTitleLocationImport, setShowTitleLocationImport] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -845,6 +849,8 @@ const SuperAdminDashboard = () => {
         : [],
       password: '', // Empty - only fill if admin wants to change password
       employeeCode: user.employeeCode || '',
+      jobTitle: user.jobTitle || '',
+      location: user.location || '',
       permissions: { canEditDepartmentForms: user.permissions?.canEditDepartmentForms || false }
     });
   };
@@ -917,6 +923,8 @@ const SuperAdminDashboard = () => {
           name: userEdit.name,
           email: userEdit.email,
           department: userEdit.department,
+          jobTitle: userEdit.jobTitle,
+          location: userEdit.location,
           role: userEdit.role,
           vacationDaysLeft: userEdit.vacationDaysLeft,
           status: userEdit.status,
@@ -1432,6 +1440,12 @@ const SuperAdminDashboard = () => {
                   <p className="section-description">{t('superAdminDashboard.userMgmtDesc')}</p>
                 </div>
                 <div className="section-actions">
+                  <button
+                    className="btn-elegant"
+                    onClick={() => setShowTitleLocationImport(true)}
+                  >
+                    {t('userTitleImport.openButton')}
+                  </button>
                   <button 
                     className="btn-elegant btn-create-user"
                     onClick={() => setShowCreateUserModal(true)}
@@ -2518,6 +2532,24 @@ const SuperAdminDashboard = () => {
                 </select>
               </div>
               <div className="form-group-elegant">
+                <label className="form-label-elegant">{t('userTitleImport.jobTitle')}</label>
+                <input
+                  type="text"
+                  value={userEdit.jobTitle}
+                  onChange={(e) => setUserEdit({ ...userEdit, jobTitle: e.target.value })}
+                  className="form-input-elegant"
+                />
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">{t('userTitleImport.location')}</label>
+                <input
+                  type="text"
+                  value={userEdit.location}
+                  onChange={(e) => setUserEdit({ ...userEdit, location: e.target.value })}
+                  className="form-input-elegant"
+                />
+              </div>
+              <div className="form-group-elegant">
                 <label className="form-label-elegant">Role</label>
                 <select
                   value={userEdit.role}
@@ -3543,6 +3575,17 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
       )}
+
+      <UserTitleLocationImportModal
+        open={showTitleLocationImport}
+        onClose={() => setShowTitleLocationImport(false)}
+        allUsers={users}
+        onApplied={() => {
+          fetchUsers();
+          setSuccess(t('userTitleImport.applySuccess'));
+          setTimeout(() => setSuccess(''), 3000);
+        }}
+      />
 
       {/* Create User Modal */}
       {showCreateUserModal && (

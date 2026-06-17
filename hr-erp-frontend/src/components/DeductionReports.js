@@ -128,6 +128,8 @@ const DeductionReports = () => {
           employeeCode: row.employeeCode,
           employeeName: row.employeeName,
           department: row.department,
+          jobTitle: row.jobTitle || '',
+          location: row.location || '',
           days: 0,
           pillarADays: 0,
           pillarBDays: 0,
@@ -218,9 +220,9 @@ const DeductionReports = () => {
       '',
       emp.employeeName || '',
       '',
-      '',
+      emp.jobTitle || '',
       emp.department || '',
-      '',
+      emp.location || '',
       formatHours(emp.otDays),
       formatHours(emp.totalOtHours),
       formatHours(emp.totalOtHours),
@@ -239,6 +241,8 @@ const DeductionReports = () => {
     const headers = [
       t('deductionReports.employeeCode'),
       t('deductionReports.employeeName'),
+      t('deductionReports.jobTitle'),
+      t('deductionReports.location'),
       t('deductionReports.department'),
       t('deductionReports.date'),
       t('deductionReports.missingPunch'),
@@ -254,6 +258,8 @@ const DeductionReports = () => {
     const lines = filteredDetailedRows.map((row) => csvLine([
       row.employeeCode,
       row.employeeName,
+      row.jobTitle || '',
+      row.location || '',
       row.department,
       row.dateKey,
       row.missLabel || '',
@@ -438,6 +444,8 @@ const DeductionReports = () => {
                       <tr>
                         <th>{t('deductionReports.employeeCode')}</th>
                         <th>{t('deductionReports.employeeName')}</th>
+                        <th>{t('deductionReports.jobTitle')}</th>
+                        <th>{t('deductionReports.location')}</th>
                         <th>{t('deductionReports.department')}</th>
                         <th>{t('deductionReports.days')}</th>
                         <th>{t('deductionReports.pillarA')}</th>
@@ -454,6 +462,8 @@ const DeductionReports = () => {
                             <tr onClick={() => toggleEmployeeExpanded(emp.key)} style={{ cursor: 'pointer' }}>
                               <td><span style={{ marginRight: '0.5rem', color: '#f87171' }}>{isExpanded ? '▾' : '▸'}</span>{emp.employeeCode || '—'}</td>
                               <td style={{ color: '#fca5a5', fontWeight: 600 }}>{emp.employeeName}</td>
+                              <td>{emp.jobTitle || '—'}</td>
+                              <td>{emp.location || '—'}</td>
                               <td>{emp.department}</td>
                               <td>{emp.days}</td>
                               <td>{formatDays(emp.pillarADays)}</td>
@@ -463,7 +473,7 @@ const DeductionReports = () => {
                             </tr>
                             {isExpanded && (
                               <tr>
-                                <td colSpan={8} style={{ padding: '0.75rem 1rem 1rem', background: 'rgba(15, 23, 42, 0.9)' }}>
+                                <td colSpan={10} style={{ padding: '0.75rem 1rem 1rem', background: 'rgba(15, 23, 42, 0.9)' }}>
                                   <ReportNestedTable>
                                   <table className="deduction-table" style={{ fontSize: '0.85rem' }}>
                                     <thead>
@@ -540,6 +550,8 @@ const DeductionReports = () => {
                   <tr>
                     <th>{t('deductionReports.employeeCode')}</th>
                     <th>{t('deductionReports.employeeName')}</th>
+                    <th>{t('deductionReports.jobTitle')}</th>
+                    <th>{t('deductionReports.location')}</th>
                     <th>{t('deductionReports.department')}</th>
                     <th>{t('deductionReports.date')}</th>
                     <th>{t('deductionReports.missingPunch')}</th>
@@ -554,6 +566,8 @@ const DeductionReports = () => {
                     <tr key={row.rowKey}>
                       <td>{row.employeeCode || '—'}</td>
                       <td>{row.employeeName}</td>
+                      <td>{row.jobTitle || '—'}</td>
+                      <td>{row.location || '—'}</td>
                       <td>{row.department}</td>
                       <td>{formatDate(row.date)}</td>
                       <td>{row.missLabel || '—'}</td>
@@ -593,6 +607,8 @@ const DeductionReports = () => {
                 <tr>
                   <th>{t('deductionReports.employeeCode')}</th>
                   <th>{t('deductionReports.employeeName')}</th>
+                  <th>{t('deductionReports.jobTitle')}</th>
+                  <th>{t('deductionReports.location')}</th>
                   <th>{t('deductionReports.department')}</th>
                   <th>{t('deductionReports.pillarA')}</th>
                   <th>{t('deductionReports.pillarB')}</th>
@@ -607,6 +623,8 @@ const DeductionReports = () => {
                   <tr key={emp.employeeId}>
                     <td>{emp.employeeCode || '—'}</td>
                     <td>{emp.employeeName}</td>
+                    <td>{emp.jobTitle || '—'}</td>
+                    <td>{emp.location || '—'}</td>
                     <td>{emp.department}</td>
                     <td>{formatDays(emp.pillarADays)}</td>
                     <td>{formatDays(emp.pillarBDays)}</td>

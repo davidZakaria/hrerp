@@ -28,6 +28,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    jobTitle: {
+        type: String,
+        required: false
+    },
+    location: {
+        type: String,
+        required: false
+    },
     managedDepartments: [{
         type: String
     }],

@@ -114,6 +114,8 @@ function buildOtReconciliationRow({ form, attendanceRecord, user, actualHours, o
         employeeCode: user.employeeCode || '',
         employeeName: user.name,
         department: user.department,
+        jobTitle: user.jobTitle || '',
+        location: user.location || '',
         otDate,
         otDateKey: dateKeyFromDate(otDate),
         requestedHours: form?.extraHoursWorked ?? null,

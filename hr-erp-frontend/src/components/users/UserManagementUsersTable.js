@@ -2,8 +2,75 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { getEffectiveManagedDepartmentsClient } from '../../utils/effectiveManagedDepartments';
 
+function UserRowActions({
+  user,
+  flags,
+  t,
+  onEdit,
+  onResetPassword,
+  onDelete,
+  onReactivate,
+  onMoveToDraft,
+  onRemoveFlag,
+  layout = 'row',
+}) {
+  const btnWrapClass = layout === 'column' ? 'user-mgmt-mobile-card-actions' : 'user-mgmt-sheet-actions';
+
+  return (
+    <>
+      <div className={btnWrapClass}>
+        {(user.status === 'draft' || user.status === 'inactive') && (
+          <button
+            type="button"
+            className="user-mgmt-sheet-btn user-mgmt-sheet-btn-success"
+            onClick={() => onReactivate(user)}
+          >
+            {t('users.reactivate') || '✓'}
+          </button>
+        )}
+        {user.status !== 'draft' &&
+          user.status !== 'inactive' &&
+          user.role !== 'super_admin' && (
+            <button
+              type="button"
+              className="user-mgmt-sheet-btn"
+              onClick={() => onMoveToDraft(user)}
+            >
+              {t('users.moveToDraft') || 'Draft'}
+            </button>
+          )}
+        <button type="button" className="user-mgmt-sheet-btn user-mgmt-sheet-btn-primary" onClick={() => onEdit(user)}>
+          {t('common.edit')}
+        </button>
+        <button type="button" className="user-mgmt-sheet-btn user-mgmt-sheet-btn-warn" onClick={() => onResetPassword(user)}>
+          🔑
+        </button>
+        <button type="button" className="user-mgmt-sheet-btn user-mgmt-sheet-btn-danger" onClick={() => onDelete(user)}>
+          {t('common.delete')}
+        </button>
+      </div>
+      {flags.length > 0 && (
+        <div className="user-mgmt-sheet-flag-row">
+          {flags.map((flag) => (
+            <button
+              key={flag._id}
+              type="button"
+              className="user-mgmt-sheet-flag-x"
+              title={flag.reason}
+              onClick={() => onRemoveFlag(flag._id)}
+            >
+              × {flag.type}
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 /**
  * Spreadsheet-style preview for user directory (read-oriented layout).
+ * Desktop: wide table with horizontal scroll. Mobile: stacked cards.
  */
 export default function UserManagementUsersTable({
   users,
@@ -29,8 +96,69 @@ export default function UserManagementUsersTable({
     return joined.length > 48 ? `${joined.slice(0, 45)}…` : joined;
   };
 
+  const mobileFields = (user) => [
+    { label: t('common.email'), value: user.email || '—' },
+    { label: t('adminDashboard.roleLabel'), value: String(user.role || '').replace(/_/g, ' ') },
+    { label: t('common.status'), value: user.status || '—' },
+    { label: t('common.department'), value: user.department || '—' },
+    { label: t('userManagement.colJobTitle'), value: user.jobTitle || '—' },
+    { label: t('userManagement.colLocation'), value: user.location || '—' },
+    { label: t('userManagement.colVacation'), value: Number(user.vacationDaysLeft ?? 0).toFixed(1) },
+    {
+      label: t('userManagement.colJoined'),
+      value: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—',
+    },
+    {
+      label: t('userManagement.colLastLogin'),
+      value: user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : t('userManagement.never'),
+    },
+    { label: t('userManagement.colScope'), value: scopeSummary(user) },
+    {
+      label: t('userManagement.colFlags'),
+      value: getEmployeeFlags(user._id).length || '—',
+    },
+  ];
+
   return (
-    <div className="user-mgmt-sheet-wrap">
+    <div className="user-mgmt-sheet-wrap responsive-table-wrap">
+      <div className="user-mgmt-mobile-cards">
+        {users.map((user, idx) => {
+          const flags = getEmployeeFlags(user._id);
+          return (
+            <article key={user._id} className="user-mgmt-mobile-card">
+              <header className="user-mgmt-mobile-card-header">
+                <h4 className="user-mgmt-mobile-card-name">
+                  {idx + 1}. {user.name || '—'}
+                </h4>
+                {user.employeeCode && (
+                  <span className="user-mgmt-mobile-card-code">#{user.employeeCode}</span>
+                )}
+              </header>
+              <dl className="user-mgmt-mobile-card-grid">
+                {mobileFields(user).map((field) => (
+                  <div key={field.label} className="user-mgmt-mobile-card-row">
+                    <dt>{field.label}</dt>
+                    <dd>{field.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <UserRowActions
+                user={user}
+                flags={flags}
+                t={t}
+                onEdit={onEdit}
+                onResetPassword={onResetPassword}
+                onDelete={onDelete}
+                onReactivate={onReactivate}
+                onMoveToDraft={onMoveToDraft}
+                onRemoveFlag={onRemoveFlag}
+                layout="column"
+              />
+            </article>
+          );
+        })}
+      </div>
+
       <table className="user-mgmt-sheet">
         <thead>
           <tr>
@@ -81,52 +209,17 @@ export default function UserManagementUsersTable({
                   )}
                 </td>
                 <td className="user-mgmt-sheet-actions-cell">
-                  <div className="user-mgmt-sheet-actions">
-                    {(user.status === 'draft' || user.status === 'inactive') && (
-                      <button
-                        type="button"
-                        className="user-mgmt-sheet-btn user-mgmt-sheet-btn-success"
-                        onClick={() => onReactivate(user)}
-                      >
-                        {t('users.reactivate') || '✓'}
-                      </button>
-                    )}
-                    {user.status !== 'draft' &&
-                      user.status !== 'inactive' &&
-                      user.role !== 'super_admin' && (
-                        <button
-                          type="button"
-                          className="user-mgmt-sheet-btn"
-                          onClick={() => onMoveToDraft(user)}
-                        >
-                          {t('users.moveToDraft') || 'Draft'}
-                        </button>
-                      )}
-                    <button type="button" className="user-mgmt-sheet-btn user-mgmt-sheet-btn-primary" onClick={() => onEdit(user)}>
-                      {t('common.edit')}
-                    </button>
-                    <button type="button" className="user-mgmt-sheet-btn user-mgmt-sheet-btn-warn" onClick={() => onResetPassword(user)}>
-                      🔑
-                    </button>
-                    <button type="button" className="user-mgmt-sheet-btn user-mgmt-sheet-btn-danger" onClick={() => onDelete(user)}>
-                      {t('common.delete')}
-                    </button>
-                  </div>
-                  {flags.length > 0 && (
-                    <div className="user-mgmt-sheet-flag-row">
-                      {flags.map((flag) => (
-                        <button
-                          key={flag._id}
-                          type="button"
-                          className="user-mgmt-sheet-flag-x"
-                          title={flag.reason}
-                          onClick={() => onRemoveFlag(flag._id)}
-                        >
-                          × {flag.type}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  <UserRowActions
+                    user={user}
+                    flags={flags}
+                    t={t}
+                    onEdit={onEdit}
+                    onResetPassword={onResetPassword}
+                    onDelete={onDelete}
+                    onReactivate={onReactivate}
+                    onMoveToDraft={onMoveToDraft}
+                    onRemoveFlag={onRemoveFlag}
+                  />
                 </td>
               </tr>
             );

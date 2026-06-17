@@ -220,7 +220,7 @@ const ManagerTeamAttendance = () => {
                   </span>
                 )}
               </div>
-              <div style={{ overflowX: 'auto' }}>
+              <div className="manager-team-table-wrap responsive-table-wrap">
                 <table style={{ width: '100%', minWidth: '1100px', borderCollapse: 'separate', borderSpacing: '0', fontSize: '0.9rem' }}>
                   <thead>
                     <tr style={{ background: 'rgba(12,10,8,0.45)', boxShadow: 'inset 0 -2px 0 rgba(201,162,39,0.35)' }}>

@@ -2,6 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
 @import './styles/GlobalStyles.css';
 @import './styles/dashboardNav.css';
+@import './styles/mobile-responsive.css';
 
 /* RTL Support for Arabic */
 [dir="rtl"] {

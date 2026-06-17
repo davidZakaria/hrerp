@@ -40,9 +40,14 @@ img {
   height: auto;
 }
 
-/* Responsive tables */
+/* Responsive tables — auto layout; use .table-layout-fixed when needed */
 table {
   width: 100%;
+  max-width: 100%;
+  table-layout: auto;
+}
+
+table.table-layout-fixed {
   table-layout: fixed;
 }
 

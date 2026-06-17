@@ -700,7 +700,7 @@ const AttendanceManagement = () => {
 
             {/* Summary View */}
             {activeView === 'summary' && (
-              <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
+              <div className="attendance-table-scroll responsive-table-wrap" style={{ marginTop: '1rem' }}>
                 <table style={{ 
                   width: '100%', 
                   minWidth: '1200px',

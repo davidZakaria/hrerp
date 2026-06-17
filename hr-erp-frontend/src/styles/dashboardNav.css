@@ -455,3 +455,23 @@
 [dir='rtl'] .dashboard-nav-header-aside {
   text-align: left;
 }
+
+@media (max-width: 768px) {
+  .dashboard-nav-track {
+    scroll-snap-type: x proximity;
+    padding-bottom: 4px;
+    mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
+  }
+
+  .dashboard-nav-pill {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+
+  .dashboard-nav-shell--fixed-dock {
+    left: max(8px, env(safe-area-inset-left, 0px)) !important;
+    right: max(8px, env(safe-area-inset-right, 0px)) !important;
+    width: auto !important;
+  }
+}

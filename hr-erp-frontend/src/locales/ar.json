@@ -30,6 +30,7 @@
     "managedDepartments": "الأقسام المدارة",
     "employeeCode": "رمز الموظف",
     "notAssigned": "غير معين",
+    "scrollTableHint": "اسحب أفقياً لعرض جميع الأعمدة",
     "locale": "ar-EG"
   },
   "login": {

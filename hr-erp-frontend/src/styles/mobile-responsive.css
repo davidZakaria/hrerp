@@ -1,0 +1,389 @@
+/* ===== MOBILE-FIRST RESPONSIVE SYSTEM ===== */
+/* Loaded after GlobalStyles/App.css — phone-first overrides for tables, layouts, modals */
+
+/* --- Universal horizontal scroll for data tables --- */
+.responsive-table-wrap,
+.table-container,
+.user-mgmt-sheet-wrap,
+.report-scroll-table-wrap,
+.report-nested-detail,
+.attendance-table-scroll,
+.manager-team-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+}
+
+.responsive-table-wrap > table,
+.table-container > table,
+.report-scroll-table-wrap > table,
+.report-nested-detail > table,
+.user-mgmt-sheet {
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
+}
+
+.table-scroll-hint {
+  display: none;
+  margin: 0 0 0.5rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.25);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.table-scroll-hint.is-visible {
+  display: block;
+}
+
+/* --- Grids & layout --- */
+@media (max-width: 768px) {
+  .grid-2,
+  .grid-3,
+  .grid-4,
+  .super-admin-card-grid,
+  .attendance-kpi-grid,
+  .stats-grid,
+  .action-buttons {
+    grid-template-columns: 1fr !important;
+    display: grid !important;
+    gap: 0.75rem !important;
+  }
+
+  .action-buttons {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .action-buttons .btn-elegant,
+  .action-buttons-inline .btn-elegant,
+  .action-buttons button,
+  .action-buttons-inline button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .main-content {
+    padding: 0.75rem !important;
+    max-width: 100% !important;
+  }
+
+  .elegant-card,
+  .glass-card {
+    padding: 1rem !important;
+    border-radius: 12px !important;
+  }
+
+  .section-title {
+    font-size: 1.25rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .stats-number {
+    font-size: 2rem !important;
+  }
+
+  /* Tab / filter bars */
+  .tab-navigation,
+  .user-mgmt-toolbar,
+  .report-filter-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .tab-navigation .tab-button,
+  .tab-button {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Modals */
+  .modal-elegant,
+  .modal-overlay .modal-content,
+  .vacation-modal-content {
+    width: calc(100vw - 1rem) !important;
+    max-width: calc(100vw - 1rem) !important;
+    margin: 0.5rem !important;
+    max-height: calc(100dvh - 1rem) !important;
+    overflow-y: auto !important;
+  }
+
+  .modal-form {
+    grid-template-columns: 1fr !important;
+  }
+
+  .form-group-elegant,
+  .grid-2 .form-group-elegant {
+    width: 100% !important;
+  }
+
+  /* Forms */
+  .form-elegant .grid-2 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Super admin / user cards */
+  .super-admin-card,
+  .user-card,
+  .pending-user-card {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .card-actions,
+  .user-mgmt-sheet-actions {
+    flex-direction: column !important;
+  }
+
+  .card-actions .btn-elegant,
+  .user-mgmt-sheet-btn {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* Report tables — compact cells on phone */
+  .report-scroll-table-wrap th,
+  .report-scroll-table-wrap td,
+  .ot-reconciliation-table th,
+  .ot-reconciliation-table td,
+  .deduction-table th,
+  .deduction-table td {
+    padding: 8px 6px !important;
+    font-size: 0.75rem !important;
+    white-space: nowrap;
+  }
+
+  .table-scroll-hint.is-visible {
+    display: block;
+  }
+
+  /* User management — hide desktop sheet, show cards */
+  .user-mgmt-sheet-wrap .user-mgmt-sheet {
+    display: none;
+  }
+
+  .user-mgmt-mobile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  /* OT / report filter stacks */
+  .elegant-card > div[style*='flexWrap'] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  /* Welcome / profile chips */
+  .user-profile-chips-wrap {
+    gap: 0.5rem !important;
+  }
+
+  .dashboard-container .elegant-card h2 {
+    font-size: clamp(1.15rem, 4.5vw, 1.75rem) !important;
+  }
+
+  .employee-ot-report-section .report-panel {
+    padding: 0.75rem !important;
+  }
+
+  .employee-ot-report-section [style*='fontSize: 2rem'] {
+    font-size: 1.5rem !important;
+  }
+
+  /* Pagination */
+  .report-pagination-mobile-stack {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .user-mgmt-mobile-cards {
+    display: none;
+  }
+}
+
+/* --- User management mobile cards --- */
+.user-mgmt-mobile-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.user-mgmt-mobile-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-mgmt-mobile-card-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.user-mgmt-mobile-card-code {
+  font-size: 0.75rem;
+  background: rgba(33, 150, 243, 0.35);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.user-mgmt-mobile-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+}
+
+.user-mgmt-mobile-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.user-mgmt-mobile-card-row dt {
+  margin: 0;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+  flex-shrink: 0;
+}
+
+.user-mgmt-mobile-card-row dd {
+  margin: 0;
+  text-align: right;
+  color: #fff;
+  word-break: break-word;
+}
+
+.user-mgmt-mobile-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.user-mgmt-mobile-card-actions .user-mgmt-sheet-btn {
+  width: 100%;
+  min-height: 44px;
+}
+
+/* --- Generic mobile data cards (reports) --- */
+@media (max-width: 768px) {
+  .mobile-data-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .mobile-data-card {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 0.85rem;
+  }
+
+  .mobile-data-card-title {
+    font-weight: 700;
+    color: #93c5fd;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .mobile-data-card-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    padding: 0.2rem 0;
+    color: #e2e8f0;
+  }
+
+  .mobile-data-card-row span:first-child {
+    color: #94a3b8;
+    flex-shrink: 0;
+  }
+
+  .mobile-data-card-row .value-positive {
+    color: #4ade80;
+    font-weight: 600;
+  }
+
+  .mobile-data-card-row .value-negative {
+    color: #f87171;
+    font-weight: 600;
+  }
+
+  /* Hide wide table when cards shown */
+  .has-mobile-cards .desktop-only-table {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-data-cards {
+    display: none !important;
+  }
+}
+
+/* --- Very small phones --- */
+@media (max-width: 480px) {
+  .dashboard-container {
+    padding-left: max(8px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(8px, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .app-title {
+    font-size: 0.875rem !important;
+  }
+
+  .btn-elegant {
+    font-size: 0.85rem;
+    padding: 0.65rem 0.85rem;
+  }
+
+  .report-scroll-table-wrap th,
+  .report-scroll-table-wrap td {
+    padding: 6px 4px !important;
+    font-size: 0.7rem !important;
+  }
+}
+
+/* --- Login / auth --- */
+@media (max-width: 768px) {
+  .auth-container,
+  .login-container {
+    padding: 1rem !important;
+    min-height: 100dvh;
+  }
+
+  .auth-card,
+  .login-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+}

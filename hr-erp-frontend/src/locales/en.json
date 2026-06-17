@@ -30,6 +30,7 @@
     "managedDepartments": "Managed Departments",
     "employeeCode": "Employee Code",
     "notAssigned": "Not Assigned",
+    "scrollTableHint": "Swipe sideways to see all columns",
     "locale": "en-US"
   },
   "login": {

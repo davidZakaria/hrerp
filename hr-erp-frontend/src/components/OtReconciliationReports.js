@@ -986,6 +986,7 @@ const OtReconciliationReports = () => {
               </ul>
             </div>
           ) : (
+            <ReportScrollTable maxHeight={560}>
             <table className="ot-reconciliation-table">
               <thead>
                 <tr>
@@ -1012,6 +1013,7 @@ const OtReconciliationReports = () => {
                 ))}
               </tbody>
             </table>
+            </ReportScrollTable>
           )}
         </div>
       )}

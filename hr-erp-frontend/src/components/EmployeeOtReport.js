@@ -167,7 +167,7 @@ const EmployeeOtReport = () => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                 gap: '1rem',
                 marginBottom: '1.5rem'
               }}
@@ -229,6 +229,37 @@ const EmployeeOtReport = () => {
               {rows.length === 0 ? (
                 <p style={{ color: '#94a3b8', margin: 0 }}>{t('employeeOtReport.noRows')}</p>
               ) : (
+                <div className="has-mobile-cards">
+                  <div className="mobile-data-cards">
+                    {rows.map((row) => (
+                      <article key={row.rowKey || row.formId} className="mobile-data-card">
+                        <div className="mobile-data-card-title">{formatOtDate(row.otDate)}</div>
+                        <div className="mobile-data-card-row">
+                          <span>{t('employeeOtReport.colFingerprint')}</span>
+                          <span>{formatHours(row.actualPunchingHours)}</span>
+                        </div>
+                        <div className="mobile-data-card-row">
+                          <span>{t('employeeOtReport.colRequested')}</span>
+                          <span>{row.requestedHours != null ? formatHours(row.requestedHours) : '—'}</span>
+                        </div>
+                        <div className="mobile-data-card-row">
+                          <span>{t('employeeOtReport.colApproved')}</span>
+                          <span>{formatHours(row.approvedHours)}</span>
+                        </div>
+                        <div className="mobile-data-card-row">
+                          <span>{t('employeeOtReport.colVariance')}</span>
+                          <span className={row.varianceFlag === 'positive' ? 'value-positive' : row.varianceFlag === 'negative' ? 'value-negative' : ''}>
+                            {row.variance > 0 ? '+' : ''}{formatHours(row.variance)}
+                          </span>
+                        </div>
+                        <div className="mobile-data-card-row">
+                          <span>{t('employeeOtReport.colFinal')}</span>
+                          <span className="value-positive">{formatHours(row.finalPayableHours)}</span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                  <div className="desktop-only-table">
                 <ReportScrollTable maxHeight={480}>
                   <table className="ot-reconciliation-table">
                     <thead>
@@ -277,6 +308,8 @@ const EmployeeOtReport = () => {
                     </tfoot>
                   </table>
                 </ReportScrollTable>
+                  </div>
+                </div>
               )}
               <p style={{ margin: '1rem 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
                 {t('employeeOtReport.footerNote')}

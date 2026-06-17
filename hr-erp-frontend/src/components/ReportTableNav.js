@@ -1,14 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const REPORT_SCROLL_TABLE_CSS = `
   .report-scroll-table-wrap {
-    overflow: auto;
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    max-width: 100%;
     border: 1px solid #334155;
     border-radius: 8px;
     background: rgba(15, 23, 42, 0.5);
   }
   .report-scroll-table-wrap table {
     margin: 0;
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
   }
   .report-scroll-table-wrap thead th {
     position: sticky;
@@ -21,14 +29,65 @@ export const REPORT_SCROLL_TABLE_CSS = `
     border-radius: 6px;
     overflow: auto;
     max-height: 320px;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
     background: rgba(15, 23, 42, 0.95);
+  }
+  .report-nested-detail table {
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
   }
   .report-nested-detail thead th {
     position: sticky;
     top: 0;
     z-index: 1;
   }
+  @media (max-width: 768px) {
+    .report-scroll-table-wrap {
+      max-height: min(70dvh, 520px) !important;
+    }
+    .report-nested-detail {
+      max-height: min(50dvh, 320px);
+    }
+  }
 `;
+
+export function TableScrollHint({ visible, className = '' }) {
+  const { t } = useTranslation();
+  if (!visible) return null;
+  return (
+    <p className={`table-scroll-hint is-visible ${className}`.trim()} role="note">
+      ↔ {t('common.scrollTableHint')}
+    </p>
+  );
+}
+
+function useHorizontalOverflow(ref, deps = []) {
+  const [overflows, setOverflows] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+
+    const check = () => {
+      setOverflows(el.scrollWidth > el.clientWidth + 4);
+    };
+
+    check();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(check) : null;
+    ro?.observe(el);
+    window.addEventListener('resize', check);
+
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', check);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+
+  return overflows;
+}
 
 export function useReportPagination(items, initialPageSize = 15) {
   const [page, setPage] = useState(1);
@@ -77,15 +136,18 @@ export function ReportPaginationBar({
   const to = Math.min(startIndex + pageSize, total);
 
   return (
-    <div style={{
-      display: 'flex',
-      flexWrap: 'wrap',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: '0.75rem',
-      marginTop: '0.75rem',
-      padding: '0.5rem 0'
-    }}>
+    <div
+      className="report-pagination-mobile-stack"
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '0.75rem',
+        marginTop: '0.75rem',
+        padding: '0.5rem 0'
+      }}
+    >
       <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
         {t(`${i18nPrefix}.showingPage`, { from, to, total })}
       </span>
@@ -148,19 +210,35 @@ export function ReportViewModeToggle({ viewMode, setViewMode, i18nPrefix, t }) {
   );
 }
 
-export function ReportScrollTable({ children, maxHeight = 520, className = '' }) {
+export function ReportScrollTable({ children, maxHeight = 520, className = '', showScrollHint = true }) {
+  const wrapRef = useRef(null);
+  const overflows = useHorizontalOverflow(wrapRef, [children, maxHeight]);
+
   return (
-    <div className={`report-scroll-table-wrap ${className}`.trim()} style={{ maxHeight }}>
-      {children}
-    </div>
+    <>
+      {showScrollHint && <TableScrollHint visible={overflows} />}
+      <div
+        ref={wrapRef}
+        className={`report-scroll-table-wrap ${className}`.trim()}
+        style={{ maxHeight }}
+      >
+        {children}
+      </div>
+    </>
   );
 }
 
 export function ReportNestedTable({ children }) {
+  const wrapRef = useRef(null);
+  const overflows = useHorizontalOverflow(wrapRef, [children]);
+
   return (
-    <div className="report-nested-detail">
-      {children}
-    </div>
+    <>
+      <TableScrollHint visible={overflows} />
+      <div ref={wrapRef} className="report-nested-detail">
+        {children}
+      </div>
+    </>
   );
 }
 

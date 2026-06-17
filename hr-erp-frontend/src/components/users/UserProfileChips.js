@@ -3,10 +3,12 @@ import { useTranslation } from 'react-i18next';
 
 const chipStyle = {
   background: 'rgba(255,255,255,0.2)',
-  padding: '0.75rem 1.5rem',
+  padding: '0.75rem 1rem',
   borderRadius: '12px',
   backdropFilter: 'blur(10px)',
-  minWidth: '140px'
+  minWidth: '120px',
+  flex: '1 1 140px',
+  maxWidth: '100%'
 };
 
 /**
@@ -32,7 +34,7 @@ export default function UserProfileChips({ user, variant = 'light' }) {
   ];
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem' }}>
+    <div className="user-profile-chips-wrap" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem' }}>
       {items.map((item) => (
         <div key={item.label} style={style}>
           <span style={labelStyle}>{item.icon} {item.label}</span>

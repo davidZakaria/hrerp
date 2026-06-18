@@ -81,8 +81,9 @@ const Login = () => {
             <div className="njd-title">NEW JERSEY DEVELOPMENTS</div>
             <div className="njd-subtitle">It's all about The Experience</div>
             <form className="njd-form" onSubmit={handleSubmit}>
-                <label>Email</label>
+                <label htmlFor="email">Email</label>
                 <input
+                    id="email"
                     type="email"
                     name="email"
                     placeholder="Email"
@@ -90,8 +91,9 @@ const Login = () => {
                     onChange={handleChange}
                     required
                 />
-                <label>Password</label>
+                <label htmlFor="password">Password</label>
                 <input
+                    id="password"
                     type="password"
                     name="password"
                     placeholder="Password"
@@ -109,6 +111,7 @@ const Login = () => {
             {message && (
                 <div 
                     className="njd-message" 
+                    aria-live="polite"
                     style={{ 
                         color: message.includes('successful') ? 'green' : 'red',
                         marginTop: '10px',

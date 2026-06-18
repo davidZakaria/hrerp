@@ -271,6 +271,9 @@ const authLimiter = rateLimit({
     }
 });
 app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/reset-password-request', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 
 // ZKTeco ADMS - raw UTF-8 body (devices often omit/vary Content-Type; express.text skipped empty bodies)
 app.use('/iclock', require('./middleware/zktecoRawBody'), require('./routes/zkteco'));

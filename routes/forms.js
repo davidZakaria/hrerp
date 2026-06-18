@@ -1601,9 +1601,16 @@ router.get('/history/:formId', auth, validateObjectId('formId'), async (req, res
 router.get('/document/:filename', auth, async (req, res) => {
     try {
         const filename = req.params.filename;
-        const filePath = path.join(__dirname, '..', 'uploads', 'medical-documents', filename);
+        const baseUploadPath = path.join(__dirname, '..', 'uploads', 'medical-documents');
+        const filePath = path.normalize(path.join(baseUploadPath, filename));
         const fs = require('fs');
         
+        // Prevent directory traversal attacks
+        if (!filePath.startsWith(baseUploadPath)) {
+            console.warn(`Blocked directory traversal attempt: ${filename}`);
+            return res.status(403).json({ msg: 'Access denied' });
+        }
+
         console.log('Document request:', {
             filename,
             filePath,

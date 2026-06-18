@@ -1,0 +1,4 @@
+## 2024-05-18 - Path Traversal Vulnerability in File Downloads
+**Vulnerability:** A path traversal vulnerability was present in the `/api/forms/document/:filename` route within `routes/forms.js`. The `filename` parameter from the user was directly joined to the base directory path without any validation or normalization.
+**Learning:** Even though the express app had a generic `protectedFileAccess` middleware for `express.static` routes in `server.js`, custom API endpoints that serve files manually using `res.sendFile()` (like the document download endpoint) often miss these checks. Unvalidated user input was used in file paths.
+**Prevention:** Always use `path.normalize(path.join(basePath, userInput))` and strictly verify that the normalized absolute path starts with the intended base directory (`filePath.startsWith(basePath)`). Never trust user input to be a safe filename.

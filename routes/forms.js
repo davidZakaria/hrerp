@@ -1601,6 +1601,12 @@ router.get('/history/:formId', auth, validateObjectId('formId'), async (req, res
 router.get('/document/:filename', auth, async (req, res) => {
     try {
         const filename = req.params.filename;
+
+        // Prevent directory traversal attacks
+        if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+            return res.status(400).json({ msg: 'Invalid filename. Path traversal detected.' });
+        }
+
         const filePath = path.join(__dirname, '..', 'uploads', 'medical-documents', filename);
         const fs = require('fs');
         

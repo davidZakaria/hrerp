@@ -3271,6 +3271,7 @@ const AdminDashboard = () => {
                 className="vacation-close-btn" 
                 onClick={() => setShowVacationManager(false)}
                 title="Close"
+                aria-label="Close"
               >
                 ✕
               </button>
@@ -3397,6 +3398,7 @@ const AdminDashboard = () => {
                   className="report-close-btn" 
                   onClick={() => setShowReport(false)}
                   title="Close"
+                  aria-label="Close"
                 >
                   ✕
                 </button>

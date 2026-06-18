@@ -1,0 +1,3 @@
+## 2024-06-14 - Accessible Toast Notifications
+**Learning:** Dynamic toast notifications present a specific accessibility challenge. Without `aria-live` regions, screen readers will not announce when a new toast appears, causing blind or low-vision users to miss important context (like success, error, or warning messages). Additionally, icon-only action buttons (like the `×` close button) must have clear `aria-label` attributes to be perceivable.
+**Action:** Always wrap dynamic notification containers with `aria-live="polite"` and `aria-atomic="true"`. Ensure all icon-only buttons have descriptive `aria-label` attributes.

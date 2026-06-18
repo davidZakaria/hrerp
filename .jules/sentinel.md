@@ -1,0 +1,4 @@
+## 2024-05-24 - [Unauthenticated Setup Route Protection]
+**Vulnerability:** Unauthenticated setup endpoints (like `/create-super-admin`) present a severe risk of account takeover during initial deployment, database resets, or accidental deletion of admin accounts. The previous protection solely checked if any super admin existed in the DB, leaving a race condition or fallback vulnerability.
+**Learning:** Relying purely on DB state to protect setup routes is insufficient. A malicious actor could exploit windows where the DB state has not been populated. Setup endpoints must require a secret token even if they include a state check.
+**Prevention:** Implement an environment variable-based secret token validation (e.g., `SETUP_TOKEN`) on all initialization and setup routes to ensure only authorized system administrators can trigger them.

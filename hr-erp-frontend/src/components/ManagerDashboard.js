@@ -1362,7 +1362,7 @@ const ManagerDashboard = ({ onLogout }) => {
               <h3>
                 {actionType === 'approve' ? t('managerDashboard.approveRequest') : t('managerDashboard.rejectRequest')}
               </h3>
-              <button className="close-btn" onClick={closeCommentModal}>×</button>
+              <button className="close-btn" onClick={closeCommentModal} aria-label={t('common.close') || "Close"}>×</button>
             </div>
             
             {selectedForm && (
@@ -1596,7 +1596,7 @@ const ManagerDashboard = ({ onLogout }) => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
             <div className="modal-header">
               <h3>✏️ {t('edit') || 'Edit'} Form</h3>
-              <button className="close-btn" onClick={closeEditFormModal}>×</button>
+              <button className="close-btn" onClick={closeEditFormModal} aria-label={t('common.close') || "Close"}>×</button>
             </div>
             <div className="modal-body">
               <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
@@ -1745,7 +1745,7 @@ const ManagerDashboard = ({ onLogout }) => {
           <div className="modal-content flag-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>🚩 {t('flags.flagEmployee') || 'Flag Employee'}</h3>
-              <button className="close-btn" onClick={closeFlagModal}>×</button>
+              <button className="close-btn" onClick={closeFlagModal} aria-label={t('common.close') || "Close"}>×</button>
             </div>
             
             <div className="modal-body">

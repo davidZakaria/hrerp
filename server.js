@@ -255,8 +255,8 @@ const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: process.env.NODE_ENV === 'production' ? 30 : 50,
     message: {
-        msg: 'Too many login attempts. Please try again in 15 minutes.',
-        error: 'Too many login attempts, please try again later.',
+        msg: 'Too many authentication attempts. Please try again in 15 minutes.',
+        error: 'Too many authentication attempts, please try again later.',
         retryAfter: '15 minutes'
     },
     standardHeaders: true,
@@ -271,6 +271,9 @@ const authLimiter = rateLimit({
     }
 });
 app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/reset-password-request', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 
 // ZKTeco ADMS - raw UTF-8 body (devices often omit/vary Content-Type; express.text skipped empty bodies)
 app.use('/iclock', require('./middleware/zktecoRawBody'), require('./routes/zkteco'));

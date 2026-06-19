@@ -447,64 +447,23 @@ router.get('/manager/pending', auth, async (req, res) => {
 
         // No caching for pending forms to ensure real-time accuracy
 
-        // Optimized aggregation pipeline
-        const pipeline = [
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'user',
-                    foreignField: '_id',
-                    as: 'userInfo'
-                }
-            },
-            { $unwind: '$userInfo' },
-            {
-                $match: {
-                    status: 'pending',
-                    type: { $ne: 'excuse' },
-                    'userInfo.department': { $in: effectiveDepts },
-                    'userInfo._id': { $ne: manager._id }
-                }
-            },
-            {
-                $project: {
-                    type: 1,
-                    vacationType: 1,
-                    startDate: 1,
-                    endDate: 1,
-                    excuseDate: 1,
-                    excuseType: 1,
-                    sickLeaveStartDate: 1,
-                    sickLeaveEndDate: 1,
-                    wfhDate: 1,
-                    wfhWorkingOn: 1,
-                    wfhDescription: 1,
-                    extraHoursDate: 1,
-                    extraHoursWorked: 1,
-                    approvedHours: 1,
-                    extraHoursDescription: 1,
-                    missionStartDate: 1,
-                    missionEndDate: 1,
-                    missionDestination: 1,
-                    missionFromTime: 1,
-                    missionToTime: 1,
-                    reason: 1,
-                    fromHour: 1,
-                    toHour: 1,
-                    medicalDocument: 1,
-                    status: 1,
-                    createdAt: 1,
-                    updatedAt: 1,
-                    'user._id': '$userInfo._id',
-                    'user.name': '$userInfo.name',
-                    'user.email': '$userInfo.email',
-                    'user.department': '$userInfo.department'
-                }
-            },
-            { $sort: { createdAt: -1 } }
-        ];
+        // Find team members in managed departments first
+        const teamMembers = await User.find({
+            department: { $in: effectiveDepts },
+            _id: { $ne: manager._id },
+            role: 'employee',
+            status: 'active'
+        }).select('_id');
 
-        const forms = await Form.aggregate(pipeline);
+        const teamMemberIds = teamMembers.map(member => member._id);
+
+        const forms = await Form.find({
+            user: { $in: teamMemberIds },
+            status: 'pending',
+            type: { $ne: 'excuse' }
+        })
+        .populate('user', 'name email department')
+        .sort({ createdAt: -1 });
 
         res.json(forms);
     } catch (err) {

@@ -1,0 +1,3 @@
+## 2024-06-13 - Inefficient MongoDB Aggregation `$lookup`
+**Learning:** Found a severe performance anti-pattern in `/manager/pending` forms endpoint where an aggregation pipeline performs a `$lookup` on the entire `forms` collection before applying a `$match` on the joined `userInfo.department`. Even with MongoDB's query optimizer, missing a `$match` at the start of a pipeline causes massive cross-collection joins.
+**Action:** Replace complex aggregations with a fast `User.find()` to resolve authorized IDs, followed by a `Form.find({ user: { $in: ids } })` query. Ensure `$match` operations are always the first stage in aggregations when they can't be avoided.

@@ -52,7 +52,7 @@ router.get('/', auth, async (req, res) => {
     if (user.role !== 'admin' && user.role !== 'super_admin') {
       return res.status(403).json({ msg: 'Not authorized' });
     }
-    const users = await User.find().select('-password');
+    const users = await User.find().select('-password').lean();
     res.json(users);
   } catch (err) {
     console.error(err.message);
@@ -86,7 +86,7 @@ router.post('/import/title-location/preview', auth, titleLocationUpload.single('
     }
 
     const fileRows = parseTitleLocationBuffer(req.file.buffer);
-    const users = await User.find().select('-password');
+    const users = await User.find().select('-password').lean();
     const rows = buildTitleLocationPreview(fileRows, users);
 
     res.json({
@@ -162,7 +162,7 @@ router.get('/employee-summary', auth, async (req, res) => {
       ? { status: 'active' }
       : { status: 'active', role: { $ne: 'super_admin' } };
 
-    const employees = await User.find(employeeFilter).select('-password');
+    const employees = await User.find(employeeFilter).select('-password').lean();
 
     const insights = await buildEmployeeInsights({
       employees,
@@ -917,7 +917,7 @@ router.get('/all', auth, async (req, res) => {
     if (user.role !== 'super_admin') {
       return res.status(403).json({ msg: 'Not authorized as super admin' });
     }
-    const users = await User.find().select('-password');
+    const users = await User.find().select('-password').lean();
     res.json(users);
   } catch (err) {
     console.error(err.message);

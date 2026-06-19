@@ -1,0 +1,3 @@
+## 2024-06-19 - Mongoose `.lean()` for Read-Only Queries
+**Learning:** For Mongoose queries that retrieve multiple documents (like `User.find()`) where the results are only sent to the client (e.g., via `res.json()`) or passed to read-only summary/preview formatting functions, appending `.lean()` significantly improves performance and reduces memory usage by returning plain JS objects instead of full Mongoose Documents.
+**Action:** When working on backend Mongoose queries that don't require calling document methods (e.g., `.save()`) or accessing virtuals, I will proactively append `.lean()` to enhance query performance.

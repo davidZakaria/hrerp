@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const multer = require('multer');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
@@ -34,6 +35,42 @@ const titleLocationUpload = multer({
     cb(null, /\.(xlsx|xls)$/i.test(file.originalname || ''));
   }
 });
+
+const AVATAR_DIR = path.join(__dirname, '..', 'uploads', 'avatars');
+const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+const AVATAR_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+const avatarUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      fsSync.mkdirSync(AVATAR_DIR, { recursive: true });
+      cb(null, AVATAR_DIR);
+    },
+    filename: (req, file, cb) => {
+      const ext = (path.extname(file.originalname || '').toLowerCase() || '.jpg').replace(/[^.a-z0-9]/g, '');
+      const safeExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext) ? ext : '.jpg';
+      cb(null, `${req.user.id}-${Date.now()}${safeExt}`);
+    }
+  }),
+  limits: { fileSize: AVATAR_MAX_BYTES },
+  fileFilter: (req, file, cb) => {
+    const extOk = /\.(jpe?g|png|webp)$/i.test(file.originalname || '');
+    cb(null, AVATAR_MIME.has(file.mimetype) && extOk);
+  }
+});
+
+async function deleteAvatarFileIfExists(relativePath) {
+  if (!relativePath || !String(relativePath).startsWith('/uploads/avatars/')) return;
+  const filename = path.basename(relativePath);
+  const fullPath = path.join(AVATAR_DIR, filename);
+  try {
+    await fs.unlink(fullPath);
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      console.warn('[upload-avatar] could not delete old file:', err.message);
+    }
+  }
+}
 
 function requireAdminOrSuperAdmin(user) {
   return user && (user.role === 'admin' || user.role === 'super_admin');
@@ -1113,6 +1150,50 @@ router.post('/reset-excuse-hours', auth, async (req, res) => {
       error: error.message 
     });
   }
+});
+
+// Upload profile picture (current user only)
+router.post('/upload-avatar', auth, (req, res) => {
+  avatarUpload.single('avatar')(req, res, async (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ msg: 'Image must be 2MB or smaller' });
+      }
+      return res.status(400).json({ msg: err.message });
+    }
+    if (err) {
+      return res.status(400).json({ msg: err.message || 'Upload failed' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ msg: 'Please upload a JPEG, PNG, or WebP image' });
+    }
+
+    try {
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        await fs.unlink(req.file.path).catch(() => {});
+        return res.status(404).json({ msg: 'User not found' });
+      }
+
+      const previousPicture = user.profilePicture;
+      const relativePath = `/uploads/avatars/${req.file.filename}`;
+      user.profilePicture = relativePath;
+      await user.save();
+
+      if (previousPicture && previousPicture !== relativePath) {
+        await deleteAvatarFileIfExists(previousPicture);
+      }
+
+      res.json({
+        msg: 'Profile picture updated',
+        profilePicture: relativePath
+      });
+    } catch (uploadErr) {
+      console.error('[upload-avatar] error:', uploadErr);
+      await fs.unlink(req.file.path).catch(() => {});
+      res.status(500).json({ msg: 'Failed to save profile picture' });
+    }
+  });
 });
 
 module.exports = router; 

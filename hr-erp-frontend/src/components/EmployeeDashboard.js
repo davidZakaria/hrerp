@@ -4,11 +4,13 @@ import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
 import DashboardAppHeader from './layout/DashboardAppHeader';
 import UserProfileChips from './users/UserProfileChips';
+import WelcomeHero from './WelcomeHero';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import EmployeeOtReport from './EmployeeOtReport';
 import API_URL from '../config/api';
 import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
 import { formatVacationDeductionDays } from '../utils/vacationDays';
+import { persistProfilePicture } from '../utils/avatarHelpers';
 
 const EmployeeDashboard = () => {
   const { t } = useTranslation();
@@ -35,6 +37,7 @@ const EmployeeDashboard = () => {
       const data = await res.json();
       if (res.ok) {
         setUser(data);
+        persistProfilePicture(data.profilePicture || '');
       }
     } catch (err) {
       // ignore
@@ -170,26 +173,21 @@ const EmployeeDashboard = () => {
       {/* Header */}
       <DashboardAppHeader title={t('dashboard.employee')} />
 
-      {/* Welcome Message */}
+      {/* Welcome hero */}
+      <WelcomeHero
+        user={user}
+        vacationDaysLeft={vacationDaysLeft}
+        variant="employee"
+        onUserUpdate={setUser}
+      />
+
       {user && (
-        <div className="elegant-card hover-lift" style={{ 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          textAlign: 'center',
-          padding: '2rem',
+        <div className="elegant-card hover-lift" style={{
           marginBottom: '2rem',
-          borderRadius: '16px',
-          boxShadow: '0 10px 40px rgba(102, 126, 234, 0.3)'
+          padding: '1rem 1.25rem',
+          borderRadius: '16px'
         }}>
-          <h2 style={{ 
-            fontSize: '2rem', 
-            marginBottom: '1rem',
-            fontWeight: '600',
-            textShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}>
-            👋 {t('dashboard.welcome')}, {user.name}!
-          </h2>
-          <UserProfileChips user={user} />
+          <UserProfileChips user={user} variant="dark" />
         </div>
       )}
 

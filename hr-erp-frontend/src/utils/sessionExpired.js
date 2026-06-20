@@ -8,5 +8,6 @@ export function handleSessionExpired() {
   localStorage.removeItem('userRole');
   localStorage.removeItem('userId');
   localStorage.removeItem('userName');
+  localStorage.removeItem('profilePicture');
   window.location.href = '/';
 }

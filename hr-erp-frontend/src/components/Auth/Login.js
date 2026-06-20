@@ -38,6 +38,11 @@ const Login = ({ onLogin }) => {
         localStorage.setItem('userRole', data.role);
         localStorage.setItem('userId', data.userId);
         localStorage.setItem('userName', data.name);
+        if (data.profilePicture) {
+          localStorage.setItem('profilePicture', data.profilePicture);
+        } else {
+          localStorage.removeItem('profilePicture');
+        }
         localStorage.setItem(
           'managedDepartments',
           JSON.stringify(data.effectiveManagedDepartments || data.managedDepartments || [])

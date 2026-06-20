@@ -7,11 +7,13 @@ import FormSubmission from './FormSubmission';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import ATSDashboard from './ATS/ATSDashboard';
 import ManagerTeamAttendance from './ManagerTeamAttendance';
+import WelcomeHero from './WelcomeHero';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
 import { normalizeExcuseType, isPaidExcuse } from '../utils/excuseType';
 import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
 import { formatVacationDeductionDays } from '../utils/vacationDays';
+import { persistProfilePicture } from '../utils/avatarHelpers';
 
 const ManagerDashboard = ({ onLogout }) => {
   const { t } = useTranslation();
@@ -118,6 +120,7 @@ const ManagerDashboard = ({ onLogout }) => {
       if (response.data) {
         setUser(response.data);
         localStorage.setItem('userName', response.data.name);
+        persistProfilePicture(response.data.profilePicture || '');
         localStorage.setItem(
           'managedDepartments',
           JSON.stringify(response.data.effectiveManagedDepartments || response.data.managedDepartments || [])
@@ -769,7 +772,6 @@ const ManagerDashboard = ({ onLogout }) => {
       <div className="dashboard-header">
         <div className="user-info">
           <h1>{t('managerDashboard.managerDashboard')}</h1>
-          <p>{t('managerDashboard.welcome')}, {user?.name || t('dashboard.manager')}</p>
           <p className="departments">
             {t('managerDashboard.managing', {
               departments: effectiveDeptList.length ? effectiveDeptList.join(', ') : t('managerDashboard.noDepartmentsAssigned')
@@ -781,6 +783,13 @@ const ManagerDashboard = ({ onLogout }) => {
           <button type="button" onClick={onLogout} className="logout-btn">{t('common.logout')}</button>
         </div>
       </div>
+
+      <WelcomeHero
+        user={user}
+        vacationDaysLeft={vacationDaysLeft}
+        variant="manager"
+        onUserUpdate={setUser}
+      />
 
       {/* Message */}
       {message && (

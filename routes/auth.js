@@ -192,6 +192,7 @@ router.post('/login', async (req, res) => {
                     userId: user.id,
                     name: user.name,
                     email: user.email,
+                    profilePicture: user.profilePicture || '',
                     managedDepartments: user.role === 'manager' ? effectiveMd : (user.managedDepartments || []),
                     managedDepartmentGroups: user.managedDepartmentGroups || [],
                     effectiveManagedDepartments: user.role === 'manager' ? effectiveMd : undefined

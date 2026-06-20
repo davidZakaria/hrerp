@@ -27,6 +27,7 @@ uploads/
 !uploads/medical-documents/.gitkeep
 !uploads/resumes/.gitkeep
 !uploads/attendance/.gitkeep
+!uploads/avatars/.gitkeep
 
 # Logs
 logs/

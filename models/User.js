@@ -36,6 +36,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    profilePicture: {
+        type: String,
+        default: ''
+    },
     managedDepartments: [{
         type: String
     }],

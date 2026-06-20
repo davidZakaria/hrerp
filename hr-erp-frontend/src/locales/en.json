@@ -267,6 +267,19 @@
     "typeFilterLabel": "Request type",
     "pipelineCompact": "Pipeline"
   },
+  "welcomeHero": {
+    "goodMorning": "Good morning",
+    "goodAfternoon": "Good afternoon",
+    "goodEvening": "Good evening",
+    "greetingLine": "{{greeting}}, {{name}}!",
+    "leaveRemaining": "Annual leave left",
+    "excusesRemaining": "Excuses left",
+    "todaysShift": "Today's shift"
+  },
+  "userAvatar": {
+    "changePhoto": "Change profile photo",
+    "uploadFailed": "Could not upload photo. Use JPEG, PNG, or WebP under 2MB."
+  },
   "systemSettings": {
     "title": "System settings",
     "subtitle": "Configure company-wide HR policies without code deployments",

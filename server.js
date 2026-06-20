@@ -416,6 +416,9 @@ app.use('/uploads/resumes', auth, protectedFileAccess('resumes', 'resume'),
 app.use('/uploads/attendance', auth, protectedFileAccess('attendance', 'attendance'),
     express.static(path.join(__dirname, 'uploads/attendance')));
 
+app.use('/uploads/avatars', auth, protectedFileAccess('avatars', 'avatar'),
+    express.static(path.join(__dirname, 'uploads/avatars')));
+
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));

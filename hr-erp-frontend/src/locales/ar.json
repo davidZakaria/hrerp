@@ -267,6 +267,19 @@
     "typeFilterLabel": "نوع الطلب",
     "pipelineCompact": "مسار الموافقة"
   },
+  "welcomeHero": {
+    "goodMorning": "صباح الخير",
+    "goodAfternoon": "مساء الخير",
+    "goodEvening": "مساء الخير",
+    "greetingLine": "{{greeting}}، {{name}}!",
+    "leaveRemaining": "الإجازة السنوية المتبقية",
+    "excusesRemaining": "الاستئذانات المتبقية",
+    "todaysShift": "وردية اليوم"
+  },
+  "userAvatar": {
+    "changePhoto": "تغيير صورة الملف الشخصي",
+    "uploadFailed": "تعذر رفع الصورة. استخدم JPEG أو PNG أو WebP أقل من 2MB."
+  },
   "systemSettings": {
     "title": "إعدادات النظام",
     "subtitle": "ضبط سياسات الموارد البشرية على مستوى الشركة دون نشر كود",

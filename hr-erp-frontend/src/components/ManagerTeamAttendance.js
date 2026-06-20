@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import API_URL from '../config/api';
 import EmployeeAttendanceDetailModal from './EmployeeAttendanceDetailModal';
@@ -77,8 +77,9 @@ const ManagerTeamAttendance = () => {
     }
   };
 
-  const filterReport = (report) => {
-    if (!report) return [];
+  const filteredReport = useMemo(() => {
+    const report = attendanceReport?.report || [];
+    if (!report.length) return [];
     const q = searchQuery.toLowerCase().trim();
     if (!q) return report;
     return report.filter(emp =>
@@ -86,9 +87,7 @@ const ManagerTeamAttendance = () => {
       (emp.user.employeeCode || '').toLowerCase().includes(q) ||
       (emp.user.department || '').toLowerCase().includes(q)
     );
-  };
-
-  const filteredReport = filterReport(attendanceReport?.report || []);
+  }, [attendanceReport?.report, searchQuery]);
 
   return (
     <div className="manager-team-attendance section">

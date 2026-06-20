@@ -27,6 +27,7 @@ const LanguageSwitcher = ({ compact = false }) => {
         onClick={() => changeLanguage('en')}
         className={`lang-btn${currentLanguage === 'en' ? ' lang-btn--active' : ''}`}
         aria-pressed={currentLanguage === 'en'}
+        aria-label="Switch to English"
       >
         EN
       </button>
@@ -35,6 +36,7 @@ const LanguageSwitcher = ({ compact = false }) => {
         onClick={() => changeLanguage('ar')}
         className={`lang-btn${currentLanguage === 'ar' ? ' lang-btn--active' : ''}`}
         aria-pressed={currentLanguage === 'ar'}
+        aria-label="Switch to Arabic"
       >
         عر
       </button>

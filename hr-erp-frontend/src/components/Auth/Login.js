@@ -97,8 +97,9 @@ const Login = ({ onLogin }) => {
 
         <form className="form-elegant" onSubmit={handleSubmit}>
           <div className="form-group-elegant">
-            <label className="form-label-elegant">{t('common.email')}</label>
+            <label className="form-label-elegant" htmlFor="auth-email">{t('common.email')}</label>
             <input
+              id="auth-email"
               name="email"
               type="email"
               placeholder={t('login.emailPlaceholder')}
@@ -110,8 +111,9 @@ const Login = ({ onLogin }) => {
           </div>
 
           <div className="form-group-elegant">
-            <label className="form-label-elegant">{t('common.password')}</label>
+            <label className="form-label-elegant" htmlFor="auth-password">{t('common.password')}</label>
             <input
+              id="auth-password"
               name="password"
               type="password"
               placeholder={t('login.passwordPlaceholder')}

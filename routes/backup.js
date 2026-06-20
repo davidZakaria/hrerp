@@ -59,6 +59,19 @@ const backupUpload = multer({
 });
 
 /**
+ * Validate backupId against path traversal
+ */
+router.param('backupId', (req, res, next, backupId) => {
+  if (backupId.includes('..') || backupId.includes('/') || backupId.includes('\\')) {
+    return res.status(400).json({
+      success: false,
+      msg: 'Invalid backup ID format. Path traversal detected.'
+    });
+  }
+  next();
+});
+
+/**
  * Middleware to check if user is super_admin or admin
  */
 const requireSuperAdmin = async (req, res, next) => {

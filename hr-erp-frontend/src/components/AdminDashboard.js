@@ -967,14 +967,15 @@ const AdminDashboard = () => {
     [users]
   );
 
-  const filteredPendingUsers = pendingUsers.filter(user => {
-    // Hide super admin accounts from regular admins
-    if (user.role === 'super_admin' && currentUser?.role !== 'super_admin') {
-      return false;
-    }
-    return user.name?.toLowerCase().includes(usersSearch.toLowerCase()) ||
-           user.email?.toLowerCase().includes(usersSearch.toLowerCase());
-  });
+  const filteredPendingUsers = useMemo(() => {
+    return pendingUsers.filter(user => {
+      if (user.role === 'super_admin' && currentUser?.role !== 'super_admin') {
+        return false;
+      }
+      return user.name?.toLowerCase().includes(usersSearch.toLowerCase()) ||
+             user.email?.toLowerCase().includes(usersSearch.toLowerCase());
+    });
+  }, [pendingUsers, currentUser, usersSearch]);
 
   useEffect(() => {
     const loadCatalog = async () => {

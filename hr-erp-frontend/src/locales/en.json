@@ -202,6 +202,7 @@
     "filterAny": "Any",
     "toolbarHint": "Advanced filters apply together with the search box. Table view is for scanning many rows like a spreadsheet.",
     "colVacation": "Vac. days",
+    "colPhoto": "Photo",
     "colJobTitle": "Job title",
     "colLocation": "Location",
     "colJoined": "Joined",

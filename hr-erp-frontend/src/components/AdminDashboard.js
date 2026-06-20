@@ -21,6 +21,7 @@ import UserManagementUsersTable from './users/UserManagementUsersTable';
 import UserTitleLocationImportModal from './users/UserTitleLocationImportModal';
 import UserProfileChips from './users/UserProfileChips';
 import UserCardDetails from './users/UserCardDetails';
+import UserAvatar from './UserAvatar';
 import {
   filterFormsByManagementMonths,
   currentYearMonth,
@@ -1136,6 +1137,8 @@ const AdminDashboard = () => {
                 <div className="pending-users-grid">
                   {filteredPendingUsers.map(user => (
                     <div key={user._id} className="pending-user-card">
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                        <UserAvatar user={user} size="md" compact />
                       <div className="user-info">
                         <h3>{user.name}</h3>
                         <p>{user.email}</p>
@@ -1196,6 +1199,7 @@ const AdminDashboard = () => {
                           );
                         })()}
                         <p><strong>{t('adminDashboard.registeredLabel')}:</strong> {new Date(user.createdAt).toLocaleDateString()}</p>
+                      </div>
                       </div>
                       <div className="user-actions">
                         <button 
@@ -1777,9 +1781,7 @@ const AdminDashboard = () => {
                   {filteredPendingUsers.map(user => (
                     <div key={user._id} className="super-admin-card user-card">
                       <div className="card-header">
-                        <div className="user-avatar">
-                          {user.role === 'manager' ? '👔' : '👤'}
-                        </div>
+                        <UserAvatar user={user} size="md" compact />
                         <div className="user-info">
                           <h4 className="user-name">
                             {user.name}
@@ -1902,9 +1904,7 @@ const AdminDashboard = () => {
                 {filteredUsers.map(user => (
                   <div key={user._id} className="super-admin-card user-card">
                     <div className="card-header">
-                      <div className="user-avatar">
-                        {user.role === 'admin' ? '👑' : user.role === 'manager' ? '👔' : '👤'}
-                      </div>
+                      <UserAvatar user={user} size="md" compact />
                       <div className="user-info">
                         <h4 className="user-name">
                           {user.name}

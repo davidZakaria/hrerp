@@ -21,6 +21,7 @@ import UserManagementToolbar from './users/UserManagementToolbar';
 import UserManagementUsersTable from './users/UserManagementUsersTable';
 import UserTitleLocationImportModal from './users/UserTitleLocationImportModal';
 import UserCardDetails from './users/UserCardDetails';
+import UserAvatar from './UserAvatar';
 import SystemSettings from './SystemSettings';
 
 const SuperAdminDashboard = () => {
@@ -1509,12 +1510,15 @@ const SuperAdminDashboard = () => {
                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                         border: '1px solid rgba(255, 152, 0, 0.2)'
                       }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '1rem' }}>
+                          <UserAvatar user={user} size="md" compact />
                           <div>
                             <h4 style={{ margin: 0, color: '#333', fontSize: '1.1rem' }}>{user.name}</h4>
                             <p style={{ margin: '0.25rem 0', color: '#666', fontSize: '0.9rem' }}>{user.email}</p>
                           </div>
                           <span style={{
+                            marginLeft: 'auto',
+                            flexShrink: 0,
                             background: user.role === 'manager' ? '#9C27B0' : '#2196F3',
                             color: 'white',
                             padding: '4px 10px',
@@ -1657,16 +1661,6 @@ const SuperAdminDashboard = () => {
               ) : (
               <div className="users-container">
                 {superAdminDirectoryUsers.map(user => {
-                    const getRoleIcon = (role) => {
-                      switch(role) {
-                        case 'super_admin': return '⚡';
-                        case 'admin': return '👑';
-                        case 'manager': return '👔';
-                        case 'employee': return '👤';
-                        default: return '👤';
-                      }
-                    };
-
                     const getRoleColor = (role) => {
                       switch(role) {
                         case 'super_admin': return '#9c27b0';
@@ -1690,9 +1684,7 @@ const SuperAdminDashboard = () => {
                     return (
                       <div key={user._id} className="user-card">
                         <div className="user-card-header">
-                          <div className="user-avatar">
-                            <span className="avatar-icon">{getRoleIcon(user.role)}</span>
-                          </div>
+                          <UserAvatar user={user} size="md" compact />
                           <div className="user-basic-info">
                             <div className="user-name">
                               {user.name}

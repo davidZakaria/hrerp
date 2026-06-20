@@ -5,6 +5,7 @@ import { getAvatarColor, getInitials } from '../utils/welcomeGreeting';
 import { persistProfilePicture, useAuthenticatedAvatar } from '../utils/avatarHelpers';
 
 const sizeMap = {
+  xs: 32,
   sm: 40,
   md: 56,
   lg: 80,
@@ -19,6 +20,7 @@ const UserAvatar = ({
   name,
   profilePicture,
   size = 'lg',
+  compact = false,
   editable = false,
   onPictureUpdated
 }) => {
@@ -80,8 +82,8 @@ const UserAvatar = ({
     fontWeight: 700,
     fontSize: dimension * 0.34,
     letterSpacing: '0.02em',
-    boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
-    border: '3px solid rgba(255,255,255,0.85)'
+    boxShadow: compact ? '0 1px 4px rgba(0,0,0,0.1)' : '0 4px 14px rgba(0,0,0,0.12)',
+    border: compact ? '2px solid rgba(255,255,255,0.65)' : '3px solid rgba(255,255,255,0.85)'
   };
 
   return (
@@ -98,7 +100,7 @@ const UserAvatar = ({
         {imageSrc ? (
           <img
             src={imageSrc}
-            alt=""
+            alt={displayName ? `${displayName} profile` : ''}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (

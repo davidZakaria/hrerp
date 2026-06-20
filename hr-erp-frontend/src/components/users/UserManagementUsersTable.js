@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import UserAvatar from '../UserAvatar';
 import { getEffectiveManagedDepartmentsClient } from '../../utils/effectiveManagedDepartments';
 
 function UserRowActions({
@@ -126,13 +127,16 @@ export default function UserManagementUsersTable({
           const flags = getEmployeeFlags(user._id);
           return (
             <article key={user._id} className="user-mgmt-mobile-card">
-              <header className="user-mgmt-mobile-card-header">
+              <header className="user-mgmt-mobile-card-header" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <UserAvatar user={user} size="sm" compact />
+                <div style={{ flex: 1, minWidth: 0 }}>
                 <h4 className="user-mgmt-mobile-card-name">
                   {idx + 1}. {user.name || '—'}
                 </h4>
                 {user.employeeCode && (
                   <span className="user-mgmt-mobile-card-code">#{user.employeeCode}</span>
                 )}
+                </div>
               </header>
               <dl className="user-mgmt-mobile-card-grid">
                 {mobileFields(user).map((field) => (
@@ -163,6 +167,7 @@ export default function UserManagementUsersTable({
         <thead>
           <tr>
             <th className="user-mgmt-sheet-col-idx">#</th>
+            <th className="user-mgmt-sheet-col-photo">{t('userManagement.colPhoto')}</th>
             <th>{t('common.name')}</th>
             <th>{t('common.email')}</th>
             <th>{t('common.employeeCode')}</th>
@@ -185,6 +190,9 @@ export default function UserManagementUsersTable({
             return (
               <tr key={user._id} className="user-mgmt-sheet-row">
                 <td className="user-mgmt-sheet-num">{idx + 1}</td>
+                <td className="user-mgmt-sheet-photo">
+                  <UserAvatar user={user} size="xs" compact />
+                </td>
                 <td className="user-mgmt-sheet-strong">{user.name || '—'}</td>
                 <td>{user.email || '—'}</td>
                 <td>{user.employeeCode || '—'}</td>

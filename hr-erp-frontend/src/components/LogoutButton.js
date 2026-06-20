@@ -7,7 +7,7 @@ const LogoutButton = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('email');
     localStorage.removeItem('userRole');
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
   return (

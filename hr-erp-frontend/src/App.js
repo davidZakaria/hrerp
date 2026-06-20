@@ -35,7 +35,7 @@ const ProtectedRoute = ({ children }) => {
   const location = useLocation();
 
   if (!token) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   // Check if user is trying to access a route they shouldn't
@@ -187,10 +187,11 @@ const AuthenticatedApp = () => {
     <ErrorBoundary>
       <Suspense fallback={<LoadingScreen message="Loading..." />}>
         <Routes>
-          <Route path="/login" element={<Login onLogin={handleLogin} />} />
+          <Route path="/" element={<Login onLogin={handleLogin} />} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/apply" element={<JobApplicationForm />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </ErrorBoundary>

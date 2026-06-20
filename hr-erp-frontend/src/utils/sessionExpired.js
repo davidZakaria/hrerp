@@ -8,5 +8,5 @@ export function handleSessionExpired() {
   localStorage.removeItem('userRole');
   localStorage.removeItem('userId');
   localStorage.removeItem('userName');
-  window.location.href = '/login';
+  window.location.href = '/';
 }

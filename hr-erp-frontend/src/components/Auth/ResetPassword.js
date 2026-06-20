@@ -109,7 +109,7 @@ const ResetPassword = () => {
         {success && (
           <div style={{ marginTop: '1.5rem' }}>
             <a 
-              href="/login" 
+              href="/" 
               className="btn-elegant"
               style={{ 
                 textDecoration: 'none',

@@ -49,7 +49,7 @@ const ResetPassword = () => {
 
             // Redirect to login after 3 seconds
             setTimeout(() => {
-                navigate('/login');
+                navigate('/');
             }, 3000);
 
         } catch (err) {

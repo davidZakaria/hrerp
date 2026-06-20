@@ -84,6 +84,7 @@ if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production' && !is
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
         logger.log('SW registered: ', registration);
+        registration.update();
       })
       .catch((registrationError) => {
         logger.log('SW registration failed: ', registrationError);

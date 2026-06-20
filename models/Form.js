@@ -186,4 +186,10 @@ const formSchema = new mongoose.Schema({
     }]
 });
 
+// Compound indexes for common queries
+formSchema.index({ user: 1, createdAt: -1 });
+formSchema.index({ status: 1, type: 1, createdAt: -1 });
+formSchema.index({ type: 1, status: 1 });
+formSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Form', formSchema); 

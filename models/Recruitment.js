@@ -52,4 +52,10 @@ const recruitmentSchema = new mongoose.Schema({
   }
 });
 
+// Compound indexes for common queries
+recruitmentSchema.index({ email: 1 });
+recruitmentSchema.index({ position: 1, finalStatus: 1 });
+recruitmentSchema.index({ finalStatus: 1, createdAt: -1 });
+recruitmentSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Recruitment', recruitmentSchema); 

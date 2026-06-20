@@ -186,4 +186,8 @@ const formSchema = new mongoose.Schema({
     }]
 });
 
+formSchema.index({ user: 1, status: 1 });
+formSchema.index({ status: 1, type: 1 });
+formSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Form', formSchema); 

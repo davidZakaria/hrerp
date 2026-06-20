@@ -10,6 +10,8 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const User = require('./models/User');
 const Audit = require('./models/Audit');
+const { buildExcuseQuotaResetUpdate } = require('./utils/excuseResetHelper');
+const { getSystemSettings } = require('./utils/getSystemSettings');
 
 // Load environment variables
 dotenv.config();
@@ -425,6 +427,7 @@ app.use('/api/excuse-hours', require('./routes/excuse-hours'));
 app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/backup', require('./routes/backup'));
 app.use('/api/employee-flags', require('./routes/employee-flags'));
+app.use('/api/settings', require('./routes/settings'));
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
@@ -550,29 +553,30 @@ cron.schedule('0 2 * * *', async () => {
     }
 });
 
-// Optimized monthly excuse hours reset with better error handling
+// Optimized monthly excuse requests reset with better error handling
 cron.schedule('0 0 1 * *', async () => {
-    console.log('Starting monthly excuse hours reset...');
+    console.log('Starting monthly excuse requests reset...');
     const startTime = Date.now();
     
     try {
+        const settings = await getSystemSettings();
         const result = await User.updateMany(
             { role: { $in: ['employee', 'manager', 'admin', 'super_admin'] } },
-            { $set: { excuseHoursLeft: 2 } }
+            { $set: buildExcuseQuotaResetUpdate(settings.monthlyExcuseRequests) }
         );
 
         const duration = Date.now() - startTime;
-        console.log(`Monthly excuse hours reset completed in ${duration}ms. Updated ${result.modifiedCount} users.`);
+        console.log(`Monthly excuse requests reset completed in ${duration}ms. Updated ${result.modifiedCount} users.`);
 
         // Create audit log
         await Audit.create({
             action: 'MONTHLY_EXCUSE_HOURS_RESET',
             performedBy: 'SYSTEM',
             targetResource: 'user',
-            description: `Automated monthly reset of excuse hours for all users`,
+            description: `Automated monthly reset of excuse requests for all users`,
             details: {
                 usersUpdated: result.modifiedCount,
-                resetValue: 2,
+                resetValue: settings.monthlyExcuseRequests,
                 resetDate: new Date(),
                 duration: duration,
                 triggerType: 'cron_job'
@@ -581,14 +585,14 @@ cron.schedule('0 0 1 * *', async () => {
         });
 
     } catch (error) {
-        console.error('Monthly excuse hours reset failed:', error);
+        console.error('Monthly excuse requests reset failed:', error);
         
         // Create error audit log
         await Audit.create({
             action: 'MONTHLY_EXCUSE_HOURS_RESET',
             performedBy: 'SYSTEM',
             targetResource: 'user',
-            description: `Failed automated monthly reset of excuse hours`,
+            description: `Failed automated monthly reset of excuse requests`,
             details: {
                 error: error.message,
                 resetDate: new Date(),

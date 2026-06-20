@@ -3,13 +3,14 @@
  */
 
 /**
- * Check if excuse requests need to be reset based on 25th of the month
+ * Check if excuse requests need to be reset based on pay-period anchor day.
  * @param {Date} lastResetDate - The date when requests were last reset
+ * @param {number} [resetDay=25] - Day of month when quotas reset
  * @returns {boolean} - True if reset is needed
  */
-function shouldResetExcuseRequests(lastResetDate) {
+function shouldResetExcuseRequests(lastResetDate, resetDay = 25) {
     const now = new Date();
-    const resetDay = 25; // Reset on the 25th of each month
+    const anchorDay = Math.min(Math.max(Number(resetDay) || 25, 1), 31);
     
     if (!lastResetDate) {
         return true; // No reset date means never reset, so reset now
@@ -17,55 +18,64 @@ function shouldResetExcuseRequests(lastResetDate) {
     
     const lastReset = new Date(lastResetDate);
     
-    // Get the 25th of current month
-    const currentMonth25th = new Date(now.getFullYear(), now.getMonth(), resetDay);
-    
-    // Get the 25th of last month
-    const lastMonth25th = new Date(now.getFullYear(), now.getMonth() - 1, resetDay);
-    
-    // If today is on or after the 25th of this month
-    if (now.getDate() >= resetDay) {
-        // Reset if last reset was before the 25th of this month
-        return lastReset < currentMonth25th;
-    } else {
-        // If today is before the 25th, reset if last reset was before the 25th of last month
-        return lastReset < lastMonth25th;
+    const currentMonthAnchor = new Date(now.getFullYear(), now.getMonth(), anchorDay);
+    const lastMonthAnchor = new Date(now.getFullYear(), now.getMonth() - 1, anchorDay);
+
+    if (now.getDate() >= anchorDay) {
+        return lastReset < currentMonthAnchor;
     }
+    return lastReset < lastMonthAnchor;
 }
 
 /**
- * Get the next reset date (25th of next month)
- * @returns {Date} - The next reset date
+ * Get the next reset date (anchor day of current or next month)
+ * @param {number} [resetDay=25]
+ * @returns {Date}
  */
-function getNextResetDate() {
+function getNextResetDate(resetDay = 25) {
     const now = new Date();
-    const resetDay = 25;
-    
-    // If today is before the 25th, next reset is the 25th of this month
-    if (now.getDate() < resetDay) {
-        return new Date(now.getFullYear(), now.getMonth(), resetDay);
-    } else {
-        // Otherwise, next reset is the 25th of next month
-        return new Date(now.getFullYear(), now.getMonth() + 1, resetDay);
+    const anchorDay = Math.min(Math.max(Number(resetDay) || 25, 1), 31);
+
+    if (now.getDate() < anchorDay) {
+        return new Date(now.getFullYear(), now.getMonth(), anchorDay);
     }
+    return new Date(now.getFullYear(), now.getMonth() + 1, anchorDay);
 }
 
 /**
  * Get the display text for reset information
- * @param {Date} lastResetDate - The date when requests were last reset
- * @returns {string} - Display text
+ * @param {Date} lastResetDate
+ * @param {number} [resetDay=25]
+ * @returns {string}
  */
-function getResetDisplayText(lastResetDate) {
-    const nextReset = getNextResetDate();
+function getResetDisplayText(lastResetDate, resetDay = 25) {
+    const nextReset = getNextResetDate(resetDay);
     const dayOfMonth = nextReset.getDate();
     const monthName = nextReset.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     
     return `Resets on ${dayOfMonth}th of each month | Next: ${monthName}`;
 }
 
+/** Default paid excuse quota per reset cycle */
+const DEFAULT_EXCUSE_REQUESTS_QUOTA = 2;
+
+/**
+ * MongoDB $set payload for resetting excuse request quota (cron / admin reset).
+ * @param {number} [quota=2]
+ * @returns {{ excuseRequestsLeft: number, excuseRequestsResetDate: Date }}
+ */
+function buildExcuseQuotaResetUpdate(quota = DEFAULT_EXCUSE_REQUESTS_QUOTA) {
+    return {
+        excuseRequestsLeft: quota,
+        excuseRequestsResetDate: new Date()
+    };
+}
+
 module.exports = {
     shouldResetExcuseRequests,
     getNextResetDate,
-    getResetDisplayText
+    getResetDisplayText,
+    DEFAULT_EXCUSE_REQUESTS_QUOTA,
+    buildExcuseQuotaResetUpdate
 };
 

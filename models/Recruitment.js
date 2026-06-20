@@ -52,4 +52,6 @@ const recruitmentSchema = new mongoose.Schema({
   }
 });
 
+recruitmentSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Recruitment', recruitmentSchema); 

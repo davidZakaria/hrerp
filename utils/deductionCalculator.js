@@ -60,13 +60,15 @@ function getWorkSchedule(user) {
  * Pillar B: combined late + early shortfall with 15-min daily grace.
  * If total > 15, deduct ALL minutes (including the grace window).
  */
-function calculateShortfall({ clockIn, clockOut, workSchedule }) {
+function calculateShortfall({ clockIn, clockOut, workSchedule, graceMinutes = GRACE_MINUTES, shiftMinutes = STANDARD_SHIFT_MINUTES }) {
     const schedule = workSchedule || DEFAULT_WORK_SCHEDULE;
     const minutesLate = rawMinutesLate(clockIn, schedule.startTime);
     const minutesEarly = calculateMinutesEarlyExit(clockOut, schedule.endTime);
     const totalShortfallMinutes = minutesLate + minutesEarly;
+    const grace = Number.isFinite(graceMinutes) ? graceMinutes : GRACE_MINUTES;
+    const shift = Number.isFinite(shiftMinutes) && shiftMinutes > 0 ? shiftMinutes : STANDARD_SHIFT_MINUTES;
 
-    if (totalShortfallMinutes <= GRACE_MINUTES) {
+    if (totalShortfallMinutes <= grace) {
         return {
             minutesLate,
             minutesEarly,
@@ -82,7 +84,7 @@ function calculateShortfall({ clockIn, clockOut, workSchedule }) {
         minutesEarly,
         totalShortfallMinutes,
         deductableMinutes,
-        deductionDays: roundDays(deductableMinutes / STANDARD_SHIFT_MINUTES)
+        deductionDays: roundDays(deductableMinutes / shift)
     };
 }
 
@@ -214,7 +216,7 @@ function buildMissOccurrenceMap(recordsByUserId) {
     return map;
 }
 
-function classifyDay({ date, record, user, waiverForms, missOccurrence }) {
+function classifyDay({ date, record, user, waiverForms, missOccurrence, graceMinutes, shiftMinutes }) {
     const workSchedule = getWorkSchedule(user);
     const coverage = getWaiverCoverage(waiverForms, date);
     const waivedByAtt = isWaivedByAttendance(record);
@@ -274,7 +276,9 @@ function classifyDay({ date, record, user, waiverForms, missOccurrence }) {
     const shortfall = calculateShortfall({
         clockIn: record.clockIn,
         clockOut: record.clockOut,
-        workSchedule
+        workSchedule,
+        graceMinutes,
+        shiftMinutes
     });
 
     return {
@@ -382,8 +386,9 @@ function aggregateEmployeeTotals(detailedRows, otByUserId) {
     return Array.from(map.values()).sort((a, b) => b.totalDeductionDays - a.totalDeductionDays);
 }
 
-function computeFinalOtForUser(otForms, attendanceByDateKey, user) {
+function computeFinalOtForUser(otForms, attendanceByDateKey, user, shiftHours = 8) {
     let totalOtHours = 0;
+    const shift = Number.isFinite(shiftHours) && shiftHours > 0 ? shiftHours : 8;
     for (const form of otForms) {
         const dateKey = dateKeyFromDate(form.extraHoursDate);
         const att = attendanceByDateKey.get(dateKey);
@@ -394,7 +399,7 @@ function computeFinalOtForUser(otForms, attendanceByDateKey, user) {
     }
     return {
         totalOtHours: Math.round(totalOtHours * 100) / 100,
-        otDays: Math.round((totalOtHours / 8) * 100) / 100
+        otDays: Math.round((totalOtHours / shift) * 100) / 100
     };
 }
 
@@ -407,8 +412,12 @@ function buildDeductionReport({
     waiverForms,
     otForms,
     rangeStart,
-    rangeEnd
+    rangeEnd,
+    policy = {}
 }) {
+    const graceMinutes = policy.graceMinutes ?? GRACE_MINUTES;
+    const shiftMinutes = policy.shiftMinutes ?? STANDARD_SHIFT_MINUTES;
+    const shiftHours = policy.shiftHours ?? (shiftMinutes / 60);
     const extendedStart = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1, 0, 0, 0, 0);
 
     const attendanceByUser = new Map();
@@ -453,7 +462,7 @@ function buildDeductionReport({
         }
 
         const userOtForms = otByUser.get(uid) || [];
-        const otCalc = computeFinalOtForUser(userOtForms, attByDateKey, user);
+        const otCalc = computeFinalOtForUser(userOtForms, attByDateKey, user, shiftHours);
         otTotalsMap.set(uid, {
             userId: user._id,
             employeeCode: user.employeeCode || '',
@@ -477,7 +486,9 @@ function buildDeductionReport({
                 record,
                 user,
                 waiverForms: userWaivers,
-                missOccurrence
+                missOccurrence,
+                graceMinutes,
+                shiftMinutes
             });
 
             const shouldInclude =

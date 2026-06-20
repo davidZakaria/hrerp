@@ -227,13 +227,13 @@ function aggregateOrgKpis(records) {
     };
 }
 
-function applyRecalcAttendance(att, user) {
+function applyRecalcAttendance(att, user, gracePeriodMinutes = 15) {
     const ws = user.workSchedule || defaultSchedule();
     const calc = calculateAttendanceStatus(
         att.clockIn || '',
         att.clockOut || '',
         ws,
-        15,
+        gracePeriodMinutes,
         att.date
     );
     att.status = calc.status;

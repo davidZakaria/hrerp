@@ -21,6 +21,7 @@ import UserManagementToolbar from './users/UserManagementToolbar';
 import UserManagementUsersTable from './users/UserManagementUsersTable';
 import UserTitleLocationImportModal from './users/UserTitleLocationImportModal';
 import UserCardDetails from './users/UserCardDetails';
+import SystemSettings from './SystemSettings';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -1391,7 +1392,8 @@ const SuperAdminDashboard = () => {
             { id: 'forms', label: t('superAdminDashboard.navForms'), icon: '📋', onSelect: () => setActiveTab('forms') },
             { id: 'logs', label: t('superAdminDashboard.navLogs'), icon: '📜', onSelect: () => setActiveTab('logs') },
             { id: 'attendance', label: t('superAdminDashboard.navAttendance'), icon: '📊', onSelect: () => setActiveTab('attendance') },
-            { id: 'backup', label: t('superAdminDashboard.navBackup'), icon: '💾', onSelect: () => setActiveTab('backup') }
+            { id: 'backup', label: t('superAdminDashboard.navBackup'), icon: '💾', onSelect: () => setActiveTab('backup') },
+            { id: 'settings', label: t('superAdminDashboard.navSettings'), icon: '⚙️', onSelect: () => setActiveTab('settings') }
           ]}
         />
 
@@ -3435,6 +3437,8 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {activeTab === 'settings' && <SystemSettings />}
 
       {/* Delete User Confirmation Modal */}
       {userToDelete && (

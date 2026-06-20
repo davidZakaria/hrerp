@@ -19,6 +19,8 @@ const { DEPARTMENT_GROUPS } = require('../config/departmentGroups');
 const { getEffectiveManagedDepartments, getEffectiveManagedDepartmentsForQueries } = require('../utils/effectiveManagedDepartments');
 const { parsePeriodQuery } = require('../utils/formSubmissionMonthBounds');
 const { buildEmployeeInsights } = require('../utils/employeeInsights');
+const { buildExcuseQuotaResetUpdate } = require('../utils/excuseResetHelper');
+const { getSystemSettings } = require('../utils/getSystemSettings');
 const {
   parseTitleLocationBuffer,
   buildTitleLocationPreview,
@@ -204,6 +206,7 @@ router.post('/', auth, async (req, res) => {
     }
 
     // Create new user
+    const settings = await getSystemSettings();
     user = new User({
       name,
       email,
@@ -211,8 +214,8 @@ router.post('/', auth, async (req, res) => {
       department,
       role: role || 'employee',
       status: status || 'active',
-      vacationDaysLeft: 21,
-      excuseHoursLeft: 2,
+      vacationDaysLeft: settings.annualVacationDays,
+      excuseRequestsLeft: settings.monthlyExcuseRequests,
       managedDepartments: (role === 'manager' && managedDepartments) ? managedDepartments : [],
       managedDepartmentGroups:
         role === 'manager' ? sanitizeManagedDepartmentGroups(managedDepartmentGroups || []) : [],
@@ -1043,10 +1046,11 @@ router.post('/reset-excuse-hours', auth, async (req, res) => {
     }
 
     console.log(`Manual excuse hours reset initiated by ${admin.name} (${admin.email})`);
-    
+
+    const settings = await getSystemSettings();
     const result = await User.updateMany(
       { role: { $in: ['employee', 'manager', 'admin', 'super_admin'] } },
-      { $set: { excuseHoursLeft: 2 } }
+      { $set: buildExcuseQuotaResetUpdate(settings.monthlyExcuseRequests) }
     );
 
     console.log(`Manual excuse hours reset completed. Updated ${result.modifiedCount} users.`);
@@ -1059,7 +1063,7 @@ router.post('/reset-excuse-hours', auth, async (req, res) => {
       description: `Manual reset of excuse hours for all users performed by ${admin.name}`,
       details: {
         usersUpdated: result.modifiedCount,
-        resetValue: 2,
+        resetValue: settings.monthlyExcuseRequests,
         resetDate: new Date(),
         initiatedBy: admin.name,
         initiatedByEmail: admin.email

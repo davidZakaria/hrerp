@@ -13,9 +13,54 @@ const {
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const Form = require('../models/Form');
+const { getSystemSettings } = require('../utils/getSystemSettings');
 
 const GRACE_MINUTES = 5;
 const defaultWorkSchedule = { startTime: '10:00', endTime: '19:00' };
+
+function parseAllowedDeviceSerials() {
+    const raw = process.env.ZKTECO_ALLOWED_SERIALS || '';
+    return raw.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+/**
+ * Require a valid device serial (ZKTECO_ALLOWED_SERIALS) and/or shared secret
+ * (ZKTECO_SECRET_TOKEN via header or query). In production at least one must be configured.
+ */
+function verifyZktecoAccess(req, res, next) {
+    const secret = process.env.ZKTECO_SECRET_TOKEN;
+    const allowedSerials = parseAllowedDeviceSerials();
+    const sn = String(req.query.SN || req.query.sn || '').trim();
+    const token = String(
+        req.get('X-ZKTeco-Token')
+        || req.get('x-zkteco-token')
+        || req.query.token
+        || req.query.secret
+        || ''
+    ).trim();
+
+    if (!secret && allowedSerials.length === 0) {
+        if (process.env.NODE_ENV === 'production') {
+            console.error('[ZKTeco] Rejected: configure ZKTECO_SECRET_TOKEN and/or ZKTECO_ALLOWED_SERIALS');
+            return res.status(403).type('text/plain').send('Forbidden');
+        }
+        console.warn('[ZKTeco] DEV: no device auth configured — allowing request');
+        return next();
+    }
+
+    if (secret && token && token === secret) {
+        return next();
+    }
+
+    if (sn && allowedSerials.length > 0 && allowedSerials.includes(sn)) {
+        return next();
+    }
+
+    console.warn(`[ZKTeco] Rejected unauthorized request SN=${sn || '(empty)'} IP=${req.ip}`);
+    return res.status(403).type('text/plain').send('Forbidden');
+}
+
+router.use(verifyZktecoAccess);
 
 let cachedSystemUserId = null;
 
@@ -147,6 +192,9 @@ function applyDedupAndFILO(punches) {
 async function processAttlogBatch(punches, deviceSN) {
     if (!punches || punches.length === 0) return;
 
+    const settings = await getSystemSettings();
+    const graceMinutes = settings.latenessGracePeriodMinutes;
+
     const systemUserId = await getSystemUserId();
     if (!systemUserId) {
         console.error('[zkteco] No system user for uploadedBy. Set ZKTECO_SYSTEM_USER_ID or ensure a super_admin exists.');
@@ -178,7 +226,7 @@ async function processAttlogBatch(punches, deviceSN) {
                 rec.clockIn,
                 rec.clockOut,
                 workSchedule,
-                15,
+                graceMinutes,
                 rec.date
             );
 

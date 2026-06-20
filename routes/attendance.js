@@ -30,6 +30,7 @@ const {
     APPROVED_WAIVER_STATUSES,
     WAIVER_FORM_TYPES
 } = require('../utils/deductionCalculator');
+const { getSystemSettings } = require('../utils/getSystemSettings');
 const { getEffectiveManagedDepartmentsForQueries } = require('../utils/effectiveManagedDepartments');
 
 // Configure multer for file uploads
@@ -464,6 +465,9 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
         }
         
         console.log(`Processing ${req.files.length} attendance files...`);
+
+        const settings = await getSystemSettings();
+        const graceMinutes = settings.latenessGracePeriodMinutes;
         
         const results = {
             totalFiles: req.files.length,
@@ -608,7 +612,7 @@ router.post('/upload', auth, upload.array('attendanceFiles', 10), async (req, re
                             record.clockIn,
                             record.clockOut,
                             workSchedule,
-                            15,
+                            graceMinutes,
                             record.date
                         );
                         status = attendanceStatus.status;
@@ -772,10 +776,11 @@ router.post('/recalc-overtime', auth, async (req, res) => {
             clockOut: { $exists: true, $ne: '' }
         }).populate('user', 'workSchedule');
 
+        const settings = await getSystemSettings();
         let updated = 0;
         for (const att of records) {
             if (!att.user) continue;
-            applyRecalcAttendance(att, att.user);
+            applyRecalcAttendance(att, att.user, settings.latenessGracePeriodMinutes);
             await att.save();
             updated++;
         }
@@ -859,13 +864,19 @@ router.get('/deduction-report', auth, async (req, res) => {
             }).populate('user', 'name department employeeCode')
         ]);
 
+        const settings = await getSystemSettings();
         const report = buildDeductionReport({
             users,
             attendanceRecords,
             waiverForms,
             otForms,
             rangeStart,
-            rangeEnd
+            rangeEnd,
+            policy: {
+                graceMinutes: settings.latenessGracePeriodMinutes,
+                shiftMinutes: settings.standardShiftHours * 60,
+                shiftHours: settings.standardShiftHours
+            }
         });
 
         res.json({
@@ -1069,7 +1080,8 @@ router.patch('/:attendanceId/fix-punch', auth, validateObjectId('attendanceId'),
         }
 
         att.source = 'manual';
-        applyRecalcAttendance(att, user);
+        const settings = await getSystemSettings();
+        applyRecalcAttendance(att, user, settings.latenessGracePeriodMinutes);
 
         att.adjustmentHistory.push({
             at: new Date(),

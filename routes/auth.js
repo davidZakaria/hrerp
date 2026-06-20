@@ -8,14 +8,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { createAuditLog } = require('./audit');
 const { getEffectiveManagedDepartments } = require('../utils/effectiveManagedDepartments');
-const { DEPARTMENT_GROUPS } = require('../config/departmentGroups');
-
-/** Allow only known group keys on self-registration */
-function sanitizeRegisterGroups(raw) {
-    if (!Array.isArray(raw)) return [];
-    const allowed = new Set(Object.keys(DEPARTMENT_GROUPS));
-    return [...new Set(raw.filter((g) => typeof g === 'string' && allowed.has(g.trim())).map((g) => g.trim()))];
-}
+const { getSystemSettings } = require('../utils/getSystemSettings');
 
 // Allowed company email domains
 const ALLOWED_EMAIL_DOMAINS = ['@newjerseyegypt.com', '@gycegypt.com'];
@@ -28,7 +21,7 @@ function emailInsensitiveRegex(normalizedLowerEmail) {
 // Register User (Employee Registration)
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password, department, role, managedDepartments, managedDepartmentGroups, employeeCode, workSchedule } = req.body;
+        const { name, email, password, department, employeeCode, workSchedule } = req.body;
 
         // Validate required fields
         if (!name || !email || !password || !department) {
@@ -56,18 +49,19 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ msg: 'User already exists with this email address' });
         }
 
-        // Create new user with pending status
+        // Create new user with pending status (privilege fields are never taken from client input)
+        const settings = await getSystemSettings();
         user = new User({
             name,
             email,
             password,
             department,
-            role: role || 'employee', // Default to employee
-            managedDepartments: role === 'manager' ? (managedDepartments || []) : [],
-            managedDepartmentGroups:
-                role === 'manager' ? sanitizeRegisterGroups(managedDepartmentGroups || []) : [],
-            status: 'pending', // New registrations are pending approval
-            vacationDaysLeft: 21, // Default vacation days
+            role: 'employee',
+            managedDepartments: [],
+            managedDepartmentGroups: [],
+            status: 'pending',
+            vacationDaysLeft: settings.annualVacationDays,
+            excuseRequestsLeft: settings.monthlyExcuseRequests,
             employeeCode: employeeCode || null,
             workSchedule: workSchedule || null
         });

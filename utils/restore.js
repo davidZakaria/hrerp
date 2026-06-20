@@ -1,362 +1,52 @@
 /**
  * HR-ERP Restore System
  * =====================
- * Comprehensive restore utility for recovering from backups.
- * 
- * WARNING: This script will OVERWRITE existing data!
- * Always verify the backup before restoring.
- * 
- * Usage:
- * - Restore all: node utils/restore.js <backupId>
- * - Restore database only: node utils/restore.js <backupId> --database-only
- * - Restore files only: node utils/restore.js <backupId> --files-only
- * - Dry run (preview): node utils/restore.js <backupId> --dry-run
+ * Shared restore logic for CLI and API.
+ *
+ * Usage (CLI):
+ *   node utils/restore.js <backupId> [--database-only|--files-only|--full] [--dry-run] [--force]
  */
 
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const crypto = require('crypto');
-const util = require('util');
 const readline = require('readline');
+const { EJSON } = require('bson');
 
-const execPromise = util.promisify(exec);
-
-const { 
-  BACKUP_CONFIG, 
-  verifyBackup, 
-  formatBytes,
-  listBackups 
+const {
+  BACKUP_CONFIG,
+  verifyBackup,
+  listBackups,
+  decryptData,
+  getMongoConfig
 } = require('./backup');
 
-/**
- * Prompt for user confirmation
- */
+function log(message, quiet) {
+  if (!quiet) console.log(message);
+}
+
+function logError(message, quiet) {
+  if (!quiet) console.error(message);
+}
+
 async function promptConfirmation(message) {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
   });
-  
-  return new Promise(resolve => {
-    rl.question(`${message} (yes/no): `, answer => {
+
+  return new Promise((resolve) => {
+    rl.question(`${message} (yes/no): `, (answer) => {
       rl.close();
       resolve(answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y');
     });
   });
 }
 
-/**
- * Decrypt backup archive
- */
-function decryptData(encryptedData, key) {
-  const keyBuffer = crypto.scryptSync(key, 'salt', BACKUP_CONFIG.encryption.keyLength);
-  const iv = encryptedData.slice(0, BACKUP_CONFIG.encryption.ivLength);
-  const data = encryptedData.slice(BACKUP_CONFIG.encryption.ivLength);
-  
-  const decipher = crypto.createDecipheriv(
-    BACKUP_CONFIG.encryption.algorithm,
-    keyBuffer,
-    iv
-  );
-  
-  return Buffer.concat([decipher.update(data), decipher.final()]);
-}
-
-/**
- * Get MongoDB connection details
- */
-function getMongoConfig() {
-  const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/hr-erp';
-  
-  try {
-    const url = new URL(mongoURI);
-    return {
-      host: url.hostname,
-      port: url.port || '27017',
-      database: url.pathname.replace('/', '') || 'hr-erp',
-      username: url.username || null,
-      password: url.password || null,
-      authSource: url.searchParams.get('authSource') || 'admin',
-      uri: mongoURI
-    };
-  } catch (err) {
-    return {
-      host: 'localhost',
-      port: '27017',
-      database: 'hr-erp',
-      uri: mongoURI
-    };
-  }
-}
-
-/**
- * Restore MongoDB database
- */
-async function restoreDatabase(backupPath, options = {}) {
-  const { dryRun = false } = options;
-  const dbBackupPath = path.join(backupPath, 'database');
-  
-  console.log('\n💾 RESTORING DATABASE');
-  console.log('─'.repeat(40));
-  
-  if (!fs.existsSync(dbBackupPath)) {
-    console.log('⚠️  Database backup not found, skipping...');
-    return { success: false, error: 'Database backup not found' };
-  }
-  
-  const mongoConfig = getMongoConfig();
-  console.log(`📊 Target database: ${mongoConfig.database}`);
-  
-  if (dryRun) {
-    console.log('🔍 DRY RUN: Would restore database from', dbBackupPath);
-    return { success: true, dryRun: true };
-  }
-  
-  try {
-    // Check if this is a mongodump backup or JSON export
-    const dbPath = fs.readdirSync(dbBackupPath);
-    const isJsonBackup = dbPath.some(f => f.endsWith('.json'));
-    
-    if (isJsonBackup) {
-      // Restore from JSON files
-      return await restoreDatabaseFromJson(dbBackupPath, mongoConfig);
-    } else {
-      // Restore using mongorestore
-      const mongoDatabasePath = path.join(dbBackupPath, mongoConfig.database);
-      
-      if (!fs.existsSync(mongoDatabasePath)) {
-        // Try to find any database folder
-        const dirs = fs.readdirSync(dbBackupPath, { withFileTypes: true })
-          .filter(d => d.isDirectory())
-          .map(d => d.name);
-        
-        if (dirs.length > 0) {
-          console.log(`📁 Found database: ${dirs[0]}`);
-        }
-      }
-      
-      let mongorestoreCmd = `mongorestore --uri="${mongoConfig.uri}" --gzip --drop "${dbBackupPath}"`;
-      
-      console.log('🔄 Running mongorestore...');
-      const { stdout, stderr } = await execPromise(mongorestoreCmd, {
-        timeout: 600000 // 10 minute timeout
-      });
-      
-      if (stderr && !stderr.includes('done')) {
-        console.warn('⚠️  Restore warnings:', stderr);
-      }
-      
-      console.log('✅ Database restored successfully');
-      return { success: true, method: 'mongorestore' };
-    }
-  } catch (error) {
-    console.error('❌ Database restore failed:', error.message);
-    
-    // Try JSON fallback
-    const jsonFiles = fs.existsSync(dbBackupPath) ? 
-      fs.readdirSync(dbBackupPath).filter(f => f.endsWith('.json')) : [];
-    
-    if (jsonFiles.length > 0) {
-      console.log('📝 Attempting JSON restore fallback...');
-      return await restoreDatabaseFromJson(dbBackupPath, mongoConfig);
-    }
-    
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Restore database from JSON backup files
- */
-async function restoreDatabaseFromJson(backupPath, mongoConfig) {
-  console.log('📝 Restoring from JSON backup...');
-  
-  try {
-    const mongoose = require('mongoose');
-    
-    // Ensure connection
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(mongoConfig.uri);
-      console.log('✅ Connected to MongoDB');
-    }
-    
-    const jsonFiles = fs.readdirSync(backupPath).filter(f => f.endsWith('.json'));
-    let restored = 0;
-    
-    for (const file of jsonFiles) {
-      const collectionName = path.basename(file, '.json');
-      const filePath = path.join(backupPath, file);
-      
-      try {
-        const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-        
-        if (Array.isArray(data) && data.length > 0) {
-          // Drop existing collection
-          try {
-            await mongoose.connection.db.collection(collectionName).drop();
-          } catch (e) {
-            // Collection might not exist
-          }
-          
-          // Insert data
-          await mongoose.connection.db.collection(collectionName).insertMany(data);
-          restored++;
-          console.log(`  📄 ${collectionName}: ${data.length} documents`);
-        }
-      } catch (err) {
-        console.warn(`  ⚠️  Error restoring ${collectionName}:`, err.message);
-      }
-    }
-    
-    console.log(`✅ JSON restore completed: ${restored} collections`);
-    return { success: true, method: 'json_import', collections: restored };
-  } catch (error) {
-    console.error('❌ JSON restore failed:', error.message);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Restore uploaded files
- */
-async function restoreFiles(backupPath, options = {}) {
-  const { dryRun = false } = options;
-  const filesBackupPath = path.join(backupPath, 'files');
-  
-  console.log('\n📂 RESTORING FILES');
-  console.log('─'.repeat(40));
-  
-  if (!fs.existsSync(filesBackupPath)) {
-    console.log('⚠️  Files backup not found, skipping...');
-    return { success: false, error: 'Files backup not found' };
-  }
-  
-  let restored = 0;
-  let errors = [];
-  
-  for (const uploadDir of BACKUP_CONFIG.uploadDirs) {
-    const sourcePath = path.join(filesBackupPath, uploadDir);
-    const destPath = path.join(__dirname, '..', uploadDir);
-    
-    if (fs.existsSync(sourcePath)) {
-      console.log(`📁 ${uploadDir}`);
-      
-      if (dryRun) {
-        const files = getAllFiles(sourcePath);
-        console.log(`   Would restore ${files.length} files`);
-        continue;
-      }
-      
-      try {
-        // Ensure destination directory exists
-        fs.mkdirSync(destPath, { recursive: true });
-        
-        // Copy files
-        const files = getAllFiles(sourcePath);
-        for (const file of files) {
-          const relativePath = path.relative(sourcePath, file);
-          const destFile = path.join(destPath, relativePath);
-          const destDir = path.dirname(destFile);
-          
-          if (!fs.existsSync(destDir)) {
-            fs.mkdirSync(destDir, { recursive: true });
-          }
-          
-          fs.copyFileSync(file, destFile);
-          restored++;
-        }
-        
-        console.log(`   ✅ Restored ${files.length} files`);
-      } catch (err) {
-        console.error(`   ❌ Error: ${err.message}`);
-        errors.push({ dir: uploadDir, error: err.message });
-      }
-    } else {
-      console.log(`   ⏭️  Not in backup`);
-    }
-  }
-  
-  if (dryRun) {
-    return { success: true, dryRun: true };
-  }
-  
-  console.log(`✅ Files restore completed: ${restored} files`);
-  return { 
-    success: errors.length === 0, 
-    restored, 
-    errors: errors.length > 0 ? errors : undefined 
-  };
-}
-
-/**
- * Restore configuration files
- */
-async function restoreConfig(backupPath, options = {}) {
-  const { dryRun = false } = options;
-  const configBackupPath = path.join(backupPath, 'config');
-  
-  console.log('\n⚙️  RESTORING CONFIGURATION');
-  console.log('─'.repeat(40));
-  
-  if (!fs.existsSync(configBackupPath)) {
-    console.log('⚠️  Config backup not found, skipping...');
-    return { success: false, error: 'Config backup not found' };
-  }
-  
-  let restored = 0;
-  
-  // Note: We don't auto-restore package.json to avoid version conflicts
-  // Only restore safe config files
-  const safeConfigs = ['config/default.json'];
-  
-  for (const configFile of safeConfigs) {
-    const sourcePath = path.join(configBackupPath, configFile);
-    const destPath = path.join(__dirname, '..', configFile);
-    
-    if (fs.existsSync(sourcePath)) {
-      console.log(`📄 ${configFile}`);
-      
-      if (dryRun) {
-        console.log('   Would restore config file');
-        continue;
-      }
-      
-      try {
-        const destDir = path.dirname(destPath);
-        if (!fs.existsSync(destDir)) {
-          fs.mkdirSync(destDir, { recursive: true });
-        }
-        
-        // Create backup of existing config
-        if (fs.existsSync(destPath)) {
-          const backupName = `${destPath}.bak.${Date.now()}`;
-          fs.copyFileSync(destPath, backupName);
-          console.log(`   📋 Backed up existing to ${path.basename(backupName)}`);
-        }
-        
-        fs.copyFileSync(sourcePath, destPath);
-        restored++;
-        console.log('   ✅ Restored');
-      } catch (err) {
-        console.error(`   ❌ Error: ${err.message}`);
-      }
-    }
-  }
-  
-  console.log(`✅ Config restore completed: ${restored} files`);
-  return { success: true, restored };
-}
-
-/**
- * Get all files in directory recursively
- */
 function getAllFiles(dirPath, arrayOfFiles = []) {
   if (!fs.existsSync(dirPath)) return arrayOfFiles;
-  
-  const files = fs.readdirSync(dirPath);
-  
-  for (const file of files) {
+
+  for (const file of fs.readdirSync(dirPath)) {
     const filePath = path.join(dirPath, file);
     if (fs.statSync(filePath).isDirectory()) {
       getAllFiles(filePath, arrayOfFiles);
@@ -364,12 +54,415 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
       arrayOfFiles.push(filePath);
     }
   }
-  
+
   return arrayOfFiles;
 }
 
+function runProcess(command, args, timeoutMs = 600000) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(command, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: process.platform === 'win32'
+    });
+
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => {
+      proc.kill('SIGTERM');
+      reject(new Error(`${command} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    proc.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+    proc.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+
+    proc.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+
+    proc.on('close', (code) => {
+      clearTimeout(timer);
+      if (code === 0) {
+        resolve({ stdout, stderr });
+      } else {
+        reject(new Error(stderr.trim() || stdout.trim() || `${command} exited with code ${code}`));
+      }
+    });
+  });
+}
+
+function detectDatabaseBackupFormat(dbBackupPath) {
+  if (!fs.existsSync(dbBackupPath)) return 'missing';
+
+  const rootJson = fs.readdirSync(dbBackupPath).filter((f) => f.endsWith('.json'));
+  if (rootJson.length > 0) return 'json';
+
+  const allFiles = getAllFiles(dbBackupPath);
+  if (allFiles.some((f) => f.endsWith('.bson') || f.endsWith('.bson.gz') || f.endsWith('.metadata.json.gz'))) {
+    return 'mongodump';
+  }
+
+  return 'unknown';
+}
+
+async function disconnectMongooseIfConnected() {
+  const mongoose = require('mongoose');
+  if (mongoose.connection.readyState === 1) {
+    await mongoose.disconnect();
+    return true;
+  }
+  return false;
+}
+
+async function reconnectMongoose(uri) {
+  const mongoose = require('mongoose');
+  if (mongoose.connection.readyState !== 1) {
+    await mongoose.connect(uri);
+  }
+}
+
+async function runMongorestore(dbBackupPath, mongoConfig, quiet = false) {
+  log('🔄 Running mongorestore...', quiet);
+  const args = ['--uri', mongoConfig.uri, '--gzip', '--drop', dbBackupPath];
+  const { stderr } = await runProcess('mongorestore', args);
+  if (stderr && !quiet) {
+    log(`mongorestore: ${stderr.trim()}`, quiet);
+  }
+}
+
+function readJsonBackupDocuments(filePath) {
+  const raw = fs.readFileSync(filePath, 'utf8');
+  try {
+    return EJSON.parse(raw);
+  } catch (_) {
+    return JSON.parse(raw);
+  }
+}
+
+function normalizeDocuments(data) {
+  if (!Array.isArray(data)) return [];
+  return data.map((doc) => EJSON.deserialize(EJSON.serialize(doc)));
+}
+
 /**
- * Main restore function
+ * Restore MongoDB from backup folder.
+ */
+async function restoreDatabase(backupPath, options = {}) {
+  const { dryRun = false, quiet = false } = options;
+  const dbBackupPath = path.join(backupPath, 'database');
+
+  log('\n💾 RESTORING DATABASE', quiet);
+  log('─'.repeat(40), quiet);
+
+  if (!fs.existsSync(dbBackupPath)) {
+    return { success: false, error: 'Database backup not found' };
+  }
+
+  const mongoConfig = getMongoConfig();
+  const format = detectDatabaseBackupFormat(dbBackupPath);
+  log(`📊 Target: ${mongoConfig.database} (${format})`, quiet);
+
+  if (dryRun) {
+    return { success: true, dryRun: true, method: format };
+  }
+
+  if (format === 'json') {
+    return restoreDatabaseFromJson(dbBackupPath, mongoConfig, quiet);
+  }
+
+  if (format === 'mongodump') {
+    let reconnected = false;
+    try {
+      reconnected = await disconnectMongooseIfConnected();
+      await runMongorestore(dbBackupPath, mongoConfig, quiet);
+      log('✅ Database restored via mongorestore', quiet);
+      return { success: true, method: 'mongorestore' };
+    } catch (error) {
+      logError(`❌ mongorestore failed: ${error.message}`, quiet);
+
+      if (detectDatabaseBackupFormat(dbBackupPath) === 'json') {
+        log('📝 Falling back to JSON restore...', quiet);
+        return restoreDatabaseFromJson(dbBackupPath, mongoConfig, quiet);
+      }
+
+      return { success: false, error: error.message, method: 'mongorestore' };
+    } finally {
+      if (reconnected) {
+        try {
+          await reconnectMongoose(mongoConfig.uri);
+        } catch (err) {
+          logError(`⚠️  Reconnect after restore failed: ${err.message}`, quiet);
+        }
+      }
+    }
+  }
+
+  return {
+    success: false,
+    error: 'Unrecognized database backup format (expected mongodump or JSON export)'
+  };
+}
+
+async function restoreDatabaseFromJson(backupPath, mongoConfig, quiet = false) {
+  log('📝 Restoring from JSON backup...', quiet);
+
+  const mongoose = require('mongoose');
+  let disconnectedForRestore = false;
+
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await mongoose.connect(mongoConfig.uri);
+      log('✅ Connected to MongoDB', quiet);
+    }
+
+    const jsonFiles = fs.readdirSync(backupPath).filter((f) => f.endsWith('.json'));
+    let restored = 0;
+    let totalDocuments = 0;
+    const errors = [];
+
+    for (const file of jsonFiles) {
+      const collectionName = path.basename(file, '.json');
+      const filePath = path.join(backupPath, file);
+
+      try {
+        const parsed = readJsonBackupDocuments(filePath);
+        const data = normalizeDocuments(parsed);
+
+        if (data.length === 0) continue;
+
+        try {
+          await mongoose.connection.db.collection(collectionName).drop();
+        } catch (_) {
+          // collection may not exist
+        }
+
+        const result = await mongoose.connection.db.collection(collectionName).insertMany(data, { ordered: false });
+        const inserted = result.insertedCount ?? data.length;
+        restored += 1;
+        totalDocuments += inserted;
+        log(`  📄 ${collectionName}: ${inserted} documents`, quiet);
+      } catch (err) {
+        errors.push({ collection: collectionName, error: err.message });
+        logError(`  ⚠️  ${collectionName}: ${err.message}`, quiet);
+      }
+    }
+
+    if (restored === 0 && errors.length > 0) {
+      return { success: false, method: 'json_import', errors };
+    }
+
+    return {
+      success: errors.length === 0,
+      method: 'json_import',
+      collections: restored,
+      documents: totalDocuments,
+      errors: errors.length > 0 ? errors : undefined
+    };
+  } catch (error) {
+    return { success: false, error: error.message, method: 'json_import' };
+  } finally {
+    if (disconnectedForRestore) {
+      try {
+        await reconnectMongoose(mongoConfig.uri);
+      } catch (_) {}
+    }
+  }
+}
+
+async function restoreFiles(backupPath, options = {}) {
+  const { dryRun = false, quiet = false } = options;
+  const filesBackupPath = path.join(backupPath, 'files');
+
+  log('\n📂 RESTORING FILES', quiet);
+  log('─'.repeat(40), quiet);
+
+  if (!fs.existsSync(filesBackupPath)) {
+    return { success: false, error: 'Files backup not found' };
+  }
+
+  let restored = 0;
+  const errors = [];
+
+  for (const uploadDir of BACKUP_CONFIG.uploadDirs) {
+    const sourcePath = path.join(filesBackupPath, uploadDir);
+    const destPath = path.join(__dirname, '..', uploadDir);
+
+    if (!fs.existsSync(sourcePath)) {
+      log(`   ⏭️  ${uploadDir} not in backup`, quiet);
+      continue;
+    }
+
+    log(`📁 ${uploadDir}`, quiet);
+
+    if (dryRun) {
+      const files = getAllFiles(sourcePath);
+      log(`   Would restore ${files.length} files`, quiet);
+      continue;
+    }
+
+    try {
+      fs.mkdirSync(destPath, { recursive: true });
+      const files = getAllFiles(sourcePath);
+
+      for (const file of files) {
+        const relativePath = path.relative(sourcePath, file);
+        const destFile = path.join(destPath, relativePath);
+        fs.mkdirSync(path.dirname(destFile), { recursive: true });
+        fs.copyFileSync(file, destFile);
+        restored += 1;
+      }
+
+      log(`   ✅ Restored ${files.length} files`, quiet);
+    } catch (err) {
+      errors.push({ dir: uploadDir, error: err.message });
+      logError(`   ❌ ${uploadDir}: ${err.message}`, quiet);
+    }
+  }
+
+  if (dryRun) {
+    return { success: true, dryRun: true };
+  }
+
+  return {
+    success: errors.length === 0,
+    restored,
+    filesRestored: restored,
+    errors: errors.length > 0 ? errors : undefined
+  };
+}
+
+async function restoreConfig(backupPath, options = {}) {
+  const { dryRun = false, quiet = false } = options;
+  const configBackupPath = path.join(backupPath, 'config');
+
+  log('\n⚙️  RESTORING CONFIGURATION', quiet);
+  log('─'.repeat(40), quiet);
+
+  if (!fs.existsSync(configBackupPath)) {
+    return { success: false, skipped: true, error: 'Config backup not found' };
+  }
+
+  let restored = 0;
+  const safeConfigs = ['config/default.json'];
+
+  for (const configFile of safeConfigs) {
+    const sourcePath = path.join(configBackupPath, configFile);
+    const destPath = path.join(__dirname, '..', configFile);
+
+    if (!fs.existsSync(sourcePath)) continue;
+
+    if (dryRun) {
+      log(`   Would restore ${configFile}`, quiet);
+      continue;
+    }
+
+    try {
+      fs.mkdirSync(path.dirname(destPath), { recursive: true });
+      if (fs.existsSync(destPath)) {
+        fs.copyFileSync(destPath, `${destPath}.bak.${Date.now()}`);
+      }
+      fs.copyFileSync(sourcePath, destPath);
+      restored += 1;
+      log(`   ✅ ${configFile}`, quiet);
+    } catch (err) {
+      logError(`   ❌ ${configFile}: ${err.message}`, quiet);
+    }
+  }
+
+  return { success: restored > 0 || dryRun, restored, skipped: restored === 0 && !dryRun };
+}
+
+function evaluateRestoreSuccess(results, restoreType) {
+  if (restoreType === 'database') {
+    return results.database?.success === true;
+  }
+  if (restoreType === 'files') {
+    return results.files?.success === true;
+  }
+  if (restoreType === 'config') {
+    return results.config?.success === true;
+  }
+  if (restoreType === 'full') {
+    const dbOk = results.database?.success === true;
+    const filesOk = results.files?.success === true;
+    return dbOk && filesOk;
+  }
+  return false;
+}
+
+function buildFailureMessage(results, restoreType) {
+  const parts = [];
+  if ((restoreType === 'database' || restoreType === 'full') && results.database && !results.database.success) {
+    parts.push(`Database: ${results.database.error || 'failed'}`);
+  }
+  if ((restoreType === 'files' || restoreType === 'full') && results.files && !results.files.success) {
+    parts.push(`Files: ${results.files.error || 'failed'}`);
+  }
+  if (restoreType === 'full' && results.config && results.config.error && !results.config.skipped) {
+    parts.push(`Config: ${results.config.error}`);
+  }
+  return parts.join('; ') || 'Restore failed';
+}
+
+/**
+ * API-friendly restore entry point (no interactive prompts).
+ */
+async function restoreFromBackupId(backupId, options = {}) {
+  const {
+    restoreType = 'database',
+    skipVerify = false,
+    force = false,
+    quiet = true
+  } = options;
+
+  const backupPath = path.join(BACKUP_CONFIG.backupDir, backupId);
+
+  if (!fs.existsSync(backupPath)) {
+    return {
+      success: false,
+      error: 'Backup not found',
+      results: {}
+    };
+  }
+
+  if (!skipVerify && !force) {
+    const verification = await verifyBackup(backupId);
+    if (!verification.valid) {
+      return {
+        success: false,
+        error: verification.error || 'Backup verification failed',
+        verification,
+        results: {}
+      };
+    }
+  }
+
+  const results = {};
+
+  if (restoreType === 'database' || restoreType === 'full') {
+    results.database = await restoreDatabase(backupPath, { quiet });
+  }
+
+  if (restoreType === 'files' || restoreType === 'full') {
+    results.files = await restoreFiles(backupPath, { quiet });
+  }
+
+  if (restoreType === 'full') {
+    results.config = await restoreConfig(backupPath, { quiet });
+  }
+
+  const success = evaluateRestoreSuccess(results, restoreType);
+
+  return {
+    success,
+    results,
+    msg: success ? `Restore completed (${restoreType})` : buildFailureMessage(results, restoreType),
+    requiresRestart: success && (restoreType === 'database' || restoreType === 'full')
+  };
+}
+
+/**
+ * CLI restore with confirmation and logging.
  */
 async function restore(backupId, options = {}) {
   const {
@@ -380,167 +473,123 @@ async function restore(backupId, options = {}) {
     skipVerify = false,
     force = false
   } = options;
-  
+
+  let restoreType = 'full';
+  if (databaseOnly) restoreType = 'database';
+  else if (filesOnly) restoreType = 'files';
+  else if (configOnly) restoreType = 'config';
+
   console.log('\n' + '='.repeat(60));
   console.log('🔄 HR-ERP RESTORE SYSTEM');
   console.log('='.repeat(60));
   console.log(`📅 Started: ${new Date().toISOString()}`);
   console.log(`📦 Backup ID: ${backupId}`);
-  if (dryRun) console.log('🔍 MODE: DRY RUN (no changes will be made)');
+  if (dryRun) console.log('🔍 MODE: DRY RUN');
   console.log('');
-  
+
   const backupPath = path.join(BACKUP_CONFIG.backupDir, backupId);
-  
-  // Check if backup exists
   if (!fs.existsSync(backupPath)) {
     console.error('❌ Backup not found:', backupPath);
-    console.log('\n📋 Available backups:');
-    const backups = listBackups();
-    backups.forEach(b => console.log(`   - ${b.id} (${b.formattedSize})`));
-    return { success: false, error: 'Backup not found' };
+    listBackups().forEach((b) => console.log(`   - ${b.id}`));
+    return { success: false, error: 'Backup not found', results: {} };
   }
-  
-  // Verify backup integrity
+
   if (!skipVerify) {
     console.log('🔍 Verifying backup integrity...');
     const verification = await verifyBackup(backupId);
-    
     if (!verification.valid) {
-      console.error('❌ Backup verification failed:', verification.error || 'Unknown error');
-      if (verification.errors) {
-        console.error('   Errors:', JSON.stringify(verification.errors, null, 2));
-      }
-      
+      console.error('❌ Verification failed:', verification.error || verification.errors);
       if (!force) {
-        console.log('\n⚠️  Use --force to restore anyway (not recommended)');
-        return { success: false, error: 'Verification failed' };
+        return { success: false, error: 'Verification failed', results: {} };
       }
-      console.log('⚠️  Proceeding anyway due to --force flag');
+      console.log('⚠️  Proceeding due to --force');
     } else {
-      console.log(`✅ Backup verified: ${verification.verified}/${verification.total} files OK`);
+      console.log(`✅ Verified ${verification.verified}/${verification.total} files`);
     }
   }
-  
-  // Warning and confirmation
+
   if (!dryRun && !force) {
-    console.log('\n' + '⚠️'.repeat(30));
-    console.log('WARNING: This will OVERWRITE existing data!');
-    console.log('⚠️'.repeat(30));
-    
+    console.log('\n⚠️  WARNING: This will OVERWRITE existing data!');
     const confirmed = await promptConfirmation('Are you sure you want to proceed?');
     if (!confirmed) {
-      console.log('❌ Restore cancelled by user');
-      return { success: false, error: 'Cancelled by user' };
+      return { success: false, error: 'Cancelled by user', results: {} };
     }
   }
-  
+
   const results = {};
-  
-  // Restore database
-  if (!filesOnly && !configOnly) {
+
+  if (databaseOnly) {
     results.database = await restoreDatabase(backupPath, { dryRun });
-  }
-  
-  // Restore files
-  if (!databaseOnly && !configOnly) {
+  } else if (filesOnly) {
     results.files = await restoreFiles(backupPath, { dryRun });
-  }
-  
-  // Restore config
-  if (!databaseOnly && !filesOnly) {
+  } else if (configOnly) {
+    results.config = await restoreConfig(backupPath, { dryRun });
+  } else {
+    results.database = await restoreDatabase(backupPath, { dryRun });
+    results.files = await restoreFiles(backupPath, { dryRun });
     results.config = await restoreConfig(backupPath, { dryRun });
   }
-  
-  // Summary
+
+  const effectiveType = configOnly ? 'config' : databaseOnly ? 'database' : filesOnly ? 'files' : 'full';
+  const success = dryRun ? true : evaluateRestoreSuccess(results, effectiveType);
+
   console.log('\n' + '='.repeat(60));
-  if (dryRun) {
-    console.log('🔍 DRY RUN COMPLETED');
-  } else {
-    console.log('✅ RESTORE COMPLETED');
-  }
+  console.log(success ? '✅ RESTORE COMPLETED' : '❌ RESTORE FAILED');
   console.log('='.repeat(60));
-  console.log('Results:');
   if (results.database) console.log(`  Database: ${results.database.success ? '✅' : '❌'}`);
-  if (results.files) console.log(`  Files: ${results.files.success ? '✅' : '❌'} (${results.files.restored || 0} files)`);
-  if (results.config) console.log(`  Config: ${results.config.success ? '✅' : '❌'} (${results.config.restored || 0} files)`);
-  console.log('='.repeat(60) + '\n');
-  
-  if (!dryRun) {
-    console.log('🔄 IMPORTANT: Restart the server to apply changes!');
+  if (results.files) console.log(`  Files: ${results.files.success ? '✅' : '❌'} (${results.files.restored || results.files.filesRestored || 0} files)`);
+  if (results.config) console.log(`  Config: ${results.config.success ? '✅' : '❌'}`);
+  console.log('='.repeat(60));
+  if (success && !dryRun) {
+    console.log('🔄 Restart the server (pm2 restart hr-erp-backend) to apply database changes.');
   }
-  
-  return {
-    success: true,
-    dryRun,
-    results
-  };
+
+  return { success, dryRun, results };
 }
 
-// Export functions
 module.exports = {
   restore,
+  restoreFromBackupId,
   restoreDatabase,
   restoreFiles,
   restoreConfig,
-  verifyBackup
+  verifyBackup,
+  detectDatabaseBackupFormat,
+  evaluateRestoreSuccess
 };
 
-// Run restore if executed directly
 if (require.main === module) {
   require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
-  
+
   const args = process.argv.slice(2);
-  
+
   if (args.length === 0 || args.includes('--help')) {
     console.log(`
 HR-ERP Restore System
 =====================
-
 Usage: node utils/restore.js <backupId> [options]
 
 Options:
   --database-only    Restore only the database
   --files-only       Restore only uploaded files
   --config-only      Restore only configuration files
-  --dry-run          Preview restore without making changes
-  --skip-verify      Skip backup verification
-  --force            Force restore without confirmation
-
-Examples:
-  node utils/restore.js backup-2024-01-15-10-30-00-abc123
-  node utils/restore.js backup-2024-01-15-10-30-00-abc123 --dry-run
-  node utils/restore.js backup-2024-01-15-10-30-00-abc123 --database-only
-
-Available backups:
+  --dry-run          Preview without changes
+  --skip-verify      Skip checksum verification
+  --force            Skip confirmation / verification failures
 `);
-    const backups = listBackups();
-    if (backups.length === 0) {
-      console.log('  No backups found');
-    } else {
-      backups.forEach(b => {
-        console.log(`  - ${b.id}`);
-        console.log(`    Created: ${b.createdAt}`);
-        console.log(`    Size: ${b.formattedSize}`);
-      });
-    }
     process.exit(0);
   }
-  
-  const backupId = args[0];
-  const options = {
+
+  restore(args[0], {
     databaseOnly: args.includes('--database-only'),
     filesOnly: args.includes('--files-only'),
     configOnly: args.includes('--config-only'),
     dryRun: args.includes('--dry-run'),
     skipVerify: args.includes('--skip-verify'),
     force: args.includes('--force')
-  };
-  
-  restore(backupId, options)
-    .then(result => {
-      process.exit(result.success ? 0 : 1);
-    })
-    .catch(err => {
+  })
+    .then((result) => process.exit(result.success ? 0 : 1))
+    .catch((err) => {
       console.error('Restore failed:', err);
       process.exit(1);
     });

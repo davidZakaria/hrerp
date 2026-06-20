@@ -30,6 +30,7 @@ const {
   BACKUP_CONFIG,
   formatBytes
 } = require('../utils/backup');
+const { restoreFromBackupId } = require('../utils/restore');
 
 // Configure multer for backup file uploads
 const backupStorage = multer.diskStorage({
@@ -649,177 +650,74 @@ router.post('/import', auth, requireSuperAdmin, backupUpload.single('backupFile'
 
 /**
  * POST /api/backup/:backupId/restore
- * Restore from a backup (database only or full)
+ * Restore from a backup (database, files, or full)
  */
 router.post('/:backupId/restore', auth, requireSuperAdmin, async (req, res) => {
   try {
     const { backupId } = req.params;
-    const { restoreType = 'database' } = req.body; // 'database', 'files', or 'full'
-    
+    const { restoreType = 'database', skipVerify = false, force = false } = req.body;
+
     const backupPath = path.join(BACKUP_CONFIG.backupDir, backupId);
-    
+
     if (!fs.existsSync(backupPath)) {
       return res.status(404).json({
         success: false,
         msg: 'Backup not found'
       });
     }
-    
-    console.log(`🔄 Restoring backup: ${backupId} (type: ${restoreType})`);
-    
-    const results = {
-      database: null,
-      files: null
-    };
-    
-    // Restore database
-    if (restoreType === 'database' || restoreType === 'full') {
-      const dbBackupPath = path.join(backupPath, 'database');
-      
-      if (fs.existsSync(dbBackupPath)) {
-        try {
-          const mongoose = require('mongoose');
-          
-          // Find JSON files in database backup
-          const jsonFiles = fs.readdirSync(dbBackupPath).filter(f => f.endsWith('.json'));
-          
-          if (jsonFiles.length > 0) {
-            let restoredCollections = 0;
-            let totalDocuments = 0;
-            
-            for (const file of jsonFiles) {
-              const collectionName = path.basename(file, '.json');
-              const filePath = path.join(dbBackupPath, file);
-              
-              try {
-                const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-                
-                if (Array.isArray(data) && data.length > 0) {
-                  // Drop existing collection
-                  try {
-                    await mongoose.connection.db.collection(collectionName).drop();
-                  } catch (e) {
-                    // Collection might not exist, ignore
-                  }
-                  
-                  // Insert data
-                  await mongoose.connection.db.collection(collectionName).insertMany(data);
-                  restoredCollections++;
-                  totalDocuments += data.length;
-                  console.log(`  📄 Restored ${collectionName}: ${data.length} documents`);
-                }
-              } catch (collErr) {
-                console.warn(`  ⚠️ Error restoring ${collectionName}:`, collErr.message);
-              }
-            }
-            
-            results.database = {
-              success: true,
-              collections: restoredCollections,
-              documents: totalDocuments
-            };
-          } else {
-            results.database = {
-              success: false,
-              error: 'No database files found in backup'
-            };
-          }
-        } catch (dbErr) {
-          results.database = {
-            success: false,
-            error: dbErr.message
-          };
-        }
-      } else {
-        results.database = {
-          success: false,
-          error: 'Database backup folder not found'
-        };
-      }
+
+    const allowedTypes = ['database', 'files', 'full'];
+    if (!allowedTypes.includes(restoreType)) {
+      return res.status(400).json({
+        success: false,
+        msg: `Invalid restoreType. Use: ${allowedTypes.join(', ')}`
+      });
     }
-    
-    // Restore files
-    if (restoreType === 'files' || restoreType === 'full') {
-      const filesBackupPath = path.join(backupPath, 'files');
-      
-      if (fs.existsSync(filesBackupPath)) {
-        try {
-          let restoredFiles = 0;
-          
-          // Copy files back to uploads directory
-          const copyDir = (src, dest) => {
-            if (!fs.existsSync(dest)) {
-              fs.mkdirSync(dest, { recursive: true });
-            }
-            
-            const entries = fs.readdirSync(src, { withFileTypes: true });
-            for (const entry of entries) {
-              const srcPath = path.join(src, entry.name);
-              const destPath = path.join(dest, entry.name);
-              
-              if (entry.isDirectory()) {
-                copyDir(srcPath, destPath);
-              } else {
-                fs.copyFileSync(srcPath, destPath);
-                restoredFiles++;
-              }
-            }
-          };
-          
-          // Restore each upload directory
-          for (const uploadDir of BACKUP_CONFIG.uploadDirs) {
-            const srcPath = path.join(filesBackupPath, uploadDir);
-            const destPath = path.join(__dirname, '..', uploadDir);
-            
-            if (fs.existsSync(srcPath)) {
-              copyDir(srcPath, destPath);
-              console.log(`  📁 Restored ${uploadDir}`);
-            }
-          }
-          
-          results.files = {
-            success: true,
-            filesRestored: restoredFiles
-          };
-        } catch (fileErr) {
-          results.files = {
-            success: false,
-            error: fileErr.message
-          };
-        }
-      } else {
-        results.files = {
-          success: false,
-          error: 'Files backup folder not found'
-        };
-      }
-    }
-    
-    // Create audit log
+
+    console.log(`🔄 Restoring backup: ${backupId} (type: ${restoreType}) by ${req.adminUser.email}`);
+
+    const result = await restoreFromBackupId(backupId, {
+      restoreType,
+      skipVerify: Boolean(skipVerify),
+      force: Boolean(force),
+      quiet: true
+    });
+
     await createAuditLog({
       action: 'BACKUP_RESTORED',
       performedBy: req.adminUser._id,
       targetResource: 'backup',
       targetResourceId: backupId,
-      description: `Backup ${backupId} restored (${restoreType}) by ${req.adminUser.name}`,
+      description: `Backup ${backupId} restore (${restoreType}): ${result.success ? 'SUCCESS' : 'FAILED'}`,
       details: {
         backupId,
         restoreType,
-        results
+        success: result.success,
+        results: result.results,
+        error: result.error || null
       },
       ipAddress: req.ip || req.connection.remoteAddress,
       userAgent: req.get('User-Agent'),
       severity: 'CRITICAL'
     });
-    
+
+    if (!result.success) {
+      return res.status(422).json({
+        success: false,
+        msg: result.msg || result.error || 'Restore failed',
+        results: result.results,
+        verification: result.verification || null
+      });
+    }
+
     console.log(`✅ Restore completed for: ${backupId}`);
-    
+
     res.json({
       success: true,
-      msg: `Backup restored successfully (${restoreType})`,
-      results
+      msg: result.msg,
+      results: result.results,
+      requiresRestart: result.requiresRestart
     });
-    
   } catch (err) {
     console.error('Restore backup error:', err);
     res.status(500).json({

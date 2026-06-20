@@ -746,18 +746,34 @@ const SuperAdminDashboard = () => {
       });
       const data = await res.json();
       
-      if (res.ok) {
-        let message = `Restore completed!\n`;
-        if (data.results.database) {
-          message += `Database: ${data.results.database.success ? `✅ ${data.results.database.collections} collections, ${data.results.database.documents} documents` : `❌ ${data.results.database.error}`}\n`;
+      if (res.ok && data.success) {
+        let message = `Restore completed (${restoreType}).\n`;
+        if (data.results?.database) {
+          const db = data.results.database;
+          message += `Database: ${db.success ? `✅ ${db.method || 'ok'}${db.collections != null ? ` — ${db.collections} collections, ${db.documents} documents` : ''}` : `❌ ${db.error}`}\n`;
         }
-        if (data.results.files) {
-          message += `Files: ${data.results.files.success ? `✅ ${data.results.files.filesRestored} files` : `❌ ${data.results.files.error}`}`;
+        if (data.results?.files) {
+          const files = data.results.files;
+          message += `Files: ${files.success ? `✅ ${files.filesRestored ?? files.restored ?? 0} files` : `❌ ${files.error}`}\n`;
+        }
+        if (data.results?.config) {
+          const cfg = data.results.config;
+          message += `Config: ${cfg.success ? `✅ ${cfg.restored || 0} files` : cfg.skipped ? '⏭️ skipped' : `❌ ${cfg.error}`}\n`;
+        }
+        if (data.requiresRestart) {
+          message += '\n⚠️ Restart the backend (pm2 restart hr-erp-backend) for database changes to take full effect.';
         }
         setSuccess(message);
-        setTimeout(() => setSuccess(''), 10000);
+        setTimeout(() => setSuccess(''), 15000);
       } else {
-        setError(data.msg || 'Failed to restore backup');
+        let errMsg = data.msg || data.error || 'Restore failed';
+        if (data.results?.database && !data.results.database.success) {
+          errMsg += `\nDatabase: ${data.results.database.error || 'failed'}`;
+        }
+        if (data.results?.files && !data.results.files.success) {
+          errMsg += `\nFiles: ${data.results.files.error || 'failed'}`;
+        }
+        setError(errMsg);
       }
     } catch (err) {
       setError('Error restoring backup: ' + err.message);

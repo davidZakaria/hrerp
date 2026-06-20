@@ -22,6 +22,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const util = require('util');
+const { EJSON } = require('bson');
 
 const execPromise = util.promisify(exec);
 
@@ -187,7 +188,7 @@ async function backupDatabaseFallback(backupPath) {
       const data = await mongoose.connection.db.collection(collectionName).find({}).toArray();
       
       const filePath = path.join(backupPath, `${collectionName}.json`);
-      fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+      fs.writeFileSync(filePath, EJSON.stringify(data, { relaxed: false }));
       
       const stats = fs.statSync(filePath);
       totalSize += stats.size;
@@ -687,6 +688,10 @@ async function createBackup(options = {}) {
       files: await backupFiles(backupPath),
       config: await backupConfig(backupPath)
     };
+
+    if (!results.database.success) {
+      throw new Error(results.database.error || 'Database backup failed');
+    }
     
     // Generate manifest
     const manifest = generateManifest(backupPath, results);
@@ -805,6 +810,8 @@ module.exports = {
   cleanupOldBackups,
   getDirectorySize,
   formatBytes,
+  decryptData,
+  getMongoConfig,
   BACKUP_CONFIG
 };
 

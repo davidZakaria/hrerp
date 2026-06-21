@@ -43,7 +43,13 @@ function UserRowActions({
         <button type="button" className="user-mgmt-sheet-btn user-mgmt-sheet-btn-primary" onClick={() => onEdit(user)}>
           {t('common.edit')}
         </button>
-        <button type="button" className="user-mgmt-sheet-btn user-mgmt-sheet-btn-warn" onClick={() => onResetPassword(user)}>
+        <button
+          type="button"
+          className="user-mgmt-sheet-btn user-mgmt-sheet-btn-warn"
+          aria-label={t('common.resetPassword') || 'Reset Password'}
+          title={t('common.resetPassword') || 'Reset Password'}
+          onClick={() => onResetPassword(user)}
+        >
           🔑
         </button>
         <button type="button" className="user-mgmt-sheet-btn user-mgmt-sheet-btn-danger" onClick={() => onDelete(user)}>
@@ -58,6 +64,7 @@ function UserRowActions({
               type="button"
               className="user-mgmt-sheet-flag-x"
               title={flag.reason}
+              aria-label={`Remove flag: ${flag.type}`}
               onClick={() => onRemoveFlag(flag._id)}
             >
               × {flag.type}

@@ -38,13 +38,14 @@ async function buildOtReconciliationPayload(rangeStart, rangeEnd, { userId = nul
     const userScope = userId ? { user: userId } : {};
     const dateFilter = { extraHoursDate: { $gte: rangeStart, $lte: rangeEnd } };
 
+    // ⚡ Bolt: Optimize bulk read queries with .lean() to bypass mongoose document instantiation overhead.
     const [attendanceRecords, forms, pendingHrCount, pendingManagerCount, totalOtInRange] = await Promise.all([
         Attendance.find({
             date: { $gte: rangeStart, $lte: rangeEnd },
             clockIn: { $exists: true, $ne: '' },
             clockOut: { $exists: true, $ne: '' },
             ...userScope
-        }).populate('user', USER_POPULATE),
+        }).populate('user', USER_POPULATE).lean(),
         Form.find({
             type: 'extra_hours',
             status: 'approved',
@@ -52,7 +53,8 @@ async function buildOtReconciliationPayload(rangeStart, rangeEnd, { userId = nul
             ...userScope
         })
             .populate('user', USER_POPULATE)
-            .sort({ extraHoursDate: 1 }),
+            .sort({ extraHoursDate: 1 })
+            .lean(),
         Form.countDocuments({
             type: 'extra_hours',
             status: { $in: ['manager_approved', 'manager_submitted'] },

@@ -840,13 +840,16 @@ router.get('/deduction-report', auth, async (req, res) => {
 
         const extendedStart = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1, 0, 0, 0, 0);
 
+        // ⚡ Bolt: Optimize bulk read queries with .lean() to reduce memory overhead and improve response times.
         const [users, attendanceRecords, waiverForms, otForms] = await Promise.all([
             User.find({ employeeCode: { $exists: true, $ne: '' } })
                 .select('name department employeeCode workSchedule jobTitle location')
-                .sort({ name: 1 }),
+                .sort({ name: 1 })
+                .lean(),
             Attendance.find({
                 date: { $gte: extendedStart, $lte: rangeEnd }
-            }).populate('user', 'name department employeeCode workSchedule jobTitle location'),
+            }).populate('user', 'name department employeeCode workSchedule jobTitle location')
+              .lean(),
             Form.find({
                 type: { $in: WAIVER_FORM_TYPES },
                 status: { $in: APPROVED_WAIVER_STATUSES },
@@ -856,12 +859,14 @@ router.get('/deduction-report', auth, async (req, res) => {
                     { type: 'wfh', wfhDate: { $gte: extendedStart, $lte: rangeEnd } },
                     { type: 'mission', missionEndDate: { $gte: extendedStart }, missionStartDate: { $lte: rangeEnd } }
                 ]
-            }).populate('user', 'name department employeeCode'),
+            }).populate('user', 'name department employeeCode')
+              .lean(),
             Form.find({
                 type: 'extra_hours',
                 status: 'approved',
                 extraHoursDate: { $gte: rangeStart, $lte: rangeEnd }
             }).populate('user', 'name department employeeCode')
+              .lean()
         ]);
 
         const settings = await getSystemSettings();
@@ -1403,14 +1408,17 @@ router.get('/data-summary/:month', auth, async (req, res) => {
         const { month } = req.params;
         
         // Get all users with employee codes
+        // ⚡ Bolt: Use .lean() to skip document overhead for read-only reports.
         const users = await User.find({ 
             employeeCode: { $exists: true, $ne: null } 
-        }).select('name employeeCode department');
+        }).select('name employeeCode department').lean();
         
         // Get all attendance records for the month
+        // ⚡ Bolt: Use .lean() to significantly boost bulk fetching performance.
         const records = await Attendance.find({ month: month })
             .populate('user', 'name employeeCode department')
-            .sort({ date: 1 });
+            .sort({ date: 1 })
+            .lean();
         
         // Build detailed summary per employee
         const employeeSummaries = [];

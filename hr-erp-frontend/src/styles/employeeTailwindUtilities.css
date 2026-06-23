@@ -86,8 +86,11 @@
 .hover\:bg-slate-50:hover { background-color: #f8fafc; }
 [data-theme='dark'] .dark\:hover\:bg-slate-700:hover { background-color: #334155; }
 
-.text-stat { font-size: 1.5rem; line-height: 2rem; font-weight: 700; color: #0f172a; }
-[data-theme='dark'] .text-stat { color: #ffffff; }
+.text-stat { font-size: 1.5rem; line-height: 2rem; font-weight: 700; color: #0f172a !important; }
+[data-theme='dark'] .text-stat { color: #ffffff !important; }
+[data-theme='light'] .employee-dashboard-v2 .text-stat:not(.text-stat--danger):not(.text-stat--success) {
+  color: #0f172a !important;
+}
 .text-stat-label { font-size: 0.875rem; line-height: 1.25rem; color: #64748b; }
 .text-stat--danger { color: #ef4444 !important; }
 .text-stat--success { color: #10b981 !important; }

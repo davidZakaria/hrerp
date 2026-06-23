@@ -2072,23 +2072,34 @@ label {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Text contrast improvements for all components */
-h1, h2, h3, h4, h5, h6 {
+/* Text contrast improvements — dark theme only (light mode uses slate tokens) */
+[data-theme='dark'] h1,
+[data-theme='dark'] h2,
+[data-theme='dark'] h3,
+[data-theme='dark'] h4,
+[data-theme='dark'] h5,
+[data-theme='dark'] h6 {
   color: #ffffff !important;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
 }
 
-p, span:not(.insights-badge):not(.saas-vacation-badge):not(.leaves-status-badge), div:not(.modal-overlay):not(.insights-alert-text) {
+[data-theme='dark'] p,
+[data-theme='dark'] span:not(.insights-badge):not(.saas-vacation-badge):not(.leaves-status-badge),
+[data-theme='dark'] div:not(.modal-overlay):not(.insights-alert-text) {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
-strong, b {
+[data-theme='dark'] strong,
+[data-theme='dark'] b {
   color: #ffffff !important;
   font-weight: 700 !important;
 }
 
-/* Ensure no white text on white background anywhere */
-.white-bg, .light-bg, .bg-white, .bg-light {
+/* Dark theme: avoid white-on-white legacy panels */
+[data-theme='dark'] .white-bg,
+[data-theme='dark'] .light-bg,
+[data-theme='dark'] .bg-white,
+[data-theme='dark'] .bg-light {
   background: rgba(0, 0, 0, 0.1) !important;
   color: #ffffff !important;
 }
@@ -2399,9 +2410,9 @@ form select:focus {
 }
 
 /* Ensure all important text is visible - Dark Theme */
-.main-content p,
-.main-content span:not(.insights-badge):not(.saas-vacation-badge):not(.leaves-status-badge),
-.main-content div {
+[data-theme='dark'] .main-content p,
+[data-theme='dark'] .main-content span:not(.insights-badge):not(.saas-vacation-badge):not(.leaves-status-badge),
+[data-theme='dark'] .main-content div {
   color: rgba(255, 255, 255, 0.9);
 }
 

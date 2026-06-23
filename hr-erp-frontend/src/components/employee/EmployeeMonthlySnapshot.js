@@ -27,7 +27,7 @@ function StatBox({ label, value, valueClass = '' }) {
   return (
     <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
       <div className="text-sm !text-slate-500 dark:!text-slate-400">{label}</div>
-      <div className={`text-stat ${valueClass}`.trim()}>{value}</div>
+      <div className={`text-stat !text-slate-900 dark:!text-white ${valueClass}`.trim()}>{value}</div>
     </div>
   );
 }

@@ -2897,6 +2897,32 @@
   text-shadow: none !important;
 }
 
+/* Employee dashboard v2 — no .main-content wrapper; fix ghost text on stat cards */
+[data-theme='light'] .employee-dashboard-v2.dashboard-container section,
+[data-theme='light'] .employee-dashboard-v2.dashboard-container article,
+[data-theme='light'] .employee-dashboard-v2.dashboard-container .bg-white,
+[data-theme='light'] .employee-dashboard-v2.dashboard-container .bg-slate-50 {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .employee-dashboard-v2.dashboard-container .bg-white {
+  background-color: #ffffff !important;
+}
+
+[data-theme='light'] .employee-dashboard-v2.dashboard-container .bg-slate-50 {
+  background-color: #f8fafc !important;
+}
+
+[data-theme='light'] .employee-dashboard-v2 .text-stat:not(.text-stat--danger):not(.text-stat--success),
+[data-theme='light'] .employee-dashboard-v2 .\!text-slate-900 {
+  color: #0f172a !important;
+}
+
+[data-theme='dark'] .employee-dashboard-v2 .text-stat:not(.text-stat--danger):not(.text-stat--success) {
+  color: #ffffff !important;
+}
+
 [data-theme='light'] .modern-dash .section-title,
 [data-theme='light'] .modern-dash .subsection-title {
   color: #0f172a !important;

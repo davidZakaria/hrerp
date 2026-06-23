@@ -13,6 +13,24 @@ function getDefaultDateRange() {
   };
 }
 
+const KPI_CARD =
+  'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm text-center';
+const KPI_VALUE = '!text-indigo-600 dark:!text-indigo-400 text-2xl font-bold';
+const KPI_LABEL =
+  'text-xs uppercase tracking-wider font-semibold !text-slate-500 dark:!text-slate-400 mt-1';
+const TH =
+  'px-3 py-3 text-xs font-bold uppercase !text-slate-600 dark:!text-slate-400 whitespace-nowrap';
+const TD = 'px-3 py-3 !text-slate-900 dark:!text-white text-sm';
+
+function KpiCard({ value, label, valueClass = KPI_VALUE }) {
+  return (
+    <div className={KPI_CARD}>
+      <div className={valueClass}>{value}</div>
+      <div className={KPI_LABEL}>{label}</div>
+    </div>
+  );
+}
+
 const ManagerTeamAttendance = () => {
   const { t } = useTranslation();
   const [rangeStart, setRangeStart] = useState(() => getDefaultDateRange().startDate);
@@ -89,186 +107,272 @@ const ManagerTeamAttendance = () => {
     );
   }, [attendanceReport?.report, searchQuery]);
 
+  const setCurrentMonth = () => {
+    const d = getDefaultDateRange();
+    setRangeStart(d.startDate);
+    setRangeEnd(d.endDate);
+  };
+
   return (
-    <div className="manager-team-attendance section">
-      <style>{`
-        .manager-team-attendance .attendance-modal-custom * {
-          color: #000000 !important;
-        }
-        .manager-team-attendance .attendance-modal-custom h3, .manager-team-attendance .attendance-modal-custom h4, .manager-team-attendance .attendance-modal-custom strong, .manager-team-attendance .attendance-modal-custom span, .manager-team-attendance .attendance-modal-custom div {
-          color: #000000 !important;
-        }
-      `}</style>
-      <div className="section-header">
-        <h2>{t('managerDashboard.teamAttendance', 'Team Attendance')}</h2>
-        <small className="section-subtitle">
-          {t('managerDashboard.teamAttendanceDescription', 'View and search your team members\' attendance for the selected month')}
-        </small>
+    <div className="manager-team-attendance">
+      <div className="mb-6">
+        <h2 className="text-xl font-bold !text-slate-900 dark:!text-white m-0 mb-1">
+          {t('managerDashboard.teamAttendance', 'Team Attendance')}
+        </h2>
+        <p className="text-sm !text-slate-500 dark:!text-slate-400 m-0">
+          {t(
+            'managerDashboard.teamAttendanceDescription',
+            "View and search your team members' attendance for the selected month"
+          )}
+        </p>
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'flex-end' }}>
+      <div className="flex flex-wrap gap-4 mb-6 items-end">
         <div>
-          <label className="form-label-elegant" style={{ color: '#fff', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+          <label className="block text-sm font-semibold !text-slate-700 dark:!text-slate-300 mb-1.5">
             {t('managerDashboard.startDate', 'Start date')}
           </label>
           <input
             type="date"
             value={rangeStart}
             onChange={(e) => setRangeStart(e.target.value)}
-            className="form-input-elegant"
-            style={{ maxWidth: '180px', background: 'rgba(12,10,8,0.65)', color: '#fff', border: '2px solid rgba(201,162,39,0.35)', borderRadius: '8px', padding: '12px 16px' }}
+            className="form-input-elegant max-w-[180px]"
           />
         </div>
         <div>
-          <label className="form-label-elegant" style={{ color: '#fff', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+          <label className="block text-sm font-semibold !text-slate-700 dark:!text-slate-300 mb-1.5">
             {t('managerDashboard.endDate', 'End date')}
           </label>
           <input
             type="date"
             value={rangeEnd}
             onChange={(e) => setRangeEnd(e.target.value)}
-            className="form-input-elegant"
-            style={{ maxWidth: '180px', background: 'rgba(12,10,8,0.65)', color: '#fff', border: '2px solid rgba(201,162,39,0.35)', borderRadius: '8px', padding: '12px 16px' }}
+            className="form-input-elegant max-w-[180px]"
           />
         </div>
         <div>
           <button
             type="button"
-            className="btn-manager"
-            style={{ padding: '12px 16px', marginTop: '22px' }}
-            onClick={() => {
-              const d = getDefaultDateRange();
-              setRangeStart(d.startDate);
-              setRangeEnd(d.endDate);
-            }}
+            className="bg-indigo-600 hover:bg-indigo-700 !text-white rounded-lg px-4 py-2 border-none font-medium shadow-sm cursor-pointer"
+            onClick={setCurrentMonth}
           >
             {t('managerDashboard.currentMonth', 'This month')}
           </button>
         </div>
-        <div style={{ flex: 1, minWidth: '250px' }}>
-          <label className="form-label-elegant" style={{ color: '#fff', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
-            {t('managerDashboard.searchEmployee', 'Search Employee')}:
+        <div className="flex-1 min-w-[250px]">
+          <label className="block text-sm font-semibold !text-slate-700 dark:!text-slate-300 mb-1.5">
+            {t('managerDashboard.searchEmployee', 'Search Employee')}
           </label>
           <input
             type="text"
-            placeholder={t('managerDashboard.searchEmployeePlaceholder', 'Search by name, code, or department...')}
+            placeholder={t(
+              'managerDashboard.searchEmployeePlaceholder',
+              'Search by name, code, or department...'
+            )}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="form-input-elegant"
-            style={{ width: '100%', background: 'rgba(12,10,8,0.65)', color: '#fff', border: '2px solid rgba(201,162,39,0.35)', borderRadius: '8px', padding: '12px 16px' }}
+            className="form-input-elegant w-full"
           />
         </div>
       </div>
 
       {error && (
-        <div className="message error" style={{ marginBottom: '1rem', padding: '15px', borderRadius: '8px', background: 'rgba(244, 67, 54, 0.2)', color: '#f44336', border: '1px solid rgba(244, 67, 54, 0.4)' }}>
+        <div className="mb-4 p-4 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 !text-rose-700 dark:!text-rose-300 text-sm">
           {error}
         </div>
       )}
+
       {loading && (
-        <div className="loading-container" style={{ padding: '2rem', textAlign: 'center' }}>
-          <div className="spinner" style={{ width: '40px', height: '40px', border: '4px solid rgba(255,255,255,0.3)', borderTop: '4px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 1rem' }}></div>
-          <p style={{ color: 'rgba(255,255,255,0.8)' }}>{t('managerDashboard.loading', 'Loading...')}</p>
+        <div className="py-8 text-center">
+          <div className="manager-attendance-spinner mx-auto mb-3" aria-hidden />
+          <p className="!text-slate-600 dark:!text-slate-400 m-0">{t('managerDashboard.loading', 'Loading...')}</p>
         </div>
       )}
 
       {attendanceReport && !loading && (
         <>
           {attendanceReport.kpi && (
-            <div className="attendance-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
-              <div className="attendance-kpi-card" style={{ padding: '0.75rem', background: 'rgba(76,175,80,0.15)', border: '1px solid rgba(76,175,80,0.4)', borderRadius: '8px', textAlign: 'center', color: '#111827' }}>
-                <div className="kpi-value kpi-value--present" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#14532d' }}>{attendanceReport.kpi.totalPresent}</div>
-                <div className="kpi-label" style={{ fontSize: '0.75rem', color: '#111827', fontWeight: 600 }}>Present days</div>
-              </div>
-              <div className="attendance-kpi-card" style={{ padding: '0.75rem', background: 'rgba(244,67,54,0.15)', border: '1px solid rgba(244,67,54,0.4)', borderRadius: '8px', textAlign: 'center', color: '#111827' }}>
-                <div className="kpi-value kpi-value--absences" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#991b1b' }}>{attendanceReport.kpi.totalAbsences}</div>
-                <div className="kpi-label" style={{ fontSize: '0.75rem', color: '#111827', fontWeight: 600 }}>Absences</div>
-              </div>
-              <div className="attendance-kpi-card" style={{ padding: '0.75rem', background: 'rgba(255,152,0,0.15)', border: '1px solid rgba(255,152,0,0.4)', borderRadius: '8px', textAlign: 'center', color: '#111827' }}>
-                <div className="kpi-value kpi-value--late" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#9a3412' }}>{attendanceReport.kpi.totalLateHours}h</div>
-                <div className="kpi-label" style={{ fontSize: '0.75rem', color: '#111827', fontWeight: 600 }}>Late hours</div>
-              </div>
-              <div className="attendance-kpi-card" style={{ padding: '0.75rem', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.35)', borderRadius: '8px', textAlign: 'center', color: '#111827' }}>
-                <div className="kpi-value kpi-value--missed" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#6b4f1e' }}>{attendanceReport.kpi.pendingMissedPunches}</div>
-                <div className="kpi-label" style={{ fontSize: '0.75rem', color: '#111827', fontWeight: 600 }}>Missed punches</div>
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <KpiCard value={attendanceReport.kpi.totalPresent} label="Present days" />
+              <KpiCard
+                value={attendanceReport.kpi.totalAbsences}
+                label="Absences"
+                valueClass="!text-rose-600 dark:!text-rose-400 text-2xl font-bold"
+              />
+              <KpiCard
+                value={`${attendanceReport.kpi.totalLateHours}h`}
+                label="Late hours"
+                valueClass="!text-amber-600 dark:!text-amber-400 text-2xl font-bold"
+              />
+              <KpiCard
+                value={attendanceReport.kpi.pendingMissedPunches}
+                label="Missed punches"
+                valueClass="!text-violet-600 dark:!text-violet-400 text-2xl font-bold"
+              />
             </div>
           )}
+
           {attendanceReport.totalEmployees === 0 ? (
-            <div className="no-content" style={{ textAlign: 'center', padding: '40px 20px', color: 'rgba(255,255,255,0.7)' }}>
-              <span className="no-content-icon" style={{ fontSize: '3rem', display: 'block', marginBottom: '15px' }}>👥</span>
-              <p style={{ margin: 0, fontSize: '1.1rem' }}>{t('managerDashboard.noTeamMembersInManagedDepts', 'No team members in your managed departments')}</p>
-              <small style={{ fontStyle: 'italic' }}>{t('managerDashboard.noTeamMembersHint', 'Ask HR to assign employees to your departments or verify your managed departments.')}</small>
+            <div className="text-center py-10 !text-slate-500 dark:!text-slate-400">
+              <span className="text-4xl block mb-3" aria-hidden>
+                👥
+              </span>
+              <p className="!text-slate-900 dark:!text-white text-lg m-0 mb-1">
+                {t('managerDashboard.noTeamMembersInManagedDepts', 'No team members in your managed departments')}
+              </p>
+              <small className="text-sm italic">
+                {t(
+                  'managerDashboard.noTeamMembersHint',
+                  'Ask HR to assign employees to your departments or verify your managed departments.'
+                )}
+              </small>
             </div>
           ) : (
             <>
               {attendanceReport.overtimeSummary && attendanceReport.overtimeSummary.totalOvertimeMinutes > 0 && (
-                <div style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, rgba(201, 162, 39, 0.12) 0%, rgba(107, 79, 30, 0.06) 100%)', border: '1px solid rgba(201, 162, 39, 0.35)', borderRadius: '12px', padding: '1rem' }}>
-                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#e5c76b' }}>{t('managerDashboard.overtimeSummary', 'Overtime Summary')}</h4>
-                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                    <span style={{ color: 'rgba(255,255,255,0.9)' }}>{attendanceReport.overtimeSummary.totalOvertimeHours}h {t('managerDashboard.totalOvertime', 'total overtime')}</span>
-                    <span style={{ color: 'rgba(255,255,255,0.9)' }}>{attendanceReport.overtimeSummary.employeesWithOvertime.length} {t('managerDashboard.employeesWithOvertime', 'employees with overtime')}</span>
+                <div className="mb-6 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4">
+                  <h4 className="m-0 mb-2 text-sm font-semibold !text-indigo-800 dark:!text-indigo-200">
+                    {t('managerDashboard.overtimeSummary', 'Overtime Summary')}
+                  </h4>
+                  <div className="flex flex-wrap gap-4 text-sm !text-slate-700 dark:!text-slate-300">
+                    <span>
+                      {attendanceReport.overtimeSummary.totalOvertimeHours}h{' '}
+                      {t('managerDashboard.totalOvertime', 'total overtime')}
+                    </span>
+                    <span>
+                      {attendanceReport.overtimeSummary.employeesWithOvertime.length}{' '}
+                      {t('managerDashboard.employeesWithOvertime', 'employees with overtime')}
+                    </span>
                   </div>
                 </div>
               )}
-              <div style={{ marginBottom: '1rem', color: 'rgba(255,255,255,0.8)' }}>
-                <strong>{t('managerDashboard.totalEmployees', 'Total Employees')}:</strong> {attendanceReport.totalEmployees}
+
+              <p className="mb-4 text-sm !text-slate-700 dark:!text-slate-300">
+                <strong className="!text-slate-900 dark:!text-white">
+                  {t('managerDashboard.totalEmployees', 'Total Employees')}:
+                </strong>{' '}
+                {attendanceReport.totalEmployees}
                 {searchQuery && (
-                  <span style={{ marginLeft: '1rem', color: '#e5c76b' }}>
-                    ({t('managerDashboard.showingResults', 'Showing')} {filteredReport.length} {t('managerDashboard.results', 'results')})
+                  <span className="ml-3 !text-indigo-600 dark:!text-indigo-400">
+                    ({t('managerDashboard.showingResults', 'Showing')} {filteredReport.length}{' '}
+                    {t('managerDashboard.results', 'results')})
                   </span>
                 )}
-              </div>
-              <div className="manager-team-table-wrap responsive-table-wrap">
-                <table style={{ width: '100%', minWidth: '1100px', borderCollapse: 'separate', borderSpacing: '0', fontSize: '0.9rem' }}>
-                  <thead>
-                    <tr style={{ background: 'rgba(12,10,8,0.45)', boxShadow: 'inset 0 -2px 0 rgba(201,162,39,0.35)' }}>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#fff', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '140px' }}>{t('managerDashboard.employee', 'Employee')}</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fff', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '70px' }}>{t('managerDashboard.code', 'Code')}</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'left', color: '#fff', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '110px' }}>{t('managerDashboard.department', 'Department')}</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fff', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '50px' }}>{t('managerDashboard.days', 'Days')}</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#4ade80', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '60px' }}>{t('managerDashboard.present', 'Present')}</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fb923c', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '50px' }}>{t('managerDashboard.late', 'Late')}</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#f87171', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '60px' }}>{t('managerDashboard.absent', 'Absent')}</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#c084fc', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '55px' }}>{t('managerDashboard.leave', 'Leave')}</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#d4a84b', fontWeight: '600', borderBottom: '2px solid rgba(201,162,39,0.35)', minWidth: '45px' }}>WFH</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#e5c76b', fontWeight: '600', borderBottom: '2px solid rgba(201,162,39,0.35)', minWidth: '60px' }}>{t('managerDashboard.excused', 'Excused')}</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fbbf24', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '65px' }}>FP</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#f87171', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '60px' }}>{t('managerDashboard.deduct', 'Deduct')}</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#4ade80', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '55px' }}>OT</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fff', fontWeight: '600', borderBottom: '2px solid rgba(255,255,255,0.2)', minWidth: '100px' }}>{t('managerDashboard.actions', 'Actions')}</th>
+              </p>
+
+              <div className="manager-team-table-wrap responsive-table-wrap overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                <table className="w-full min-w-[1100px] border-collapse text-sm">
+                  <thead className="bg-slate-100 dark:bg-slate-900/50 border-y border-slate-200 dark:border-slate-700">
+                    <tr>
+                      <th className={`${TH} text-left min-w-[140px]`}>
+                        {t('managerDashboard.employee', 'Employee')}
+                      </th>
+                      <th className={`${TH} text-center min-w-[70px]`}>{t('managerDashboard.code', 'Code')}</th>
+                      <th className={`${TH} text-left min-w-[110px]`}>
+                        {t('managerDashboard.department', 'Department')}
+                      </th>
+                      <th className={`${TH} text-center min-w-[50px]`}>{t('managerDashboard.days', 'Days')}</th>
+                      <th className={`${TH} text-center min-w-[60px] !text-emerald-600 dark:!text-emerald-400`}>
+                        {t('managerDashboard.present', 'Present')}
+                      </th>
+                      <th className={`${TH} text-center min-w-[50px] !text-amber-600 dark:!text-amber-400`}>
+                        {t('managerDashboard.late', 'Late')}
+                      </th>
+                      <th className={`${TH} text-center min-w-[60px] !text-rose-600 dark:!text-rose-400`}>
+                        {t('managerDashboard.absent', 'Absent')}
+                      </th>
+                      <th className={`${TH} text-center min-w-[55px] !text-violet-600 dark:!text-violet-400`}>
+                        {t('managerDashboard.leave', 'Leave')}
+                      </th>
+                      <th className={`${TH} text-center min-w-[45px]`}>WFH</th>
+                      <th className={`${TH} text-center min-w-[60px]`}>
+                        {t('managerDashboard.excused', 'Excused')}
+                      </th>
+                      <th className={`${TH} text-center min-w-[65px]`}>FP</th>
+                      <th className={`${TH} text-center min-w-[60px] !text-rose-600 dark:!text-rose-400`}>
+                        {t('managerDashboard.deduct', 'Deduct')}
+                      </th>
+                      <th className={`${TH} text-center min-w-[55px] !text-emerald-600 dark:!text-emerald-400`}>
+                        OT
+                      </th>
+                      <th className={`${TH} text-center min-w-[100px]`}>
+                        {t('managerDashboard.actions', 'Actions')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredReport.map((emp, idx) => (
-                      <tr key={idx} style={{ background: idx % 2 === 0 ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                        <td style={{ padding: '12px 16px', color: '#e2e8f0', fontWeight: '500' }}>{emp.user.name}</td>
-                        <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                          <code style={{ background: 'rgba(255,255,255,0.1)', color: '#94a3b8', padding: '2px 6px', borderRadius: '4px', fontSize: '0.85rem' }}>
+                      <tr
+                        key={emp.user?.id || idx}
+                        className={
+                          idx % 2 === 0
+                            ? 'bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700'
+                            : 'bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700'
+                        }
+                      >
+                        <td className={`${TD} font-medium`}>{emp.user.name}</td>
+                        <td className={`${TD} text-center`}>
+                          <code className="bg-slate-100 dark:bg-slate-700 !text-slate-600 dark:!text-slate-300 px-1.5 py-0.5 rounded text-xs">
                             {emp.user.employeeCode || 'N/A'}
                           </code>
                         </td>
-                        <td style={{ padding: '12px 10px', color: '#94a3b8', fontSize: '0.85rem' }}>{emp.user.department}</td>
-                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#cbd5e1', fontWeight: '600' }}>{emp.stats.totalDays}</td>
-                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#4ade80', fontWeight: '600' }}>{emp.stats.present}</td>
-                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#fb923c', fontWeight: '600' }}>{emp.stats.late}</td>
-                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#f87171', fontWeight: '600' }}>{emp.stats.unexcusedAbsences}</td>
-                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#c084fc', fontWeight: '600' }}>{emp.stats.onLeave || 0}</td>
-                        <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                          {(emp.stats.wfh || 0) > 0 ? <span style={{ background: 'rgba(201,162,39,0.2)', color: '#e5c76b', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.9rem' }}>{emp.stats.wfh}</span> : <span style={{ color: '#64748b' }}>0</span>}
+                        <td className={`${TD} !text-slate-600 dark:!text-slate-400`}>{emp.user.department}</td>
+                        <td className={`${TD} text-center font-semibold`}>{emp.stats.totalDays}</td>
+                        <td className={`${TD} text-center font-semibold !text-emerald-600 dark:!text-emerald-400`}>
+                          {emp.stats.present}
                         </td>
-                        <td style={{ padding: '12px 10px', textAlign: 'center', color: '#e5c76b', fontWeight: '600' }}>{emp.stats.excused || 0}</td>
-                        <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                          {(emp.stats.fingerprintMisses || 0) > 0 ? <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>{emp.stats.fingerprintMisses}</span> : <span style={{ color: '#64748b' }}>0</span>}
+                        <td className={`${TD} text-center font-semibold !text-amber-600 dark:!text-amber-400`}>
+                          {emp.stats.late}
                         </td>
-                        <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                          {(emp.stats.totalFingerprintDeduction || 0) > 0 ? <span style={{ background: 'rgba(248,113,113,0.2)', color: '#f87171', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.9rem' }}>-{emp.stats.totalFingerprintDeduction}</span> : <span style={{ color: '#64748b' }}>0</span>}
+                        <td className={`${TD} text-center font-semibold !text-rose-600 dark:!text-rose-400`}>
+                          {emp.stats.unexcusedAbsences}
                         </td>
-                        <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                          {(emp.stats.totalMinutesOvertime || 0) > 0 ? <span style={{ background: 'rgba(74,222,128,0.2)', color: '#4ade80', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.9rem' }}>+{emp.stats.totalMinutesOvertime}</span> : <span style={{ color: '#64748b' }}>0</span>}
+                        <td className={`${TD} text-center font-semibold !text-violet-600 dark:!text-violet-400`}>
+                          {emp.stats.onLeave || 0}
                         </td>
-                        <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                          <button onClick={() => viewEmployeeDetails(emp)} className="btn-manager" style={{ padding: '6px 14px', fontSize: '0.85rem', background: 'linear-gradient(135deg, #c9a227, #6b4f1e)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
+                        <td className={`${TD} text-center`}>
+                          {(emp.stats.wfh || 0) > 0 ? (
+                            <span className="bg-indigo-50 dark:bg-indigo-900/30 !text-indigo-700 dark:!text-indigo-300 px-2 py-0.5 rounded font-bold text-xs">
+                              {emp.stats.wfh}
+                            </span>
+                          ) : (
+                            <span className="!text-slate-400">0</span>
+                          )}
+                        </td>
+                        <td className={`${TD} text-center font-semibold`}>{emp.stats.excused || 0}</td>
+                        <td className={`${TD} text-center`}>
+                          {(emp.stats.fingerprintMisses || 0) > 0 ? (
+                            <span className="font-bold !text-amber-600 dark:!text-amber-400">
+                              {emp.stats.fingerprintMisses}
+                            </span>
+                          ) : (
+                            <span className="!text-slate-400">0</span>
+                          )}
+                        </td>
+                        <td className={`${TD} text-center`}>
+                          {(emp.stats.totalFingerprintDeduction || 0) > 0 ? (
+                            <span className="bg-rose-50 dark:bg-rose-900/30 !text-rose-700 dark:!text-rose-300 px-2 py-0.5 rounded font-bold text-xs">
+                              -{emp.stats.totalFingerprintDeduction}
+                            </span>
+                          ) : (
+                            <span className="!text-slate-400">0</span>
+                          )}
+                        </td>
+                        <td className={`${TD} text-center`}>
+                          {(emp.stats.totalMinutesOvertime || 0) > 0 ? (
+                            <span className="bg-emerald-50 dark:bg-emerald-900/30 !text-emerald-700 dark:!text-emerald-300 px-2 py-0.5 rounded font-bold text-xs">
+                              +{emp.stats.totalMinutesOvertime}
+                            </span>
+                          ) : (
+                            <span className="!text-slate-400">0</span>
+                          )}
+                        </td>
+                        <td className={`${TD} text-center`}>
+                          <button
+                            type="button"
+                            onClick={() => viewEmployeeDetails(emp)}
+                            className="bg-indigo-600 hover:bg-indigo-700 !text-white rounded-lg px-3 py-1.5 text-xs font-medium border-none shadow-sm cursor-pointer"
+                          >
                             {t('managerDashboard.viewDetails', 'View Details')}
                           </button>
                         </td>
@@ -291,10 +395,6 @@ const ManagerTeamAttendance = () => {
           if (selectedEmployee?.user?.id) await viewEmployeeDetails({ user: selectedEmployee.user });
         }}
       />
-
-      <style>{`
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 };

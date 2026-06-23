@@ -17,6 +17,25 @@ import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScr
 import { formatVacationDeductionDays } from '../utils/vacationDays';
 import { persistProfilePicture } from '../utils/avatarHelpers';
 
+const MD_PANEL =
+  'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl p-6';
+const MD_H2 = 'text-xl font-bold !text-slate-900 dark:!text-white m-0 mb-2';
+const MD_SUB = 'block text-sm !text-slate-500 dark:!text-slate-400 m-0 leading-relaxed';
+const MD_BTN_EDIT =
+  'bg-slate-100 dark:bg-slate-700 !text-slate-700 dark:!text-white rounded-lg px-4 py-2 font-medium border border-slate-300 dark:border-slate-600 shadow-sm cursor-pointer disabled:opacity-50';
+const MD_BTN_APPROVE =
+  'bg-emerald-500 hover:bg-emerald-600 !text-white rounded-lg px-4 py-2 font-medium shadow-sm border-none cursor-pointer disabled:opacity-50';
+const MD_BTN_REJECT =
+  'bg-rose-500 hover:bg-rose-600 !text-white rounded-lg px-4 py-2 font-medium shadow-sm border-none cursor-pointer disabled:opacity-50';
+const MD_BTN_REFRESH =
+  'bg-indigo-600 hover:bg-indigo-700 !text-white rounded-lg px-4 py-2 font-medium shadow-sm border-none cursor-pointer disabled:opacity-50';
+const MD_PENDING_CARD =
+  'bg-white dark:bg-slate-800 border-l-4 border-l-indigo-500 border-y border-r border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-sm mb-4 flex flex-col md:flex-row justify-between gap-4';
+const MD_TEAM_CARD =
+  'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl p-5 text-center';
+const MD_FORM_CARD =
+  'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-l-4 border-l-indigo-500 shadow-sm rounded-xl p-5';
+
 const ManagerDashboard = ({ onLogout }) => {
   const { t } = useTranslation();
   const [pendingForms, setPendingForms] = useState([]);
@@ -364,7 +383,7 @@ const ManagerDashboard = ({ onLogout }) => {
         headers: { 'x-auth-token': token }
       });
 
-      setMessage(`✅ ${t('flags.flagCreated') || 'Flag created successfully'}`);
+      setMessage(`âœ… ${t('flags.flagCreated') || 'Flag created successfully'}`);
       closeFlagModal();
       fetchTeamFlags();
       
@@ -388,7 +407,7 @@ const ManagerDashboard = ({ onLogout }) => {
         headers: { 'x-auth-token': token }
       });
 
-      setMessage(`✅ ${t('flags.flagRemoved') || 'Flag removed successfully'}`);
+      setMessage(`âœ… ${t('flags.flagRemoved') || 'Flag removed successfully'}`);
       fetchTeamFlags();
       
       setTimeout(() => setMessage(''), 3000);
@@ -571,7 +590,7 @@ const ManagerDashboard = ({ onLogout }) => {
           })
         );
 
-        setMessage(`✅ Request ${actionType}d successfully!`);
+        setMessage(`âœ… Request ${actionType}d successfully!`);
         closeCommentModal();
         
         // Clear message after 3 seconds
@@ -581,7 +600,7 @@ const ManagerDashboard = ({ onLogout }) => {
         
         // Background refresh for consistency
         setTimeout(async () => {
-          logger.log('🔄 Background refresh for consistency...');
+          logger.log('ðŸ”„ Background refresh for consistency...');
           await fetchPendingForms();
           await fetchTeamForms();
         }, 1000);
@@ -737,39 +756,15 @@ const ManagerDashboard = ({ onLogout }) => {
 
   if (loading || !user) {
     return (
-      <div className="loading-container">
-        <div className="spinner"></div>
-        <p>{t('managerDashboard.loadingManagerDashboard')}</p>
-        <style>{`
-          .loading-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background: linear-gradient(145deg, #1a1510 0%, #2a2218 40%, #c9a227 140%);
-            color: white;
-          }
-          .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #e5c76b;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-          }
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
+      <div className="loading-container flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="manager-attendance-spinner mb-5" aria-hidden />
+        <p className="!text-slate-600 dark:!text-slate-400">{t('managerDashboard.loadingManagerDashboard')}</p>
       </div>
     );
   }
 
   return (
-    <div className="manager-dashboard dashboard-container modern-dash min-h-screen bg-slate-100 dark:bg-slate-900">
+    <div className="manager-dashboard dashboard-container modern-dash min-h-screen bg-slate-50 dark:bg-slate-900">
       <DashboardAppHeader title={t('managerDashboard.managerDashboard')} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6 w-full">
@@ -786,11 +781,11 @@ const ManagerDashboard = ({ onLogout }) => {
       {user && (
         <DashboardStatGrid columns={3}>
           <DashboardStatCard
-            value={vacationDaysLeft ?? user.vacationDaysLeft ?? '—'}
+            value={vacationDaysLeft ?? user.vacationDaysLeft ?? 'â€”'}
             label={t('welcomeHero.leaveRemaining')}
           />
           <DashboardStatCard
-            value={user.excuseRequestsLeft ?? '—'}
+            value={user.excuseRequestsLeft ?? 'â€”'}
             label={t('welcomeHero.excusesRemaining')}
           />
           <DashboardStatCard
@@ -817,12 +812,12 @@ const ManagerDashboard = ({ onLogout }) => {
         activeId={managerNavActiveId}
         subtitle={`${pendingForms.length} ${t('managerDashboard.pendingTeamRequests')}`}
         sections={[
-          { id: 'teamAttendance', label: t('managerDashboard.teamAttendance', 'Team Attendance'), icon: '📊', onSelect: handleShowTeamAttendance },
-          { id: 'submit', label: t('managerDashboard.submitMyForm'), icon: '📝', onSelect: handleShowForm },
-          { id: 'myForms', label: t('managerDashboard.viewMyForms'), icon: '📋', onSelect: handleShowMyForms },
-          { id: 'teamForms', label: t('managerDashboard.myTeamMembersForms'), icon: '👥', onSelect: handleShowTeamForms },
-          { id: 'teamApprovals', label: t('managerDashboard.approveTeamForms'), icon: '✅', onSelect: handleGoToTeamApprovals },
-          { id: 'ats', label: t('managerDashboard.atsSystem', 'ATS'), icon: '🎯', onSelect: handleShowATS }
+          { id: 'teamAttendance', label: t('managerDashboard.teamAttendance', 'Team Attendance'), icon: 'ðŸ“Š', onSelect: handleShowTeamAttendance },
+          { id: 'submit', label: t('managerDashboard.submitMyForm'), icon: 'ðŸ“', onSelect: handleShowForm },
+          { id: 'myForms', label: t('managerDashboard.viewMyForms'), icon: 'ðŸ“‹', onSelect: handleShowMyForms },
+          { id: 'teamForms', label: t('managerDashboard.myTeamMembersForms'), icon: 'ðŸ‘¥', onSelect: handleShowTeamForms },
+          { id: 'teamApprovals', label: t('managerDashboard.approveTeamForms'), icon: 'âœ…', onSelect: handleGoToTeamApprovals },
+          { id: 'ats', label: t('managerDashboard.atsSystem', 'ATS'), icon: 'ðŸŽ¯', onSelect: handleShowATS }
         ]}
       />
 
@@ -847,9 +842,9 @@ const ManagerDashboard = ({ onLogout }) => {
       </DashboardStatGrid>
 
       {/* Manager's Personal Section */}
-      <div className="section manager-personal-section">
-        <div className="section-header">
-          <h2>{t('managerDashboard.myPersonalFormsAndRequests')}</h2>
+      <div className={`section manager-personal-section ${MD_PANEL}`}>
+        <div className="section-header mb-4">
+          <h2 className={MD_H2}>{t('managerDashboard.myPersonalFormsAndRequests')}</h2>
         </div>
       </div>
 
@@ -857,7 +852,7 @@ const ManagerDashboard = ({ onLogout }) => {
       {showTeamAttendance && (
         <div
           ref={teamAttendanceRef}
-          className="section manager-team-attendance-section dashboard-section-anchor"
+          className={`section manager-team-attendance-section dashboard-section-anchor ${MD_PANEL}`}
         >
           <ManagerTeamAttendance />
         </div>
@@ -865,19 +860,19 @@ const ManagerDashboard = ({ onLogout }) => {
 
       {/* ATS System */}
       {showATS && (
-        <div ref={managerAtsRef} className="section manager-ats-section dashboard-section-anchor">
+        <div ref={managerAtsRef} className={`section manager-ats-section dashboard-section-anchor ${MD_PANEL}`}>
           <ATSDashboard />
         </div>
       )}
 
       {/* Form Submission */}
       {showForm && (
-        <div ref={managerFormRef} className="section manager-form-section dashboard-section-anchor">
-          <div className="section-header">
-            <h2>📝 {t('managerDashboard.submitNewPersonalForm')}</h2>
-            <small className="section-subtitle">{t('managerDashboard.thisIsForYourOwnPersonalRequestsVacationSickLeaveEtc')}</small>
+        <div ref={managerFormRef} className={`section manager-form-section dashboard-section-anchor ${MD_PANEL}`}>
+          <div className="section-header mb-4">
+            <h2 className={MD_H2}>ðŸ“ {t('managerDashboard.submitNewPersonalForm')}</h2>
+            <small className={MD_SUB}>{t('managerDashboard.thisIsForYourOwnPersonalRequestsVacationSickLeaveEtc')}</small>
           </div>
-          <div className="form-container">
+          <div className="form-container mt-4">
             <FormSubmission onFormSubmitted={handleFormSubmitted} />
           </div>
         </div>
@@ -885,24 +880,24 @@ const ManagerDashboard = ({ onLogout }) => {
 
       {/* My Forms Preview */}
       {showMyForms && (
-        <div ref={managerMyFormsRef} className="section manager-forms-view-section dashboard-section-anchor">
-          <div className="section-header">
-            <h2>📋 {t('managerDashboard.mySubmittedForms')}</h2>
-            <small className="section-subtitle">{t('managerDashboard.yourPersonalFormSubmissionsAndTheirStatus')}</small>
+        <div ref={managerMyFormsRef} className={`section manager-forms-view-section dashboard-section-anchor ${MD_PANEL}`}>
+          <div className="section-header mb-4">
+            <h2 className={MD_H2}>ðŸ“‹ {t('managerDashboard.mySubmittedForms')}</h2>
+            <small className={MD_SUB}>{t('managerDashboard.yourPersonalFormSubmissionsAndTheirStatus')}</small>
           </div>
           {myForms.length > 0 ? (
-            <div className="my-forms-grid">
+            <div className="my-forms-grid grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {myForms.map(form => (
-                <div key={form._id} className="my-form-card manager-own-form">
-                  <div className="form-header">
-                    <h4>
+                <div key={form._id} className={`my-form-card manager-own-form ${MD_FORM_CARD}`}>
+                  <div className="form-header flex justify-between items-start gap-3 mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
+                    <h4 className="!text-slate-900 dark:!text-white font-semibold m-0 text-base">
                       {form.type === 'vacation' ? 'ANNUAL VACATION' :
                        form.type.toUpperCase()}
                     </h4>
                     {getStatusBadge(form.status)}
                   </div>
                   
-                  <div className="form-details">
+                  <div className="form-details text-sm !text-slate-700 dark:!text-slate-300 space-y-1">
                     <p><strong>{t('submitted')}:</strong> {formatDate(form.createdAt)}</p>
                     
                     {form.type === 'vacation' && (
@@ -915,7 +910,7 @@ const ManagerDashboard = ({ onLogout }) => {
                     
                     {form.type === 'excuse' && (
                       <>
-                        <p><strong>Excuse Type:</strong> <span style={{ color: isPaidExcuse(form) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{isPaidExcuse(form) ? '💰 Paid' : '📝 Unpaid'}</span></p>
+                        <p><strong>Excuse Type:</strong> <span style={{ color: isPaidExcuse(form) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{isPaidExcuse(form) ? 'ðŸ’° Paid' : 'ðŸ“ Unpaid'}</span></p>
                         <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
                         <p><strong>{t('time')}:</strong> {form.fromHour} - {form.toHour}</p>
                         <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
@@ -952,7 +947,7 @@ const ManagerDashboard = ({ onLogout }) => {
                       <>
                         <p><strong>{t('forms.startDate')}:</strong> {formatDate(form.missionStartDate)}</p>
                         <p><strong>{t('forms.endDate')}:</strong> {formatDate(form.missionEndDate)}</p>
-                        <p><strong>{t('forms.missionDestination')}:</strong> 📍 {form.missionDestination}</p>
+                        <p><strong>{t('forms.missionDestination')}:</strong> ðŸ“ {form.missionDestination}</p>
                       </>
                     )}
                     
@@ -964,7 +959,7 @@ const ManagerDashboard = ({ onLogout }) => {
                           {form.status === 'manager_rejected' ? t('rejectedByManager') : t('approvedByManager')}:
                         </strong>
                         <p style={{ color: form.status === 'manager_rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
-                          👔 {form.managerApprovedBy.name}
+                          ðŸ‘” {form.managerApprovedBy.name}
                           {form.managerApprovedAt && (
                             <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
                               {' '}{t('on')} {new Date(form.managerApprovedAt).toLocaleDateString()}
@@ -989,7 +984,7 @@ const ManagerDashboard = ({ onLogout }) => {
                             : t('managerDashboard.hrApprovedByHR')}:
                         </strong>
                         <p style={{ color: form.status === 'rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
-                          🏢 {form.adminApprovedBy.name}
+                          ðŸ¢ {form.adminApprovedBy.name}
                           {form.adminApprovedAt && (
                             <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
                               {' '}{t('managerDashboard.on')} {new Date(form.adminApprovedAt).toLocaleDateString()}
@@ -1014,10 +1009,10 @@ const ManagerDashboard = ({ onLogout }) => {
               ))}
             </div>
           ) : (
-            <div className="no-content">
-              <span className="no-content-icon">📋</span>
-              <p>{t('managerDashboard.noPersonalFormsSubmittedYet')}</p>
-              <small>{t('managerDashboard.theseAreYourOwnFormsVacationSickLeaveEtc')}</small>
+            <div className="no-content text-center py-10 !text-slate-500 dark:!text-slate-400">
+              <span className="no-content-icon text-4xl block mb-3">ðŸ“‹</span>
+              <p className="!text-slate-900 dark:!text-white m-0 mb-1">{t('managerDashboard.noPersonalFormsSubmittedYet')}</p>
+              <small className="text-sm italic">{t('managerDashboard.theseAreYourOwnFormsVacationSickLeaveEtc')}</small>
             </div>
           )}
         </div>
@@ -1025,24 +1020,24 @@ const ManagerDashboard = ({ onLogout }) => {
 
       {/* Team Members Forms */}
       {showTeamForms && (
-        <div ref={managerTeamFormsRef} className="section team-management-section dashboard-section-anchor">
-          <div className="section-header">
-          <h2>{t('managerDashboard.myTeamMembersForms')}</h2>
-            <small className="section-subtitle">{t('managerDashboard.allFormsSubmittedByYourTeamMembersFromManagedDepartments')}</small>
+        <div ref={managerTeamFormsRef} className={`section team-management-section dashboard-section-anchor ${MD_PANEL}`}>
+          <div className="section-header mb-4">
+            <h2 className={MD_H2}>{t('managerDashboard.myTeamMembersForms')}</h2>
+            <small className={MD_SUB}>{t('managerDashboard.allFormsSubmittedByYourTeamMembersFromManagedDepartments')}</small>
           </div>
           {teamForms.length > 0 ? (
-            <div className="my-forms-grid">
+            <div className="my-forms-grid grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {teamForms.map(form => (
-                <div key={form._id} className="my-form-card team-request-card">
-                  <div className="form-header">
-                    <h4>
+                <div key={form._id} className={`my-form-card team-request-card ${MD_FORM_CARD}`}>
+                  <div className="form-header flex justify-between items-start gap-3 mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
+                    <h4 className="!text-slate-900 dark:!text-white font-semibold m-0 text-base">
                       {form.user.name} - {form.type === 'vacation' ? 'ANNUAL VACATION' :
                                           form.type.toUpperCase()}
                     </h4>
                     {getStatusBadge(form.status)}
                   </div>
                   
-                  <div className="form-details">
+                  <div className="form-details text-sm !text-slate-700 dark:!text-slate-300 space-y-1">
                     <p><strong>{t('employee')}:</strong> {form.user.name}</p>
                     <p><strong>{t('department')}:</strong> {form.user.department}</p>
                     <p><strong>{t('submitted')}:</strong> {formatDate(form.createdAt)}</p>
@@ -1057,7 +1052,7 @@ const ManagerDashboard = ({ onLogout }) => {
                     
                     {form.type === 'excuse' && (
                       <>
-                        <p><strong>Excuse Type:</strong> <span style={{ color: isPaidExcuse(form) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{isPaidExcuse(form) ? '💰 Paid' : '📝 Unpaid'}</span></p>
+                        <p><strong>Excuse Type:</strong> <span style={{ color: isPaidExcuse(form) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{isPaidExcuse(form) ? 'ðŸ’° Paid' : 'ðŸ“ Unpaid'}</span></p>
                         <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
                         <p><strong>{t('time')}:</strong> {form.fromHour} - {form.toHour}</p>
                         <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
@@ -1094,7 +1089,7 @@ const ManagerDashboard = ({ onLogout }) => {
                       <>
                         <p><strong>{t('forms.startDate')}:</strong> {formatDate(form.missionStartDate)}</p>
                         <p><strong>{t('forms.endDate')}:</strong> {formatDate(form.missionEndDate)}</p>
-                        <p><strong>{t('forms.missionDestination')}:</strong> 📍 {form.missionDestination}</p>
+                        <p><strong>{t('forms.missionDestination')}:</strong> ðŸ“ {form.missionDestination}</p>
                       </>
                     )}
                     
@@ -1106,7 +1101,7 @@ const ManagerDashboard = ({ onLogout }) => {
                           {form.status === 'manager_rejected' ? t('rejectedByManager') : t('approvedByManager')}:
                         </strong>
                         <p style={{ color: form.status === 'manager_rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
-                          👔 {form.managerApprovedBy.name}
+                          ðŸ‘” {form.managerApprovedBy.name}
                           {form.managerApprovedAt && (
                             <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
                               {' '}{t('on')} {new Date(form.managerApprovedAt).toLocaleDateString()}
@@ -1131,7 +1126,7 @@ const ManagerDashboard = ({ onLogout }) => {
                             : t('managerDashboard.hrApprovedByHR')}:
                         </strong>
                         <p style={{ color: form.status === 'rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
-                          🏢 {form.adminApprovedBy.name}
+                          ðŸ¢ {form.adminApprovedBy.name}
                           {form.adminApprovedAt && (
                             <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
                               {' '}{t('managerDashboard.on')} {new Date(form.adminApprovedAt).toLocaleDateString()}
@@ -1152,44 +1147,46 @@ const ManagerDashboard = ({ onLogout }) => {
                       </div>
                     )}
                   </div>
-                  <div style={{ marginTop: '1rem' }}>
-                    <button onClick={() => openEditFormModal(form)} className="btn-manager" style={{ padding: '6px 12px', fontSize: '0.9rem' }}>
-                      ✏️ {t('edit') || 'Edit'}
+                  <div className="mt-4">
+                    <button type="button" onClick={() => openEditFormModal(form)} className={MD_BTN_EDIT}>
+                      âœï¸ {t('edit') || 'Edit'}
                     </button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="no-content">
-              <span className="no-content-icon">👥</span>
-              <p>{t('managerDashboard.noFormsFoundFromYourTeamMembers')}</p>
-              <small>{t('managerDashboard.yourTeamMembersHaventSubmittedAnyFormsYetOrYouDontHaveAnyManagedDepartmentsAssigned')}</small>
+            <div className="no-content text-center py-10 !text-slate-500 dark:!text-slate-400">
+              <span className="no-content-icon text-4xl block mb-3">ðŸ‘¥</span>
+              <p className="!text-slate-900 dark:!text-white m-0 mb-1">{t('managerDashboard.noFormsFoundFromYourTeamMembers')}</p>
+              <small className="text-sm italic">{t('managerDashboard.yourTeamMembersHaventSubmittedAnyFormsYetOrYouDontHaveAnyManagedDepartmentsAssigned')}</small>
             </div>
           )}
         </div>
       )}
 
       {/* Team Members */}
-      <div className="section team-management-section">
-        <div className="section-header">
-          <h2>{t('managerDashboard.myTeamMembers')}</h2>
-          <small className="section-subtitle">
+      <div className={`section team-management-section ${MD_PANEL}`}>
+        <div className="section-header mb-4">
+          <h2 className={MD_H2}>{t('managerDashboard.myTeamMembers')}</h2>
+          <small className={MD_SUB}>
             {t('managerDashboard.employeesFromYourManagedDepartments', {
               departments: effectiveDeptList.length ? effectiveDeptList.join(', ') : t('managerDashboard.noDepartmentsAssigned')
             })}
           </small>
         </div>
         {teamMembers.length > 0 ? (
-          <div className="team-grid">
+          <div className="team-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {teamMembers.map(member => {
               const memberFlags = getEmployeeFlags(member._id);
               return (
-                <div key={member._id} className="team-card team-member-card">
-                  <div className="member-avatar">👤</div>
-                  <h4>{member.name}</h4>
-                  <p className="member-department">{member.department}</p>
-                  <span className="vacation-days team-stat">{Number(member.vacationDaysLeft).toFixed(1)} {t('daysLeft')}</span>
+                <div key={member._id} className={`team-card team-member-card ${MD_TEAM_CARD}`}>
+                  <div className="member-avatar text-3xl mb-2">ðŸ‘¤</div>
+                  <h4 className="!text-slate-900 dark:!text-white font-semibold m-0 mb-1">{member.name}</h4>
+                  <p className="member-department !text-slate-500 dark:!text-slate-400 text-sm m-0 mb-2">{member.department}</p>
+                  <span className="vacation-days team-stat inline-block bg-indigo-50 dark:bg-indigo-900/30 !text-indigo-700 dark:!text-indigo-300 px-2.5 py-1 rounded-lg text-xs font-semibold">
+                    {Number(member.vacationDaysLeft).toFixed(1)} {t('daysLeft')}
+                  </span>
                   
                   {/* Display existing flags */}
                   {memberFlags.length > 0 && (
@@ -1200,52 +1197,53 @@ const ManagerDashboard = ({ onLogout }) => {
                           className={`flag-badge ${flag.type === 'deduction' ? 'flag-deduction' : 'flag-reward'}`}
                           title={`${flag.reason} - ${new Date(flag.createdAt).toLocaleDateString()}`}
                         >
-                          {flag.type === 'deduction' ? '⚠️' : '⭐'} {flag.type === 'deduction' ? t('flags.deduction') : t('flags.reward')}
+                          {flag.type === 'deduction' ? 'âš ï¸' : 'â­'} {flag.type === 'deduction' ? t('flags.deduction') : t('flags.reward')}
                           <button 
                             className="flag-remove-btn"
                             onClick={(e) => { e.stopPropagation(); handleRemoveFlag(flag._id); }}
                             title={t('flags.removeFlag')}
-                          >×</button>
+                          >Ã—</button>
                         </div>
                       ))}
                     </div>
                   )}
                   
                   {/* Flag Employee Button */}
-                  <button 
-                    className="btn-flag-employee"
+                  <button
+                    type="button"
+                    className="btn-flag-employee mt-3 w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 !text-slate-700 dark:!text-white rounded-lg px-4 py-2 text-sm font-medium border border-slate-300 dark:border-slate-600 cursor-pointer"
                     onClick={() => openFlagModal(member)}
                     title={t('flags.flagEmployee')}
                   >
-                    🚩 {t('flags.flagEmployee') || 'Flag'}
+                    ðŸš© {t('flags.flagEmployee') || 'Flag'}
                   </button>
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="no-content">
-            <span className="no-content-icon">👥</span>
-            <p>{t('managerDashboard.noTeamMembersFoundInYourManagedDepartments')}</p>
+          <div className="no-content text-center py-10 !text-slate-500 dark:!text-slate-400">
+            <span className="no-content-icon text-4xl block mb-3">ðŸ‘¥</span>
+            <p className="!text-slate-900 dark:!text-white m-0">{t('managerDashboard.noTeamMembersFoundInYourManagedDepartments')}</p>
           </div>
         )}
       </div>
 
       {/* Pending Requests */}
-      <div ref={pendingApprovalsRef} className="section team-requests-section dashboard-section-anchor">
-        <div className="section-header section-header--with-actions">
-          <div className="section-header-text">
-            <h2>
+      <div ref={pendingApprovalsRef} className={`section team-requests-section dashboard-section-anchor ${MD_PANEL}`}>
+        <div className="section-header section-header--with-actions flex flex-wrap items-start justify-between gap-4 mb-4">
+          <div className="section-header-text flex-1 min-w-[200px]">
+            <h2 className={MD_H2}>
               {t('managerDashboard.pendingTeamRequests')}
               {refreshingPending ? ` (${t('managerDashboard.refreshing')})` : ''}
             </h2>
-            <small className="section-subtitle">
+            <small className={MD_SUB}>
               {t('managerDashboard.employeeRequestsAwaitingYourApprovalFromManagedDepartments')}
             </small>
           </div>
           <button
             type="button"
-            className="btn-manager manager-refresh-btn"
+            className={MD_BTN_REFRESH}
             onClick={() => fetchPendingForms()}
             title={t('managerDashboard.refreshPendingRequests')}
             disabled={refreshingPending}
@@ -1256,11 +1254,14 @@ const ManagerDashboard = ({ onLogout }) => {
         {pendingForms.length > 0 ? (
           <div className="requests-list">
             {pendingForms.map(form => (
-              <div key={form._id} className="request-card team-request-card">
-                <div className="request-info">
-                  <h4>{form.user.name} - {form.type === 'vacation' ? 'ANNUAL VACATION' :
-                                        form.type.toUpperCase()}</h4>
-                  <p><strong>{t('department')}:</strong> {form.user.department}</p>
+              <div key={form._id} className={`request-card team-request-card ${MD_PENDING_CARD}`}>
+                <div className="request-info flex-1 min-w-0">
+                  <h4 className="!text-slate-900 dark:!text-white font-semibold m-0 mb-2 text-base">
+                    {form.user.name} - {form.type === 'vacation' ? 'ANNUAL VACATION' :
+                                        form.type.toUpperCase()}
+                  </h4>
+                  <div className="text-sm !text-slate-700 dark:!text-slate-300 space-y-1">
+                  <p className="m-0"><strong className="!text-slate-900 dark:!text-white">{t('department')}:</strong> {form.user.department}</p>
                   
                   {/* Display different information based on form type */}
                   {form.type === 'vacation' && (
@@ -1273,7 +1274,7 @@ const ManagerDashboard = ({ onLogout }) => {
                   
                   {form.type === 'excuse' && (
                     <>
-                      <p><strong>Excuse Type:</strong> <span style={{ color: isPaidExcuse(form) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{isPaidExcuse(form) ? '💰 Paid' : '📝 Unpaid'}</span></p>
+                      <p><strong>Excuse Type:</strong> <span style={{ color: isPaidExcuse(form) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{isPaidExcuse(form) ? 'ðŸ’° Paid' : 'ðŸ“ Unpaid'}</span></p>
                       <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
                       <p><strong>{t('timePeriod')}:</strong> {form.fromHour} - {form.toHour}</p>
                       <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
@@ -1313,33 +1314,36 @@ const ManagerDashboard = ({ onLogout }) => {
                       {(form.missionFromTime || form.missionToTime) && (
                         <p><strong>{t('forms.time') || 'Time'}:</strong> {form.missionFromTime || '--'} {t('forms.to')} {form.missionToTime || '--'}</p>
                       )}
-                      <p><strong>{t('forms.missionDestination')}:</strong> 📍 {form.missionDestination}</p>
+                      <p><strong>{t('forms.missionDestination')}:</strong> ðŸ“ {form.missionDestination}</p>
                     </>
                   )}
                   
-                  <p><strong>{t('reason')}:</strong> {form.reason}</p>
-                  <p><strong>{t('submitted')}:</strong> {formatDate(form.createdAt)}</p>
+                  <p className="m-0"><strong className="!text-slate-900 dark:!text-white">{t('reason')}:</strong> {form.reason}</p>
+                  <p className="m-0"><strong className="!text-slate-900 dark:!text-white">{t('submitted')}:</strong> {formatDate(form.createdAt)}</p>
+                  </div>
                 </div>
-                <div className="request-actions">
-                  <button 
+                <div className="request-actions flex flex-col gap-2 shrink-0 md:min-w-[120px]">
+                  <button
+                    type="button"
                     onClick={() => openEditFormModal(form)}
-                    className="btn-manager"
+                    className={MD_BTN_EDIT}
                     title={t('edit') || 'Edit form'}
-                    style={{ marginRight: '8px' }}
                   >
-                    ✏️ {t('edit') || 'Edit'}
+                    âœï¸ {t('edit') || 'Edit'}
                   </button>
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => openCommentModal(form, 'approve')}
-                    className="approve-btn"
+                    className={MD_BTN_APPROVE}
                     title={`${t('managerDashboard.approve')} ${form.type} ${t('forms.from')} ${form.user.name}`}
                     disabled={processingForms.has(form._id)}
                   >
                     {processingForms.has(form._id) ? t('managerDashboard.processing') : t('managerDashboard.approve')}
                   </button>
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => openCommentModal(form, 'reject')}
-                    className="reject-btn"
+                    className={MD_BTN_REJECT}
                     title={`${t('managerDashboard.reject')} ${form.type} ${t('forms.from')} ${form.user.name}`}
                     disabled={processingForms.has(form._id)}
                   >
@@ -1350,10 +1354,10 @@ const ManagerDashboard = ({ onLogout }) => {
             ))}
           </div>
         ) : (
-          <div className="no-content">
-            <span className="no-content-icon">⏳</span>
-            <p>{t('managerDashboard.noPendingRequestsFromYourTeam')}</p>
-            <small>{t('managerDashboard.allCaughtUpYourTeamHaventSubmittedAnyRequestsNeedingApproval')}</small>
+          <div className="no-content text-center py-10 !text-slate-500 dark:!text-slate-400">
+            <span className="no-content-icon text-4xl block mb-3">â³</span>
+            <p className="!text-slate-900 dark:!text-white m-0 mb-1">{t('managerDashboard.noPendingRequestsFromYourTeam')}</p>
+            <small className="text-sm italic">{t('managerDashboard.allCaughtUpYourTeamHaventSubmittedAnyRequestsNeedingApproval')}</small>
           </div>
         )}
       </div>
@@ -1366,7 +1370,7 @@ const ManagerDashboard = ({ onLogout }) => {
               <h3>
                 {actionType === 'approve' ? t('managerDashboard.approveRequest') : t('managerDashboard.rejectRequest')}
               </h3>
-              <button className="close-btn" onClick={closeCommentModal}>×</button>
+              <button className="close-btn" onClick={closeCommentModal}>Ã—</button>
             </div>
             
             {selectedForm && (
@@ -1389,7 +1393,7 @@ const ManagerDashboard = ({ onLogout }) => {
                     <>
                       <p><strong>{t('excuseType') || 'Excuse Type'}:</strong>{' '}
                         <span style={{ color: isPaidExcuse(selectedForm) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>
-                          {isPaidExcuse(selectedForm) ? '💰 Paid' : '📝 Unpaid'}
+                          {isPaidExcuse(selectedForm) ? 'ðŸ’° Paid' : 'ðŸ“ Unpaid'}
                         </span>
                       </p>
                       <p><strong>{t('excuseDate')}:</strong> {formatDate(selectedForm.excuseDate)}</p>
@@ -1426,9 +1430,9 @@ const ManagerDashboard = ({ onLogout }) => {
 
                 {formEditData && formEditData._id && (
                   <div className="edit-before-submit-section" style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(201, 162, 39, 0.1)', borderRadius: '8px', border: '1px solid rgba(201, 162, 39, 0.3)' }}>
-                    <strong style={{ display: 'block', marginBottom: '0.75rem', color: '#c9a227' }}>✏️ {t('edit') || 'Edit'} form before {actionType === 'approve' ? (t('approve') || 'approving') : (t('reject') || 'rejecting')}</strong>
+                    <strong style={{ display: 'block', marginBottom: '0.75rem', color: '#c9a227' }}>âœï¸ {t('edit') || 'Edit'} form before {actionType === 'approve' ? (t('approve') || 'approving') : (t('reject') || 'rejecting')}</strong>
                     <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                      <label className="form-label-elegant">{t('reason')}{fieldDirty('reason') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                      <label className="form-label-elegant">{t('reason')}{fieldDirty('reason') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
                       <textarea value={formEditData.reason || ''} onChange={(e) => setFormEditData({ ...formEditData, reason: e.target.value })} rows={2} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('reason') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
                     </div>
                     {formEditData.type === 'vacation' && (
@@ -1458,18 +1462,18 @@ const ManagerDashboard = ({ onLogout }) => {
                     {formEditData.type === 'excuse' && (
                       <>
                         <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('excuseDate')}{fieldDirty('excuseDate') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                          <label className="form-label-elegant">{t('excuseDate')}{fieldDirty('excuseDate') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
                           <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('excuseDate') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
                         </div>
                         <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('timePeriod') || 'Time'}{fieldDirty('fromHour') || fieldDirty('toHour') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                          <label className="form-label-elegant">{t('timePeriod') || 'Time'}{fieldDirty('fromHour') || fieldDirty('toHour') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
                           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                             <input type="time" value={formEditData.fromHour || ''} onChange={(e) => setFormEditData({ ...formEditData, fromHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('fromHour') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
                             <input type="time" value={formEditData.toHour || ''} onChange={(e) => setFormEditData({ ...formEditData, toHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('toHour') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
                           </div>
                         </div>
                         <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}{fieldDirty('excuseType') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                          <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}{fieldDirty('excuseType') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
                           <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('excuseType') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }}>
                             <option value="paid">Paid</option>
                             <option value="unpaid">Unpaid</option>
@@ -1599,8 +1603,8 @@ const ManagerDashboard = ({ onLogout }) => {
         <div className="modal-overlay" onClick={closeEditFormModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
             <div className="modal-header">
-              <h3>✏️ {t('edit') || 'Edit'} Form</h3>
-              <button className="close-btn" onClick={closeEditFormModal}>×</button>
+              <h3>âœï¸ {t('edit') || 'Edit'} Form</h3>
+              <button className="close-btn" onClick={closeEditFormModal}>Ã—</button>
             </div>
             <div className="modal-body">
               <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
@@ -1639,18 +1643,18 @@ const ManagerDashboard = ({ onLogout }) => {
               {formEditData.type === 'excuse' && (
                 <>
                   <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('excuseDate')}{fieldDirty('excuseDate') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                    <label className="form-label-elegant">{t('excuseDate')}{fieldDirty('excuseDate') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
                     <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" style={{ boxShadow: fieldDirty('excuseDate') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
                   </div>
                   <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('timePeriod') || 'Time'}{fieldDirty('fromHour') || fieldDirty('toHour') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                    <label className="form-label-elegant">{t('timePeriod') || 'Time'}{fieldDirty('fromHour') || fieldDirty('toHour') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <input type="time" value={formEditData.fromHour || ''} onChange={(e) => setFormEditData({ ...formEditData, fromHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('fromHour') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
                       <input type="time" value={formEditData.toHour || ''} onChange={(e) => setFormEditData({ ...formEditData, toHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('toHour') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
                     </div>
                   </div>
                   <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}{fieldDirty('excuseType') ? ' · ' + (t('modified') || 'Modified') : ''}</label>
+                    <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}{fieldDirty('excuseType') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
                     <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant" style={{ boxShadow: fieldDirty('excuseType') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }}>
                       <option value="paid">Paid</option>
                       <option value="unpaid">Unpaid</option>
@@ -1748,13 +1752,13 @@ const ManagerDashboard = ({ onLogout }) => {
         <div className="modal-overlay" onClick={closeFlagModal}>
           <div className="modal-content flag-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>🚩 {t('flags.flagEmployee') || 'Flag Employee'}</h3>
-              <button className="close-btn" onClick={closeFlagModal}>×</button>
+              <h3>ðŸš© {t('flags.flagEmployee') || 'Flag Employee'}</h3>
+              <button className="close-btn" onClick={closeFlagModal}>Ã—</button>
             </div>
             
             <div className="modal-body">
               <div className="employee-summary">
-                <div className="employee-avatar">👤</div>
+                <div className="employee-avatar">ðŸ‘¤</div>
                 <div className="employee-info">
                   <h4>{selectedEmployee.name}</h4>
                   <p>{selectedEmployee.department}</p>
@@ -1768,13 +1772,13 @@ const ManagerDashboard = ({ onLogout }) => {
                     className={`flag-type-btn ${flagType === 'deduction' ? 'active deduction' : ''}`}
                     onClick={() => setFlagType('deduction')}
                   >
-                    ⚠️ {t('flags.deduction') || 'Deduction'}
+                    âš ï¸ {t('flags.deduction') || 'Deduction'}
                   </button>
                   <button 
                     className={`flag-type-btn ${flagType === 'reward' ? 'active reward' : ''}`}
                     onClick={() => setFlagType('reward')}
                   >
-                    ⭐ {t('flags.reward') || 'Reward'}
+                    â­ {t('flags.reward') || 'Reward'}
                   </button>
                 </div>
               </div>
@@ -1816,1404 +1820,6 @@ const ManagerDashboard = ({ onLogout }) => {
 
       </div>
 
-      <style>{`
-        .manager-dashboard {
-          padding: 0;
-        }
-
-        .dashboard-header {
-          background: rgba(12, 10, 8, 0.55);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(201, 162, 39, 0.22);
-          border-radius: 15px;
-          padding: 20px;
-          margin-bottom: 20px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
-        }
-
-        .user-info h1 {
-          color: #ffffff;
-          margin: 0 0 10px 0;
-          font-size: 2rem;
-          font-weight: 700;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-          background: linear-gradient(135deg, #f5e6b8, #c9a227);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .user-info p {
-          color: rgba(255, 255, 255, 0.8);
-          margin: 5px 0;
-        }
-
-        .departments {
-          font-style: italic;
-          font-size: 0.9rem;
-          color: rgba(255, 255, 255, 0.7);
-        }
-
-        .logout-btn {
-          background: linear-gradient(135deg, #c9a227, #6b4f1e);
-          color: white;
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          padding: 10px 20px;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          font-weight: 600;
-        }
-
-        .logout-btn:hover {
-          background: linear-gradient(135deg, #6b4f1e, #c9a227);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 15px rgba(201, 162, 39, 0.3);
-        }
-
-        .message {
-          padding: 15px;
-          border-radius: 8px;
-          margin-bottom: 20px;
-          text-align: center;
-        }
-
-        .message.success {
-          background: rgba(76, 175, 80, 0.2);
-          color: #4caf50;
-          border: 1px solid rgba(76, 175, 80, 0.4);
-        }
-
-        .message.error {
-          background: rgba(244, 67, 54, 0.2);
-          color: #f44336;
-          border: 1px solid rgba(244, 67, 54, 0.4);
-        }
-
-        .stats-section {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 20px;
-          margin-bottom: 30px;
-        }
-
-        .stat-card {
-          background: rgba(0, 0, 0, 0.5);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          padding: 30px;
-          border-radius: 15px;
-          text-align: center;
-          box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
-          transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 12px 40px rgba(255, 255, 255, 0.15);
-          background: rgba(0, 0, 0, 0.7);
-        }
-
-        .stat-card-clickable {
-          cursor: pointer;
-          border: 2px solid rgba(201, 162, 39, 0.4);
-          background: rgba(201, 162, 39, 0.1);
-        }
-
-        .stat-card-clickable:hover {
-          border-color: rgba(201, 162, 39, 0.8);
-          background: rgba(201, 162, 39, 0.2);
-          box-shadow: 0 12px 40px rgba(201, 162, 39, 0.2);
-        }
-
-        .stat-card-clickable.pending-approvals-stat {
-          border: 2px solid rgba(255, 193, 7, 0.45);
-          background: rgba(255, 193, 7, 0.08);
-        }
-
-        .stat-card-clickable.pending-approvals-stat:hover {
-          border-color: rgba(255, 193, 7, 0.9);
-          background: rgba(255, 193, 7, 0.18);
-          box-shadow: 0 12px 40px rgba(255, 193, 7, 0.25);
-        }
-
-        .stat-card h3 {
-          font-size: 2.5rem;
-          margin: 0 0 10px 0;
-          background: linear-gradient(135deg, #c9a227, #6b4f1e);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          font-weight: bold;
-        }
-
-        .stat-card p {
-          color: rgba(255, 255, 255, 0.8);
-          margin: 0;
-          font-size: 1.1rem;
-          font-weight: 600;
-        }
-
-        .stat-card small {
-          color: rgba(255, 255, 255, 0.6);
-          font-size: 0.9rem;
-        }
-
-        .section {
-          background: rgba(0, 0, 0, 0.3);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 15px;
-          padding: 25px;
-          margin-bottom: 20px;
-          box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
-        }
-
-        .section h2 {
-          margin: 0 0 20px 0;
-          color: #ffffff;
-          font-size: 1.5rem;
-          font-weight: 700;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .team-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-          gap: 15px;
-        }
-
-        .team-card {
-          background: rgba(0, 0, 0, 0.7) !important;
-          backdrop-filter: blur(10px) !important;
-          border: 1px solid rgba(255, 255, 255, 0.2) !important;
-          padding: 20px !important;
-          border-radius: 10px !important;
-          border-left: 4px solid #c9a227 !important;
-          text-align: center !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .team-card h4 {
-          margin: 0 0 5px 0;
-          color: #ffffff;
-          font-weight: 600;
-        }
-
-        .team-card p {
-          margin: 0 0 10px 0;
-          color: rgba(255, 255, 255, 0.7);
-        }
-
-        .vacation-days {
-          background: linear-gradient(135deg, #4CAF50, #45a049);
-          color: white;
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 0.8rem;
-          font-weight: bold;
-        }
-
-        .requests-list {
-          max-height: 600px;
-          overflow-y: auto;
-        }
-
-        .request-card {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          padding: 20px;
-          margin-bottom: 15px;
-          background: rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 10px;
-          border-left: 4px solid #c9a227;
-          transition: all 0.3s ease;
-        }
-
-        .request-card:hover {
-          background: rgba(0, 0, 0, 0.6);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
-        }
-
-        .request-info {
-          flex: 1;
-        }
-
-        .request-info h4 {
-          margin: 0 0 10px 0;
-          color: #ffffff;
-          font-weight: 600;
-        }
-
-        .request-info p {
-          margin: 5px 0;
-          color: rgba(255, 255, 255, 0.7);
-          font-size: 0.9rem;
-        }
-
-        .request-info strong {
-          color: #ffffff;
-        }
-
-        .request-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          margin-left: 20px;
-        }
-
-        .approve-btn, .reject-btn {
-          padding: 8px 16px;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-weight: bold;
-          transition: all 0.3s ease;
-          min-width: 80px;
-        }
-
-        .approve-btn {
-          background: #4CAF50;
-          color: white;
-        }
-
-        .approve-btn:hover {
-          background: #45a049;
-        }
-
-        .approve-btn:disabled {
-          background: #ccc;
-          cursor: not-allowed;
-        }
-
-        .reject-btn {
-          background: #f44336;
-          color: white;
-        }
-
-        .reject-btn:hover {
-          background: #da190b;
-        }
-
-        .reject-btn:disabled {
-          background: #ccc;
-          cursor: not-allowed;
-        }
-
-        .no-requests {
-          text-align: center;
-          color: rgba(255, 255, 255, 0.7);
-          font-style: italic;
-          padding: 40px;
-        }
-
-        /* Modal Styles */
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.8);
-          backdrop-filter: blur(5px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          padding: 20px;
-        }
-
-        .modal-content {
-          background: rgba(0, 0, 0, 0.9);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 15px;
-          max-width: 500px;
-          width: 100%;
-          max-height: 90vh;
-          overflow-y: auto;
-          box-shadow: 0 20px 60px rgba(255, 255, 255, 0.1);
-        }
-
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 20px 25px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .modal-header h3 {
-          margin: 0;
-          color: #ffffff;
-          font-size: 1.4rem;
-          font-weight: 600;
-        }
-
-        .close-btn {
-          background: none;
-          border: none;
-          font-size: 1.5rem;
-          cursor: pointer;
-          color: rgba(255, 255, 255, 0.7);
-          padding: 0;
-          width: 30px;
-          height: 30px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          transition: all 0.3s ease;
-        }
-
-        .close-btn:hover {
-          color: #ffffff;
-          background: rgba(255, 255, 255, 0.1);
-        }
-
-        .modal-body {
-          padding: 25px;
-        }
-
-        .request-summary {
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          padding: 15px;
-          border-radius: 8px;
-          margin-bottom: 20px;
-        }
-
-        .request-summary h4 {
-          margin: 0 0 10px 0;
-          color: #ffffff;
-          font-weight: 600;
-        }
-
-        .request-summary p {
-          margin: 5px 0;
-          color: rgba(255, 255, 255, 0.7);
-          font-size: 0.9rem;
-        }
-
-        .request-summary strong {
-          color: #ffffff;
-        }
-
-        .comment-section label {
-          display: block;
-          margin-bottom: 8px;
-          font-weight: 600;
-          color: #ffffff;
-        }
-
-        .comment-section textarea {
-          width: 100%;
-          padding: 12px;
-          border: 2px solid rgba(255, 255, 255, 0.2);
-          background: rgba(0, 0, 0, 0.5);
-          color: #ffffff;
-          border-radius: 8px;
-          font-family: inherit;
-          font-size: 14px;
-          resize: vertical;
-          transition: all 0.3s ease;
-        }
-
-        .comment-section textarea:focus {
-          outline: none;
-          border-color: #c9a227;
-          background: rgba(0, 0, 0, 0.7);
-          box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
-        }
-
-        .comment-section textarea::placeholder {
-          color: rgba(255, 255, 255, 0.5);
-        }
-
-        /* Enhanced Input Field Styling */
-        input[type="text"],
-        input[type="email"],
-        input[type="password"],
-        input[type="number"],
-        input[type="date"],
-        input[type="time"],
-        input[type="search"],
-        select,
-        textarea {
-          background: rgba(0, 0, 0, 0.6) !important;
-          color: #ffffff !important;
-          border: 2px solid rgba(255, 255, 255, 0.2) !important;
-          border-radius: 8px !important;
-          padding: 12px 16px !important;
-          font-size: 14px !important;
-          transition: all 0.3s ease !important;
-          backdrop-filter: blur(10px) !important;
-        }
-
-        input[type="text"]:focus,
-        input[type="email"]:focus,
-        input[type="password"]:focus,
-        input[type="number"]:focus,
-        input[type="date"]:focus,
-        input[type="time"]:focus,
-        input[type="search"]:focus,
-        select:focus,
-        textarea:focus {
-          outline: none !important;
-          border-color: #c9a227 !important;
-          background: rgba(0, 0, 0, 0.8) !important;
-          box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.3) !important;
-        }
-
-        input::placeholder,
-        textarea::placeholder {
-          color: rgba(255, 255, 255, 0.5) !important;
-          font-style: italic;
-        }
-
-        /* Select dropdown specific styling */
-        select option {
-          background: rgba(0, 0, 0, 0.95) !important;
-          color: #ffffff !important;
-          padding: 10px !important;
-        }
-
-        /* Form labels */
-        label {
-          color: #ffffff !important;
-          font-weight: 600 !important;
-          margin-bottom: 8px !important;
-          display: block !important;
-        }
-
-        /* Form groups */
-        .form-group,
-        .form-field,
-        .input-group {
-          margin-bottom: 20px;
-        }
-
-        .form-group label,
-        .form-field label,
-        .input-group label {
-          color: #ffffff !important;
-          font-weight: 600;
-          margin-bottom: 8px;
-          display: block;
-        }
-
-        /* Button improvements */
-        button:not(.logout-btn):not(.close-btn) {
-          background: linear-gradient(135deg, #c9a227, #6b4f1e) !important;
-          color: white !important;
-          border: none !important;
-          padding: 12px 24px !important;
-          border-radius: 8px !important;
-          font-weight: 600 !important;
-          cursor: pointer !important;
-          transition: all 0.3s ease !important;
-        }
-
-        button:not(.logout-btn):not(.close-btn):hover {
-          background: linear-gradient(135deg, #6b4f1e, #c9a227) !important;
-          transform: translateY(-2px) !important;
-          box-shadow: 0 4px 15px rgba(201, 162, 39, 0.3) !important;
-        }
-
-        /* Search inputs specific styling */
-        .search-input,
-        input[type="search"] {
-          background: rgba(0, 0, 0, 0.5) !important;
-          color: #ffffff !important;
-          border: 2px solid rgba(255, 255, 255, 0.2) !important;
-          border-radius: 25px !important;
-          padding: 12px 20px !important;
-          font-size: 14px !important;
-          width: 100% !important;
-        }
-
-        .search-input:focus,
-        input[type="search"]:focus {
-          border-color: #c9a227 !important;
-          background: rgba(0, 0, 0, 0.7) !important;
-          box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2) !important;
-        }
-
-        /* Card content text clarity */
-        .stat-card h3,
-        .team-card h4,
-        .request-card h4,
-        .my-form-card h4 {
-          color: #ffffff !important;
-          font-weight: 600 !important;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-        }
-
-        .stat-card p,
-        .team-card p,
-        .request-card p,
-        .my-form-card p {
-          color: rgba(255, 255, 255, 0.8) !important;
-        }
-
-        .stat-card small,
-        .team-card small,
-        .request-card small,
-        .my-form-card small {
-          color: rgba(255, 255, 255, 0.6) !important;
-        }
-
-        /* Enhanced contrast for specific elements */
-        strong {
-          color: #ffffff !important;
-          font-weight: 700 !important;
-        }
-
-        /* Form container improvements */
-        .form-container input,
-        .form-container textarea,
-        .form-container select {
-          background: rgba(0, 0, 0, 0.7) !important;
-          color: #ffffff !important;
-          border: 2px solid rgba(76, 175, 80, 0.3) !important;
-        }
-
-        .form-container input:focus,
-        .form-container textarea:focus,
-        .form-container select:focus {
-          border-color: #4caf50 !important;
-          box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2) !important;
-        }
-
-        /* File input styling */
-        input[type="file"] {
-          background: rgba(0, 0, 0, 0.6) !important;
-          color: #ffffff !important;
-          border: 2px dashed rgba(255, 255, 255, 0.3) !important;
-          border-radius: 8px !important;
-          padding: 16px !important;
-          cursor: pointer !important;
-          transition: all 0.3s ease !important;
-        }
-
-        input[type="file"]:hover {
-          border-color: #c9a227 !important;
-          background: rgba(0, 0, 0, 0.8) !important;
-        }
-
-        input[type="file"]:focus {
-          outline: none !important;
-          border-color: #c9a227 !important;
-          box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2) !important;
-        }
-
-        /* Radio buttons and checkboxes */
-        input[type="radio"],
-        input[type="checkbox"] {
-          accent-color: #c9a227 !important;
-          transform: scale(1.2) !important;
-          margin-right: 8px !important;
-        }
-
-        /* Date picker improvements */
-        input[type="date"]::-webkit-calendar-picker-indicator,
-        input[type="time"]::-webkit-calendar-picker-indicator {
-          filter: invert(1) !important;
-          cursor: pointer !important;
-        }
-
-        /* Number input spinner styling */
-        input[type="number"]::-webkit-outer-spin-button,
-        input[type="number"]::-webkit-inner-spin-button {
-          -webkit-appearance: none !important;
-          margin: 0 !important;
-        }
-
-        /* Manager Dashboard specific text improvements */
-        .manager-dashboard h1,
-        .manager-dashboard h2,
-        .manager-dashboard h3,
-        .manager-dashboard h4,
-        .manager-dashboard h5,
-        .manager-dashboard h6 {
-          color: #ffffff !important;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
-        }
-
-        .manager-dashboard p,
-        .manager-dashboard span,
-        .manager-dashboard div {
-          color: rgba(255, 255, 255, 0.8) !important;
-        }
-
-        .manager-dashboard strong,
-        .manager-dashboard b {
-          color: #ffffff !important;
-          font-weight: 700 !important;
-        }
-
-        /* Table styling if present */
-        table,
-        .table {
-          background: rgba(0, 0, 0, 0.4) !important;
-          border-radius: 8px !important;
-          overflow: hidden !important;
-        }
-
-        table th,
-        .table th {
-          background: rgba(0, 0, 0, 0.6) !important;
-          color: #ffffff !important;
-          font-weight: 600 !important;
-          border: none !important;
-          padding: 12px 16px !important;
-        }
-
-        table td,
-        .table td {
-          background: rgba(0, 0, 0, 0.3) !important;
-          color: rgba(255, 255, 255, 0.8) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
-          padding: 12px 16px !important;
-        }
-
-        table tr:hover td,
-        .table tr:hover td {
-          background: rgba(0, 0, 0, 0.5) !important;
-        }
-
-        /* Enhanced visibility for all text elements */
-        .manager-dashboard *:not(input):not(textarea):not(select):not(button) {
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Universal override for any white backgrounds */
-        .manager-dashboard .card,
-        .manager-dashboard .stat-card,
-        .manager-dashboard .team-card,
-        .manager-dashboard .request-card,
-        .manager-dashboard [class*="card"],
-        .manager-dashboard [class*="Card"] {
-          background: rgba(0, 0, 0, 0.7) !important;
-          color: #ffffff !important;
-        }
-
-        /* Ensure all card text is white */
-        .manager-dashboard .card *,
-        .manager-dashboard .stat-card *,
-        .manager-dashboard .team-card *,
-        .manager-dashboard .request-card *,
-        .manager-dashboard [class*="card"] *,
-        .manager-dashboard [class*="Card"] * {
-          color: rgba(255, 255, 255, 0.9) !important;
-        }
-
-        .manager-dashboard .card h1,
-        .manager-dashboard .card h2,
-        .manager-dashboard .card h3,
-        .manager-dashboard .card h4,
-        .manager-dashboard .card h5,
-        .manager-dashboard .card h6,
-        .manager-dashboard .stat-card h1,
-        .manager-dashboard .stat-card h2,
-        .manager-dashboard .stat-card h3,
-        .manager-dashboard .stat-card h4,
-        .manager-dashboard .stat-card h5,
-        .manager-dashboard .stat-card h6,
-        .manager-dashboard .team-card h1,
-        .manager-dashboard .team-card h2,
-        .manager-dashboard .team-card h3,
-        .manager-dashboard .team-card h4,
-        .manager-dashboard .team-card h5,
-        .manager-dashboard .team-card h6,
-        .manager-dashboard .request-card h1,
-        .manager-dashboard .request-card h2,
-        .manager-dashboard .request-card h3,
-        .manager-dashboard .request-card h4,
-        .manager-dashboard .request-card h5,
-        .manager-dashboard .request-card h6,
-        .manager-dashboard [class*="card"] h1,
-        .manager-dashboard [class*="card"] h2,
-        .manager-dashboard [class*="card"] h3,
-        .manager-dashboard [class*="card"] h4,
-        .manager-dashboard [class*="card"] h5,
-        .manager-dashboard [class*="card"] h6,
-        .manager-dashboard [class*="Card"] h1,
-        .manager-dashboard [class*="Card"] h2,
-        .manager-dashboard [class*="Card"] h3,
-        .manager-dashboard [class*="Card"] h4,
-        .manager-dashboard [class*="Card"] h5,
-        .manager-dashboard [class*="Card"] h6 {
-          color: #ffffff !important;
-          font-weight: 600 !important;
-        }
-
-        /* Ensure proper contrast for all interactive elements */
-        .manager-dashboard [role="button"],
-        .manager-dashboard .clickable {
-          background: rgba(0, 0, 0, 0.5) !important;
-          color: #ffffff !important;
-          border: 1px solid rgba(255, 255, 255, 0.2) !important;
-          border-radius: 6px !important;
-          padding: 8px 16px !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .manager-dashboard [role="button"]:hover,
-        .manager-dashboard .clickable:hover {
-          background: rgba(0, 0, 0, 0.7) !important;
-          border-color: #c9a227 !important;
-        }
-
-        .comment-section textarea.required-field {
-          border-color: #f44336;
-          box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.2);
-        }
-
-        .error-text {
-          color: #ff5252;
-          font-size: 0.8rem;
-          margin-top: 5px;
-          display: block;
-          font-weight: 500;
-        }
-
-        .modal-actions {
-          padding: 20px 25px;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-          display: flex;
-          gap: 10px;
-          justify-content: flex-end;
-        }
-
-        .cancel-btn {
-          padding: 10px 20px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          background: rgba(0, 0, 0, 0.5);
-          color: rgba(255, 255, 255, 0.8);
-          border-radius: 6px;
-          cursor: pointer;
-          font-weight: 500;
-          transition: all 0.3s ease;
-        }
-
-        .cancel-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #ffffff;
-        }
-
-        .cancel-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        /* Form submission styles */
-        .action-buttons {
-          display: flex;
-          gap: 15px;
-          justify-content: center;
-          margin-top: 20px;
-        }
-
-        .btn-action {
-          padding: 12px 24px;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: bold;
-          transition: all 0.3s ease;
-          color: white;
-          font-size: 16px;
-        }
-
-        .submit-btn {
-          background: linear-gradient(135deg, #4CAF50, #45a049);
-        }
-
-        .submit-btn:hover {
-          background: linear-gradient(135deg, #45a049, #3d8b40);
-          transform: translateY(-2px);
-        }
-
-        .view-btn {
-          background: linear-gradient(135deg, #c9a227, #6b4f1e);
-        }
-
-        .view-btn:hover {
-          background: linear-gradient(135deg, #6b4f1e, #5c4818);
-          transform: translateY(-2px);
-        }
-
-        /* My forms grid */
-        .my-forms-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-          gap: 20px;
-          margin-top: 20px;
-        }
-
-        .my-form-card {
-          background: rgba(0, 0, 0, 0.7) !important;
-          backdrop-filter: blur(10px) !important;
-          border: 1px solid rgba(255, 255, 255, 0.2) !important;
-          border-radius: 12px !important;
-          padding: 20px !important;
-          box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1) !important;
-          border-left: 4px solid #c9a227 !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .my-form-card:hover {
-          transform: translateY(-2px);
-          background: rgba(0, 0, 0, 0.6);
-          box-shadow: 0 8px 30px rgba(255, 255, 255, 0.15);
-        }
-
-        .form-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 15px;
-          padding-bottom: 10px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .form-header h4 {
-          margin: 0;
-          color: #ffffff;
-          font-size: 1.2rem;
-          font-weight: 600;
-        }
-
-        .form-details p {
-          margin: 8px 0;
-          color: rgba(255, 255, 255, 0.7);
-          font-size: 0.9rem;
-        }
-
-        .form-details strong {
-          color: #ffffff;
-        }
-
-        .my-form-card .comment-section {
-          background: rgba(201, 162, 39, 0.2);
-          border: 1px solid rgba(201, 162, 39, 0.3);
-          padding: 10px;
-          border-radius: 6px;
-          margin-top: 10px;
-        }
-
-        .my-form-card .comment-section strong {
-          color: #64b5f6;
-          font-size: 0.9rem;
-        }
-
-        .my-form-card .comment-section p {
-          margin: 5px 0 0 0;
-          color: rgba(255, 255, 255, 0.8);
-          font-style: italic;
-        }
-
-        /* Badge styles */
-        .badge-elegant {
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 0.8rem;
-          font-weight: bold;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .badge-success {
-          background: linear-gradient(135deg, #4CAF50, #45a049);
-          color: white;
-        }
-
-        .badge-warning {
-          background: linear-gradient(135deg, #FF9800, #F57C00);
-          color: white;
-        }
-
-        .badge-info {
-          background: linear-gradient(135deg, #c9a227, #6b4f1e);
-          color: white;
-        }
-
-        .badge-danger {
-          background: linear-gradient(135deg, #f44336, #d32f2f);
-          color: white;
-        }
-
-        .badge-secondary {
-          background: linear-gradient(135deg, #9E9E9E, #757575);
-          color: white;
-        }
-
-        /* Manager Personal Section Styles */
-        .manager-personal-section {
-          background: linear-gradient(135deg, rgba(201, 162, 39, 0.06), rgba(107, 79, 30, 0.03));
-          border: 2px solid rgba(201, 162, 39, 0.22);
-          border-radius: 20px;
-          position: relative;
-        }
-
-        .manager-form-section {
-          background: linear-gradient(135deg, rgba(201, 162, 39, 0.06), rgba(107, 79, 30, 0.03));
-          border: 2px solid rgba(201, 162, 39, 0.22);
-          border-radius: 20px;
-          position: relative;
-        }
-
-        .manager-forms-view-section {
-          background: linear-gradient(135deg, rgba(201, 162, 39, 0.06), rgba(107, 79, 30, 0.03));
-          border: 2px solid rgba(201, 162, 39, 0.22);
-          border-radius: 20px;
-          position: relative;
-        }
-
-        /* Team Management Section Styles */
-        .manager-team-attendance-section {
-          background: linear-gradient(135deg, rgba(201, 162, 39, 0.1), rgba(201, 162, 39, 0.05));
-          border: 2px solid rgba(201, 162, 39, 0.3);
-          border-radius: 20px;
-          position: relative;
-        }
-
-        .team-management-section {
-          background: linear-gradient(135deg, rgba(201, 162, 39, 0.08), rgba(107, 79, 30, 0.04));
-          border: 2px solid rgba(201, 162, 39, 0.28);
-          border-radius: 20px;
-          position: relative;
-        }
-
-        .team-requests-section {
-          background: linear-gradient(135deg, rgba(201, 162, 39, 0.1), rgba(107, 79, 30, 0.05));
-          border: 2px solid rgba(201, 162, 39, 0.32);
-          border-radius: 20px;
-          position: relative;
-        }
-
-        /* Section Headers */
-        .section-header {
-          margin-bottom: 25px;
-          padding-top: 10px;
-        }
-
-        .section-header h2 {
-          margin: 0 0 8px 0;
-          color: #ffffff;
-          font-size: 1.6rem;
-          font-weight: 700;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .section-subtitle {
-          color: rgba(255, 255, 255, 0.7);
-          font-style: italic;
-          font-size: 0.9rem;
-          line-height: 1.4;
-        }
-
-        .section-header--with-actions {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 1rem;
-        }
-
-        .section-header--with-actions .section-header-text {
-          flex: 1;
-          min-width: 200px;
-        }
-
-        .manager-refresh-btn {
-          padding: 10px 20px !important;
-          font-size: 0.9rem !important;
-          align-self: center;
-          background: linear-gradient(135deg, #c9a227, #6b4f1e) !important;
-          border: 1px solid rgba(201, 162, 39, 0.45) !important;
-        }
-
-        .manager-refresh-btn:hover:not(:disabled) {
-          filter: brightness(1.08);
-        }
-
-        .manager-refresh-btn:disabled {
-          opacity: 0.55;
-          cursor: not-allowed !important;
-        }
-
-        /* Manager Buttons — base style for inline actions (edit, refresh, etc.) */
-        .btn-manager {
-          padding: 14px 28px;
-          border: none;
-          border-radius: 12px;
-          cursor: pointer;
-          font-weight: bold;
-          transition: all 0.3s ease;
-          color: white;
-          font-size: 16px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        /* Manager Stats */
-        .manager-stats .manager-stat-card {
-          background: rgba(0, 0, 0, 0.7) !important;
-          border: 2px solid rgba(201, 162, 39, 0.45) !important;
-          border-radius: 16px !important;
-          position: relative !important;
-          overflow: hidden !important;
-        }
-
-        .manager-stats .manager-stat-card::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 4px;
-          background: linear-gradient(90deg, #e5c76b, #8b6914);
-        }
-
-        .stat-icon {
-          font-size: 2.5rem;
-          margin-bottom: 10px;
-        }
-
-        /* Team Member Cards */
-        .team-member-card {
-          background: rgba(0, 0, 0, 0.7) !important;
-          border: 2px solid #c9a227 !important;
-          border-radius: 16px !important;
-          text-align: center !important;
-          position: relative !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .team-member-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 8px 25px rgba(201, 162, 39, 0.35);
-        }
-
-        .member-avatar {
-          font-size: 2.5rem;
-          margin-bottom: 10px;
-        }
-
-        .member-department {
-          color: #e5c76b;
-          font-weight: 500;
-          font-size: 0.9rem;
-        }
-
-        .team-stat {
-          background: linear-gradient(135deg, #c9a227, #6b4f1e);
-          color: white;
-          padding: 6px 12px;
-          border-radius: 8px;
-          font-size: 0.8rem;
-          font-weight: bold;
-          display: inline-block;
-          margin-top: 8px;
-        }
-
-        /* Team Request Cards */
-        .team-request-card {
-          background: rgba(0, 0, 0, 0.7) !important;
-          border: 2px solid rgba(201, 162, 39, 0.5) !important;
-          border-left: 6px solid #c9a227 !important;
-          border-radius: 12px !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .team-request-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(201, 162, 39, 0.22);
-        }
-
-        /* Manager's Own Form Cards */
-        .manager-own-form {
-          background: rgba(0, 0, 0, 0.7) !important;
-          border: 2px solid rgba(201, 162, 39, 0.45) !important;
-          border-left: 6px solid #c9a227 !important;
-          border-radius: 12px !important;
-        }
-
-        /* Form Container */
-        .form-container {
-          background: rgba(0, 0, 0, 0.2);
-          backdrop-filter: blur(10px);
-          border-radius: 16px;
-          padding: 25px;
-          margin-top: 20px;
-          border: 1px solid rgba(201, 162, 39, 0.28);
-        }
-
-        /* No Content Styling */
-        .no-content {
-          text-align: center;
-          padding: 40px 20px;
-          color: rgba(255, 255, 255, 0.7);
-        }
-
-        .no-content-icon {
-          font-size: 3rem;
-          display: block;
-          margin-bottom: 15px;
-          opacity: 0.6;
-        }
-
-        .no-content p {
-          margin: 0 0 8px 0;
-          font-size: 1.1rem;
-          color: rgba(255, 255, 255, 0.8);
-        }
-
-        .no-content small {
-          color: rgba(255, 255, 255, 0.6);
-          font-style: italic;
-        }
-
-        /* Flag Styles */
-        .member-flags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-          margin: 10px 0;
-          justify-content: center;
-        }
-
-        .flag-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          padding: 4px 10px;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: bold;
-          position: relative;
-        }
-
-        .flag-deduction {
-          background: linear-gradient(135deg, #f44336, #d32f2f);
-          color: white;
-          border: 1px solid rgba(244, 67, 54, 0.5);
-        }
-
-        .flag-reward {
-          background: linear-gradient(135deg, #4caf50, #388e3c);
-          color: white;
-          border: 1px solid rgba(76, 175, 80, 0.5);
-        }
-
-        .flag-remove-btn {
-          background: rgba(255, 255, 255, 0.3) !important;
-          border: none !important;
-          color: white !important;
-          width: 16px !important;
-          height: 16px !important;
-          border-radius: 50% !important;
-          padding: 0 !important;
-          margin-left: 4px !important;
-          cursor: pointer !important;
-          font-size: 12px !important;
-          line-height: 1 !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-        }
-
-        .flag-remove-btn:hover {
-          background: rgba(255, 255, 255, 0.5) !important;
-        }
-
-        .btn-flag-employee {
-          margin-top: 12px !important;
-          padding: 8px 16px !important;
-          background: linear-gradient(135deg, #ff9800, #f57c00) !important;
-          color: white !important;
-          border: none !important;
-          border-radius: 8px !important;
-          font-size: 0.85rem !important;
-          font-weight: 600 !important;
-          cursor: pointer !important;
-          transition: all 0.3s ease !important;
-          width: 100% !important;
-        }
-
-        .btn-flag-employee:hover {
-          background: linear-gradient(135deg, #f57c00, #ef6c00) !important;
-          transform: translateY(-2px) !important;
-          box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4) !important;
-        }
-
-        /* Flag Modal Styles */
-        .flag-modal {
-          max-width: 450px !important;
-        }
-
-        .employee-summary {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          padding: 15px;
-          border-radius: 12px;
-          margin-bottom: 20px;
-        }
-
-        .employee-avatar {
-          font-size: 2.5rem;
-        }
-
-        .employee-info h4 {
-          margin: 0 0 5px 0;
-          color: #ffffff;
-          font-size: 1.2rem;
-        }
-
-        .employee-info p {
-          margin: 0;
-          color: rgba(255, 255, 255, 0.7);
-          font-size: 0.9rem;
-        }
-
-        .flag-type-section {
-          margin-bottom: 20px;
-        }
-
-        .flag-type-section label {
-          display: block;
-          margin-bottom: 10px;
-          font-weight: 600;
-          color: #ffffff;
-        }
-
-        .flag-type-options {
-          display: flex;
-          gap: 10px;
-        }
-
-        .flag-type-btn {
-          flex: 1 !important;
-          padding: 12px 16px !important;
-          border: 2px solid rgba(255, 255, 255, 0.2) !important;
-          background: rgba(0, 0, 0, 0.4) !important;
-          color: rgba(255, 255, 255, 0.7) !important;
-          border-radius: 10px !important;
-          font-size: 1rem !important;
-          font-weight: 600 !important;
-          cursor: pointer !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .flag-type-btn:hover {
-          background: rgba(0, 0, 0, 0.6) !important;
-          color: #ffffff !important;
-        }
-
-        .flag-type-btn.active.deduction {
-          background: linear-gradient(135deg, #f44336, #d32f2f) !important;
-          border-color: #f44336 !important;
-          color: white !important;
-        }
-
-        .flag-type-btn.active.reward {
-          background: linear-gradient(135deg, #4caf50, #388e3c) !important;
-          border-color: #4caf50 !important;
-          color: white !important;
-        }
-
-        .flag-reason-section {
-          margin-bottom: 10px;
-        }
-
-        .flag-reason-section label {
-          display: block;
-          margin-bottom: 8px;
-          font-weight: 600;
-          color: #ffffff;
-        }
-
-        .flag-reason-section textarea {
-          width: 100%;
-          padding: 12px;
-          border: 2px solid rgba(255, 255, 255, 0.2);
-          background: rgba(0, 0, 0, 0.5);
-          color: #ffffff;
-          border-radius: 8px;
-          font-family: inherit;
-          font-size: 14px;
-          resize: vertical;
-          transition: all 0.3s ease;
-        }
-
-        .flag-reason-section textarea:focus {
-          outline: none;
-          border-color: #c9a227;
-          background: rgba(0, 0, 0, 0.7);
-          box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
-        }
-
-        .flag-submit-btn {
-          padding: 12px 24px !important;
-          border: none !important;
-          border-radius: 8px !important;
-          font-weight: 600 !important;
-          cursor: pointer !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .flag-submit-btn.deduction {
-          background: linear-gradient(135deg, #f44336, #d32f2f) !important;
-          color: white !important;
-        }
-
-        .flag-submit-btn.deduction:hover:not(:disabled) {
-          background: linear-gradient(135deg, #d32f2f, #c62828) !important;
-        }
-
-        .flag-submit-btn.reward {
-          background: linear-gradient(135deg, #4caf50, #388e3c) !important;
-          color: white !important;
-        }
-
-        .flag-submit-btn.reward:hover:not(:disabled) {
-          background: linear-gradient(135deg, #388e3c, #2e7d32) !important;
-        }
-
-        .flag-submit-btn:disabled {
-          opacity: 0.5 !important;
-          cursor: not-allowed !important;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-          .stats-section {
-            grid-template-columns: 1fr;
-          }
-
-          .my-forms-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .team-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
     </div>
   );
 };

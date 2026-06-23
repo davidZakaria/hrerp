@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import DashboardSectionNav from './layout/DashboardSectionNav';
 import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
 import DashboardAppHeader from './layout/DashboardAppHeader';
@@ -28,11 +27,9 @@ const EmployeeDashboard = () => {
   const [snapshotRefreshKey, setSnapshotRefreshKey] = useState(0);
   const [formIntent, setFormIntent] = useState({ type: 'vacation', vacationType: 'annual' });
   const [myFlags, setMyFlags] = useState([]);
-  const overviewRef = useRef(null);
   const previewRef = useRef(null);
   const submitRef = useRef(null);
   const otReportRef = useRef(null);
-  const [scrollSpySection, setScrollSpySection] = useState('overview');
 
   const fetchUserData = async () => {
     const token = localStorage.getItem('token');
@@ -97,25 +94,6 @@ const EmployeeDashboard = () => {
     fetchMyFlags();
   }, []);
 
-  useEffect(() => {
-    if (showForm || showPreview) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        const intersecting = entries.filter((e) => e.isIntersecting);
-        if (intersecting.length === 0) return;
-        intersecting.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        const id = intersecting[0].target.getAttribute('data-nav-section');
-        if (id === 'overview' || id === 'ot-report') setScrollSpySection(id);
-      },
-      { threshold: [0, 0.1, 0.25, 0.45], rootMargin: '-88px 0px -35% 0px' }
-    );
-    const o = overviewRef.current;
-    const a = otReportRef.current;
-    if (o) obs.observe(o);
-    if (a) obs.observe(a);
-    return () => obs.disconnect();
-  }, [showForm, showPreview]);
-
   const fetchForms = async () => {
     setLoading(true);
     setError('');
@@ -155,16 +133,6 @@ const EmployeeDashboard = () => {
   const handleRequestLeave = () => handleShowForm('vacation', 'annual');
   const handleRequestOvertime = () => handleShowForm('extra_hours', 'annual');
 
-  const goOverview = () => {
-    setShowForm(false);
-    setShowPreview(false);
-    setTimeout(() => smoothScrollToElement(overviewRef.current, DEFAULT_SCROLL_OFFSET), 50);
-  };
-
-  const scrollToOtReport = () => {
-    smoothScrollToElement(otReportRef.current, DEFAULT_SCROLL_OFFSET);
-  };
-
   const handleFormSubmitted = () => {
     fetchVacationDays();
     fetchUserData();
@@ -195,8 +163,6 @@ const EmployeeDashboard = () => {
     return <span className={`badge-elegant ${badgeClass}`}>{statusText}</span>;
   };
 
-  const employeeNavActiveId = showForm ? 'submit' : showPreview ? 'preview' : scrollSpySection;
-
   return (
     <div className="dashboard-container employee-dashboard-v2 fade-in">
       <DashboardAppHeader title={t('dashboard.employee')} />
@@ -217,111 +183,54 @@ const EmployeeDashboard = () => {
 
       {/* Flags Section */}
       {myFlags.length > 0 && (
-        <div className="flags-section" style={{ marginBottom: '2rem' }}>
-          <h3 style={{ 
-            fontSize: '1.3rem', 
-            marginBottom: '1rem',
-            color: '#333',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
+        <section className="ed-flags-section">
+          <h3 className="ed-flags-title">
             🚩 {t('flags.myFlags') || 'My Flags'}
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {myFlags.map(flag => (
-              <div 
-                key={flag._id} 
-                className="flag-card"
-                style={{
-                  background: flag.type === 'deduction' 
-                    ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(244, 67, 54, 0.05))' 
-                    : 'linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.05))',
-                  border: flag.type === 'deduction' 
-                    ? '2px solid rgba(244, 67, 54, 0.4)' 
-                    : '2px solid rgba(76, 175, 80, 0.4)',
-                  borderRadius: '12px',
-                  padding: '1.25rem',
-                  borderLeft: flag.type === 'deduction' 
-                    ? '5px solid #f44336' 
-                    : '5px solid #4caf50'
-                }}
+              <div
+                key={flag._id}
+                className={`ed-flag-card ed-flag-card--${flag.type === 'deduction' ? 'deduction' : 'reward'}`}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <span style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.5rem',
                     padding: '0.35rem 0.75rem',
                     borderRadius: '20px',
-                    fontSize: '0.9rem',
+                    fontSize: '0.85rem',
                     fontWeight: 'bold',
-                    background: flag.type === 'deduction' ? '#f44336' : '#4caf50',
+                    background: flag.type === 'deduction' ? '#ef4444' : '#10b981',
                     color: 'white'
                   }}>
                     {flag.type === 'deduction' ? '⚠️' : '⭐'} {flag.type === 'deduction' ? (t('flags.deduction') || 'Deduction') : (t('flags.reward') || 'Reward')}
                   </span>
-                  <span style={{ fontSize: '0.85rem', color: '#666' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
                     {new Date(flag.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                <div style={{ 
-                  background: 'rgba(255, 255, 255, 0.5)', 
-                  padding: '0.75rem', 
-                  borderRadius: '8px',
-                  marginBottom: '0.75rem'
-                }}>
-                  <p style={{ margin: 0, color: '#333', lineHeight: '1.5' }}>
-                    {flag.reason}
-                  </p>
-                </div>
-                <div style={{ fontSize: '0.85rem', color: '#666' }}>
+                <p style={{ margin: '0 0 0.75rem', color: '#334155', lineHeight: 1.5, fontSize: '0.9375rem' }}>
+                  {flag.reason}
+                </p>
+                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
                   <span>{t('flags.flaggedBy') || 'Flagged by'}: </span>
-                  <span style={{ fontWeight: '600', color: '#333' }}>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>
                     👔 {flag.flaggedBy?.name || 'Manager'}
                   </span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      </div>
-
-      {/* Main Content */}
-      <div className="main-content employee-dashboard-stack" style={{ paddingTop: 0 }}>
-        <DashboardSectionNav
-          variant="light"
-          role="employee"
-          title={t('dashboard.nav.employeeTitle')}
-          description={t('dashboard.nav.employeeDesc')}
-          badgeLabel={t('dashboard.nav.badgeEmployee')}
-          activeId={employeeNavActiveId}
-          sections={[
-            { id: 'overview', label: t('dashboard.overview', 'Overview'), icon: '🏠', onSelect: goOverview },
-            { id: 'preview', label: t('dashboard.previewForms'), icon: '📋', onSelect: handlePreview },
-            { id: 'submit', label: t('dashboard.submitNewForm'), icon: '📝', onSelect: () => handleShowForm() },
-            { id: 'ot-report', label: t('dashboard.otReport', 'My OT Report'), icon: '⏱️', onSelect: scrollToOtReport }
-          ]}
-        />
-
-        <div
-          ref={overviewRef}
-          className="dashboard-section-anchor"
-          data-nav-section="overview"
-        >
         <EmployeeMonthlySnapshot refreshKey={snapshotRefreshKey} onLoaded={handleSnapshotLoaded} />
-        </div>
 
-        {/* Form Submission */}
         {showForm && (
-          <div
-            ref={submitRef}
-            className="dashboard-section-anchor"
-            data-nav-section="submit"
-          >
-            <div className="elegant-card slide-in-left">
+          <div ref={submitRef} className="dashboard-section-anchor">
+            <div className="ed-forms-panel slide-in-left">
               <FormSubmission
                 key={`${formIntent.type}-${formIntent.vacationType}`}
                 initialType={formIntent.type}
@@ -331,18 +240,13 @@ const EmployeeDashboard = () => {
             </div>
           </div>
         )}
-        
-        {/* Forms Preview */}
+
         {showPreview && (
-          <div
-            ref={previewRef}
-            className="dashboard-section-anchor"
-            data-nav-section="preview"
-          >
-          <div className="elegant-card slide-in-right">
-            <h2 className="section-title" style={{ fontSize: '1.8rem', marginBottom: '1.5rem' }}>
-              {t('dashboard.yourSubmittedForms')}
-            </h2>
+          <div ref={previewRef} className="dashboard-section-anchor">
+            <div className="ed-forms-panel slide-in-right">
+              <h2 className="section-title" style={{ marginBottom: '1.25rem' }}>
+                {t('dashboard.yourSubmittedForms')}
+              </h2>
             
             {loading && <div className="spinner-elegant"></div>}
             

@@ -9,7 +9,7 @@ const EmployeeDashboardHero = ({ user, onUserUpdate }) => {
   const firstName = getFirstName(user?.name);
 
   if (!user) {
-    return <div className="ed-hero ed-hero--loading" aria-hidden="true" />;
+    return <div className="ed-surface-card ed-hero ed-hero--loading" aria-hidden="true" />;
   }
 
   const departmentLabel = user.department
@@ -22,7 +22,7 @@ const EmployeeDashboardHero = ({ user, onUserUpdate }) => {
   };
 
   return (
-    <header className="ed-hero">
+    <header className="ed-surface-card ed-hero">
       <UserAvatar
         user={user}
         size="xl"

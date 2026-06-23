@@ -977,6 +977,7 @@
     "endDate": "تاريخ النهاية",
     "refresh": "تحديث",
     "loading": "جاري التحميل...",
+    "periodHint": "اختر فترة الراتب لمقارنة العمل الإضافي المعتمد مع البصمة ({{start}} → {{end}}).",
     "statFingerprint": "بصمة OT (ساعات)",
     "statApproved": "OT معتمد (ساعات)",
     "statFinal": "OT نهائي (ساعات)",

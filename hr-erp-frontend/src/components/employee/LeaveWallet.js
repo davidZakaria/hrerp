@@ -2,9 +2,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 const WALLET_ICONS = {
-  annual: { icon: '🌴', className: 'ed-wallet-icon--annual' },
-  casual: { icon: '🌸', className: 'ed-wallet-icon--casual' },
-  excuse: { icon: '⏳', className: 'ed-wallet-icon--excuse' }
+  annual: { icon: '🌴', badgeClass: 'ed-wallet-icon-badge--annual' },
+  casual: { icon: '🌸', badgeClass: 'ed-wallet-icon-badge--casual' },
+  excuse: { icon: '⏳', badgeClass: 'ed-wallet-icon-badge--excuse' }
 };
 
 function formatBalance(value) {
@@ -13,10 +13,12 @@ function formatBalance(value) {
 }
 
 function WalletCard({ themeKey, label, remaining, quota, t }) {
-  const { icon, className } = WALLET_ICONS[themeKey];
+  const { icon, badgeClass } = WALLET_ICONS[themeKey];
   return (
     <article className="ed-wallet-card">
-      <span className={`ed-wallet-icon ${className}`} aria-hidden="true">{icon}</span>
+      <span className={`ed-wallet-icon-badge ${badgeClass}`} aria-hidden="true">
+        <span className="ed-wallet-icon">{icon}</span>
+      </span>
       <div className="ed-wallet-label">{label}</div>
       <div className="ed-wallet-value-row">
         <span className="ed-wallet-value">{formatBalance(remaining)}</span>

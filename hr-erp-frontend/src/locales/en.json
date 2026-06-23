@@ -955,6 +955,7 @@
     "endDate": "End date",
     "refresh": "Refresh",
     "loading": "Loading...",
+    "periodHint": "Select a pay period to view your approved vs fingerprint overtime ({{start}} → {{end}}).",
     "statFingerprint": "Fingerprint OT (hrs)",
     "statApproved": "Approved OT (hrs)",
     "statFinal": "Final OT (hrs)",

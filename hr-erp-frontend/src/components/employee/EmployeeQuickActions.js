@@ -6,22 +6,22 @@ const EmployeeQuickActions = ({ onRequestLeave, onRequestOvertime, onViewRequest
 
   return (
     <nav className="ed-actions-row" aria-label={t('employeeDashboard.quickActions')}>
-      <button type="button" className="ed-action-btn" onClick={onRequestLeave}>
+      <button type="button" className="ed-action-btn ed-action-btn--primary" onClick={onRequestLeave}>
         {t('employeeDashboard.requestLeave')}
       </button>
-      <button type="button" className="ed-action-btn" onClick={onRequestOvertime}>
+      <button type="button" className="ed-action-btn ed-action-btn--secondary" onClick={onRequestOvertime}>
         {t('employeeDashboard.requestOvertime')}
       </button>
       <button
         type="button"
-        className="ed-action-btn"
+        className="ed-action-btn ed-action-btn--secondary"
         disabled
         title={t('employeeDashboard.excuseUnavailableHint')}
       >
         {t('employeeDashboard.requestExcuse')}
       </button>
       {onViewRequests && (
-        <button type="button" className="ed-action-btn" onClick={onViewRequests}>
+        <button type="button" className="ed-action-btn ed-action-btn--secondary" onClick={onViewRequests}>
           {t('employeeDashboard.viewMyRequests')}
         </button>
       )}

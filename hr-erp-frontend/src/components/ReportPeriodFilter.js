@@ -57,7 +57,8 @@ export function ReportPeriodFilter({
   setRangeStart,
   setRangeEnd,
   onRefresh,
-  loading
+  loading,
+  variant = 'default'
 }) {
   const { t, i18n } = useTranslation();
   const periodOptions = useMemo(
@@ -66,14 +67,15 @@ export function ReportPeriodFilter({
   );
 
   const selectedOption = periodOptions.find((o) => o.value === selectedPeriod);
+  const isSleek = variant === 'sleek';
 
-  return (
-    <div className="elegant-card" style={{ marginBottom: '1.5rem' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
-        <div style={{ minWidth: '200px', flex: '1 1 200px' }}>
-          <label className="form-label-elegant">{t(`${i18nPrefix}.payPeriod`)}</label>
+  const filterContent = (
+    <>
+      <div className={isSleek ? 'eot-filter-row' : undefined} style={isSleek ? undefined : { display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
+        <div className={isSleek ? 'eot-filter-field' : undefined} style={isSleek ? undefined : { minWidth: '200px', flex: '1 1 200px' }}>
+          <label className={isSleek ? 'eot-filter-label' : 'form-label-elegant'}>{t(`${i18nPrefix}.payPeriod`)}</label>
           <select
-            className="form-input-elegant"
+            className={isSleek ? 'eot-filter-select' : 'form-input-elegant'}
             value={selectedPeriod === 'custom' ? '' : selectedPeriod}
             onChange={(e) => applyPeriod(e.target.value || 'custom')}
           >
@@ -85,37 +87,53 @@ export function ReportPeriodFilter({
             ))}
           </select>
         </div>
-        <div>
-          <label className="form-label-elegant">{t(`${i18nPrefix}.startDate`)}</label>
+        <div className={isSleek ? 'eot-filter-field eot-filter-field--dates' : undefined}>
+          <label className={isSleek ? 'eot-filter-label' : 'form-label-elegant'}>{t(`${i18nPrefix}.startDate`)}</label>
           <input
             type="date"
-            className="form-input-elegant"
+            className={isSleek ? 'eot-filter-input' : 'form-input-elegant'}
             value={rangeStart}
             onChange={(e) => setRangeStart(e.target.value)}
           />
         </div>
-        <div>
-          <label className="form-label-elegant">{t(`${i18nPrefix}.endDate`)}</label>
+        <div className={isSleek ? 'eot-filter-field eot-filter-field--dates' : undefined}>
+          <label className={isSleek ? 'eot-filter-label' : 'form-label-elegant'}>{t(`${i18nPrefix}.endDate`)}</label>
           <input
             type="date"
-            className="form-input-elegant"
+            className={isSleek ? 'eot-filter-input' : 'form-input-elegant'}
             value={rangeEnd}
             onChange={(e) => setRangeEnd(e.target.value)}
           />
         </div>
-        <button type="button" className="btn-elegant btn-primary" onClick={onRefresh} disabled={loading}>
+        <button
+          type="button"
+          className={isSleek ? 'eot-filter-btn' : 'btn-elegant btn-primary'}
+          onClick={onRefresh}
+          disabled={loading}
+        >
           {loading ? t(`${i18nPrefix}.loading`) : t(`${i18nPrefix}.refresh`)}
         </button>
       </div>
       {selectedOption && selectedPeriod !== 'custom' && (
-        <p style={{ margin: '0.75rem 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
+        <p className={isSleek ? 'eot-filter-hint' : undefined} style={isSleek ? undefined : { margin: '0.75rem 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
           {t(`${i18nPrefix}.periodHint`, {
             day: PERIOD_ANCHOR_DAY,
             start: selectedOption.startDate,
-            end: selectedOption.endDate
+            end: selectedOption.endDate,
+            defaultValue: 'Select a pay period to view your approved vs fingerprint overtime.'
           })}
         </p>
       )}
+    </>
+  );
+
+  if (isSleek) {
+    return <div className="eot-filter">{filterContent}</div>;
+  }
+
+  return (
+    <div className="elegant-card" style={{ marginBottom: '1.5rem' }}>
+      {filterContent}
     </div>
   );
 }

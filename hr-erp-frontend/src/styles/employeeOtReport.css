@@ -1,0 +1,410 @@
+/* Employee OT Report — mobile-first, theme-adaptive */
+
+.eot-report {
+  margin-top: 24px;
+  background: var(--theme-bg-elevated);
+  border: 1px solid var(--theme-border-strong);
+  border-radius: 16px;
+  overflow: hidden;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .eot-report {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+
+[data-theme='dark'] .eot-report {
+  background: #111827;
+  border-color: #1f2937;
+}
+
+.eot-report *,
+.eot-report h3,
+.eot-report h4,
+.eot-report p {
+  text-shadow: none !important;
+}
+
+.eot-report-inner {
+  padding: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .eot-report-inner {
+    padding: 1.5rem;
+  }
+}
+
+.eot-report-header {
+  margin-bottom: 1.25rem;
+}
+
+.eot-report-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--theme-text) !important;
+  letter-spacing: -0.02em;
+}
+
+.eot-report-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: var(--theme-text-muted) !important;
+  line-height: 1.5;
+}
+
+/* ----- Filter bar (mobile-first) ----- */
+.eot-filter {
+  margin-bottom: 1.25rem;
+}
+
+.eot-filter-row {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .eot-filter-row {
+    flex-direction: row;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+}
+
+.eot-filter-field {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .eot-filter-field {
+    width: auto;
+    flex: 1 1 180px;
+    max-width: 280px;
+  }
+
+  .eot-filter-field--dates {
+    flex: 0 1 auto;
+    max-width: none;
+  }
+}
+
+.eot-filter-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--theme-text-muted) !important;
+}
+
+.eot-filter-input,
+.eot-filter-select {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.625rem 0.75rem;
+  font-size: 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--theme-border-strong);
+  background: var(--theme-metric-bg);
+  color: var(--theme-text) !important;
+  box-sizing: border-box;
+}
+
+[data-theme='light'] .eot-filter-input,
+[data-theme='light'] .eot-filter-select {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+[data-theme='dark'] .eot-filter-input,
+[data-theme='dark'] .eot-filter-select {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.eot-filter-input:focus,
+.eot-filter-select:focus {
+  outline: 2px solid var(--theme-focus);
+  outline-offset: 1px;
+}
+
+.eot-filter-btn {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.625rem 1.25rem;
+  border-radius: 10px;
+  border: 1px solid var(--theme-border-strong);
+  background: var(--theme-text);
+  color: var(--theme-bg-elevated);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+[data-theme='light'] .eot-filter-btn {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+[data-theme='dark'] .eot-filter-btn {
+  background: #f9fafb;
+  color: #111827;
+}
+
+@media (min-width: 768px) {
+  .eot-filter-btn {
+    width: auto;
+    flex-shrink: 0;
+  }
+}
+
+.eot-filter-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.eot-filter-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--theme-text-muted) !important;
+  line-height: 1.45;
+}
+
+/* ----- Stat cards ----- */
+.eot-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .eot-stat-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+}
+
+.eot-stat-card {
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--theme-metric-bg);
+  border: 1px solid var(--theme-border-strong);
+  text-align: center;
+}
+
+[data-theme='light'] .eot-stat-card {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+[data-theme='dark'] .eot-stat-card {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.eot-stat-value {
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--theme-text) !important;
+}
+
+.eot-stat-value--variance-pos {
+  color: #ef4444 !important;
+}
+
+.eot-stat-value--variance-zero {
+  color: #10b981 !important;
+}
+
+.eot-stat-value--variance-neg {
+  color: #f59e0b !important;
+}
+
+.eot-stat-label {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--theme-text-muted) !important;
+  line-height: 1.3;
+}
+
+/* ----- Pending notice ----- */
+.eot-pending-notice {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #d97706;
+}
+
+[data-theme='dark'] .eot-pending-notice {
+  color: #fbbf24;
+}
+
+/* ----- Daily breakdown ----- */
+.eot-daily-section {
+  margin-top: 0.5rem;
+}
+
+.eot-daily-title {
+  margin: 0 0 0.85rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--theme-text) !important;
+}
+
+.eot-empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--theme-text-muted) !important;
+  line-height: 1.5;
+}
+
+.eot-footer-note {
+  margin: 1rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--theme-text-muted) !important;
+  line-height: 1.45;
+}
+
+/* ----- Mobile row cards (scoped) ----- */
+@media (max-width: 768px) {
+  .eot-report .mobile-data-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .eot-report .mobile-data-card {
+    background: var(--theme-metric-bg);
+    border: 1px solid var(--theme-border-strong);
+    border-radius: 12px;
+    padding: 0.85rem;
+  }
+
+  [data-theme='light'] .eot-report .mobile-data-card {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+  }
+
+  [data-theme='dark'] .eot-report .mobile-data-card {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .eot-report .mobile-data-card-title {
+    font-weight: 700;
+    color: var(--theme-text) !important;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .eot-report .mobile-data-card-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    padding: 0.25rem 0;
+    color: var(--theme-text) !important;
+  }
+
+  .eot-report .mobile-data-card-row span:first-child {
+    color: var(--theme-text-muted) !important;
+  }
+
+  .eot-report .mobile-data-card-row .value-variance-match {
+    color: #10b981 !important;
+    font-weight: 600;
+  }
+
+  .eot-report .mobile-data-card-row .value-variance-over {
+    color: #ef4444 !important;
+    font-weight: 600;
+  }
+
+  .eot-report .mobile-data-card-row .value-variance-under {
+    color: #f59e0b !important;
+    font-weight: 600;
+  }
+
+  .eot-report .has-mobile-cards .desktop-only-table {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .eot-report .mobile-data-cards {
+    display: none !important;
+  }
+}
+
+/* ----- Desktop table ----- */
+.eot-report .eot-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--theme-border-strong);
+}
+
+.eot-report .eot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.eot-report .eot-table th {
+  padding: 0.75rem 0.65rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--theme-text-muted) !important;
+  background: var(--theme-metric-bg);
+  border-bottom: 1px solid var(--theme-border-strong);
+}
+
+.eot-report .eot-table td {
+  padding: 0.65rem;
+  color: var(--theme-text) !important;
+  border-bottom: 1px solid var(--theme-border-strong);
+}
+
+.eot-report .eot-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.eot-report .eot-table tfoot td {
+  font-weight: 700;
+  background: var(--theme-metric-bg);
+  border-top: 1px solid var(--theme-border-strong);
+}
+
+.eot-report .eot-variance-pos {
+  color: #ef4444 !important;
+  font-weight: 700;
+}
+
+.eot-report .eot-variance-zero {
+  color: #10b981 !important;
+  font-weight: 600;
+}
+
+.eot-report .eot-variance-neg {
+  color: #f59e0b !important;
+  font-weight: 700;
+}
+
+.eot-report .eot-final-positive {
+  color: #10b981 !important;
+  font-weight: 600;
+}

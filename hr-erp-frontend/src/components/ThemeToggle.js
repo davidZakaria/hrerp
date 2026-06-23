@@ -10,7 +10,7 @@ export default function ThemeToggle({ className = '' }) {
   return (
     <button
       type="button"
-      className={`theme-toggle ${className}`.trim()}
+      className={`theme-toggle ed-header-control ${className}`.trim()}
       onClick={toggleTheme}
       aria-label={isDark ? t('theme.switchToLight') : t('theme.switchToDark')}
       title={isDark ? t('theme.switchToLight') : t('theme.switchToDark')}

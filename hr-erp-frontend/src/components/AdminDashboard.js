@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import ATSDashboard from './ATS/ATSDashboard';
@@ -24,6 +24,7 @@ import UserCardDetails from './users/UserCardDetails';
 import UserAvatar from './UserAvatar';
 import DashboardWelcomeCard from './dashboard/DashboardWelcomeCard';
 import { DashboardStatCard, DashboardStatGrid } from './dashboard/DashboardStatCard';
+import AdminEmployeeInsights from './admin/AdminEmployeeInsights';
 import {
   filterFormsByManagementMonths,
   currentYearMonth,
@@ -343,7 +344,7 @@ const AdminDashboard = () => {
       await axios.delete(`${API_URL}/api/employee-flags/${flagId}`, {
         headers: { 'x-auth-token': token }
       });
-      setMessage('✅ Flag removed successfully');
+      setMessage('âœ… Flag removed successfully');
       fetchAllFlags();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
@@ -909,20 +910,20 @@ const AdminDashboard = () => {
 
   // Simple and reliable print function
   const handlePrintSimple = () => {
-    logger.log('🖨️ Simple print function called');
+    logger.log('ðŸ–¨ï¸ Simple print function called');
     
     if (!reportData || reportData.length === 0) {
       alert('No report data available to print.');
       return;
     }
 
-    const reportHTML = `<!DOCTYPE html><html><head><title>Vacation Days Report</title><style>body{font-family:Arial,sans-serif;margin:20px;color:#333}.header{text-align:center;margin-bottom:30px;border-bottom:2px solid #3498db;padding-bottom:20px}.title{font-size:24px;font-weight:bold;margin:0}.summary{display:flex;justify-content:space-around;margin:20px 0;background:#f8f9fa;padding:15px}.summary-item{text-align:center}.summary-number{font-size:24px;font-weight:bold;color:#3498db}.employee{border:1px solid #ddd;margin:10px 0;padding:15px;page-break-inside:avoid}.employee-name{font-weight:bold;font-size:16px}.badge{padding:4px 8px;border-radius:4px;color:white;font-size:12px}.badge-good{background:#27ae60}.badge-warning{background:#f39c12}.badge-critical{background:#e74c3c}@media print{.badge{-webkit-print-color-adjust:exact;color-adjust:exact}}</style></head><body><div class="header"><h1 class="title">🏖️ Vacation Days Report</h1><p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p></div><div class="summary"><div class="summary-item"><div class="summary-number">${reportData.length}</div><div>Total Employees</div></div><div class="summary-item"><div class="summary-number">${reportData.filter(emp => emp.vacationDaysLeft === 0).length}</div><div>No Days Left</div></div><div class="summary-item"><div class="summary-number">${Math.round(reportData.reduce((acc, emp) => acc + emp.vacationDaysLeft, 0) / reportData.length) || 0}</div><div>Average Days</div></div></div>${reportData.map(emp => `<div class="employee"><div class="employee-name">${emp.name}</div><div><strong>Email:</strong> ${emp.email}</div><div><strong>Department:</strong> ${emp.department}</div><div><strong>Vacation Days:</strong> <span class="badge ${emp.vacationDaysLeft === 0 ? 'badge-critical' : emp.vacationDaysLeft <= 5 ? 'badge-warning' : 'badge-good'}">${emp.vacationDaysLeft} days</span></div></div>`).join('')}<script>window.onload=function(){setTimeout(function(){window.print();setTimeout(function(){window.close()},1000)},500)}</script></body></html>`;
+    const reportHTML = `<!DOCTYPE html><html><head><title>Vacation Days Report</title><style>body{font-family:Arial,sans-serif;margin:20px;color:#333}.header{text-align:center;margin-bottom:30px;border-bottom:2px solid #3498db;padding-bottom:20px}.title{font-size:24px;font-weight:bold;margin:0}.summary{display:flex;justify-content:space-around;margin:20px 0;background:#f8f9fa;padding:15px}.summary-item{text-align:center}.summary-number{font-size:24px;font-weight:bold;color:#3498db}.employee{border:1px solid #ddd;margin:10px 0;padding:15px;page-break-inside:avoid}.employee-name{font-weight:bold;font-size:16px}.badge{padding:4px 8px;border-radius:4px;color:white;font-size:12px}.badge-good{background:#27ae60}.badge-warning{background:#f39c12}.badge-critical{background:#e74c3c}@media print{.badge{-webkit-print-color-adjust:exact;color-adjust:exact}}</style></head><body><div class="header"><h1 class="title">ðŸ–ï¸ Vacation Days Report</h1><p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p></div><div class="summary"><div class="summary-item"><div class="summary-number">${reportData.length}</div><div>Total Employees</div></div><div class="summary-item"><div class="summary-number">${reportData.filter(emp => emp.vacationDaysLeft === 0).length}</div><div>No Days Left</div></div><div class="summary-item"><div class="summary-number">${Math.round(reportData.reduce((acc, emp) => acc + emp.vacationDaysLeft, 0) / reportData.length) || 0}</div><div>Average Days</div></div></div>${reportData.map(emp => `<div class="employee"><div class="employee-name">${emp.name}</div><div><strong>Email:</strong> ${emp.email}</div><div><strong>Department:</strong> ${emp.department}</div><div><strong>Vacation Days:</strong> <span class="badge ${emp.vacationDaysLeft === 0 ? 'badge-critical' : emp.vacationDaysLeft <= 5 ? 'badge-warning' : 'badge-good'}">${emp.vacationDaysLeft} days</span></div></div>`).join('')}<script>window.onload=function(){setTimeout(function(){window.print();setTimeout(function(){window.close()},1000)},500)}</script></body></html>`;
 
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (printWindow) {
       printWindow.document.write(reportHTML);
       printWindow.document.close();
-      logger.log('✅ Print window opened');
+      logger.log('âœ… Print window opened');
     } else {
       alert('Please allow pop-ups to enable printing.');
     }
@@ -1068,11 +1069,11 @@ const AdminDashboard = () => {
         badgeLabel={t('dashboard.nav.badgeAdmin')}
         activeId={activeTab}
         sections={[
-          { id: 'overview', label: t('adminDashboard.navOverview'), icon: '📊', onSelect: () => setActiveTab('overview') },
-          { id: 'users', label: t('adminDashboard.usersSectionTitle'), icon: '👥', onSelect: () => setActiveTab('users') },
-          { id: 'forms', label: t('adminDashboard.formsSectionTitle'), icon: '📋', onSelect: () => setActiveTab('forms') },
-          { id: 'ats', label: t('adminDashboard.navAts'), icon: '🎯', onSelect: () => setActiveTab('ats') },
-          { id: 'attendance', label: t('adminDashboard.navAttendance'), icon: '📈', onSelect: () => setActiveTab('attendance') }
+          { id: 'overview', label: t('adminDashboard.navOverview'), icon: 'ðŸ“Š', onSelect: () => setActiveTab('overview') },
+          { id: 'users', label: t('adminDashboard.usersSectionTitle'), icon: 'ðŸ‘¥', onSelect: () => setActiveTab('users') },
+          { id: 'forms', label: t('adminDashboard.formsSectionTitle'), icon: 'ðŸ“‹', onSelect: () => setActiveTab('forms') },
+          { id: 'ats', label: t('adminDashboard.navAts'), icon: 'ðŸŽ¯', onSelect: () => setActiveTab('ats') },
+          { id: 'attendance', label: t('adminDashboard.navAttendance'), icon: 'ðŸ“ˆ', onSelect: () => setActiveTab('attendance') }
         ]}
       />
 
@@ -1133,7 +1134,7 @@ const AdminDashboard = () => {
                             borderRadius: '4px',
                             fontSize: '0.85rem'
                           }}>
-                            {user.role === 'manager' ? '👔 Manager' : '👤 Employee'}
+                            {user.role === 'manager' ? 'ðŸ‘” Manager' : 'ðŸ‘¤ Employee'}
                           </span>
                         </p>
                         <p><strong>{t('adminDashboard.departmentLabel')}:</strong> {user.department}</p>
@@ -1204,8 +1205,8 @@ const AdminDashboard = () => {
             )}
 
             {/* Quick Actions */}
-            <div className="elegant-card">
-              <h2 className="section-title">{t('adminDashboard.quickActions')}</h2>
+            <div className="dash-panel-card">
+              <h2 className="dash-panel-title">{t('adminDashboard.quickActions')}</h2>
               <div className="action-buttons">
                 <button 
                   className="btn-elegant btn-success"
@@ -1231,470 +1232,14 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Employee Insights Section */}
-            <div className="elegant-card" style={{ marginTop: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                  <h2 className="section-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {t('adminDashboard.employeeInsights')}
-                    {summaryLoading && <span style={{ fontSize: '0.8rem', color: '#666', fontWeight: 'normal' }}>({t('adminDashboard.insightsLoading')})</span>}
-                  </h2>
-                  {employeeSummary?.periodLabel && (
-                    <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
-                      {t('adminDashboard.insightsPeriod')}: {employeeSummary.periodLabel}
-                    </p>
-                  )}
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'flex-end' }}>
-                  <div>
-                    <label className="form-label-elegant">{t('adminDashboard.insightsPayPeriod')}</label>
-                    <select
-                      className="form-input-elegant"
-                      value={insightsPeriodMonth}
-                      onChange={(e) => setInsightsPeriodMonth(e.target.value)}
-                    >
-                      {insightsPeriodOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label} ({opt.startDate} → {opt.endDate})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <button type="button" className="btn-elegant btn-primary" onClick={fetchEmployeeSummary} disabled={summaryLoading}>
-                    {summaryLoading ? t('adminDashboard.insightsLoading') : t('adminDashboard.refresh')}
-                  </button>
-                {employeeSummary && (
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button
-                      onClick={() => {
-                        const headers = ['Name', 'Email', 'Department', 'Role', 'Vacation Days', 'Present', 'Absent', 'Late', 'Deduction Days', 'OT Hours', 'Attendance %'];
-                        const csvContent = [
-                          headers.join(','),
-                          ...employeeSummary.allEmployees.map(emp => [
-                            `"${emp.name}"`,
-                            `"${emp.email}"`,
-                            `"${emp.department}"`,
-                            emp.role,
-                            emp.vacationDaysLeft,
-                            emp.presentDays,
-                            emp.absentDays,
-                            emp.lateDays,
-                            emp.deductions,
-                            emp.totalOtHours ?? 0,
-                            emp.attendanceRate
-                          ].join(','))
-                        ].join('\n');
-                        
-                        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = `employee_insights_${employeeSummary.periodStart || employeeSummary.currentMonth}.csv`;
-                        link.click();
-                      }}
-                      className="btn-elegant"
-                      style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
-                    >
-                      {t('adminDashboard.exportCsv')}
-                    </button>
-                    <button
-                      onClick={() => {
-                        const printContent = document.getElementById('employee-insights-table');
-                        const printWindow = window.open('', '_blank');
-                        printWindow.document.write(`
-                          <html>
-                            <head>
-                              <title>Employee Insights - ${employeeSummary.periodLabel || employeeSummary.currentMonth}</title>
-                              <style>
-                                body { font-family: Arial, sans-serif; padding: 20px; }
-                                h1 { color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
-                                .stats-row { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
-                                .stat-card { background: #f5f5f5; padding: 15px; border-radius: 8px; text-align: center; flex: 1; min-width: 120px; }
-                                .stat-value { font-size: 24px; font-weight: bold; color: #667eea; }
-                                .stat-label { color: #666; font-size: 12px; }
-                                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                                th { background: #667eea; color: white; padding: 12px 8px; text-align: left; font-size: 12px; }
-                                td { padding: 10px 8px; border-bottom: 1px solid #eee; font-size: 12px; }
-                                tr:nth-child(even) { background: #f9f9f9; }
-                                .footer { margin-top: 20px; text-align: right; color: #999; font-size: 12px; }
-                                @media print { body { -webkit-print-color-adjust: exact; } }
-                              </style>
-                            </head>
-                            <body>
-                              <h1>📈 Employee Insights Report</h1>
-                              <p>Period: ${employeeSummary.periodLabel || employeeSummary.currentMonth}</p>
-                              <div class="stats-row">
-                                <div class="stat-card"><div class="stat-value">${employeeSummary.totalEmployees}</div><div class="stat-label">Total Employees</div></div>
-                                <div class="stat-card"><div class="stat-value">${employeeSummary.averageVacationDays}</div><div class="stat-label">Avg Vacation Days</div></div>
-                                <div class="stat-card"><div class="stat-value">${employeeSummary.attendanceRate}%</div><div class="stat-label">Attendance Rate</div></div>
-                                <div class="stat-card"><div class="stat-value">${employeeSummary.totalDeductions}</div><div class="stat-label">Total Deduction Days</div></div>
-                                <div class="stat-card"><div class="stat-value">${employeeSummary.totalOtHours ?? 0}</div><div class="stat-label">Total OT Hours</div></div>
-                              </div>
-                              ${printContent.outerHTML}
-                              <div class="footer">Generated on ${new Date().toLocaleString()} | Period: ${employeeSummary.periodLabel || employeeSummary.currentMonth}</div>
-                            </body>
-                          </html>
-                        `);
-                        printWindow.document.close();
-                        printWindow.print();
-                      }}
-                      className="btn-elegant"
-                      style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
-                    >
-                      🖨️ Print
-                    </button>
-                  </div>
-                )}
-                </div>
-              </div>
-              
-              {employeeSummary && (
-                <>
-                  {/* Summary Stats Cards */}
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', 
-                    gap: '1rem', 
-                    marginBottom: '1.5rem' 
-                  }}>
-                    <div style={{ 
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      padding: '1.5rem',
-                      borderRadius: '12px',
-                      color: 'white',
-                      textAlign: 'center',
-                      boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
-                    }}>
-                      <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{employeeSummary.totalEmployees}</div>
-                      <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '0.25rem' }}>Total Employees</div>
-                    </div>
-                    <div style={{ 
-                      background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-                      padding: '1.5rem',
-                      borderRadius: '12px',
-                      color: 'white',
-                      textAlign: 'center',
-                      boxShadow: '0 4px 15px rgba(17, 153, 142, 0.3)'
-                    }}>
-                      <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{employeeSummary.averageVacationDays}</div>
-                      <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '0.25rem' }}>Avg Vacation Days</div>
-                    </div>
-                    <div style={{ 
-                      background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                      padding: '1.5rem',
-                      borderRadius: '12px',
-                      color: 'white',
-                      textAlign: 'center',
-                      boxShadow: '0 4px 15px rgba(79, 172, 254, 0.3)'
-                    }}>
-                      <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{employeeSummary.attendanceRate}%</div>
-                      <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '0.25rem' }}>Attendance Rate</div>
-                    </div>
-                    <div style={{ 
-                      background: employeeSummary.totalDeductions > 0 
-                        ? 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
-                        : 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                      padding: '1.5rem',
-                      borderRadius: '12px',
-                      color: employeeSummary.totalDeductions > 0 ? 'white' : '#333',
-                      textAlign: 'center',
-                      boxShadow: employeeSummary.totalDeductions > 0 
-                        ? '0 4px 15px rgba(245, 87, 108, 0.3)'
-                        : '0 4px 15px rgba(168, 237, 234, 0.3)'
-                    }}>
-                      <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{employeeSummary.totalDeductions}</div>
-                      <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '0.25rem' }}>{t('adminDashboard.insightsTotalDeductionDays')}</div>
-                    </div>
-                    <div style={{ 
-                      background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                      padding: '1.5rem',
-                      borderRadius: '12px',
-                      color: '#1a1a2e',
-                      textAlign: 'center',
-                      boxShadow: '0 4px 15px rgba(67, 233, 123, 0.3)'
-                    }}>
-                      <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{employeeSummary.totalOtHours ?? 0}</div>
-                      <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: '0.25rem' }}>{t('adminDashboard.insightsTotalOtHours')}</div>
-                    </div>
-                  </div>
-
-                  {/* All Employees Table */}
-                  <div style={{ 
-                    background: '#fff',
-                    borderRadius: '12px',
-                    border: '1px solid #e0e0e0',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{ 
-                      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-                      padding: '1rem 1.5rem',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem', fontWeight: '600' }}>
-                        👥 All Employees Data
-                      </h3>
-                      <span style={{ color: '#a0aec0', fontSize: '0.85rem' }}>
-                        {employeeSummary.allEmployees?.length || 0} employees | {employeeSummary.periodLabel || employeeSummary.currentMonth}
-                      </span>
-                    </div>
-                    
-                    <div style={{ overflowX: 'auto' }}>
-                      <table id="employee-insights-table" style={{ 
-                        width: '100%', 
-                        borderCollapse: 'collapse',
-                        fontSize: '0.9rem'
-                      }}>
-                        <thead>
-                          <tr style={{ background: '#f8f9fa' }}>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Employee</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Department</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Vacation Days</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Present</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Absent</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Late</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>{t('adminDashboard.insightsColDeductionDays')}</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>{t('adminDashboard.insightsColOtHours')}</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#333', borderBottom: '2px solid #e0e0e0' }}>Attendance %</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {employeeSummary.allEmployees?.map((emp, idx) => (
-                            <tr key={emp._id} style={{ 
-                              background: idx % 2 === 0 ? '#ffffff' : '#f8f9fa',
-                              transition: 'background 0.2s'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = '#e3f2fd';
-                              Array.from(e.currentTarget.cells).forEach(cell => cell.style.background = '#e3f2fd');
-                            }}
-                            onMouseLeave={(e) => {
-                              const bg = idx % 2 === 0 ? '#ffffff' : '#f8f9fa';
-                              e.currentTarget.style.background = bg;
-                              Array.from(e.currentTarget.cells).forEach(cell => cell.style.background = '#fff');
-                            }}
-                            >
-                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', background: '#fff' }}>
-                                <div style={{ fontWeight: '600', color: '#1a1a1a' }}>{emp.name}</div>
-                                <div style={{ fontSize: '0.8rem', color: '#666' }}>{emp.email}</div>
-                              </td>
-                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', color: '#333', background: '#fff', fontWeight: '500' }}>
-                                {emp.department}
-                              </td>
-                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
-                                <span style={{ 
-                                  background: emp.vacationDaysLeft < 5 ? '#FFF3E0' : '#E8F5E9',
-                                  color: emp.vacationDaysLeft < 5 ? '#E65100' : '#1B5E20',
-                                  padding: '4px 12px',
-                                  borderRadius: '20px',
-                                  fontWeight: '600',
-                                  fontSize: '0.85rem',
-                                  display: 'inline-block'
-                                }}>
-                                  {emp.vacationDaysLeft}
-                                </span>
-                              </td>
-                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
-                                <span style={{ 
-                                  background: '#E8F5E9',
-                                  color: '#1B5E20',
-                                  padding: '4px 12px',
-                                  borderRadius: '20px',
-                                  fontWeight: '600',
-                                  fontSize: '0.85rem',
-                                  display: 'inline-block'
-                                }}>
-                                  {emp.presentDays || 0}
-                                </span>
-                              </td>
-                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
-                                <span style={{ 
-                                  background: emp.absentDays >= 3 ? '#FFCDD2' : emp.absentDays > 0 ? '#FFF3E0' : '#f5f5f5',
-                                  color: emp.absentDays >= 3 ? '#B71C1C' : emp.absentDays > 0 ? '#E65100' : '#333',
-                                  padding: '4px 12px',
-                                  borderRadius: '20px',
-                                  fontWeight: '600',
-                                  fontSize: '0.85rem',
-                                  display: 'inline-block'
-                                }}>
-                                  {emp.absentDays || 0}
-                                </span>
-                              </td>
-                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
-                                <span style={{ 
-                                  background: emp.lateDays > 5 ? '#FFF3E0' : '#f5f5f5',
-                                  color: emp.lateDays > 5 ? '#E65100' : '#333',
-                                  padding: '4px 12px',
-                                  borderRadius: '20px',
-                                  fontWeight: '600',
-                                  fontSize: '0.85rem',
-                                  display: 'inline-block'
-                                }}>
-                                  {emp.lateDays || 0}
-                                </span>
-                              </td>
-                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
-                                <span style={{ 
-                                  background: emp.deductions > 0 ? '#FFEBEE' : '#f5f5f5',
-                                  color: emp.deductions > 0 ? '#B71C1C' : '#333',
-                                  padding: '4px 12px',
-                                  borderRadius: '20px',
-                                  fontWeight: '600',
-                                  fontSize: '0.85rem',
-                                  display: 'inline-block'
-                                }}
-                                title={emp.deductions > 0 ? `A: ${emp.pillarADays} | B: ${emp.pillarBDays} | C: ${emp.pillarCDays}` : ''}
-                                >
-                                  {emp.deductions > 0 ? Number(emp.deductions).toFixed(4) : '0'}
-                                </span>
-                              </td>
-                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
-                                <span style={{ 
-                                  background: (emp.totalOtHours ?? 0) > 0 ? '#E8F5E9' : '#f5f5f5',
-                                  color: (emp.totalOtHours ?? 0) > 0 ? '#1B5E20' : '#333',
-                                  padding: '4px 12px',
-                                  borderRadius: '20px',
-                                  fontWeight: '600',
-                                  fontSize: '0.85rem',
-                                  display: 'inline-block'
-                                }}>
-                                  {Number(emp.totalOtHours ?? 0).toFixed(2)}
-                                </span>
-                              </td>
-                              <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', textAlign: 'center', background: '#fff' }}>
-                                <span style={{ 
-                                  background: emp.attendanceRate !== '-' 
-                                    ? (parseFloat(emp.attendanceRate) >= 90 ? '#E8F5E9' : parseFloat(emp.attendanceRate) >= 75 ? '#FFF3E0' : '#FFEBEE')
-                                    : '#f5f5f5',
-                                  color: emp.attendanceRate !== '-'
-                                    ? (parseFloat(emp.attendanceRate) >= 90 ? '#1B5E20' : parseFloat(emp.attendanceRate) >= 75 ? '#E65100' : '#B71C1C')
-                                    : '#666',
-                                  padding: '4px 12px',
-                                  borderRadius: '20px',
-                                  fontWeight: '600',
-                                  fontSize: '0.85rem',
-                                  display: 'inline-block'
-                                }}>
-                                  {emp.attendanceRate !== '-' ? `${emp.attendanceRate}%` : 'No data'}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    
-                    {(!employeeSummary.allEmployees || employeeSummary.allEmployees.length === 0) && (
-                      <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
-                        No employee data available
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Attention Alerts (compact) */}
-                  {(employeeSummary.summary.lowVacationCount > 0 || 
-                    employeeSummary.summary.highAbsenceCount > 0 || 
-                    employeeSummary.summary.deductionCount > 0) && (
-                    <>
-                    <style>{`
-                      #employee-insights-alerts,
-                      #employee-insights-alerts .insights-alert-text,
-                      #employee-insights-alerts .insights-alert-text * {
-                        color: #000000 !important;
-                        text-shadow: none !important;
-                      }
-                    `}</style>
-                    <div
-                      id="employee-insights-alerts"
-                      className="insights-alert-text"
-                      style={{
-                      display: 'flex',
-                      gap: '1rem',
-                      marginTop: '1.5rem',
-                      flexWrap: 'wrap'
-                    }}>
-                      {employeeSummary.summary.lowVacationCount > 0 && (
-                        <div className="insights-alert-text" style={{ 
-                          flex: '1',
-                          minWidth: '200px',
-                          background: '#FFF8E1',
-                          border: '1px solid #FFB300',
-                          borderRadius: '8px',
-                          padding: '1rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem'
-                        }}>
-                          <span style={{ fontSize: '1.5rem' }} aria-hidden="true">⚠️</span>
-                          <div className="insights-alert-text">
-                            <div className="insights-alert-text" style={{ fontWeight: 600, fontSize: '1rem' }}>
-                              {employeeSummary.summary.lowVacationCount} {t('adminDashboard.insightsAlertEmployees')}
-                            </div>
-                            <div className="insights-alert-text" style={{ fontSize: '0.85rem', marginTop: '0.15rem' }}>
-                              {t('adminDashboard.insightsAlertLowVacation')}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {employeeSummary.summary.highAbsenceCount > 0 && (
-                        <div className="insights-alert-text" style={{ 
-                          flex: '1',
-                          minWidth: '200px',
-                          background: '#FFEBEE',
-                          border: '1px solid #EF9A9A',
-                          borderRadius: '8px',
-                          padding: '1rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem'
-                        }}>
-                          <span style={{ fontSize: '1.5rem' }} aria-hidden="true">🚨</span>
-                          <div className="insights-alert-text">
-                            <div className="insights-alert-text" style={{ fontWeight: 600, fontSize: '1rem' }}>
-                              {employeeSummary.summary.highAbsenceCount} {t('adminDashboard.insightsAlertEmployees')}
-                            </div>
-                            <div className="insights-alert-text" style={{ fontSize: '0.85rem', marginTop: '0.15rem' }}>
-                              {t('adminDashboard.insightsAlertHighAbsence')}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {employeeSummary.summary.deductionCount > 0 && (
-                        <div className="insights-alert-text" style={{ 
-                          flex: '1',
-                          minWidth: '200px',
-                          background: '#F3E5F5',
-                          border: '1px solid #CE93D8',
-                          borderRadius: '8px',
-                          padding: '1rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem'
-                        }}>
-                          <span style={{ fontSize: '1.5rem' }} aria-hidden="true">⚡</span>
-                          <div className="insights-alert-text">
-                            <div className="insights-alert-text" style={{ fontWeight: 600, fontSize: '1rem' }}>
-                              {employeeSummary.summary.deductionCount} {t('adminDashboard.insightsAlertEmployees')}
-                            </div>
-                            <div className="insights-alert-text" style={{ fontSize: '0.85rem', marginTop: '0.15rem' }}>
-                              {t('adminDashboard.insightsAlertDeductions')}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    </>
-                  )}
-                </>
-              )}
-
-              {!employeeSummary && !summaryLoading && (
-                <div style={{ textAlign: 'center', padding: '3rem', color: '#666' }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
-                  <div>{t('adminDashboard.noInsightsData')}</div>
-                </div>
-              )}
-            </div>
+            <AdminEmployeeInsights
+              employeeSummary={employeeSummary}
+              summaryLoading={summaryLoading}
+              insightsPeriodMonth={insightsPeriodMonth}
+              onInsightsPeriodChange={setInsightsPeriodMonth}
+              insightsPeriodOptions={insightsPeriodOptions}
+              onRefresh={fetchEmployeeSummary}
+            />
           </div>
         )}
 
@@ -1754,7 +1299,7 @@ const AdminDashboard = () => {
               <div className="super-admin-section">
                 <div className="section-title-container">
                   <h3 className="section-title">
-                    ⏳ Pending Registrations ({currentUser?.role === 'super_admin' 
+                    â³ Pending Registrations ({currentUser?.role === 'super_admin' 
                       ? pendingUsers.length 
                       : pendingUsers.filter(u => u.role !== 'super_admin').length})
                   </h3>
@@ -1788,7 +1333,7 @@ const AdminDashboard = () => {
                         <div className="info-row">
                           <span className="info-label">Role:</span>
                           <span className={`role-badge role-${user.role}`}>
-                            {user.role === 'manager' ? '👔 Manager' : '👤 Employee'}
+                            {user.role === 'manager' ? 'ðŸ‘” Manager' : 'ðŸ‘¤ Employee'}
                           </span>
                         </div>
                         <div className="info-row">
@@ -1804,7 +1349,7 @@ const AdminDashboard = () => {
                           if (!eff.length) return null;
                           return (
                           <div className="info-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                            <span className="info-label" style={{ marginBottom: '0.5rem' }}>🎯 Wants to Manage (effective):</span>
+                            <span className="info-label" style={{ marginBottom: '0.5rem' }}>ðŸŽ¯ Wants to Manage (effective):</span>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                               {eff.map((dept, idx) => (
                                 <span key={idx} style={{
@@ -1839,13 +1384,13 @@ const AdminDashboard = () => {
                           className="btn-elegant btn-success btn-sm"
                           onClick={() => handleApproveUser(user._id)}
                         >
-                          ✅ Approve
+                          âœ… Approve
                         </button>
                         <button 
                           className="btn-elegant btn-danger btn-sm"
                           onClick={() => handleRejectUser(user._id)}
                         >
-                          ❌ Reject
+                          âŒ Reject
                         </button>
                       </div>
                     </div>
@@ -1858,13 +1403,13 @@ const AdminDashboard = () => {
             <div className="super-admin-section">
               <div className="section-title-container">
                 <h3 className="section-title">
-                  👥 Users ({filteredUsers.length})
+                  ðŸ‘¥ Users ({filteredUsers.length})
                 </h3>
               </div>
               {userMgmtViewMode === 'table' ? (
                 filteredUsers.length === 0 ? (
                   <div className="no-users-message" style={{ marginTop: '1rem' }}>
-                    <div className="no-users-icon">👥</div>
+                    <div className="no-users-icon">ðŸ‘¥</div>
                     <h3>{t('userManagement.noUsersTitle')}</h3>
                     <p>{t('userManagement.noUsersBody')}</p>
                   </div>
@@ -1958,7 +1503,7 @@ const AdminDashboard = () => {
                       {/* Employee Flags */}
                       {getEmployeeFlags(user._id).length > 0 && (
                         <div className="info-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                          <span className="info-label" style={{ marginBottom: '8px' }}>🚩 Active Flags:</span>
+                          <span className="info-label" style={{ marginBottom: '8px' }}>ðŸš© Active Flags:</span>
                           <div className="employee-flags-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                             {getEmployeeFlags(user._id).map(flag => (
                               <span 
@@ -1966,12 +1511,12 @@ const AdminDashboard = () => {
                                 className={`flag-badge-admin ${flag.type === 'deduction' ? 'deduction' : 'reward'}`}
                                 title={`${flag.reason} - By: ${flag.flaggedBy?.name || 'Manager'} on ${new Date(flag.createdAt).toLocaleDateString()}`}
                               >
-                                {flag.type === 'deduction' ? '⚠️' : '⭐'} {flag.type}
+                                {flag.type === 'deduction' ? 'âš ï¸' : 'â­'} {flag.type}
                                 <button 
                                   className="flag-remove-btn-admin"
                                   onClick={(e) => { e.stopPropagation(); handleRemoveFlag(flag._id); }}
                                   title="Remove flag"
-                                >×</button>
+                                >Ã—</button>
                               </span>
                             ))}
                           </div>
@@ -1985,7 +1530,7 @@ const AdminDashboard = () => {
                           onClick={() => handleReactivateUser(user)}
                           title={t('users.reactivate') || 'Reactivate'}
                         >
-                          ✅ {t('users.reactivate') || 'Reactivate'}
+                          âœ… {t('users.reactivate') || 'Reactivate'}
                         </button>
                       ) : user.role !== 'super_admin' ? (
                         <button 
@@ -1994,27 +1539,27 @@ const AdminDashboard = () => {
                           style={{ background: 'linear-gradient(135deg, #9e9e9e, #757575)' }}
                           title={t('users.moveToDraft') || 'Move to Draft'}
                         >
-                          📄 {t('users.moveToDraft') || 'Draft'}
+                          ðŸ“„ {t('users.moveToDraft') || 'Draft'}
                         </button>
                       ) : null}
                       <button 
                         className="btn-elegant btn-primary btn-sm"
                         onClick={() => handleEditUser(user)}
                       >
-                        ✏️ Edit User
+                        âœï¸ Edit User
                       </button>
                       <button 
                         className="btn-elegant btn-sm"
                         onClick={() => openPasswordResetModal(user)}
                         style={{ background: 'linear-gradient(135deg, #ff9800, #f57c00)' }}
                       >
-                        🔑 Reset Password
+                        ðŸ”‘ Reset Password
                       </button>
                       <button 
                         className="btn-elegant btn-danger btn-sm"
                         onClick={() => handleDeleteUser(user)}
                       >
-                        🗑️ Delete
+                        ðŸ—‘ï¸ Delete
                       </button>
                     </div>
                   </div>
@@ -2089,7 +1634,7 @@ const AdminDashboard = () => {
                 >
                   <div className="vacation-card-header">
                     <div className="vacation-card-icon manage-icon">
-                      🏖️
+                      ðŸ–ï¸
                     </div>
                     <div className="vacation-card-content">
                       <h3 className="vacation-card-title">{t('adminDashboard.vacationCardManageTitle')}</h3>
@@ -2097,7 +1642,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                   <div className="vacation-card-footer">
-                    <span className="vacation-card-action">{t('adminDashboard.vacationCardManageCta')} →</span>
+                    <span className="vacation-card-action">{t('adminDashboard.vacationCardManageCta')} â†’</span>
                   </div>
                 </div>
 
@@ -2115,7 +1660,7 @@ const AdminDashboard = () => {
                 >
                   <div className="vacation-card-header">
                     <div className="vacation-card-icon report-icon">
-                      📊
+                      ðŸ“Š
                     </div>
                     <div className="vacation-card-content">
                       <h3 className="vacation-card-title">{t('adminDashboard.vacationCardReportTitle')}</h3>
@@ -2123,7 +1668,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                   <div className="vacation-card-footer">
-                    <span className="vacation-card-action">{t('adminDashboard.vacationCardReportCta')} →</span>
+                    <span className="vacation-card-action">{t('adminDashboard.vacationCardReportCta')} â†’</span>
                   </div>
                 </div>
 
@@ -2141,7 +1686,7 @@ const AdminDashboard = () => {
                 >
                   <div className="vacation-card-header">
                     <div className="vacation-card-icon manage-icon vacation-card-icon--personal">
-                      ✈️
+                      âœˆï¸
                     </div>
                     <div className="vacation-card-content">
                       <h3 className="vacation-card-title">{t('adminDashboard.vacationCardPersonalTitle')}</h3>
@@ -2151,8 +1696,8 @@ const AdminDashboard = () => {
                   <div className="vacation-card-footer">
                     <span className="vacation-card-action">
                       {showAdminFormSubmission
-                        ? `${t('adminDashboard.vacationCardPersonalCtaOpen')} ▼`
-                        : `${t('adminDashboard.vacationCardPersonalCtaClosed')} →`}
+                        ? `${t('adminDashboard.vacationCardPersonalCtaOpen')} â–¼`
+                        : `${t('adminDashboard.vacationCardPersonalCtaClosed')} â†’`}
                     </span>
                   </div>
                 </div>
@@ -2162,7 +1707,7 @@ const AdminDashboard = () => {
             {showAdminFormSubmission && (
               <div className="admin-form-submission-section" style={{ marginBottom: '2rem' }}>
                 <div className="section-header">
-                  <h2>📝 {t('managerDashboard.submitNewPersonalForm', 'Submit New Personal Form')}</h2>
+                  <h2>ðŸ“ {t('managerDashboard.submitNewPersonalForm', 'Submit New Personal Form')}</h2>
                   <small className="section-subtitle">{t('managerDashboard.thisIsForYourOwnPersonalRequestsVacationSickLeaveEtc', 'This is for your own personal requests: vacation, mission, sick leave, etc.')}</small>
                 </div>
                 <div className="form-container">
@@ -2209,7 +1754,7 @@ const AdminDashboard = () => {
             <div className="super-admin-section">
               <div className="section-title-container">
                 <h3 className="section-title" style={{ color: '#ff9800' }}>
-                  ⏳ Pending Manager Approval - {activeFormType.toUpperCase()} ({formsForMonthFilter.filter(f => f.type === activeFormType && f.status === 'pending').length})
+                  â³ Pending Manager Approval - {activeFormType.toUpperCase()} ({formsForMonthFilter.filter(f => f.type === activeFormType && f.status === 'pending').length})
                 </h3>
                 <ExportPrintButtons 
                   forms={formsForMonthFilter}
@@ -2229,15 +1774,15 @@ const AdminDashboard = () => {
                   <div key={form._id} className="super-admin-card form-card">
                     <div className="card-header">
                       <div className="form-type-icon">
-                        {form.type === 'vacation' ? '🏖️' : 
-                         form.type === 'sick_leave' ? '🏥' : 
-                         form.type === 'excuse' ? '🕐' : 
-                         form.type === 'extra_hours' ? '⏱️' : 
-                         form.type === 'mission' ? '✈️' : '🏠'}
+                        {form.type === 'vacation' ? 'ðŸ–ï¸' : 
+                         form.type === 'sick_leave' ? 'ðŸ¥' : 
+                         form.type === 'excuse' ? 'ðŸ•' : 
+                         form.type === 'extra_hours' ? 'â±ï¸' : 
+                         form.type === 'mission' ? 'âœˆï¸' : 'ðŸ '}
                       </div>
                       <div className="form-info">
                         <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
-                        <p className="employee-details">{form.user?.email} • {form.user?.department}</p>
+                        <p className="employee-details">{form.user?.email} â€¢ {form.user?.department}</p>
                       </div>
                     </div>
                     <div className="card-content">
@@ -2245,9 +1790,9 @@ const AdminDashboard = () => {
                         <span className="info-label">Type:</span>
                         <span className="info-value">
                           {form.type === 'vacation' ? 'Annual Vacation' :
-                           form.type === 'wfh' ? '🏠 Work From Home' :
-                           form.type === 'extra_hours' ? `⏱️ ${t('forms.extra_hours')}` :
-                           form.type === 'mission' ? '✈️ Mission' :
+                           form.type === 'wfh' ? 'ðŸ  Work From Home' :
+                           form.type === 'extra_hours' ? `â±ï¸ ${t('forms.extra_hours')}` :
+                           form.type === 'mission' ? 'âœˆï¸ Mission' :
                            form.type}
                         </span>
                       </div>
@@ -2295,7 +1840,7 @@ const AdminDashboard = () => {
                           ) : form.type === 'extra_hours' ? (
                             <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
                           ) : form.type === 'mission' ? (
-                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` • ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} • ${form.missionDestination || 'N/A'}`
+                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` â€¢ ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} â€¢ ${form.missionDestination || 'N/A'}`
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -2329,7 +1874,7 @@ const AdminDashboard = () => {
                 ))}
                 {formsForMonthFilter.filter(f => f.type === activeFormType && f.status === 'pending').length === 0 && (
                   <div className="no-items-message">
-                    <div className="no-items-icon">📋</div>
+                    <div className="no-items-icon">ðŸ“‹</div>
                     <h3>No Pending Forms</h3>
                     <p>No {activeFormType} forms are pending manager approval at this time.</p>
                   </div>
@@ -2341,7 +1886,7 @@ const AdminDashboard = () => {
             <div className="super-admin-section">
               <div className="section-title-container">
                 <h3 className="section-title" style={{ color: '#2196f3' }}>
-                  👨‍💼 Awaiting HR Approval - {activeFormType.toUpperCase()} ({formsForMonthFilter.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length})
+                  ðŸ‘¨â€ðŸ’¼ Awaiting HR Approval - {activeFormType.toUpperCase()} ({formsForMonthFilter.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length})
                 </h3>
                 <ExportPrintButtons 
                   forms={formsForMonthFilter}
@@ -2361,15 +1906,15 @@ const AdminDashboard = () => {
                   <div key={form._id} className="super-admin-card form-card">
                     <div className="card-header">
                       <div className="form-type-icon">
-                        {form.type === 'vacation' ? '🏖️' : 
-                         form.type === 'sick_leave' ? '🏥' : 
-                         form.type === 'excuse' ? '🕐' : 
-                         form.type === 'extra_hours' ? '⏱️' : 
-                         form.type === 'mission' ? '✈️' : '🏠'}
+                        {form.type === 'vacation' ? 'ðŸ–ï¸' : 
+                         form.type === 'sick_leave' ? 'ðŸ¥' : 
+                         form.type === 'excuse' ? 'ðŸ•' : 
+                         form.type === 'extra_hours' ? 'â±ï¸' : 
+                         form.type === 'mission' ? 'âœˆï¸' : 'ðŸ '}
                       </div>
                       <div className="form-info">
                         <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
-                        <p className="employee-details">{form.user?.email} • {form.user?.department}</p>
+                        <p className="employee-details">{form.user?.email} â€¢ {form.user?.department}</p>
                       </div>
                     </div>
                     <div className="card-content">
@@ -2377,11 +1922,11 @@ const AdminDashboard = () => {
                         <span className="info-label">Type:</span>
                         <span className="info-value">
                           {form.type === 'vacation' ? 'Annual Vacation' :
-                           form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
-                           form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
-                           form.type === 'wfh' ? '🏠 Work From Home' :
-                           form.type === 'extra_hours' ? `⏱️ ${t('forms.extra_hours')}` :
-                           form.type === 'mission' ? '✈️ Mission' :
+                           form.type === 'excuse' && form.excuseType === 'paid' ? 'ðŸ’° Paid Excuse' :
+                           form.type === 'excuse' && form.excuseType === 'unpaid' ? 'ðŸ“ Unpaid Excuse' :
+                           form.type === 'wfh' ? 'ðŸ  Work From Home' :
+                           form.type === 'extra_hours' ? `â±ï¸ ${t('forms.extra_hours')}` :
+                           form.type === 'mission' ? 'âœˆï¸ Mission' :
                            form.type}
                         </span>
                       </div>
@@ -2444,7 +1989,7 @@ const AdminDashboard = () => {
                           ) : form.type === 'extra_hours' ? (
                             <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
                           ) : form.type === 'mission' ? (
-                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` • ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} • ${form.missionDestination || 'N/A'}`
+                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` â€¢ ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} â€¢ ${form.missionDestination || 'N/A'}`
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -2469,7 +2014,7 @@ const AdminDashboard = () => {
                         <span className="info-label">Manager Approval:</span>
                         <div className="manager-approval-info">
                           <div style={{ color: '#4caf50', fontWeight: 'bold' }}>
-                            ✅ Approved by {form.managerApprovedBy?.name ? `👔 ${form.managerApprovedBy.name}` : 'Manager'}
+                            âœ… Approved by {form.managerApprovedBy?.name ? `ðŸ‘” ${form.managerApprovedBy.name}` : 'Manager'}
                           </div>
                           {form.managerApprovedAt && (
                             <div style={{ fontSize: '0.8rem', color: '#666' }}>
@@ -2515,14 +2060,14 @@ const AdminDashboard = () => {
                           className="btn-elegant btn-success btn-sm"
                           disabled={processingForms.has(form._id) || form._isProcessing}
                         >
-                          {processingForms.has(form._id) || form._isProcessing ? '⏳ Processing...' : '✅ FINAL APPROVAL'}
+                          {processingForms.has(form._id) || form._isProcessing ? 'â³ Processing...' : 'âœ… FINAL APPROVAL'}
                         </button>
                         <button
                           onClick={() => handleFormAction(form._id, 'rejected')}
                           className="btn-elegant btn-danger btn-sm"
                           disabled={processingForms.has(form._id) || form._isProcessing}
                         >
-                          {processingForms.has(form._id) || form._isProcessing ? '⏳ Processing...' : '❌ REJECT'}
+                          {processingForms.has(form._id) || form._isProcessing ? 'â³ Processing...' : 'âŒ REJECT'}
                         </button>
                       </div>
                       <div className="comment-section">
@@ -2539,7 +2084,7 @@ const AdminDashboard = () => {
                 ))}
                 {formsForMonthFilter.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length === 0 && (
                   <div className="no-items-message">
-                    <div className="no-items-icon">👨‍💼</div>
+                    <div className="no-items-icon">ðŸ‘¨â€ðŸ’¼</div>
                     <h3>No Forms Awaiting HR</h3>
                     <p>No {activeFormType} forms are awaiting HR approval at this time.</p>
                   </div>
@@ -2551,7 +2096,7 @@ const AdminDashboard = () => {
             <div className="super-admin-section">
               <div className="section-title-container">
                 <h3 className="section-title" style={{ color: '#666' }}>
-                  📋 {activeFormType.toUpperCase()} Forms History ({formsForMonthFilter.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length})
+                  ðŸ“‹ {activeFormType.toUpperCase()} Forms History ({formsForMonthFilter.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length})
                 </h3>
                 <ExportPrintButtons 
                   forms={formsForMonthFilter}
@@ -2571,15 +2116,15 @@ const AdminDashboard = () => {
                   <div key={form._id} className="super-admin-card form-card history-card">
                     <div className="card-header">
                       <div className="form-type-icon">
-                        {form.type === 'vacation' ? '🏖️' : 
-                         form.type === 'sick_leave' ? '🏥' : 
-                         form.type === 'excuse' ? '🕐' : 
-                         form.type === 'extra_hours' ? '⏱️' : 
-                         form.type === 'mission' ? '✈️' : '🏠'}
+                        {form.type === 'vacation' ? 'ðŸ–ï¸' : 
+                         form.type === 'sick_leave' ? 'ðŸ¥' : 
+                         form.type === 'excuse' ? 'ðŸ•' : 
+                         form.type === 'extra_hours' ? 'â±ï¸' : 
+                         form.type === 'mission' ? 'âœˆï¸' : 'ðŸ '}
                       </div>
                       <div className="form-info">
                         <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
-                        <p className="employee-details">{form.user?.email} • {form.user?.department}</p>
+                        <p className="employee-details">{form.user?.email} â€¢ {form.user?.department}</p>
                       </div>
                     </div>
                     <div className="card-content">
@@ -2587,11 +2132,11 @@ const AdminDashboard = () => {
                         <span className="info-label">Type:</span>
                         <span className="info-value">
                           {form.type === 'vacation' ? 'Annual Vacation' :
-                           form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
-                           form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
-                           form.type === 'wfh' ? '🏠 Work From Home' :
-                           form.type === 'extra_hours' ? `⏱️ ${t('forms.extra_hours')}` :
-                           form.type === 'mission' ? '✈️ Mission' :
+                           form.type === 'excuse' && form.excuseType === 'paid' ? 'ðŸ’° Paid Excuse' :
+                           form.type === 'excuse' && form.excuseType === 'unpaid' ? 'ðŸ“ Unpaid Excuse' :
+                           form.type === 'wfh' ? 'ðŸ  Work From Home' :
+                           form.type === 'extra_hours' ? `â±ï¸ ${t('forms.extra_hours')}` :
+                           form.type === 'mission' ? 'âœˆï¸ Mission' :
                            form.type}
                         </span>
                       </div>
@@ -2654,7 +2199,7 @@ const AdminDashboard = () => {
                           ) : form.type === 'extra_hours' ? (
                             <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
                           ) : form.type === 'mission' ? (
-                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` • ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} • ${form.missionDestination || 'N/A'}`
+                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` â€¢ ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} â€¢ ${form.missionDestination || 'N/A'}`
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -2664,7 +2209,7 @@ const AdminDashboard = () => {
                         <span className="info-label">Final Status:</span>
                         <div className={`status-badge-history status-${form.status}`}>
                           <span className="status-icon">
-                            {form.status === 'approved' ? '✅' : '❌'}
+                            {form.status === 'approved' ? 'âœ…' : 'âŒ'}
                           </span>
                           <span className="status-text">
                             {form.status === 'manager_rejected' ? 'Rejected by Manager' : form.status}
@@ -2683,7 +2228,7 @@ const AdminDashboard = () => {
                             {form.status === 'manager_rejected' ? 'Rejected by Manager:' : 'Manager Action:'}
                           </span>
                           <span className="info-value manager-name">
-                            👔 {form.managerApprovedBy.name}
+                            ðŸ‘” {form.managerApprovedBy.name}
                             {form.managerApprovedAt && (
                               <span className="approval-date"> ({new Date(form.managerApprovedAt).toLocaleDateString()})</span>
                             )}
@@ -2717,14 +2262,14 @@ const AdminDashboard = () => {
                         className="btn-elegant btn-danger btn-sm"
                         title="Delete this form record"
                       >
-                        🗑️ Delete
+                        ðŸ—‘ï¸ Delete
                       </button>
                     </div>
                   </div>
                 ))}
                 {formsForMonthFilter.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length === 0 && (
                   <div className="no-items-message">
-                    <div className="no-items-icon">📋</div>
+                    <div className="no-items-icon">ðŸ“‹</div>
                     <h3>No Historical Forms</h3>
                     <p>No completed {activeFormType} forms found in the history.</p>
                   </div>
@@ -3177,7 +2722,7 @@ const AdminDashboard = () => {
         <div className="modal-elegant" onClick={() => setShowPasswordResetModal(false)}>
           <div className="modal-content-elegant" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
             <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              🔑 Reset Password
+              ðŸ”‘ Reset Password
             </h2>
             <p style={{ color: '#888', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
               Reset password for: <strong style={{ color: '#fff' }}>{passwordResetUser?.name}</strong>
@@ -3212,7 +2757,7 @@ const AdminDashboard = () => {
               </div>
               {newPassword && confirmPassword && newPassword !== confirmPassword && (
                 <p style={{ color: '#f44336', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                  ⚠️ Passwords do not match
+                  âš ï¸ Passwords do not match
                 </p>
               )}
               <div className="action-buttons" style={{ marginTop: '1.5rem' }}>
@@ -3224,7 +2769,7 @@ const AdminDashboard = () => {
                     opacity: (passwordResetLoading || newPassword !== confirmPassword || newPassword.length < 6) ? 0.6 : 1 
                   }}
                 >
-                  {passwordResetLoading ? '⏳ Resetting...' : '✅ Reset Password'}
+                  {passwordResetLoading ? 'â³ Resetting...' : 'âœ… Reset Password'}
                 </button>
                 <button 
                   type="button" 
@@ -3246,7 +2791,7 @@ const AdminDashboard = () => {
           <div className="vacation-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="vacation-modal-header">
               <div className="modal-title-section">
-                <div className="modal-icon">🏖️</div>
+                <div className="modal-icon">ðŸ–ï¸</div>
                 <div>
                   <h2 className="vacation-modal-title">Manage Vacation Days</h2>
                   <p className="vacation-modal-subtitle">Update employee vacation balances</p>
@@ -3257,14 +2802,14 @@ const AdminDashboard = () => {
                 onClick={() => setShowVacationManager(false)}
                 title="Close"
               >
-                ✕
+                âœ•
               </button>
             </div>
 
             <div className="vacation-modal-search">
               <input
                 type="text"
-                placeholder="🔍 Search by employee name..."
+                placeholder="ðŸ” Search by employee name..."
                 value={vacationManagerSearch}
                 onChange={e => setVacationManagerSearch(e.target.value)}
                 className="vacation-search-input"
@@ -3280,14 +2825,14 @@ const AdminDashboard = () => {
 
             {vacationManagerError && (
               <div className="vacation-message error">
-                <span className="message-icon">⚠️</span>
+                <span className="message-icon">âš ï¸</span>
                 {vacationManagerError}
               </div>
             )}
 
             {vacationManagerSuccess && (
               <div className="vacation-message success">
-                <span className="message-icon">✅</span>
+                <span className="message-icon">âœ…</span>
                 {vacationManagerSuccess}
               </div>
             )}
@@ -3297,7 +2842,7 @@ const AdminDashboard = () => {
                 <div key={emp._id} className="vacation-employee-card">
                   <div className="vacation-card-header">
                     <div className="employee-avatar">
-                      👤
+                      ðŸ‘¤
                     </div>
                     <div className="employee-basic-info">
                       <h4 className="employee-card-name">{emp.name}</h4>
@@ -3332,7 +2877,7 @@ const AdminDashboard = () => {
                       className="btn-vacation-save" 
                       onClick={() => handleVacationSave(emp._id)}
                     >
-                      💾 Save Changes
+                      ðŸ’¾ Save Changes
                     </button>
                   </div>
                 </div>
@@ -3340,7 +2885,7 @@ const AdminDashboard = () => {
               
               {allEmployees.filter(emp => emp.name.toLowerCase().includes(vacationManagerSearch.toLowerCase())).length === 0 && (
                 <div className="vacation-no-results">
-                  <div className="no-results-icon">👥</div>
+                  <div className="no-results-icon">ðŸ‘¥</div>
                   <h3>No employees found</h3>
                   <p>Try adjusting your search criteria</p>
                 </div>
@@ -3365,7 +2910,7 @@ const AdminDashboard = () => {
           <div className="report-modal-content">
             <div className="report-modal-header">
               <div className="modal-title-section">
-                <div className="modal-icon">📊</div>
+                <div className="modal-icon">ðŸ“Š</div>
                 <div>
                   <h2 className="report-modal-title">Vacation Days Report</h2>
                   <p className="report-modal-subtitle">Comprehensive overview of employee vacation balances</p>
@@ -3376,14 +2921,14 @@ const AdminDashboard = () => {
                   className="btn-print-report"
                   onClick={handlePrintSimple}
                 >
-                  🖨️ Print Report
+                  ðŸ–¨ï¸ Print Report
                 </button>
                 <button 
                   className="report-close-btn" 
                   onClick={() => setShowReport(false)}
                   title="Close"
                 >
-                  ✕
+                  âœ•
                 </button>
               </div>
             </div>
@@ -3397,7 +2942,7 @@ const AdminDashboard = () => {
 
             {reportError && (
               <div className="report-message error">
-                <span className="message-icon">⚠️</span>
+                <span className="message-icon">âš ï¸</span>
                 {reportError}
               </div>
             )}
@@ -3406,21 +2951,21 @@ const AdminDashboard = () => {
               <>
                 <div className="report-summary">
                   <div className="summary-card">
-                    <div className="summary-icon">👥</div>
+                    <div className="summary-icon">ðŸ‘¥</div>
                     <div className="summary-content">
                       <div className="summary-number">{reportData.length}</div>
                       <div className="summary-label">Total Employees</div>
                     </div>
                   </div>
                   <div className="summary-card">
-                    <div className="summary-icon">⚠️</div>
+                    <div className="summary-icon">âš ï¸</div>
                     <div className="summary-content">
                       <div className="summary-number">{reportData.filter(emp => emp.vacationDaysLeft === 0).length}</div>
                       <div className="summary-label">No Days Left</div>
                     </div>
                   </div>
                   <div className="summary-card">
-                    <div className="summary-icon">🏖️</div>
+                    <div className="summary-icon">ðŸ–ï¸</div>
                     <div className="summary-content">
                       <div className="summary-number">{Math.round(reportData.reduce((acc, emp) => acc + emp.vacationDaysLeft, 0) / reportData.length) || 0}</div>
                       <div className="summary-label">Average Days</div>
@@ -3433,7 +2978,7 @@ const AdminDashboard = () => {
                     <div key={employee._id} className="report-employee-card">
                       <div className="report-card-header">
                         <div className="employee-avatar">
-                          👤
+                          ðŸ‘¤
                         </div>
                         <div className="employee-basic-info">
                           <h4 className="employee-card-name">{employee.name}</h4>
@@ -3454,8 +2999,8 @@ const AdminDashboard = () => {
                           <div className="vacation-progress-label">
                             <span>Vacation Days Balance</span>
                             <span className="vacation-status">
-                              {employee.vacationDaysLeft === 0 ? '❌ Depleted' : 
-                               employee.vacationDaysLeft <= 5 ? '⚠️ Low' : '✅ Available'}
+                              {employee.vacationDaysLeft === 0 ? 'âŒ Depleted' : 
+                               employee.vacationDaysLeft <= 5 ? 'âš ï¸ Low' : 'âœ… Available'}
                             </span>
                           </div>
                           <div className="vacation-progress-bar">
@@ -3496,7 +3041,7 @@ const AdminDashboard = () => {
             onClick={() => setMessage('')}
             className="notification-close"
           >
-            ×
+            Ã—
           </button>
         </div>
       )}

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import logo from '../assets/njd-logo.png';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
 import { getSubmissionPeriodBounds } from '../utils/formSubmissionMonthBounds';
@@ -221,7 +220,6 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
   return (
     <div className="glass-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <img src={logo} alt="NJD Logo" className="app-logo" style={{ width: '80px', marginBottom: '1rem' }} />
         <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
           {t('login.title')}
         </h2>

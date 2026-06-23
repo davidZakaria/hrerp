@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 
 const SINGLETON_KEY = 'global';
+const LEGACY_ANNUAL_VACATION_DAYS = 21;
+const TARGET_ANNUAL_VACATION_DAYS = 15;
+const TARGET_CASUAL_VACATION_DAYS = 6;
 
 const systemSettingsSchema = new mongoose.Schema({
     /** Enforces a single document in this collection */
@@ -51,17 +54,29 @@ const systemSettingsSchema = new mongoose.Schema({
 });
 
 /**
+ * Migrate legacy singleton quotas (21 annual / missing casual) to 15 / 6.
+ * Only changes annual when still at the old default of 21 — custom values are preserved.
+ */
+systemSettingsSchema.statics.applyLeaveQuotaMigration = function applyLeaveQuotaMigration(doc) {
+    let needsSave = false;
+    if (doc.casualVacationDays == null) {
+        doc.casualVacationDays = TARGET_CASUAL_VACATION_DAYS;
+        needsSave = true;
+    }
+    if (doc.annualVacationDays === LEGACY_ANNUAL_VACATION_DAYS) {
+        doc.annualVacationDays = TARGET_ANNUAL_VACATION_DAYS;
+        needsSave = true;
+    }
+    return needsSave;
+};
+
+/**
  * Returns the singleton settings document, creating defaults if missing.
  */
 systemSettingsSchema.statics.getOrCreate = async function getOrCreate() {
     const existing = await this.findOne({ singletonKey: SINGLETON_KEY });
     if (existing) {
-        let needsSave = false;
-        if (existing.casualVacationDays == null) {
-            existing.casualVacationDays = 6;
-            needsSave = true;
-        }
-        if (needsSave) {
+        if (this.applyLeaveQuotaMigration(existing)) {
             await existing.save();
         }
         return existing;
@@ -93,3 +108,6 @@ systemSettingsSchema.methods.toPublicJSON = function toPublicJSON() {
 
 module.exports = mongoose.model('SystemSettings', systemSettingsSchema);
 module.exports.SINGLETON_KEY = SINGLETON_KEY;
+module.exports.LEGACY_ANNUAL_VACATION_DAYS = LEGACY_ANNUAL_VACATION_DAYS;
+module.exports.TARGET_ANNUAL_VACATION_DAYS = TARGET_ANNUAL_VACATION_DAYS;
+module.exports.TARGET_CASUAL_VACATION_DAYS = TARGET_CASUAL_VACATION_DAYS;

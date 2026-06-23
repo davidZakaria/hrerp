@@ -1,8 +1,8 @@
 /**
  * One-time backfill for 15/6 leave split migration.
- * - Sets casualDaysLeft: 6 for users missing the field
- * - Sets casualVacationDays: 6 on SystemSettings if missing
- * Does NOT change existing vacationDaysLeft (HR must adjust 21→15 manually).
+ * - SystemSettings: 21 annual → 15, missing casual → 6
+ * - Users: casualDaysLeft → 6 when field is missing
+ * Does NOT change existing user vacationDaysLeft (HR must adjust 21→15 manually).
  *
  * Run: node scripts/backfillLeaveBalances.js
  */
@@ -10,6 +10,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const SystemSettings = require('../models/SystemSettings');
+const { invalidateSystemSettingsCache } = require('../utils/getSystemSettings');
 
 async function main() {
     const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
@@ -22,12 +23,17 @@ async function main() {
     console.log('Connected to MongoDB');
 
     const settings = await SystemSettings.getOrCreate();
-    if (settings.casualVacationDays == null) {
-        settings.casualVacationDays = 6;
+    const beforeAnnual = settings.annualVacationDays;
+    const beforeCasual = settings.casualVacationDays;
+    const migrated = SystemSettings.applyLeaveQuotaMigration(settings);
+    if (migrated) {
         await settings.save();
-        console.log('SystemSettings: set casualVacationDays = 6');
+        invalidateSystemSettingsCache();
+        console.log(
+            `SystemSettings: updated quotas (annual ${beforeAnnual} → ${settings.annualVacationDays}, casual ${beforeCasual ?? 'missing'} → ${settings.casualVacationDays})`
+        );
     } else {
-        console.log(`SystemSettings: casualVacationDays already ${settings.casualVacationDays}`);
+        console.log(`SystemSettings: already at annual=${settings.annualVacationDays}, casual=${settings.casualVacationDays}`);
     }
 
     const userResult = await User.updateMany(
@@ -38,7 +44,7 @@ async function main() {
 
     const missingCount = await User.countDocuments({ casualDaysLeft: { $exists: false } });
     console.log(`Users still missing casualDaysLeft: ${missingCount}`);
-    console.log('Note: vacationDaysLeft was NOT modified. Update annual balances via Super Admin if HR approves 21→15.');
+    console.log('Note: user vacationDaysLeft was NOT modified. Adjust per employee via Super Admin if HR approves 21→15.');
 
     await mongoose.disconnect();
     console.log('Done.');

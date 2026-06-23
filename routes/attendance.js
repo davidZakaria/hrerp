@@ -31,6 +31,10 @@ const {
     WAIVER_FORM_TYPES
 } = require('../utils/deductionCalculator');
 const { getSystemSettings } = require('../utils/getSystemSettings');
+const {
+    buildDetailedLeavesReport,
+    APPROVED_LEAVE_STATUSES
+} = require('../utils/detailedLeavesCalculator');
 const { getEffectiveManagedDepartmentsForQueries } = require('../utils/effectiveManagedDepartments');
 
 // Configure multer for file uploads
@@ -886,6 +890,105 @@ router.get('/deduction-report', auth, async (req, res) => {
         });
     } catch (error) {
         console.error('Error getting deduction report:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+});
+
+/**
+ * GET /api/attendance/detailed-leaves-report
+ * Monthly detailed leaves & absenteeism report (whiteboard rules).
+ * Query: month=YYYY-MM (preferred) or startDate/endDate covering one calendar month.
+ */
+router.get('/detailed-leaves-report', auth, async (req, res) => {
+    try {
+        const admin = await User.findById(req.user.id);
+        if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
+            return res.status(403).json({ msg: 'Access denied. Admin only.' });
+        }
+
+        let rangeStart;
+        let rangeEnd;
+        let monthLabel = req.query.month;
+
+        if (monthLabel) {
+            if (!/^\d{4}-\d{2}$/.test(monthLabel)) {
+                return res.status(400).json({ msg: 'Invalid month format. Use YYYY-MM' });
+            }
+            const range = monthToRange(monthLabel);
+            if (!range) {
+                return res.status(400).json({ msg: 'Invalid month' });
+            }
+            rangeStart = range.rangeStart;
+            rangeEnd = range.rangeEnd;
+        } else {
+            const parsed = parseDateRangeQuery(req.query);
+            if (parsed.error) {
+                return res.status(400).json({ msg: parsed.error });
+            }
+            rangeStart = parsed.rangeStart;
+            rangeEnd = parsed.rangeEnd;
+            const y = rangeStart.getFullYear();
+            const m = String(rangeStart.getMonth() + 1).padStart(2, '0');
+            monthLabel = `${y}-${m}`;
+        }
+
+        const settings = await getSystemSettings();
+        const annualQuota = settings.annualVacationDays ?? 15;
+        const casualQuota = settings.casualVacationDays ?? 6;
+
+        const [users, attendanceRecords, forms] = await Promise.all([
+            User.find({ employeeCode: { $exists: true, $ne: '' } })
+                .select('name department employeeCode jobTitle location')
+                .sort({ name: 1 }),
+            Attendance.find({
+                date: { $gte: rangeStart, $lte: rangeEnd }
+            }).populate('user', 'name employeeCode'),
+            Form.find({
+                status: { $in: APPROVED_LEAVE_STATUSES },
+                $or: [
+                    {
+                        type: 'vacation',
+                        endDate: { $gte: rangeStart },
+                        startDate: { $lte: rangeEnd }
+                    },
+                    {
+                        type: 'sick_leave',
+                        sickLeaveEndDate: { $gte: rangeStart },
+                        sickLeaveStartDate: { $lte: rangeEnd }
+                    },
+                    {
+                        type: 'wfh',
+                        wfhDate: { $gte: rangeStart, $lte: rangeEnd }
+                    },
+                    {
+                        type: 'mission',
+                        missionEndDate: { $gte: rangeStart },
+                        missionStartDate: { $lte: rangeEnd }
+                    }
+                ]
+            }).populate('user', 'name employeeCode')
+        ]);
+
+        const report = buildDetailedLeavesReport({
+            users,
+            attendanceRecords,
+            forms,
+            monthStart: rangeStart,
+            monthEnd: rangeEnd,
+            annualQuota,
+            casualQuota
+        });
+
+        res.json({
+            month: monthLabel,
+            startDate: rangeStart.toISOString(),
+            endDate: rangeEnd.toISOString(),
+            annualQuota,
+            casualQuota,
+            ...report
+        });
+    } catch (error) {
+        console.error('Error getting detailed leaves report:', error);
         res.status(500).json({ msg: 'Server error', error: error.message });
     }
 });

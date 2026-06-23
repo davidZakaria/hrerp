@@ -105,6 +105,7 @@ export default function UserManagementUsersTable({
     { label: t('userManagement.colJobTitle'), value: user.jobTitle || '—' },
     { label: t('userManagement.colLocation'), value: user.location || '—' },
     { label: t('userManagement.colVacation'), value: Number(user.vacationDaysLeft ?? 0).toFixed(1) },
+    { label: t('userManagement.colCasual'), value: Number(user.casualDaysLeft ?? 0).toFixed(1) },
     {
       label: t('userManagement.colJoined'),
       value: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—',
@@ -177,6 +178,7 @@ export default function UserManagementUsersTable({
             <th>{t('userManagement.colJobTitle')}</th>
             <th>{t('userManagement.colLocation')}</th>
             <th className="user-mgmt-sheet-num">{t('userManagement.colVacation')}</th>
+            <th className="user-mgmt-sheet-num">{t('userManagement.colCasual')}</th>
             <th>{t('userManagement.colJoined')}</th>
             <th>{t('userManagement.colLastLogin')}</th>
             <th>{t('userManagement.colScope')}</th>
@@ -202,6 +204,7 @@ export default function UserManagementUsersTable({
                 <td className="user-mgmt-sheet-clip" title={user.jobTitle || ''}>{user.jobTitle || '—'}</td>
                 <td className="user-mgmt-sheet-clip" title={user.location || ''}>{user.location || '—'}</td>
                 <td className="user-mgmt-sheet-num">{Number(user.vacationDaysLeft ?? 0).toFixed(1)}</td>
+                <td className="user-mgmt-sheet-num">{Number(user.casualDaysLeft ?? 0).toFixed(1)}</td>
                 <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}</td>
                 <td>{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : t('userManagement.never')}</td>
                 <td className="user-mgmt-sheet-clip" title={scopeSummary(user)}>

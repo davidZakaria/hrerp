@@ -305,23 +305,53 @@ const FormSubmission = ({ onFormSubmitted }) => {
           </small>
         </div>
 
-        {/* Vacation type removed - all vacation requests are Annual Leave */}
+        {/* Vacation type: annual or casual */}
         {form.type === 'vacation' && (
           <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-            <div style={{ 
-              padding: '1rem', 
-              backgroundColor: 'rgba(76, 175, 80, 0.1)', 
-              borderLeft: '4px solid #4caf50', 
-              borderRadius: '4px' 
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.2rem' }}>🏖️</span>
-                <span style={{ fontWeight: 'bold', color: '#4caf50' }}>Annual Vacation Leave</span>
+            <label className="form-label-elegant">
+              <span className="label-icon">🏖️</span>
+              {t('forms.vacationType')}
+            </label>
+            {userInfo && (
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                marginBottom: '0.75rem',
+                fontSize: '0.9rem',
+                color: '#90a4ae'
+              }}>
+                <span>{t('forms.annualBalance')}: <strong style={{ color: '#4caf50' }}>{Number(userInfo.vacationDaysLeft ?? 0).toFixed(1)}</strong></span>
+                <span>{t('forms.casualBalance')}: <strong style={{ color: '#64b5f6' }}>{Number(userInfo.casualDaysLeft ?? 0).toFixed(1)}</strong></span>
               </div>
-              <small style={{ display: 'block', marginTop: '0.5rem', opacity: 0.8 }}>
-                {t('forms.annualLeaveHelp') || 'Deducted from your annual vacation days balance'}
-              </small>
+            )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="vacationType"
+                  value="annual"
+                  checked={form.vacationType === 'annual'}
+                  onChange={handleChange}
+                />
+                <span>{t('forms.annualLeave')}</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="vacationType"
+                  value="casual"
+                  checked={form.vacationType === 'casual'}
+                  onChange={handleChange}
+                />
+                <span>{t('forms.casualLeave')}</span>
+              </label>
             </div>
+            <small className="input-helper" style={{ display: 'block', marginTop: '0.5rem' }}>
+              {form.vacationType === 'casual'
+                ? (t('forms.casualLeaveHelp') || 'Deducted from your casual leave balance')
+                : (t('forms.annualLeaveHelp') || 'Deducted from your annual vacation days balance')}
+            </small>
           </div>
         )}
 

@@ -8,6 +8,7 @@ import MedicalDocumentViewer from './MedicalDocumentViewer';
 import AttendanceManagement from './AttendanceManagement';
 import OtReconciliationReports from './OtReconciliationReports';
 import DeductionReports from './DeductionReports';
+import DetailedLeavesReport from './DetailedLeavesReport';
 import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
@@ -2765,6 +2766,7 @@ const AdminDashboard = () => {
             <AttendanceManagement />
             <OtReconciliationReports />
             <DeductionReports />
+            <DetailedLeavesReport />
           </div>
         )}
       </div>

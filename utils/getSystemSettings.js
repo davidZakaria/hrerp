@@ -5,7 +5,8 @@ const CACHE_TTL_MS = 60 * 1000;
 /** Fallback values when DB is unavailable (match SystemSettings schema defaults). */
 const DEFAULTS = {
     companyName: 'NEW JERSEY DEVELOPMENTS',
-    annualVacationDays: 21,
+    annualVacationDays: 15,
+    casualVacationDays: 6,
     monthlyExcuseRequests: 2,
     payPeriodAnchorDay: 25,
     latenessGracePeriodMinutes: 15,
@@ -18,6 +19,7 @@ function toPlainSettings(doc) {
     return {
         companyName: doc.companyName,
         annualVacationDays: doc.annualVacationDays,
+        casualVacationDays: doc.casualVacationDays,
         monthlyExcuseRequests: doc.monthlyExcuseRequests,
         payPeriodAnchorDay: doc.payPeriodAnchorDay,
         latenessGracePeriodMinutes: doc.latenessGracePeriodMinutes,

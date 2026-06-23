@@ -28,6 +28,13 @@ const {
     parseIsHalfDay,
     validateHalfDayVacation
 } = require('../utils/vacationDays');
+const { getSystemSettings } = require('../utils/getSystemSettings');
+const {
+    DEDUCTIBLE_VACATION_TYPES,
+    vacationBalanceField,
+    defaultVacationBalance,
+    deductVacationBalanceOnApproval
+} = require('../utils/vacationBalance');
 
 /** Express can duplicate query keys; normalize to a single trimmed YYYY-MM string */
 function firstQueryParam(val) {
@@ -245,8 +252,8 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             if (!startDate || !endDate || !vacationType) {
                 return res.status(400).json({ msg: 'Start date, end date, and vacation type are required for vacation requests' });
             }
-            if (vacationType !== 'annual') {
-                return res.status(400).json({ msg: 'Only annual vacation leave is allowed. Unpaid vacation is no longer available.' });
+            if (!['annual', 'casual'].includes(vacationType)) {
+                return res.status(400).json({ msg: 'Vacation type must be annual or casual leave.' });
             }
             if (new Date(startDate) > new Date(endDate)) {
                 return res.status(400).json({ msg: 'Start date cannot be after end date' });
@@ -480,12 +487,15 @@ router.get('/vacation-days', auth, async (req, res) => {
             return res.json(cachedData);
         }
 
-        const user = await User.findById(req.user.id).select('vacationDaysLeft');
+        const user = await User.findById(req.user.id).select('vacationDaysLeft casualDaysLeft');
         if (!user) {
             return res.status(404).json({ msg: 'User not found' });
         }
 
-        const result = { vacationDaysLeft: user.vacationDaysLeft };
+        const result = {
+            vacationDaysLeft: user.vacationDaysLeft,
+            casualDaysLeft: user.casualDaysLeft
+        };
         setCachedData(cacheKey, result);
         
         res.json(result);
@@ -994,59 +1004,51 @@ router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
             
             // Handle vacation days deduction when super admin approves vacation form
             if (
-                form.type === 'vacation' && 
-                form.vacationType === 'annual' && 
-                status === 'approved' && 
+                form.type === 'vacation' &&
+                DEDUCTIBLE_VACATION_TYPES.includes(form.vacationType) &&
+                status === 'approved' &&
                 previousStatus !== 'approved'
             ) {
                 const employee = await User.findById(form.user._id || form.user);
                 if (employee) {
-                    const calculatedDays = calculateVacationDeductionDays({
-                        startDate: form.startDate,
-                        endDate: form.endDate,
-                        isHalfDay: form.isHalfDay
-                    });
-                    
-                    // Check if employee has enough vacation days
-                    if ((employee.vacationDaysLeft || 0) < calculatedDays) {
-                        return res.status(400).json({ 
-                            msg: `Cannot approve: Employee has insufficient vacation days (${employee.vacationDaysLeft} remaining, ${calculatedDays} requested)`
-                        });
+                    const settings = await getSystemSettings();
+                    const deduction = deductVacationBalanceOnApproval(employee, form, settings);
+                    if (deduction.error) {
+                        return res.status(400).json({ msg: deduction.error });
                     }
-                    
-                    const oldVacationDays = employee.vacationDaysLeft;
-                    employee.vacationDaysLeft = Math.max(0, (employee.vacationDaysLeft || 21) - calculatedDays);
-                    await employee.save();
-                    
-                    // Create audit log for automatic vacation days deduction
-                    await createAuditLog({
-                        action: 'VACATION_DAYS_MODIFIED',
-                        performedBy: user._id,
-                        targetUser: employee._id,
-                        targetResource: 'user',
-                        targetResourceId: employee._id,
-                        description: `Vacation days automatically deducted for ${employee.name}: ${calculatedDays} days deducted due to approved annual vacation by super admin (Form ID: ${form._id})`,
-                        oldValues: {
-                            vacationDaysLeft: oldVacationDays
-                        },
-                        newValues: {
-                            vacationDaysLeft: employee.vacationDaysLeft
-                        },
-                        details: {
-                            targetUserName: employee.name,
-                            targetUserEmail: employee.email,
-                            targetUserDepartment: employee.department,
-                            formId: form._id.toString(),
-                            daysDeducted: calculatedDays,
-                            approvedBy: 'super_admin'
-                        },
-                        ipAddress: req.ip || req.connection.remoteAddress,
-                        userAgent: req.get('User-Agent'),
-                        severity: 'HIGH'
-                    });
-                    
-                    console.log(`✅ Super Admin approved vacation - Deducted ${calculatedDays} days from ${employee.name}`);
-                    console.log(`   Old balance: ${oldVacationDays}, New balance: ${employee.vacationDaysLeft}`);
+                    if (deduction.days) {
+                        await employee.save();
+
+                        await createAuditLog({
+                            action: 'VACATION_DAYS_MODIFIED',
+                            performedBy: user._id,
+                            targetUser: employee._id,
+                            targetResource: 'user',
+                            targetResourceId: employee._id,
+                            description: `${form.vacationType} vacation days automatically deducted for ${employee.name}: ${deduction.days} days due to super admin approval (Form ID: ${form._id})`,
+                            oldValues: {
+                                [deduction.field]: deduction.oldBalance
+                            },
+                            newValues: {
+                                [deduction.field]: deduction.newBalance
+                            },
+                            details: {
+                                targetUserName: employee.name,
+                                targetUserEmail: employee.email,
+                                targetUserDepartment: employee.department,
+                                formId: form._id.toString(),
+                                daysDeducted: deduction.days,
+                                vacationType: form.vacationType,
+                                approvedBy: 'super_admin'
+                            },
+                            ipAddress: req.ip || req.connection.remoteAddress,
+                            userAgent: req.get('User-Agent'),
+                            severity: 'HIGH'
+                        });
+
+                        console.log(`✅ Super Admin approved ${form.vacationType} vacation - Deducted ${deduction.days} days from ${employee.name}`);
+                        console.log(`   Old balance: ${deduction.oldBalance}, New balance: ${deduction.newBalance}`);
+                    }
                 }
             }
             
@@ -1069,66 +1071,57 @@ router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
                     });
                 }
             }
-            // Check remaining vacation days before approving annual vacation
+            // Check remaining vacation days before approving annual or casual vacation
             if (
                 form.type === 'vacation' &&
-                form.vacationType === 'annual' &&
+                DEDUCTIBLE_VACATION_TYPES.includes(form.vacationType) &&
                 status === 'approved' &&
                 (form.status === 'pending' || form.status === 'manager_approved' || form.status === 'manager_submitted')
             ) {
-                const days = calculateVacationDeductionDays({
-                    startDate: form.startDate,
-                    endDate: form.endDate,
-                    isHalfDay: form.isHalfDay
-                });
                 const employee = await User.findById(form.user);
-                
-                // Check if employee has enough vacation days
-                if (employee && (employee.vacationDaysLeft || 0) < days) {
-                    return res.status(400).json({ 
-                        msg: `Cannot approve: Employee has insufficient vacation days (${employee.vacationDaysLeft} remaining, ${days} requested)`
-                    });
-                }
-
                 if (employee) {
-                    const oldVacationDays = employee.vacationDaysLeft;
-                    employee.vacationDaysLeft = Math.max(0, (employee.vacationDaysLeft || 21) - days);
-                    await employee.save();
-                    
-                    // Create audit log for automatic vacation days deduction
-                    const admin = await User.findById(req.user.id);
-                    await createAuditLog({
-                        action: 'VACATION_DAYS_MODIFIED',
-                        performedBy: admin._id,
-                        targetUser: employee._id,
-                        targetResource: 'user',
-                        targetResourceId: employee._id,
-                        description: `Vacation days automatically deducted for ${employee.name}: ${days} days deducted due to approved annual vacation (Form ID: ${form._id})`,
-                        oldValues: {
-                            vacationDaysLeft: oldVacationDays
-                        },
-                        newValues: {
-                            vacationDaysLeft: employee.vacationDaysLeft
-                        },
-                        details: {
-                            targetUserName: employee.name,
-                            targetUserEmail: employee.email,
-                            targetUserDepartment: employee.department,
-                            adminName: admin.name,
-                            adminEmail: admin.email,
-                            changeAmount: -(days),
-                            formId: form._id,
-                            formType: 'vacation',
-                            vacationType: 'annual',
-                            vacationStartDate: form.startDate,
-                            vacationEndDate: form.endDate,
-                            daysDeducted: days,
-                            reason: 'Automatic deduction upon vacation approval'
-                        },
-                        ipAddress: req.ip || req.connection.remoteAddress,
-                        userAgent: req.get('User-Agent'),
-                        severity: 'MEDIUM'
-                    });
+                    const settings = await getSystemSettings();
+                    const deduction = deductVacationBalanceOnApproval(employee, form, settings);
+                    if (deduction.error) {
+                        return res.status(400).json({ msg: deduction.error });
+                    }
+                    if (deduction.days) {
+                        await employee.save();
+
+                        const admin = await User.findById(req.user.id);
+                        await createAuditLog({
+                            action: 'VACATION_DAYS_MODIFIED',
+                            performedBy: admin._id,
+                            targetUser: employee._id,
+                            targetResource: 'user',
+                            targetResourceId: employee._id,
+                            description: `${form.vacationType} vacation days automatically deducted for ${employee.name}: ${deduction.days} days due to approved vacation (Form ID: ${form._id})`,
+                            oldValues: {
+                                [deduction.field]: deduction.oldBalance
+                            },
+                            newValues: {
+                                [deduction.field]: deduction.newBalance
+                            },
+                            details: {
+                                targetUserName: employee.name,
+                                targetUserEmail: employee.email,
+                                targetUserDepartment: employee.department,
+                                adminName: admin.name,
+                                adminEmail: admin.email,
+                                changeAmount: -(deduction.days),
+                                formId: form._id,
+                                formType: 'vacation',
+                                vacationType: form.vacationType,
+                                vacationStartDate: form.startDate,
+                                vacationEndDate: form.endDate,
+                                daysDeducted: deduction.days,
+                                reason: 'Automatic deduction upon vacation approval'
+                            },
+                            ipAddress: req.ip || req.connection.remoteAddress,
+                            userAgent: req.get('User-Agent'),
+                            severity: 'MEDIUM'
+                        });
+                    }
                 }
             } else if (
                 form.type === 'vacation' &&
@@ -1490,25 +1483,31 @@ router.put('/super/:formId', auth, async (req, res) => {
         if (toHour) form.toHour = toHour;
 
         // Handle vacation days adjustment if needed
-        if (form.type === 'vacation' && form.vacationType === 'annual' && status === 'approved') {
+        if (
+            form.type === 'vacation' &&
+            DEDUCTIBLE_VACATION_TYPES.includes(form.vacationType) &&
+            status === 'approved'
+        ) {
             const employee = await User.findById(form.user);
             if (employee) {
+                const settings = await getSystemSettings();
                 const days = calculateVacationDeductionDays({
                     startDate: form.startDate,
                     endDate: form.endDate,
                     isHalfDay: form.isHalfDay
                 });
-                
-                // Add modification to employee history
+                const field = vacationBalanceField(form.vacationType);
+                const currentBalance = employee[field] ?? defaultVacationBalance(form.vacationType, settings);
+
                 employee.modificationHistory.push({
-                    field: 'vacationDaysLeft',
-                    oldValue: employee.vacationDaysLeft,
-                    newValue: Math.max(0, employee.vacationDaysLeft - days),
+                    field,
+                    oldValue: currentBalance,
+                    newValue: Math.max(0, currentBalance - days),
                     modifiedBy: superAdmin._id,
                     reason: `Vacation days adjusted due to form correction: ${modificationReason}`
                 });
 
-                employee.vacationDaysLeft = Math.max(0, employee.vacationDaysLeft - days);
+                employee[field] = Math.max(0, currentBalance - days);
                 await employee.save();
             }
         }

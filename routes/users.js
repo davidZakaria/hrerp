@@ -226,7 +226,7 @@ router.post('/', auth, async (req, res) => {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
-    const { name, email, password, department, role, status, managedDepartments, managedDepartmentGroups, employeeCode } = req.body;
+    const { name, email, password, department, role, status, managedDepartments, managedDepartmentGroups, employeeCode, vacationDaysLeft, casualDaysLeft } = req.body;
 
     // Check if user exists
     let user = await User.findOne({ email });
@@ -251,7 +251,8 @@ router.post('/', auth, async (req, res) => {
       department,
       role: role || 'employee',
       status: status || 'active',
-      vacationDaysLeft: settings.annualVacationDays,
+      vacationDaysLeft: typeof vacationDaysLeft === 'number' ? vacationDaysLeft : settings.annualVacationDays,
+      casualDaysLeft: typeof casualDaysLeft === 'number' ? casualDaysLeft : settings.casualVacationDays,
       excuseRequestsLeft: settings.monthlyExcuseRequests,
       managedDepartments: (role === 'manager' && managedDepartments) ? managedDepartments : [],
       managedDepartmentGroups:
@@ -335,35 +336,42 @@ router.put('/:userId/vacation-days', auth, validateObjectId('userId'), async (re
     if (admin.role !== 'admin' && admin.role !== 'super_admin') {
       return res.status(403).json({ msg: 'Not authorized' });
     }
-    const { vacationDaysLeft } = req.body;
-    if (typeof vacationDaysLeft !== 'number' || vacationDaysLeft < 0) {
+    const { vacationDaysLeft, casualDaysLeft } = req.body;
+    if (vacationDaysLeft !== undefined && (typeof vacationDaysLeft !== 'number' || vacationDaysLeft < 0)) {
       return res.status(400).json({ msg: 'Invalid vacation days value' });
+    }
+    if (casualDaysLeft !== undefined && (typeof casualDaysLeft !== 'number' || casualDaysLeft < 0)) {
+      return res.status(400).json({ msg: 'Invalid casual days value' });
+    }
+    if (vacationDaysLeft === undefined && casualDaysLeft === undefined) {
+      return res.status(400).json({ msg: 'vacationDaysLeft or casualDaysLeft is required' });
     }
     const user = await User.findById(req.params.userId);
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
     
-    // Store old value for audit logging
     const oldVacationDays = user.vacationDaysLeft;
+    const oldCasualDays = user.casualDaysLeft;
     
-    // Update vacation days
-    user.vacationDaysLeft = vacationDaysLeft;
+    if (vacationDaysLeft !== undefined) user.vacationDaysLeft = vacationDaysLeft;
+    if (casualDaysLeft !== undefined) user.casualDaysLeft = casualDaysLeft;
     await user.save();
     
-    // Create audit log for vacation days modification
     await createAuditLog({
       action: 'VACATION_DAYS_MODIFIED',
       performedBy: admin._id,
       targetUser: user._id,
       targetResource: 'user',
       targetResourceId: user._id,
-      description: `Vacation days for ${user.name} (${user.email}) changed from ${oldVacationDays} to ${vacationDaysLeft} by admin ${admin.name}`,
+      description: `Leave balances for ${user.name} (${user.email}) updated by admin ${admin.name}`,
       oldValues: {
-        vacationDaysLeft: oldVacationDays
+        ...(vacationDaysLeft !== undefined ? { vacationDaysLeft: oldVacationDays } : {}),
+        ...(casualDaysLeft !== undefined ? { casualDaysLeft: oldCasualDays } : {})
       },
       newValues: {
-        vacationDaysLeft: vacationDaysLeft
+        ...(vacationDaysLeft !== undefined ? { vacationDaysLeft } : {}),
+        ...(casualDaysLeft !== undefined ? { casualDaysLeft } : {})
       },
       details: {
         targetUserName: user.name,
@@ -371,7 +379,8 @@ router.put('/:userId/vacation-days', auth, validateObjectId('userId'), async (re
         targetUserDepartment: user.department,
         adminName: admin.name,
         adminEmail: admin.email,
-        changeAmount: vacationDaysLeft - oldVacationDays
+        ...(vacationDaysLeft !== undefined ? { vacationChange: vacationDaysLeft - oldVacationDays } : {}),
+        ...(casualDaysLeft !== undefined ? { casualChange: casualDaysLeft - (oldCasualDays ?? 0) } : {})
       },
       ipAddress: req.ip || req.connection.remoteAddress,
       userAgent: req.get('User-Agent'),
@@ -401,6 +410,7 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
       location,
       role,
       vacationDaysLeft,
+      casualDaysLeft,
       status,
       modificationReason,
       password,
@@ -453,6 +463,7 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     if (location !== undefined && location !== (user.location || '')) modifications.push({ field: 'location', oldValue: user.location || '', newValue: location });
     if (role !== undefined && role !== user.role) modifications.push({ field: 'role', oldValue: user.role, newValue: role });
     if (vacationDaysLeft !== undefined && vacationDaysLeft !== user.vacationDaysLeft) modifications.push({ field: 'vacationDaysLeft', oldValue: user.vacationDaysLeft, newValue: vacationDaysLeft });
+    if (casualDaysLeft !== undefined && casualDaysLeft !== user.casualDaysLeft) modifications.push({ field: 'casualDaysLeft', oldValue: user.casualDaysLeft, newValue: casualDaysLeft });
     if (status !== undefined && status !== user.status) modifications.push({ field: 'status', oldValue: user.status, newValue: status });
     if (password && password.trim().length >= 6) modifications.push({ field: 'password', oldValue: '***', newValue: '*** (changed)' });
     if (employeeCode !== undefined && employeeCode !== user.employeeCode) modifications.push({ field: 'employeeCode', oldValue: user.employeeCode || 'Not set', newValue: employeeCode || 'Removed' });
@@ -465,7 +476,9 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
     if (location !== undefined) user.location = location || '';
     if (role !== undefined) user.role = role;
     const oldVacationDays = user.vacationDaysLeft;
+    const oldCasualDays = user.casualDaysLeft;
     if (vacationDaysLeft !== undefined) user.vacationDaysLeft = vacationDaysLeft;
+    if (casualDaysLeft !== undefined) user.casualDaysLeft = casualDaysLeft;
 
     const targetRole = user.role;
     // Managers: only replace managedDepartments when the client sends the field; otherwise keep DB value.
@@ -584,6 +597,23 @@ router.put('/super/:userId', auth, validateObjectId('userId'), async (req, res) 
         description: `Vacation days for ${user.name} (${user.email}) changed from ${oldVacationDays} to ${vacationDaysLeft} by super admin ${superAdmin.name}`,
         oldValues: { vacationDaysLeft: oldVacationDays },
         newValues: { vacationDaysLeft },
+        details: { targetUserName: user.name, adminName: superAdmin.name, modificationReason },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        severity: 'HIGH'
+      });
+    }
+
+    if (casualDaysLeft !== undefined && casualDaysLeft !== oldCasualDays) {
+      await createAuditLog({
+        action: 'VACATION_DAYS_MODIFIED',
+        performedBy: superAdmin._id,
+        targetUser: user._id,
+        targetResource: 'user',
+        targetResourceId: user._id,
+        description: `Casual days for ${user.name} (${user.email}) changed from ${oldCasualDays ?? 0} to ${casualDaysLeft} by super admin ${superAdmin.name}`,
+        oldValues: { casualDaysLeft: oldCasualDays },
+        newValues: { casualDaysLeft },
         details: { targetUserName: user.name, adminName: superAdmin.name, modificationReason },
         ipAddress: req.ip || req.connection.remoteAddress,
         userAgent: req.get('User-Agent'),
@@ -1017,7 +1047,8 @@ router.post('/create-super-admin', async (req, res) => {
             role: 'super_admin',
             department: 'Administration',
             status: 'active',
-            vacationDaysLeft: 21
+            vacationDaysLeft: 15,
+            casualDaysLeft: 6
         });
 
         // Hash password

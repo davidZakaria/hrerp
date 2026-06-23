@@ -39,10 +39,33 @@ function validateHalfDayVacation({ startDate, endDate, isHalfDay }) {
     return null;
 }
 
+function dayWithinRange(dayDate, rangeStart, rangeEnd) {
+    const t = new Date(dayDate).setHours(12, 0, 0, 0);
+    const start = new Date(rangeStart).setHours(0, 0, 0, 0);
+    const end = new Date(rangeEnd).setHours(23, 59, 59, 999);
+    return t >= start && t <= end;
+}
+
+/**
+ * Count leave days from a form overlapping a date range (half-day = 0.5).
+ */
+function countLeaveDaysInRange({ startDate, endDate, isHalfDay, rangeStart, rangeEnd }) {
+    if (!startDate || !endDate || !rangeStart || !rangeEnd) return 0;
+    if (parseIsHalfDay(isHalfDay)) {
+        return dayWithinRange(startDate, rangeStart, rangeEnd) ? 0.5 : 0;
+    }
+    const overlapStart = new Date(Math.max(new Date(startDate).getTime(), rangeStart.getTime()));
+    const overlapEnd = new Date(Math.min(new Date(endDate).getTime(), rangeEnd.getTime()));
+    if (overlapEnd < overlapStart) return 0;
+    return calculateVacationCalendarDays(overlapStart, overlapEnd);
+}
+
 module.exports = {
     calculateVacationCalendarDays,
     calculateVacationDeductionDays,
     parseIsHalfDay,
     validateHalfDayVacation,
-    dateKeyFromDate
+    dateKeyFromDate,
+    dayWithinRange,
+    countLeaveDaysInRange
 };

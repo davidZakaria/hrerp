@@ -4,7 +4,8 @@ import API_URL from '../config/api';
 
 const EMPTY_FORM = {
   companyName: '',
-  annualVacationDays: 21,
+  annualVacationDays: 15,
+  casualVacationDays: 6,
   monthlyExcuseRequests: 2,
   payPeriodAnchorDay: 25,
   latenessGracePeriodMinutes: 15,
@@ -38,6 +39,7 @@ const SystemSettings = () => {
       setForm({
         companyName: data.companyName ?? EMPTY_FORM.companyName,
         annualVacationDays: data.annualVacationDays ?? EMPTY_FORM.annualVacationDays,
+        casualVacationDays: data.casualVacationDays ?? EMPTY_FORM.casualVacationDays,
         monthlyExcuseRequests: data.monthlyExcuseRequests ?? EMPTY_FORM.monthlyExcuseRequests,
         payPeriodAnchorDay: data.payPeriodAnchorDay ?? EMPTY_FORM.payPeriodAnchorDay,
         latenessGracePeriodMinutes: data.latenessGracePeriodMinutes ?? EMPTY_FORM.latenessGracePeriodMinutes,
@@ -81,6 +83,7 @@ const SystemSettings = () => {
         setForm({
           companyName: data.settings.companyName,
           annualVacationDays: data.settings.annualVacationDays,
+          casualVacationDays: data.settings.casualVacationDays,
           monthlyExcuseRequests: data.settings.monthlyExcuseRequests,
           payPeriodAnchorDay: data.settings.payPeriodAnchorDay,
           latenessGracePeriodMinutes: data.settings.latenessGracePeriodMinutes,
@@ -174,6 +177,21 @@ const SystemSettings = () => {
                 className="form-input-elegant"
                 value={form.annualVacationDays}
                 onChange={handleChange('annualVacationDays')}
+                required
+              />
+            </div>
+            <div className="form-group-elegant">
+              <label className="form-label-elegant" htmlFor="casualVacationDays">
+                {t('systemSettings.casualVacationDays')}
+              </label>
+              <input
+                id="casualVacationDays"
+                type="number"
+                min="0"
+                max="365"
+                className="form-input-elegant"
+                value={form.casualVacationDays}
+                onChange={handleChange('casualVacationDays')}
                 required
               />
             </div>

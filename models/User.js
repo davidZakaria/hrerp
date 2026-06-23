@@ -68,7 +68,11 @@ const userSchema = new mongoose.Schema({
     },
     vacationDaysLeft: {
         type: Number,
-        default: 21
+        default: 15
+    },
+    casualDaysLeft: {
+        type: Number,
+        default: 6
     },
     excuseRequestsLeft: {
         type: Number,

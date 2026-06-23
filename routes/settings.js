@@ -8,6 +8,7 @@ const { invalidateSystemSettingsCache } = require('../utils/getSystemSettings');
 const EDITABLE_FIELDS = [
     'companyName',
     'annualVacationDays',
+    'casualVacationDays',
     'monthlyExcuseRequests',
     'payPeriodAnchorDay',
     'latenessGracePeriodMinutes',
@@ -40,6 +41,7 @@ function validateSettingsPayload(body) {
 
     const numberChecks = [
         { key: 'annualVacationDays', min: 0, max: 365 },
+        { key: 'casualVacationDays', min: 0, max: 365 },
         { key: 'monthlyExcuseRequests', min: 0, max: 31 },
         { key: 'payPeriodAnchorDay', min: 1, max: 31 },
         { key: 'latenessGracePeriodMinutes', min: 0, max: 240 },

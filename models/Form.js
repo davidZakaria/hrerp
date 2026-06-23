@@ -13,7 +13,7 @@ const formSchema = new mongoose.Schema({
     },
     vacationType: {
         type: String,
-        enum: ['annual'], // Only annual vacation allowed, unpaid removed
+        enum: ['annual', 'casual'],
         required: function() {
             return this.type === 'vacation';
         }

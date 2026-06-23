@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import AttendanceManagement from './AttendanceManagement';
 import OtReconciliationReports from './OtReconciliationReports';
 import DeductionReports from './DeductionReports';
+import DetailedLeavesReport from './DetailedLeavesReport';
 import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 import DashboardSectionNav from './layout/DashboardSectionNav';
@@ -63,6 +64,7 @@ const SuperAdminDashboard = () => {
     department: '',
     role: '',
     vacationDaysLeft: 0,
+    casualDaysLeft: 0,
     status: '',
     managedDepartments: [],
     managedDepartmentGroups: [],
@@ -86,7 +88,8 @@ const SuperAdminDashboard = () => {
     department: '',
     role: 'employee',
     status: 'active',
-    vacationDaysLeft: 21,
+    vacationDaysLeft: 15,
+    casualDaysLeft: 6,
     managedDepartments: [],
     managedDepartmentGroups: [],
     employeeCode: ''
@@ -862,6 +865,7 @@ const SuperAdminDashboard = () => {
       department: user.department,
       role: user.role,
       vacationDaysLeft: user.vacationDaysLeft,
+      casualDaysLeft: user.casualDaysLeft ?? 6,
       status: user.status,
       managedDepartments: existingManaged,
       managedDepartmentGroups: Array.isArray(user.managedDepartmentGroups)
@@ -947,6 +951,7 @@ const SuperAdminDashboard = () => {
           location: userEdit.location,
           role: userEdit.role,
           vacationDaysLeft: userEdit.vacationDaysLeft,
+          casualDaysLeft: userEdit.casualDaysLeft,
           status: userEdit.status,
           employeeCode: userEdit.employeeCode,
           password: userEdit.password || undefined,
@@ -1003,7 +1008,8 @@ const SuperAdminDashboard = () => {
           department: '',
           role: 'employee',
           status: 'active',
-          vacationDaysLeft: 21,
+          vacationDaysLeft: 15,
+          casualDaysLeft: 6,
           managedDepartments: [],
           managedDepartmentGroups: [],
           employeeCode: ''
@@ -2611,11 +2617,20 @@ const SuperAdminDashboard = () => {
                 <small style={{color: '#888', fontSize: '0.8rem'}}>Only fill this if you want to change the user's password</small>
               </div>
               <div className="form-group-elegant">
-                <label className="form-label-elegant">Vacation Days Left</label>
+                <label className="form-label-elegant">{t('users.vacationDaysLeft')}</label>
                 <input
                   type="number"
                   value={userEdit.vacationDaysLeft}
-                  onChange={(e) => setUserEdit({...userEdit, vacationDaysLeft: parseInt(e.target.value)})}
+                  onChange={(e) => setUserEdit({...userEdit, vacationDaysLeft: parseInt(e.target.value, 10) || 0})}
+                  className="form-input-elegant"
+                />
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">{t('users.casualDaysLeft')}</label>
+                <input
+                  type="number"
+                  value={userEdit.casualDaysLeft}
+                  onChange={(e) => setUserEdit({...userEdit, casualDaysLeft: parseInt(e.target.value, 10) || 0})}
                   className="form-input-elegant"
                 />
               </div>
@@ -2991,6 +3006,7 @@ const SuperAdminDashboard = () => {
           <AttendanceManagement />
           <OtReconciliationReports />
           <DeductionReports />
+          <DetailedLeavesReport />
         </>
       )}
 
@@ -3744,11 +3760,22 @@ const SuperAdminDashboard = () => {
               </div>
               
               <div className="form-group-elegant">
-                <label className="form-label-elegant">Vacation Days</label>
+                <label className="form-label-elegant">{t('users.vacationDaysLeft')}</label>
                 <input
                   type="number"
                   value={newUser.vacationDaysLeft}
-                  onChange={(e) => setNewUser({...newUser, vacationDaysLeft: parseInt(e.target.value) || 0})}
+                  onChange={(e) => setNewUser({...newUser, vacationDaysLeft: parseInt(e.target.value, 10) || 0})}
+                  className="form-input-elegant"
+                  min="0"
+                  max="365"
+                />
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">{t('users.casualDaysLeft')}</label>
+                <input
+                  type="number"
+                  value={newUser.casualDaysLeft}
+                  onChange={(e) => setNewUser({...newUser, casualDaysLeft: parseInt(e.target.value, 10) || 0})}
                   className="form-input-elegant"
                   min="0"
                   max="365"

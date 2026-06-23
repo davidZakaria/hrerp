@@ -17,7 +17,12 @@ const systemSettingsSchema = new mongoose.Schema({
     },
     annualVacationDays: {
         type: Number,
-        default: 21,
+        default: 15,
+        min: 0
+    },
+    casualVacationDays: {
+        type: Number,
+        default: 6,
         min: 0
     },
     monthlyExcuseRequests: {
@@ -50,7 +55,17 @@ const systemSettingsSchema = new mongoose.Schema({
  */
 systemSettingsSchema.statics.getOrCreate = async function getOrCreate() {
     const existing = await this.findOne({ singletonKey: SINGLETON_KEY });
-    if (existing) return existing;
+    if (existing) {
+        let needsSave = false;
+        if (existing.casualVacationDays == null) {
+            existing.casualVacationDays = 6;
+            needsSave = true;
+        }
+        if (needsSave) {
+            await existing.save();
+        }
+        return existing;
+    }
 
     try {
         return await this.create({ singletonKey: SINGLETON_KEY });
@@ -67,6 +82,7 @@ systemSettingsSchema.methods.toPublicJSON = function toPublicJSON() {
     return {
         companyName: this.companyName,
         annualVacationDays: this.annualVacationDays,
+        casualVacationDays: this.casualVacationDays,
         monthlyExcuseRequests: this.monthlyExcuseRequests,
         payPeriodAnchorDay: this.payPeriodAnchorDay,
         latenessGracePeriodMinutes: this.latenessGracePeriodMinutes,

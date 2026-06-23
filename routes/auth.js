@@ -61,6 +61,7 @@ router.post('/register', async (req, res) => {
             managedDepartmentGroups: [],
             status: 'pending',
             vacationDaysLeft: settings.annualVacationDays,
+            casualDaysLeft: settings.casualVacationDays,
             excuseRequestsLeft: settings.monthlyExcuseRequests,
             employeeCode: employeeCode || null,
             workSchedule: workSchedule || null

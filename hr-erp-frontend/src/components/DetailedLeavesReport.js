@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import API_URL from '../config/api';
 import { ReportPeriodFilter, useReportPeriodRange } from './ReportPeriodFilter';
@@ -7,6 +7,8 @@ import {
   ReportPaginationBar,
   ReportScrollTable
 } from './ReportTableNav';
+
+const LEAVES_TABLE_COLSPAN = 14;
 
 function formatDays(value) {
   if (value == null || Number.isNaN(Number(value))) return '—';
@@ -19,11 +21,93 @@ function formatQuota(value, quota) {
   return `${formatDays(value)} / ${quota}`;
 }
 
+function formatLeaveDate(value) {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString();
+}
+
+function formatDateRange(start, end) {
+  const startLabel = formatLeaveDate(start);
+  const endLabel = formatLeaveDate(end);
+  if (startLabel === '—' && endLabel === '—') return '—';
+  if (startLabel === endLabel) return startLabel;
+  return `${startLabel} → ${endLabel}`;
+}
+
+function leaveStatusBadgeClass(status) {
+  const normalized = String(status || '').toLowerCase();
+  if (normalized === 'approved' || normalized.includes('approved')) {
+    return 'leaves-status-badge leaves-status-badge--approved';
+  }
+  if (normalized === 'pending') {
+    return 'leaves-status-badge leaves-status-badge--pending';
+  }
+  if (normalized === 'rejected') {
+    return 'leaves-status-badge leaves-status-badge--rejected';
+  }
+  return 'leaves-status-badge leaves-status-badge--neutral';
+}
+
+function getLeaveHistory(row) {
+  return row?.leaveRequests ?? row?.forms ?? [];
+}
+
 function currentMonthYmd() {
   const now = new Date();
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, '0');
   return `${y}-${m}`;
+}
+
+function LeaveHistoryPanel({ row, t }) {
+  const history = getLeaveHistory(row);
+
+  if (!history.length) {
+    return (
+      <div className="leaves-expand-empty !text-slate-500 dark:!text-slate-400">
+        {t('detailedLeavesReport.noLeaveHistory')}
+      </div>
+    );
+  }
+
+  return (
+    <div className="leaves-nested-table-wrap">
+      <table className="leaves-nested-table">
+        <thead>
+          <tr>
+            <th>{t('detailedLeavesReport.detailStartEnd')}</th>
+            <th>{t('detailedLeavesReport.detailLeaveType')}</th>
+            <th>{t('detailedLeavesReport.detailDuration')}</th>
+            <th>{t('detailedLeavesReport.detailReason')}</th>
+            <th>{t('detailedLeavesReport.detailStatus')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {history.map((entry) => (
+            <tr key={entry.id || `${entry.startDate}-${entry.leaveType}-${entry.reason}`}>
+              <td className="!text-slate-900 dark:!text-white">
+                {formatDateRange(entry.startDate, entry.endDate)}
+              </td>
+              <td className="!text-slate-900 dark:!text-white">{entry.leaveType || '—'}</td>
+              <td className="!text-slate-900 dark:!text-white leaves-nested-duration">
+                {formatDays(entry.duration)} {t('detailedLeavesReport.daysUnit')}
+              </td>
+              <td className="!text-slate-900 dark:!text-white leaves-nested-reason">
+                {entry.reason || '—'}
+              </td>
+              <td>
+                <span className={leaveStatusBadgeClass(entry.status || entry.rawStatus)}>
+                  {entry.status || '—'}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 const DetailedLeavesReport = () => {
@@ -45,6 +129,7 @@ const DetailedLeavesReport = () => {
   const [filterDepartment, setFilterDepartment] = useState('');
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [expandedRow, setExpandedRow] = useState(null);
 
   const fetchReport = useCallback(async () => {
     setLoading(true);
@@ -63,6 +148,7 @@ const DetailedLeavesReport = () => {
       }
       setReport(data);
       setPage(1);
+      setExpandedRow(null);
     } catch (err) {
       setError(err.message || 'Failed to load detailed leaves report');
       setReport(null);
@@ -109,6 +195,10 @@ const DetailedLeavesReport = () => {
   const safePage = Math.min(page, totalPages);
   const pageStart = (safePage - 1) * rowsPerPage;
   const pageRows = filteredRows.slice(pageStart, pageStart + rowsPerPage);
+
+  useEffect(() => {
+    setExpandedRow(null);
+  }, [safePage, filterSearch, filterDepartment, rowsPerPage]);
 
   const varianceClass = (variance) => (Number(variance) > 0 ? 'saas-stat-danger' : 'saas-stat-success');
   const deductionClass = (deduction) => (Number(deduction) > 0 ? 'saas-stat-danger' : 'saas-stat-success');
@@ -283,7 +373,7 @@ const DetailedLeavesReport = () => {
               <thead>
                 <tr>
                   <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.employeeCode')}</th>
-                  <th>{t('detailedLeavesReport.employeeName')}</th>
+                  <th className="detailed-leaves-name-col">{t('detailedLeavesReport.employeeName')}</th>
                   <th className="detailed-leaves-meta-col">{t('detailedLeavesReport.jobTitle')}</th>
                   <th className="detailed-leaves-meta-col">{t('detailedLeavesReport.department')}</th>
                   <th className="detailed-leaves-meta-col">{t('detailedLeavesReport.location')}</th>
@@ -294,31 +384,63 @@ const DetailedLeavesReport = () => {
                   <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.absentActual')}</th>
                   <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.variance')}</th>
                   <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.deduction')}</th>
-                  <th className="detailed-leaves-reason-col">{t('detailedLeavesReport.reason')}</th>
+                  <th className="detailed-leaves-summary-reason-col">{t('detailedLeavesReport.reason')}</th>
+                  <th className="detailed-leaves-actions-col">{t('detailedLeavesReport.actions')}</th>
                 </tr>
               </thead>
               <tbody>
-                {pageRows.map((row) => (
-                  <tr key={`${row.employeeCode}-${row.name}`}>
-                    <td className="detailed-leaves-compact-col">{row.employeeCode || '—'}</td>
-                    <td className="!text-slate-900 dark:!text-white" style={{ fontWeight: 600 }}>{row.name || '—'}</td>
-                    <td className="detailed-leaves-meta-col">{row.jobTitle || '—'}</td>
-                    <td className="detailed-leaves-meta-col">{row.department || '—'}</td>
-                    <td className="detailed-leaves-meta-col">{row.location || '—'}</td>
-                    <td className="detailed-leaves-compact-col">{formatQuota(row.approvedAnnual, annualQuota)}</td>
-                    <td className="detailed-leaves-compact-col">{formatQuota(row.approvedCasual, casualQuota)}</td>
-                    <td className="detailed-leaves-compact-col">{formatDays(row.approvedSick)}</td>
-                    <td className="detailed-leaves-compact-col">{formatDays(row.absentRaw)}</td>
-                    <td className="detailed-leaves-compact-col">{formatDays(row.absentActual)}</td>
-                    <td className={`detailed-leaves-compact-col ${varianceClass(row.variance)}`}>
-                      {formatDays(row.variance)}
-                    </td>
-                    <td className={`detailed-leaves-compact-col ${deductionClass(row.deduction)}`}>
-                      {formatDays(row.deduction)}
-                    </td>
-                    <td className="detailed-leaves-reason-col !text-slate-900 dark:!text-white">{row.reason || '—'}</td>
-                  </tr>
-                ))}
+                {pageRows.map((row) => {
+                  const rowKey = row.employeeCode || row.name;
+                  const isExpanded = expandedRow === rowKey;
+
+                  return (
+                    <Fragment key={rowKey}>
+                      <tr className={isExpanded ? 'detailed-leaves-row-expanded' : undefined}>
+                        <td className="detailed-leaves-compact-col !text-slate-900 dark:!text-white">{row.employeeCode || '—'}</td>
+                        <td className="detailed-leaves-name-col font-semibold !text-slate-900 dark:!text-white">{row.name || '—'}</td>
+                        <td className="detailed-leaves-meta-col !text-slate-900 dark:!text-white">{row.jobTitle || '—'}</td>
+                        <td className="detailed-leaves-meta-col !text-slate-900 dark:!text-white">{row.department || '—'}</td>
+                        <td className="detailed-leaves-meta-col !text-slate-900 dark:!text-white">{row.location || '—'}</td>
+                        <td className="detailed-leaves-compact-col !text-slate-900 dark:!text-white">{formatQuota(row.approvedAnnual, annualQuota)}</td>
+                        <td className="detailed-leaves-compact-col !text-slate-900 dark:!text-white">{formatQuota(row.approvedCasual, casualQuota)}</td>
+                        <td className="detailed-leaves-compact-col !text-slate-900 dark:!text-white">{formatDays(row.approvedSick)}</td>
+                        <td className="detailed-leaves-compact-col !text-slate-900 dark:!text-white">{formatDays(row.absentRaw)}</td>
+                        <td className="detailed-leaves-compact-col !text-slate-900 dark:!text-white">{formatDays(row.absentActual)}</td>
+                        <td className={`detailed-leaves-compact-col ${varianceClass(row.variance)}`}>
+                          {formatDays(row.variance)}
+                        </td>
+                        <td className={`detailed-leaves-compact-col ${deductionClass(row.deduction)}`}>
+                          {formatDays(row.deduction)}
+                        </td>
+                        <td className="detailed-leaves-summary-reason-col !text-slate-900 dark:!text-white" title={row.reason || ''}>
+                          {row.reason || '—'}
+                        </td>
+                        <td className="detailed-leaves-actions-col">
+                          <button
+                            type="button"
+                            className="leaves-expand-btn"
+                            onClick={() => setExpandedRow(isExpanded ? null : rowKey)}
+                            aria-expanded={isExpanded}
+                          >
+                            {isExpanded ? t('detailedLeavesReport.closeDetails') : t('detailedLeavesReport.viewDetails')}
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="detailed-leaves-expand-row">
+                          <td colSpan={LEAVES_TABLE_COLSPAN} className="p-0">
+                            <div className="leaves-expand-canvas bg-slate-50 dark:bg-slate-900/60 p-6 border-b border-slate-200 dark:border-slate-700 shadow-inner">
+                              <h4 className="leaves-expand-heading !text-slate-900 dark:!text-white">
+                                {t('detailedLeavesReport.leaveHistoryTitle', { name: row.name })}
+                              </h4>
+                              <LeaveHistoryPanel row={row} t={t} />
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </ReportScrollTable>

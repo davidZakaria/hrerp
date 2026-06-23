@@ -2078,7 +2078,7 @@ h1, h2, h3, h4, h5, h6 {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
 }
 
-p, span:not(.insights-badge):not(.saas-vacation-badge), div:not(.modal-overlay):not(.insights-alert-text) {
+p, span:not(.insights-badge):not(.saas-vacation-badge):not(.leaves-status-badge), div:not(.modal-overlay):not(.insights-alert-text) {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
@@ -2400,7 +2400,7 @@ form select:focus {
 
 /* Ensure all important text is visible - Dark Theme */
 .main-content p,
-.main-content span:not(.insights-badge):not(.saas-vacation-badge),
+.main-content span:not(.insights-badge):not(.saas-vacation-badge):not(.leaves-status-badge),
 .main-content div {
   color: rgba(255, 255, 255, 0.9);
 }

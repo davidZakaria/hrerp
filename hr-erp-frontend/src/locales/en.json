@@ -998,6 +998,17 @@
     "absentActual": "Actual Absent Days",
     "variance": "Variance",
     "deduction": "Deduction Leaves",
-    "reason": "Reason"
+    "reason": "Reason",
+    "actions": "Actions",
+    "viewDetails": "View Details ▼",
+    "closeDetails": "Close ▲",
+    "leaveHistoryTitle": "Leave history — {{name}}",
+    "noLeaveHistory": "No detailed leave history found.",
+    "detailStartEnd": "Start / End",
+    "detailLeaveType": "Leave Type",
+    "detailDuration": "Duration",
+    "detailReason": "Reason",
+    "detailStatus": "Status",
+    "daysUnit": "days"
   }
 } 

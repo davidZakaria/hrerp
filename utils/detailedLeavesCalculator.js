@@ -104,6 +104,77 @@ function isExcusedByWfhOrMission(forms, day) {
     return false;
 }
 
+function formatLeaveType(form) {
+    if (form.type === 'vacation') {
+        if (form.vacationType === 'casual') return 'Casual Leave';
+        return 'Annual Leave';
+    }
+    if (form.type === 'sick_leave') return 'Sick Leave';
+    if (form.type === 'wfh') return 'Work From Home';
+    if (form.type === 'mission') return 'Business Mission';
+    return form.type || 'Leave';
+}
+
+function getFormDateRange(form) {
+    if (form.type === 'vacation') {
+        return { start: form.startDate, end: form.endDate };
+    }
+    if (form.type === 'sick_leave') {
+        return { start: form.sickLeaveStartDate, end: form.sickLeaveEndDate };
+    }
+    if (form.type === 'wfh') {
+        return { start: form.wfhDate, end: form.wfhDate };
+    }
+    if (form.type === 'mission') {
+        return { start: form.missionStartDate, end: form.missionEndDate };
+    }
+    return { start: null, end: null };
+}
+
+function formatLeaveStatusLabel(status) {
+    if (APPROVED_LEAVE_STATUSES.includes(status)) return 'Approved';
+    if (status === 'pending') return 'Pending';
+    if (status === 'rejected') return 'Rejected';
+    return status ? String(status).replace(/_/g, ' ') : 'Unknown';
+}
+
+function formatDateIso(value) {
+    if (!value) return null;
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString();
+}
+
+function buildLeaveRequests(userForms, monthStart, monthEnd) {
+    const entries = [];
+    for (const form of userForms) {
+        const days = countFormDaysInMonth(form, monthStart, monthEnd);
+        if (days <= 0) continue;
+
+        const { start, end } = getFormDateRange(form);
+        const reason = form.reason || form.wfhWorkingOn || '';
+
+        entries.push({
+            id: String(form._id || `${form.type}-${formatDateIso(start)}`),
+            startDate: formatDateIso(start),
+            endDate: formatDateIso(end),
+            leaveType: formatLeaveType(form),
+            duration: roundDays(days),
+            reason: reason || '—',
+            status: formatLeaveStatusLabel(form.status),
+            rawStatus: form.status || 'unknown'
+        });
+    }
+
+    entries.sort((a, b) => {
+        const aTime = a.startDate ? new Date(a.startDate).getTime() : 0;
+        const bTime = b.startDate ? new Date(b.startDate).getTime() : 0;
+        return aTime - bTime;
+    });
+
+    return entries;
+}
+
 function buildReason({ appAnnual, appCasual, appSick, hasWfh, hasMission, formReasons, variance, absentActual }) {
     if (variance === 0 && absentActual === 0) {
         return 'Perfect Attendance';
@@ -235,7 +306,8 @@ function buildDetailedLeavesReport({
             absentActual,
             variance,
             deduction,
-            reason
+            reason,
+            leaveRequests: buildLeaveRequests(userForms, monthStart, monthEnd)
         });
     }
 
@@ -245,6 +317,7 @@ function buildDetailedLeavesReport({
 module.exports = {
     APPROVED_LEAVE_STATUSES,
     buildDetailedLeavesReport,
+    buildLeaveRequests,
     isExcusedByWfhOrMission,
     countFormDaysInMonth
 };

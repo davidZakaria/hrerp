@@ -2884,7 +2884,7 @@
 }
 
 [data-theme='light'] .modern-dash .main-content p,
-[data-theme='light'] .modern-dash .main-content span:not(.insights-badge):not(.saas-vacation-badge),
+[data-theme='light'] .modern-dash .main-content span:not(.insights-badge):not(.saas-vacation-badge):not(.leaves-status-badge),
 [data-theme='light'] .modern-dash .main-content div,
 [data-theme='light'] .modern-dash .main-content label,
 [data-theme='light'] .modern-dash .main-content li,
@@ -3170,5 +3170,33 @@
   color: #fb7185 !important;
   background: rgba(136, 19, 55, 0.3) !important;
   border-color: #881337 !important;
+}
+
+/* Detailed leaves expandable panel — readable in light + dark */
+[data-theme='light'] .saas-leaves-report .leaves-expand-canvas,
+[data-theme='light'] .saas-leaves-report .leaves-expand-canvas td,
+[data-theme='light'] .saas-leaves-report .leaves-nested-table td,
+[data-theme='light'] .saas-leaves-report .leaves-nested-table th {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .saas-leaves-report .leaves-expand-canvas,
+[data-theme='dark'] .saas-leaves-report .leaves-nested-table td,
+[data-theme='dark'] .saas-leaves-report .leaves-nested-table th {
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .saas-leaves-report .leaves-expand-btn {
+  color: #4f46e5 !important;
+}
+
+[data-theme='dark'] .saas-leaves-report .leaves-expand-btn {
+  color: #818cf8 !important;
+}
+
+[data-theme='light'] .saas-leaves-report span.leaves-status-badge,
+[data-theme='dark'] .saas-leaves-report span.leaves-status-badge {
+  text-shadow: none !important;
 }
 

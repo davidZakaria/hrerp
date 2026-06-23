@@ -944,7 +944,7 @@ router.get('/detailed-leaves-report', auth, async (req, res) => {
                 date: { $gte: rangeStart, $lte: rangeEnd }
             }).populate('user', 'name employeeCode'),
             Form.find({
-                status: { $in: APPROVED_LEAVE_STATUSES },
+                type: { $in: ['vacation', 'sick_leave', 'wfh', 'mission'] },
                 $or: [
                     {
                         type: 'vacation',
@@ -966,7 +966,12 @@ router.get('/detailed-leaves-report', auth, async (req, res) => {
                         missionStartDate: { $lte: rangeEnd }
                     }
                 ]
-            }).populate('user', 'name employeeCode')
+            })
+                .select(
+                    'type vacationType status startDate endDate sickLeaveStartDate sickLeaveEndDate ' +
+                    'wfhDate wfhWorkingOn missionStartDate missionEndDate reason isHalfDay user'
+                )
+                .populate('user', 'name employeeCode')
         ]);
 
         const report = buildDetailedLeavesReport({

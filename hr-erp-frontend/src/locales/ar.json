@@ -1020,6 +1020,17 @@
     "absentActual": "غياب فعلي",
     "variance": "الفرق",
     "deduction": "أيام الخصم",
-    "reason": "السبب"
+    "reason": "السبب",
+    "actions": "إجراءات",
+    "viewDetails": "عرض التفاصيل ▼",
+    "closeDetails": "إغلاق ▲",
+    "leaveHistoryTitle": "سجل الإجازات — {{name}}",
+    "noLeaveHistory": "لا يوجد سجل إجازات تفصيلي.",
+    "detailStartEnd": "البداية / النهاية",
+    "detailLeaveType": "نوع الإجازة",
+    "detailDuration": "المدة",
+    "detailReason": "السبب",
+    "detailStatus": "الحالة",
+    "daysUnit": "يوم"
   }
 } 

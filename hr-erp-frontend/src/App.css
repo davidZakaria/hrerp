@@ -2884,16 +2884,16 @@
 }
 
 [data-theme='light'] .modern-dash .main-content p,
-[data-theme='light'] .modern-dash .main-content span,
+[data-theme='light'] .modern-dash .main-content span:not(.insights-badge):not(.saas-vacation-badge),
 [data-theme='light'] .modern-dash .main-content div,
 [data-theme='light'] .modern-dash .main-content label,
 [data-theme='light'] .modern-dash .main-content li,
 [data-theme='light'] .employee-dashboard-v2 .main-content p,
-[data-theme='light'] .employee-dashboard-v2 .main-content span,
+[data-theme='light'] .employee-dashboard-v2 .main-content span:not(.insights-badge):not(.saas-vacation-badge),
 [data-theme='light'] .employee-dashboard-v2 .main-content div,
 [data-theme='light'] .employee-dashboard-v2 .main-content label,
 [data-theme='light'] .employee-dashboard-v2 .main-content li {
-  color: inherit;
+  color: inherit !important;
   text-shadow: none !important;
 }
 
@@ -3113,5 +3113,62 @@
 
 [data-theme='dark'] #employee-insights-alerts .dash-insights-alert-desc {
   color: #94a3b8 !important;
+}
+
+/* Insights badges — beat global span { color: white !important } in both themes */
+[data-theme='light'] .modern-dash #employee-insights-table .insights-badge--neutral,
+[data-theme='light'] .modern-dash .saas-insights-table .insights-badge--neutral {
+  color: #334155 !important;
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme='light'] .modern-dash #employee-insights-table .insights-badge--good,
+[data-theme='light'] .modern-dash .saas-insights-table .insights-badge--good {
+  color: #047857 !important;
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+}
+
+[data-theme='light'] .modern-dash #employee-insights-table .insights-badge--warn,
+[data-theme='light'] .modern-dash .saas-insights-table .insights-badge--warn {
+  color: #b45309 !important;
+  background: #fffbeb !important;
+  border-color: #fcd34d !important;
+}
+
+[data-theme='light'] .modern-dash #employee-insights-table .insights-badge--bad,
+[data-theme='light'] .modern-dash .saas-insights-table .insights-badge--bad {
+  color: #b91c1c !important;
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+}
+
+[data-theme='dark'] .modern-dash #employee-insights-table .insights-badge--neutral,
+[data-theme='dark'] .modern-dash .saas-insights-table .insights-badge--neutral {
+  color: #cbd5e1 !important;
+  background: rgba(51, 65, 85, 0.5) !important;
+  border-color: #475569 !important;
+}
+
+[data-theme='dark'] .modern-dash #employee-insights-table .insights-badge--good,
+[data-theme='dark'] .modern-dash .saas-insights-table .insights-badge--good {
+  color: #34d399 !important;
+  background: rgba(6, 78, 59, 0.3) !important;
+  border-color: #065f46 !important;
+}
+
+[data-theme='dark'] .modern-dash #employee-insights-table .insights-badge--warn,
+[data-theme='dark'] .modern-dash .saas-insights-table .insights-badge--warn {
+  color: #fbbf24 !important;
+  background: rgba(120, 53, 15, 0.3) !important;
+  border-color: #92400e !important;
+}
+
+[data-theme='dark'] .modern-dash #employee-insights-table .insights-badge--bad,
+[data-theme='dark'] .modern-dash .saas-insights-table .insights-badge--bad {
+  color: #fb7185 !important;
+  background: rgba(136, 19, 55, 0.3) !important;
+  border-color: #881337 !important;
 }
 

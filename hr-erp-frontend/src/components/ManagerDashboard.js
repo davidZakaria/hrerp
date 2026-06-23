@@ -33,7 +33,11 @@ const MD_BTN_REFRESH =
 const MD_PENDING_CARD =
   'bg-white dark:bg-slate-800 border-l-4 border-l-indigo-500 border-y border-r border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-sm mb-4 flex flex-col md:flex-row justify-between gap-4';
 const MD_TEAM_CARD =
-  'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl p-5 text-center';
+  'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl p-5 flex flex-col items-center gap-2 h-full';
+const MD_TEAM_NAME =
+  '!text-slate-900 dark:!text-white font-semibold m-0 text-sm text-center leading-snug break-words w-full px-1';
+const MD_BTN_FLAG =
+  'md-btn-flag mt-auto w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 !text-slate-700 dark:!text-slate-200 rounded-lg px-4 py-2 text-sm font-medium border border-slate-300 dark:border-slate-600 cursor-pointer shadow-sm';
 const MD_FORM_CARD =
   'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-l-4 border-l-indigo-500 shadow-sm rounded-xl p-5';
 const MD_HEAD = 'md-section-head mb-4';
@@ -1208,9 +1212,9 @@ const ManagerDashboard = ({ onLogout }) => {
                   >
                     {memberInitial(member.name)}
                   </div>
-                  <h4 className="!text-slate-900 dark:!text-white font-semibold m-0 mb-1">{member.name}</h4>
-                  <p className="member-department !text-slate-500 dark:!text-slate-400 text-sm m-0 mb-2">{member.department}</p>
-                  <span className="vacation-days team-stat inline-block bg-indigo-50 dark:bg-indigo-900/30 !text-indigo-700 dark:!text-indigo-300 px-2.5 py-1 rounded-lg text-xs font-semibold">
+                  <h4 className={MD_TEAM_NAME} title={member.name}>{member.name}</h4>
+                  <p className="member-department !text-slate-500 dark:!text-slate-400 text-xs m-0 text-center">{member.department}</p>
+                  <span className="vacation-days team-stat inline-block bg-indigo-50 dark:bg-indigo-900/30 !text-indigo-700 dark:!text-indigo-300 px-2.5 py-1 rounded-full text-xs font-semibold">
                     {Number(member.vacationDaysLeft).toFixed(1)} {t('daysLeft')}
                   </span>
                   
@@ -1237,7 +1241,7 @@ const ManagerDashboard = ({ onLogout }) => {
                   {/* Flag Employee Button */}
                   <button
                     type="button"
-                    className="btn-flag-employee mt-3 w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 !text-slate-700 dark:!text-white rounded-lg px-4 py-2 text-sm font-medium border border-slate-300 dark:border-slate-600 cursor-pointer"
+                    className={MD_BTN_FLAG}
                     onClick={() => openFlagModal(member)}
                     title={t('flags.flagEmployee')}
                   >
@@ -1779,70 +1783,94 @@ const ManagerDashboard = ({ onLogout }) => {
 
       {/* Flag Modal */}
       {showFlagModal && selectedEmployee && (
-        <div className="modal-overlay" onClick={closeFlagModal}>
-          <div className="modal-content flag-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay md-flag-overlay" onClick={closeFlagModal}>
+          <div className="modal-content flag-modal md-flag-modal max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{t('flags.flagEmployee') || 'Flag Employee'}</h3>
-              <button type="button" className="close-btn" onClick={closeFlagModal}>{'\u00D7'}</button>
+              <button type="button" className="close-btn" onClick={closeFlagModal} aria-label="Close">{'\u00D7'}</button>
             </div>
-            
+
             <div className="modal-body">
-              <div className="employee-summary">
+              <div className="md-flag-employee-summary flex items-center gap-4 p-4 mb-5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
                 <div
-                  className="employee-avatar w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center !text-indigo-700 dark:!text-indigo-300 font-bold text-lg"
+                  className="employee-avatar shrink-0 w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center !text-indigo-700 dark:!text-indigo-300 font-bold text-lg"
                   aria-hidden
                 >
                   {memberInitial(selectedEmployee?.name)}
                 </div>
-                <div className="employee-info">
-                  <h4>{selectedEmployee.name}</h4>
-                  <p>{selectedEmployee.department}</p>
+                <div className="employee-info min-w-0">
+                  <h4 className="m-0 mb-1 text-base font-semibold !text-slate-900 dark:!text-white break-words leading-snug">
+                    {selectedEmployee.name}
+                  </h4>
+                  <p className="m-0 text-sm !text-slate-500 dark:!text-slate-400">{selectedEmployee.department}</p>
                 </div>
               </div>
-              
-              <div className="flag-type-section">
-                <label>{t('flags.flagType') || 'Flag Type'}:</label>
-                <div className="flag-type-options">
-                  <button 
-                    className={`flag-type-btn ${flagType === 'deduction' ? 'active deduction' : ''}`}
+
+              <div className="md-flag-type-section mb-5">
+                <label className="block mb-2 text-sm font-semibold !text-slate-700 dark:!text-slate-300">
+                  {t('flags.flagType') || 'Flag Type'}
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className={`md-flag-type-btn flex-1 px-4 py-2.5 rounded-lg font-medium border transition-colors ${
+                      flagType === 'deduction'
+                        ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/30 !text-rose-700 dark:!text-rose-300 shadow-sm'
+                        : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 !text-slate-700 dark:!text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    }`}
                     onClick={() => setFlagType('deduction')}
                   >
                     {t('flags.deduction') || 'Deduction'}
                   </button>
-                  <button 
-                    className={`flag-type-btn ${flagType === 'reward' ? 'active reward' : ''}`}
+                  <button
+                    type="button"
+                    className={`md-flag-type-btn flex-1 px-4 py-2.5 rounded-lg font-medium border transition-colors ${
+                      flagType === 'reward'
+                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 !text-emerald-700 dark:!text-emerald-300 shadow-sm'
+                        : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 !text-slate-700 dark:!text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    }`}
                     onClick={() => setFlagType('reward')}
                   >
                     {t('flags.reward') || 'Reward'}
                   </button>
                 </div>
               </div>
-              
-              <div className="flag-reason-section">
-                <label>{t('flags.reason') || 'Reason'}:</label>
+
+              <div className="md-flag-reason-section">
+                <label className="block mb-2 text-sm font-semibold !text-slate-700 dark:!text-slate-300">
+                  {t('flags.reason') || 'Reason'}
+                </label>
                 <textarea
                   value={flagReason}
                   onChange={(e) => setFlagReason(e.target.value)}
                   placeholder={t('flags.enterReason') || 'Enter reason for flag...'}
                   rows={4}
-                  className={!flagReason.trim() ? 'required-field' : ''}
+                  className={`form-input-elegant w-full resize-y min-h-[100px] ${!flagReason.trim() ? 'border-rose-400 dark:border-rose-500' : ''}`}
                 />
                 {!flagReason.trim() && (
-                  <small className="error-text">{t('validation.required') || 'This field is required'}</small>
+                  <small className="block mt-1.5 text-xs !text-rose-600 dark:!text-rose-400">
+                    {t('validation.required') || 'This field is required'}
+                  </small>
                 )}
               </div>
             </div>
-            
+
             <div className="modal-actions">
-              <button 
-                className="cancel-btn" 
+              <button
+                type="button"
+                className="cancel-btn md-flag-cancel"
                 onClick={closeFlagModal}
                 disabled={flagSubmitting}
               >
                 {t('common.cancel') || 'Cancel'}
               </button>
-              <button 
-                className={`flag-submit-btn ${flagType === 'deduction' ? 'deduction' : 'reward'}`}
+              <button
+                type="button"
+                className={`md-flag-submit rounded-lg px-4 py-2 font-medium shadow-sm border-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                  flagType === 'deduction'
+                    ? 'bg-rose-500 hover:bg-rose-600 !text-white'
+                    : 'bg-emerald-500 hover:bg-emerald-600 !text-white'
+                }`}
                 onClick={handleCreateFlag}
                 disabled={flagSubmitting || !flagReason.trim()}
               >

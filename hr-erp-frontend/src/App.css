@@ -3335,3 +3335,31 @@
   transform: none !important;
 }
 
+.manager-dashboard .md-flag-modal textarea,
+.manager-dashboard .md-flag-modal textarea.form-input-elegant {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  font-family: inherit !important;
+  font-style: normal !important;
+}
+
+[data-theme='dark'] .manager-dashboard .md-flag-modal textarea,
+[data-theme='dark'] .manager-dashboard .md-flag-modal textarea.form-input-elegant {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+
+.manager-dashboard .md-flag-type-btn,
+.manager-dashboard .md-flag-submit,
+.manager-dashboard .md-btn-flag {
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.manager-dashboard .md-flag-submit:disabled {
+  opacity: 0.55 !important;
+  color: #ffffff !important;
+}
+

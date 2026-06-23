@@ -1345,6 +1345,111 @@
   transform: none !important;
 }
 
+/* Flag modal — premium SaaS */
+.manager-dashboard .md-flag-modal {
+  max-width: 28rem;
+}
+
+.manager-dashboard .md-flag-modal .employee-info h4,
+.manager-dashboard .md-flag-modal .employee-info p {
+  text-shadow: none !important;
+}
+
+.manager-dashboard .md-flag-type-btn {
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.manager-dashboard .md-flag-submit {
+  color: #ffffff !important;
+}
+
+.manager-dashboard .md-flag-submit:disabled {
+  opacity: 0.55 !important;
+  color: #ffffff !important;
+}
+
+.manager-dashboard .md-flag-modal textarea.form-input-elegant,
+.manager-dashboard .md-flag-modal .form-input-elegant {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 0.5rem !important;
+  padding: 0.75rem !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme='dark'] .manager-dashboard .md-flag-modal textarea.form-input-elegant,
+[data-theme='dark'] .manager-dashboard .md-flag-modal .form-input-elegant {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+
+.manager-dashboard .md-flag-modal textarea.form-input-elegant::placeholder {
+  color: #94a3b8 !important;
+  font-style: normal !important;
+}
+
+.manager-dashboard .team-member-card {
+  min-height: 220px;
+}
+
+.manager-dashboard .md-btn-flag {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transform: none !important;
+}
+
+.manager-dashboard .md-btn-flag:hover:not(:disabled) {
+  background: #f8fafc !important;
+}
+
+[data-theme='dark'] .manager-dashboard .md-btn-flag {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #475569 !important;
+}
+
+[data-theme='dark'] .manager-dashboard .md-btn-flag:hover:not(:disabled) {
+  background: #334155 !important;
+}
+
+.h-full { height: 100%; }
+.mt-auto { margin-top: auto; }
+.shrink-0 { flex-shrink: 0; }
+.min-w-0 { min-width: 0; }
+.max-w-md { max-width: 28rem; }
+.resize-y { resize: vertical; }
+.min-h-\[100px\] { min-height: 100px; }
+.break-words { overflow-wrap: break-word; word-break: break-word; }
+.leading-snug { line-height: 1.375; }
+.gap-2 { gap: 0.5rem; }
+.flex-1 { flex: 1 1 0%; }
+.py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+.px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+.mb-5 { margin-bottom: 1.25rem; }
+.mt-1\.5 { margin-top: 0.375rem; }
+.text-base { font-size: 1rem; line-height: 1.5rem; }
+.border-rose-400 { border-color: #fb7185; }
+.border-rose-500 { border-color: #f43f5e; }
+.border-emerald-500 { border-color: #10b981; }
+.bg-rose-50 { background-color: #fff1f2; }
+.bg-emerald-50 { background-color: #ecfdf5; }
+.hover\:bg-rose-600:hover { background-color: #e11d48; }
+.hover\:bg-emerald-600:hover { background-color: #059669; }
+[data-theme='dark'] .dark\:border-rose-500 { border-color: #f43f5e; }
+[data-theme='dark'] .dark\:bg-rose-900\/30 { background-color: rgba(136, 19, 55, 0.3); }
+[data-theme='dark'] .dark\:bg-emerald-900\/30 { background-color: rgba(6, 78, 59, 0.3); }
+[data-theme='dark'] .dark\:text-rose-300 { color: #fda4af; }
+[data-theme='dark'] .dark\:text-rose-400 { color: #fb7185; }
+[data-theme='dark'] .dark\:text-emerald-300 { color: #6ee7b7; }
+[data-theme='dark'] .dark\:bg-slate-900\/50 { background-color: rgba(15, 23, 42, 0.5); }
+.disabled\:cursor-not-allowed:disabled { cursor: not-allowed; }
+.disabled\:opacity-60:disabled { opacity: 0.6; }
+
 [data-theme='light'] .manager-dashboard.modern-dash,
 [data-theme='light'] .manager-dashboard.modern-dash .section[class*='bg-white'],
 [data-theme='light'] .manager-dashboard.modern-dash .request-card,

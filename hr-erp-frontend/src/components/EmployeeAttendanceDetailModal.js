@@ -103,77 +103,34 @@ const EmployeeAttendanceDetailModal = ({
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999
-      }}
-      onClick={onClose}
-    >
+    <div className="modal-overlay attendance-detail-overlay" onClick={onClose}>
       <div
-        className="attendance-modal-custom"
+        className="attendance-modal-custom attendance-detail-modal"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: '#f5f5f5',
-          borderRadius: '12px',
-          padding: '2rem',
-          maxWidth: '960px',
-          width: '92%',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
-        }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="attendance-detail-title"
       >
-        <h3
-          style={{
-            marginBottom: '1rem',
-            color: '#000',
-            fontWeight: 'bold',
-            fontSize: '1.45rem',
-            textAlign: 'center'
-          }}
-        >
+        <h3 id="attendance-detail-title" className="attendance-detail-title">
           Attendance Details — {user.name}
         </h3>
-        <p style={{ textAlign: 'center', color: '#555', marginBottom: '1.25rem', fontSize: '0.9rem' }}>
+        <p className="attendance-detail-subtitle">
           {payload.startDate?.slice(0, 10)} → {payload.endDate?.slice(0, 10)}
         </p>
 
-        <div
-          style={{
-            marginBottom: '1.5rem',
-            background: '#fff',
-            padding: '1.25rem',
-            borderRadius: '8px',
-            border: '1px solid #ddd'
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: '1rem'
-            }}
-          >
+        <div className="attendance-detail-panel attendance-detail-meta">
+          <div className="attendance-detail-meta-grid">
             <div>
-              <strong style={{ color: '#000', display: 'block', marginBottom: '0.25rem' }}>Employee Code</strong>
-              <span style={{ color: '#000' }}>{user.employeeCode || 'N/A'}</span>
+              <strong>Employee Code</strong>
+              <span>{user.employeeCode || 'N/A'}</span>
             </div>
             <div>
-              <strong style={{ color: '#000', display: 'block', marginBottom: '0.25rem' }}>Department</strong>
-              <span style={{ color: '#000' }}>{user.department}</span>
+              <strong>Department</strong>
+              <span>{user.department}</span>
             </div>
             <div>
-              <strong style={{ color: '#000', display: 'block', marginBottom: '0.25rem' }}>Work Schedule</strong>
-              <span style={{ color: '#000' }}>
+              <strong>Work Schedule</strong>
+              <span>
                 {user.workSchedule
                   ? `${user.workSchedule.startTime} - ${user.workSchedule.endTime}`
                   : 'Not set'}
@@ -182,15 +139,9 @@ const EmployeeAttendanceDetailModal = ({
           </div>
         </div>
 
-        <div style={{ marginBottom: '1.25rem' }}>
-          <h4 style={{ marginBottom: '0.75rem', color: '#000', fontSize: '1.05rem' }}>Summary</h4>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-              gap: '0.75rem'
-            }}
-          >
+        <div className="attendance-detail-summary-section">
+          <h4 className="attendance-detail-section-title">Summary</h4>
+          <div className="attendance-detail-summary-grid">
             {[
               ['Present', stats?.present ?? 0, '#4CAF50'],
               ['Late', stats?.late ?? 0, '#FF9800'],
@@ -201,67 +152,45 @@ const EmployeeAttendanceDetailModal = ({
             ].map(([label, val, color]) => (
               <div
                 key={label}
-                style={{
-                  padding: '0.75rem',
-                  background: '#fff',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  border: `2px solid ${color}`
-                }}
+                className="attendance-detail-stat-card"
+                style={{ borderColor: color }}
               >
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#000' }}>{val}</div>
-                <div style={{ fontSize: '0.8rem', color: '#333' }}>{label}</div>
+                <div className="attendance-detail-stat-value">{val}</div>
+                <div className="attendance-detail-stat-label">{label}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ maxHeight: 'min(50vh, 420px)', overflowY: 'auto', background: '#fff', padding: '1rem', borderRadius: '8px', border: '1px solid #eee' }}>
-          <h4 style={{ marginBottom: '1rem', color: '#000', fontSize: '1.05rem' }}>Daily breakdown</h4>
+        <div className="attendance-detail-panel attendance-detail-table-wrap">
+          <h4 className="attendance-detail-section-title">Daily breakdown</h4>
           {grouped.map(([monthLabel, rows]) => (
-            <div key={monthLabel} style={{ marginBottom: '1.5rem' }}>
-              <div
-                style={{
-                  position: 'sticky',
-                  top: 0,
-                  background: 'linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%)',
-                  color: '#fff',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
-                  fontWeight: 600,
-                  marginBottom: '0.5rem',
-                  zIndex: 1
-                }}
-              >
-                {monthLabel}
-              </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <div key={monthLabel} className="attendance-detail-month-group">
+              <div className="attendance-detail-month-bar">{monthLabel}</div>
+              <table className="attendance-detail-table">
                 <thead>
-                  <tr style={{ background: '#f0f0f0' }}>
-                    <th style={{ padding: '8px', textAlign: 'left', color: '#000' }}>Date</th>
-                    <th style={{ padding: '8px', textAlign: 'left', color: '#000' }}>Day</th>
-                    <th style={{ padding: '8px', textAlign: 'left', color: '#000' }}>Shift</th>
-                    <th style={{ padding: '8px', textAlign: 'left', color: '#000' }}>In</th>
-                    <th style={{ padding: '8px', textAlign: 'left', color: '#000' }}>Out</th>
-                    <th style={{ padding: '8px', textAlign: 'center', color: '#000' }}>Hours</th>
-                    <th style={{ padding: '8px', textAlign: 'center', color: '#000' }}>Status</th>
-                    <th style={{ padding: '8px', textAlign: 'left', color: '#000' }}>Exceptions</th>
-                    <th style={{ padding: '8px', textAlign: 'center', color: '#000' }}></th>
+                  <tr>
+                    <th>Date</th>
+                    <th>Day</th>
+                    <th>Shift</th>
+                    <th>In</th>
+                    <th>Out</th>
+                    <th className="attendance-detail-th-center">Hours</th>
+                    <th className="attendance-detail-th-center">Status</th>
+                    <th>Exceptions</th>
+                    <th className="attendance-detail-th-center"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((row, idx) => (
-                    <tr
-                      key={`${row.date}-${idx}`}
-                      style={{ borderBottom: '1px solid #eee', background: idx % 2 === 0 ? '#fff' : '#fafafa' }}
-                    >
-                      <td style={{ padding: '8px', color: '#000' }}>{row.date}</td>
-                      <td style={{ padding: '8px', color: '#000' }}>{row.dayName}</td>
-                      <td style={{ padding: '8px', color: '#333' }}>{row.scheduledShift}</td>
-                      <td style={{ padding: '8px', fontFamily: 'monospace' }}>{row.clockIn || '—'}</td>
-                      <td style={{ padding: '8px', fontFamily: 'monospace' }}>{row.clockOut || '—'}</td>
-                      <td style={{ padding: '8px', textAlign: 'center' }}>{row.totalHoursDisplay}</td>
-                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                    <tr key={`${row.date}-${idx}`}>
+                      <td>{row.date}</td>
+                      <td>{row.dayName}</td>
+                      <td className="attendance-detail-muted">{row.scheduledShift}</td>
+                      <td className="attendance-detail-clock">{row.clockIn || '—'}</td>
+                      <td className="attendance-detail-clock">{row.clockOut || '—'}</td>
+                      <td className="attendance-detail-hours attendance-detail-th-center">{row.totalHoursDisplay}</td>
+                      <td className="attendance-detail-th-center">
                         <span
                           style={{
                             ...BADGE_STYLES[row.dailyStatus] || BADGE_STYLES.present,
@@ -276,28 +205,20 @@ const EmployeeAttendanceDetailModal = ({
                           {formatLabel(row.dailyStatus)}
                         </span>
                         {row.isEdited && (
-                          <span title="Manually adjusted" style={{ marginLeft: 6, fontSize: '1rem' }}>
+                          <span title="Manually adjusted" className="attendance-detail-edited-mark">
                             ✎
                           </span>
                         )}
                       </td>
-                      <td style={{ padding: '8px', color: '#333', maxWidth: '200px' }}>
+                      <td className="attendance-detail-muted attendance-detail-exceptions">
                         {(row.exceptionLabels || []).join(', ') || '—'}
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <td className="attendance-detail-th-center">
                         {canFixPunch && needsFix(row) && (
                           <button
                             type="button"
+                            className="attendance-detail-fix-btn"
                             onClick={() => openFix(row)}
-                            style={{
-                              padding: '4px 10px',
-                              fontSize: '0.75rem',
-                              background: '#2563eb',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer'
-                            }}
                           >
                             Fix punch
                           </button>
@@ -310,53 +231,42 @@ const EmployeeAttendanceDetailModal = ({
             </div>
           ))}
           {detailRows.length === 0 && (
-            <p style={{ color: '#666' }}>No rows in range.</p>
+            <p className="attendance-detail-empty">No rows in range.</p>
           )}
         </div>
 
         {fixRow && (
-          <div
-            style={{
-              marginTop: '1rem',
-              padding: '1rem',
-              background: '#fff',
-              border: '1px solid #ccc',
-              borderRadius: '8px'
-            }}
-          >
-            <h4 style={{ marginBottom: '0.5rem' }}>Fix punch — {fixRow.date}</h4>
-            {fixError && <div style={{ color: '#c00', marginBottom: '0.5rem' }}>{fixError}</div>}
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+          <div className="attendance-detail-panel attendance-detail-fix-panel">
+            <h4 className="attendance-detail-section-title">Fix punch — {fixRow.date}</h4>
+            {fixError && <div className="attendance-detail-fix-error">{fixError}</div>}
+            <div className="attendance-detail-fix-fields">
               <label>
                 Clock in (HH:MM)
                 <input
-                  className="form-input-elegant"
+                  className="form-input-elegant attendance-detail-fix-input"
                   value={fixClockIn}
                   onChange={(e) => setFixClockIn(e.target.value)}
-                  style={{ display: 'block', marginTop: 4 }}
                 />
               </label>
               <label>
                 Clock out (HH:MM)
                 <input
-                  className="form-input-elegant"
+                  className="form-input-elegant attendance-detail-fix-input"
                   value={fixClockOut}
                   onChange={(e) => setFixClockOut(e.target.value)}
-                  style={{ display: 'block', marginTop: 4 }}
                 />
               </label>
             </div>
-            <label style={{ display: 'block', marginBottom: '0.75rem' }}>
+            <label className="attendance-detail-fix-reason">
               Reason (required)
               <textarea
                 className="form-input-elegant"
                 rows={2}
                 value={fixReason}
                 onChange={(e) => setFixReason(e.target.value)}
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
               />
             </label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div className="attendance-detail-fix-actions">
               <button type="button" className="btn-elegant btn-success" disabled={fixLoading} onClick={submitFix}>
                 {fixLoading ? 'Saving…' : 'Save'}
               </button>
@@ -367,21 +277,8 @@ const EmployeeAttendanceDetailModal = ({
           </div>
         )}
 
-        <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: '0.75rem 2rem',
-              backgroundColor: '#4a90e2',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
-          >
+        <div className="attendance-detail-footer">
+          <button type="button" className="attendance-detail-close-btn" onClick={onClose}>
             Close
           </button>
         </div>

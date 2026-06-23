@@ -2085,7 +2085,7 @@ label {
 
 [data-theme='dark'] p,
 [data-theme='dark'] span:not(.insights-badge):not(.saas-vacation-badge):not(.leaves-status-badge),
-[data-theme='dark'] div:not(.modal-overlay):not(.insights-alert-text) {
+[data-theme='dark'] div:not(.modal-overlay):not(.insights-alert-text):not(.attendance-modal-custom) {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 

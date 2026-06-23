@@ -38,6 +38,13 @@ const MD_TEAM_NAME =
   '!text-slate-900 dark:!text-white font-semibold m-0 text-sm text-center leading-snug break-words w-full px-1';
 const MD_BTN_FLAG =
   'md-btn-flag mt-auto w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 !text-slate-700 dark:!text-slate-200 rounded-lg px-4 py-2 text-sm font-medium border border-slate-300 dark:border-slate-600 cursor-pointer shadow-sm';
+const MD_BTN_SAVE =
+  'md-btn-save md-btn-refresh rounded-lg px-4 py-2 font-medium shadow-sm border-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed';
+const MD_MODAL_FIELD = 'md-modal-field mb-4';
+const MD_MODAL_LABEL = 'md-modal-label block mb-2 text-sm font-semibold !text-slate-700 dark:!text-slate-300';
+const MD_MODIFIED = ' \u00B7 Modified';
+const MD_EDIT_INLINE =
+  'md-edit-inline-panel mb-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700';
 const MD_FORM_CARD =
   'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-l-4 border-l-indigo-500 shadow-sm rounded-xl p-5';
 const MD_HEAD = 'md-section-head mb-4';
@@ -118,6 +125,8 @@ const ManagerDashboard = ({ onLogout }) => {
     const b = formEditSnapshot[key];
     return String(a ?? '') !== String(b ?? '');
   };
+
+  const fieldDirtySuffix = (key) => (fieldDirty(key) ? MD_MODIFIED : '');
 
   useEffect(() => {
     fetchUserData();
@@ -1399,7 +1408,7 @@ const ManagerDashboard = ({ onLogout }) => {
       {/* Comment Modal */}
       {showCommentModal && (
         <div className="modal-overlay" onClick={closeCommentModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content md-comment-modal max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>
                 {actionType === 'approve' ? t('managerDashboard.approveRequest') : t('managerDashboard.rejectRequest')}
@@ -1463,52 +1472,53 @@ const ManagerDashboard = ({ onLogout }) => {
                 </div>
 
                 {formEditData && formEditData._id && (
-                  <div className="edit-before-submit-section" style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(201, 162, 39, 0.1)', borderRadius: '8px', border: '1px solid rgba(201, 162, 39, 0.3)' }}>
-                    <strong className="block mb-3 !text-slate-900 dark:!text-white">{t('edit') || 'Edit'} form before {actionType === 'approve' ? (t('approve') || 'approving') : (t('reject') || 'rejecting')}</strong>
-                    <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                      <label className="form-label-elegant">{t('reason')}{fieldDirty('reason') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
-                      <textarea value={formEditData.reason || ''} onChange={(e) => setFormEditData({ ...formEditData, reason: e.target.value })} rows={2} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('reason') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
+                  <div className={`edit-before-submit-section ${MD_EDIT_INLINE}`}>
+                    <strong className="block mb-3 text-sm font-semibold !text-slate-900 dark:!text-white">{t('edit') || 'Edit'} form before {actionType === 'approve' ? (t('approve') || 'approving') : (t('reject') || 'rejecting')}</strong>
+                    <div className={MD_MODAL_FIELD}>
+                      <label className={MD_MODAL_LABEL}>{t('reason')}{fieldDirtySuffix('reason')}</label>
+                      <textarea value={formEditData.reason || ''} onChange={(e) => setFormEditData({ ...formEditData, reason: e.target.value })} rows={2} className="form-input-elegant w-full resize-y" />
                     </div>
                     {formEditData.type === 'vacation' && (
                       <>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                        <div className={`${MD_MODAL_FIELD} md-checkbox-row`}>
+                          <label className="flex items-center gap-2 cursor-pointer !text-slate-700 dark:!text-slate-300 text-sm font-medium">
                             <input
                               type="checkbox"
+                              className="md-modal-checkbox"
                               checked={!!formEditData.isHalfDay}
                               onChange={(e) => updateVacationEdit({ isHalfDay: e.target.checked, endDate: e.target.checked ? formEditData.startDate : formEditData.endDate })}
                             />
                             <span>{t('forms.halfDay')}</span>
                           </label>
                         </div>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{formEditData.isHalfDay ? t('forms.date') : t('forms.startDate')}</label>
-                          <input type="date" value={formEditData.startDate || ''} onChange={(e) => updateVacationEdit({ startDate: e.target.value, ...(formEditData.isHalfDay ? { endDate: e.target.value } : {}) })} className="form-input-elegant" style={{ width: '100%' }} />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{formEditData.isHalfDay ? t('forms.date') : t('forms.startDate')}</label>
+                          <input type="date" value={formEditData.startDate || ''} onChange={(e) => updateVacationEdit({ startDate: e.target.value, ...(formEditData.isHalfDay ? { endDate: e.target.value } : {}) })} className="form-input-elegant w-full" />
                         </div>
                         {!formEditData.isHalfDay && (
-                          <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                            <label className="form-label-elegant">{t('forms.endDate')}</label>
-                            <input type="date" value={formEditData.endDate || ''} onChange={(e) => updateVacationEdit({ endDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                          <div className={MD_MODAL_FIELD}>
+                            <label className={MD_MODAL_LABEL}>{t('forms.endDate')}</label>
+                            <input type="date" value={formEditData.endDate || ''} onChange={(e) => updateVacationEdit({ endDate: e.target.value })} className="form-input-elegant w-full" />
                           </div>
                         )}
                       </>
                     )}
                     {formEditData.type === 'excuse' && (
                       <>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('excuseDate')}{fieldDirty('excuseDate') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
-                          <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('excuseDate') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('excuseDate')}{fieldDirtySuffix('excuseDate')}</label>
+                          <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant w-full" />
                         </div>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('timePeriod') || 'Time'}{fieldDirty('fromHour') || fieldDirty('toHour') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            <input type="time" value={formEditData.fromHour || ''} onChange={(e) => setFormEditData({ ...formEditData, fromHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('fromHour') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
-                            <input type="time" value={formEditData.toHour || ''} onChange={(e) => setFormEditData({ ...formEditData, toHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('toHour') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('timePeriod') || 'Time'}{(fieldDirty('fromHour') || fieldDirty('toHour')) ? MD_MODIFIED : ''}</label>
+                          <div className="flex gap-2 flex-wrap">
+                            <input type="time" value={formEditData.fromHour || ''} onChange={(e) => setFormEditData({ ...formEditData, fromHour: e.target.value })} className="form-input-elegant flex-1 min-w-[120px]" />
+                            <input type="time" value={formEditData.toHour || ''} onChange={(e) => setFormEditData({ ...formEditData, toHour: e.target.value })} className="form-input-elegant flex-1 min-w-[120px]" />
                           </div>
                         </div>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}{fieldDirty('excuseType') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
-                          <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('excuseType') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }}>
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('excuseType') || 'Excuse Type'}{fieldDirtySuffix('excuseType')}</label>
+                          <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant w-full">
                             <option value="paid">Paid</option>
                             <option value="unpaid">Unpaid</option>
                           </select>
@@ -1517,70 +1527,70 @@ const ManagerDashboard = ({ onLogout }) => {
                     )}
                     {formEditData.type === 'sick_leave' && (
                       <>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.startDate')}</label>
-                          <input type="date" value={formEditData.sickLeaveStartDate || ''} onChange={(e) => setFormEditData({ ...formEditData, sickLeaveStartDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('forms.startDate')}</label>
+                          <input type="date" value={formEditData.sickLeaveStartDate || ''} onChange={(e) => setFormEditData({ ...formEditData, sickLeaveStartDate: e.target.value })} className="form-input-elegant w-full" />
                         </div>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.endDate')}</label>
-                          <input type="date" value={formEditData.sickLeaveEndDate || ''} onChange={(e) => setFormEditData({ ...formEditData, sickLeaveEndDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('forms.endDate')}</label>
+                          <input type="date" value={formEditData.sickLeaveEndDate || ''} onChange={(e) => setFormEditData({ ...formEditData, sickLeaveEndDate: e.target.value })} className="form-input-elegant w-full" />
                         </div>
                       </>
                     )}
                     {formEditData.type === 'wfh' && (
                       <>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.date')}</label>
-                          <input type="date" value={formEditData.wfhDate || ''} onChange={(e) => setFormEditData({ ...formEditData, wfhDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('forms.date')}</label>
+                          <input type="date" value={formEditData.wfhDate || ''} onChange={(e) => setFormEditData({ ...formEditData, wfhDate: e.target.value })} className="form-input-elegant w-full" />
                         </div>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.workingOn')}</label>
-                          <input type="text" value={formEditData.wfhWorkingOn || ''} onChange={(e) => setFormEditData({ ...formEditData, wfhWorkingOn: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('forms.workingOn')}</label>
+                          <input type="text" value={formEditData.wfhWorkingOn || ''} onChange={(e) => setFormEditData({ ...formEditData, wfhWorkingOn: e.target.value })} className="form-input-elegant w-full" />
                         </div>
                       </>
                     )}
                     {formEditData.type === 'extra_hours' && (
                       <>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.date')}</label>
-                          <input type="date" value={formEditData.extraHoursDate || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('forms.date')}</label>
+                          <input type="date" value={formEditData.extraHoursDate || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDate: e.target.value })} className="form-input-elegant w-full" />
                         </div>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.requestedOtHours')}</label>
-                          <input type="number" value={formEditData.extraHoursWorked ?? ''} readOnly className="form-input-elegant" style={{ width: '100%', background: '#f5f5f5' }} />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('forms.requestedOtHours')}</label>
+                          <input type="number" value={formEditData.extraHoursWorked ?? ''} readOnly className="form-input-elegant w-full md-input-readonly" />
                         </div>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.approvedOtHours')}</label>
-                          <input type="number" value={formEditData.approvedHours ?? ''} onChange={(e) => setFormEditData({ ...formEditData, approvedHours: Number(e.target.value) })} className="form-input-elegant" style={{ width: '100%' }} min="0.5" step="0.5" />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('forms.approvedOtHours')}</label>
+                          <input type="number" value={formEditData.approvedHours ?? ''} onChange={(e) => setFormEditData({ ...formEditData, approvedHours: Number(e.target.value) })} className="form-input-elegant w-full" min="0.5" step="0.5" />
                         </div>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.workDone')}</label>
-                          <input type="text" value={formEditData.extraHoursDescription || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDescription: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('forms.workDone')}</label>
+                          <input type="text" value={formEditData.extraHoursDescription || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDescription: e.target.value })} className="form-input-elegant w-full" />
                         </div>
                       </>
                     )}
                     {formEditData.type === 'mission' && (
                       <>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.startDate')}</label>
-                          <input type="date" value={formEditData.missionStartDate || ''} onChange={(e) => setFormEditData({ ...formEditData, missionStartDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('forms.startDate')}</label>
+                          <input type="date" value={formEditData.missionStartDate || ''} onChange={(e) => setFormEditData({ ...formEditData, missionStartDate: e.target.value })} className="form-input-elegant w-full" />
                         </div>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.endDate')}</label>
-                          <input type="date" value={formEditData.missionEndDate || ''} onChange={(e) => setFormEditData({ ...formEditData, missionEndDate: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('forms.endDate')}</label>
+                          <input type="date" value={formEditData.missionEndDate || ''} onChange={(e) => setFormEditData({ ...formEditData, missionEndDate: e.target.value })} className="form-input-elegant w-full" />
                         </div>
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                          <label className="form-label-elegant">{t('forms.missionDestination')}</label>
-                          <input type="text" value={formEditData.missionDestination || ''} onChange={(e) => setFormEditData({ ...formEditData, missionDestination: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        <div className={MD_MODAL_FIELD}>
+                          <label className={MD_MODAL_LABEL}>{t('forms.missionDestination')}</label>
+                          <input type="text" value={formEditData.missionDestination || ''} onChange={(e) => setFormEditData({ ...formEditData, missionDestination: e.target.value })} className="form-input-elegant w-full" />
                         </div>
-                        <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                          <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                            <label className="form-label-elegant">{t('forms.missionFromTime') || 'Time From'}</label>
-                            <input type="time" value={formEditData.missionFromTime || ''} onChange={(e) => setFormEditData({ ...formEditData, missionFromTime: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div className="md-modal-field">
+                            <label className={MD_MODAL_LABEL}>{t('forms.missionFromTime') || 'Time From'}</label>
+                            <input type="time" value={formEditData.missionFromTime || ''} onChange={(e) => setFormEditData({ ...formEditData, missionFromTime: e.target.value })} className="form-input-elegant w-full" />
                           </div>
-                          <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
-                            <label className="form-label-elegant">{t('forms.missionToTime') || 'Time To'}</label>
-                            <input type="time" value={formEditData.missionToTime || ''} onChange={(e) => setFormEditData({ ...formEditData, missionToTime: e.target.value })} className="form-input-elegant" style={{ width: '100%' }} />
+                          <div className="md-modal-field">
+                            <label className={MD_MODAL_LABEL}>{t('forms.missionToTime') || 'Time To'}</label>
+                            <input type="time" value={formEditData.missionToTime || ''} onChange={(e) => setFormEditData({ ...formEditData, missionToTime: e.target.value })} className="form-input-elegant w-full" />
                           </div>
                         </div>
                       </>
@@ -1589,7 +1599,7 @@ const ManagerDashboard = ({ onLogout }) => {
                 )}
                 
                 <div className="comment-section">
-                  <label htmlFor="managerComment">
+                  <label htmlFor="managerComment" className={MD_MODAL_LABEL}>
                     {actionType === 'approve' ? t('commentOptional') : t('reasonForRejectionRequired')}:
                   </label>
                   <textarea
@@ -1602,7 +1612,7 @@ const ManagerDashboard = ({ onLogout }) => {
                         : t('pleaseProvideAClearReasonForRejection')
                     }
                     rows={4}
-                    className={actionType === 'reject' && !comment.trim() ? 'required-field' : ''}
+                    className={`form-input-elegant w-full resize-y ${actionType === 'reject' && !comment.trim() ? 'required-field' : ''}`}
                   />
                   {actionType === 'reject' && !comment.trim() && (
                     <small className="error-text">{t('aReasonForRejectionIsRequired')}</small>
@@ -1612,19 +1622,21 @@ const ManagerDashboard = ({ onLogout }) => {
             )}
             
             <div className="modal-actions">
-              <button 
-                className="cancel-btn" 
+              <button
+                type="button"
+                className="cancel-btn"
                 onClick={closeCommentModal}
                 disabled={submitting}
               >
                 {t('cancel')}
               </button>
-              <button 
-                className={actionType === 'approve' ? 'approve-btn' : 'reject-btn'}
+              <button
+                type="button"
+                className={actionType === 'approve' ? MD_BTN_APPROVE : MD_BTN_REJECT}
                 onClick={handleFormAction}
                 disabled={submitting || (actionType === 'reject' && !comment.trim())}
               >
-                {submitting ? t('processing') : 
+                {submitting ? t('processing') :
                  actionType === 'approve' ? t('approveRequest') : t('rejectRequest')}
               </button>
             </div>
@@ -1634,62 +1646,63 @@ const ManagerDashboard = ({ onLogout }) => {
 
       {/* Edit Form Modal (for managers with canEditDepartmentForms) */}
       {showEditFormModal && Object.keys(formEditData).length > 0 && (
-        <div className="modal-overlay" onClick={closeEditFormModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+        <div className="modal-overlay md-edit-overlay" onClick={closeEditFormModal}>
+          <div className="modal-content md-edit-modal max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{t('edit') || 'Edit'} Form</h3>
-              <button type="button" className="close-btn" onClick={closeEditFormModal}>{'\u00D7'}</button>
+              <button type="button" className="close-btn" onClick={closeEditFormModal} aria-label="Close">{'\u00D7'}</button>
             </div>
             <div className="modal-body">
-              <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                <label className="form-label-elegant">{t('reason')}</label>
+              <div className={MD_MODAL_FIELD}>
+                <label className={MD_MODAL_LABEL}>{t('reason')}</label>
                 <textarea
                   value={formEditData.reason || ''}
                   onChange={(e) => setFormEditData({ ...formEditData, reason: e.target.value })}
                   rows={3}
-                  className="form-input-elegant"
+                  className="form-input-elegant w-full resize-y"
                 />
               </div>
               {formEditData.type === 'vacation' && (
                 <>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <div className={`${MD_MODAL_FIELD} md-checkbox-row`}>
+                    <label className="flex items-center gap-2 cursor-pointer !text-slate-700 dark:!text-slate-300 text-sm font-medium">
                       <input
                         type="checkbox"
+                        className="md-modal-checkbox"
                         checked={!!formEditData.isHalfDay}
                         onChange={(e) => updateVacationEdit({ isHalfDay: e.target.checked, endDate: e.target.checked ? formEditData.startDate : formEditData.endDate })}
                       />
                       <span>{t('forms.halfDay')}</span>
                     </label>
                   </div>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{formEditData.isHalfDay ? t('forms.date') : t('forms.startDate')}</label>
-                    <input type="date" value={formEditData.startDate || ''} onChange={(e) => updateVacationEdit({ startDate: e.target.value, ...(formEditData.isHalfDay ? { endDate: e.target.value } : {}) })} className="form-input-elegant" />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{formEditData.isHalfDay ? t('forms.date') : t('forms.startDate')}</label>
+                    <input type="date" value={formEditData.startDate || ''} onChange={(e) => updateVacationEdit({ startDate: e.target.value, ...(formEditData.isHalfDay ? { endDate: e.target.value } : {}) })} className="form-input-elegant w-full" />
                   </div>
                   {!formEditData.isHalfDay && (
-                    <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                      <label className="form-label-elegant">{t('forms.endDate')}</label>
-                      <input type="date" value={formEditData.endDate || ''} onChange={(e) => updateVacationEdit({ endDate: e.target.value })} className="form-input-elegant" />
+                    <div className={MD_MODAL_FIELD}>
+                      <label className={MD_MODAL_LABEL}>{t('forms.endDate')}</label>
+                      <input type="date" value={formEditData.endDate || ''} onChange={(e) => updateVacationEdit({ endDate: e.target.value })} className="form-input-elegant w-full" />
                     </div>
                   )}
                 </>
               )}
               {formEditData.type === 'excuse' && (
                 <>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('excuseDate')}{fieldDirty('excuseDate') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
-                    <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant" style={{ boxShadow: fieldDirty('excuseDate') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('excuseDate')}{fieldDirtySuffix('excuseDate')}</label>
+                    <input type="date" value={formEditData.excuseDate || ''} onChange={(e) => setFormEditData({ ...formEditData, excuseDate: e.target.value })} className="form-input-elegant w-full" />
                   </div>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('timePeriod') || 'Time'}{fieldDirty('fromHour') || fieldDirty('toHour') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <input type="time" value={formEditData.fromHour || ''} onChange={(e) => setFormEditData({ ...formEditData, fromHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('fromHour') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
-                      <input type="time" value={formEditData.toHour || ''} onChange={(e) => setFormEditData({ ...formEditData, toHour: e.target.value })} className="form-input-elegant" style={{ flex: 1, minWidth: '120px', boxShadow: fieldDirty('toHour') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('timePeriod') || 'Time'}{(fieldDirty('fromHour') || fieldDirty('toHour')) ? MD_MODIFIED : ''}</label>
+                    <div className="flex gap-2 flex-wrap">
+                      <input type="time" value={formEditData.fromHour || ''} onChange={(e) => setFormEditData({ ...formEditData, fromHour: e.target.value })} className="form-input-elegant flex-1 min-w-[120px]" />
+                      <input type="time" value={formEditData.toHour || ''} onChange={(e) => setFormEditData({ ...formEditData, toHour: e.target.value })} className="form-input-elegant flex-1 min-w-[120px]" />
                     </div>
                   </div>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('excuseType') || 'Excuse Type'}{fieldDirty('excuseType') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
-                    <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant" style={{ boxShadow: fieldDirty('excuseType') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }}>
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('excuseType') || 'Excuse Type'}{fieldDirtySuffix('excuseType')}</label>
+                    <select value={formEditData.excuseType || 'paid'} onChange={(e) => setFormEditData({ ...formEditData, excuseType: e.target.value })} className="form-input-elegant w-full">
                       <option value="paid">Paid</option>
                       <option value="unpaid">Unpaid</option>
                     </select>
@@ -1698,82 +1711,82 @@ const ManagerDashboard = ({ onLogout }) => {
               )}
               {formEditData.type === 'sick_leave' && (
                 <>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.startDate')}</label>
-                    <input type="date" value={formEditData.sickLeaveStartDate || ''} onChange={(e) => setFormEditData({ ...formEditData, sickLeaveStartDate: e.target.value })} className="form-input-elegant" />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('forms.startDate')}</label>
+                    <input type="date" value={formEditData.sickLeaveStartDate || ''} onChange={(e) => setFormEditData({ ...formEditData, sickLeaveStartDate: e.target.value })} className="form-input-elegant w-full" />
                   </div>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.endDate')}</label>
-                    <input type="date" value={formEditData.sickLeaveEndDate || ''} onChange={(e) => setFormEditData({ ...formEditData, sickLeaveEndDate: e.target.value })} className="form-input-elegant" />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('forms.endDate')}</label>
+                    <input type="date" value={formEditData.sickLeaveEndDate || ''} onChange={(e) => setFormEditData({ ...formEditData, sickLeaveEndDate: e.target.value })} className="form-input-elegant w-full" />
                   </div>
                 </>
               )}
               {formEditData.type === 'wfh' && (
                 <>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.date')}</label>
-                    <input type="date" value={formEditData.wfhDate || ''} onChange={(e) => setFormEditData({ ...formEditData, wfhDate: e.target.value })} className="form-input-elegant" />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('forms.date')}</label>
+                    <input type="date" value={formEditData.wfhDate || ''} onChange={(e) => setFormEditData({ ...formEditData, wfhDate: e.target.value })} className="form-input-elegant w-full" />
                   </div>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.workingOn')}</label>
-                    <input type="text" value={formEditData.wfhWorkingOn || ''} onChange={(e) => setFormEditData({ ...formEditData, wfhWorkingOn: e.target.value })} className="form-input-elegant" />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('forms.workingOn')}</label>
+                    <input type="text" value={formEditData.wfhWorkingOn || ''} onChange={(e) => setFormEditData({ ...formEditData, wfhWorkingOn: e.target.value })} className="form-input-elegant w-full" />
                   </div>
                 </>
               )}
               {formEditData.type === 'extra_hours' && (
                 <>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.date')}</label>
-                    <input type="date" value={formEditData.extraHoursDate || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDate: e.target.value })} className="form-input-elegant" />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('forms.date')}</label>
+                    <input type="date" value={formEditData.extraHoursDate || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDate: e.target.value })} className="form-input-elegant w-full" />
                   </div>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.requestedOtHours')}</label>
-                    <input type="number" value={formEditData.extraHoursWorked || 0} readOnly className="form-input-elegant" style={{ background: '#f5f5f5' }} />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('forms.requestedOtHours')}</label>
+                    <input type="number" value={formEditData.extraHoursWorked || 0} readOnly className="form-input-elegant w-full bg-slate-100 dark:bg-slate-900/50" />
                   </div>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.approvedOtHours')}</label>
-                    <input type="number" value={formEditData.approvedHours || 0} onChange={(e) => setFormEditData({ ...formEditData, approvedHours: Number(e.target.value) })} className="form-input-elegant" min="0.5" step="0.5" />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('forms.approvedOtHours')}</label>
+                    <input type="number" value={formEditData.approvedHours || 0} onChange={(e) => setFormEditData({ ...formEditData, approvedHours: Number(e.target.value) })} className="form-input-elegant w-full" min="0.5" step="0.5" />
                   </div>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.workDone')}</label>
-                    <input type="text" value={formEditData.extraHoursDescription || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDescription: e.target.value })} className="form-input-elegant" />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('forms.workDone')}</label>
+                    <input type="text" value={formEditData.extraHoursDescription || ''} onChange={(e) => setFormEditData({ ...formEditData, extraHoursDescription: e.target.value })} className="form-input-elegant w-full" />
                   </div>
                 </>
               )}
               {formEditData.type === 'mission' && (
                 <>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.startDate')}</label>
-                    <input type="date" value={formEditData.missionStartDate || ''} onChange={(e) => setFormEditData({ ...formEditData, missionStartDate: e.target.value })} className="form-input-elegant" />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('forms.startDate')}</label>
+                    <input type="date" value={formEditData.missionStartDate || ''} onChange={(e) => setFormEditData({ ...formEditData, missionStartDate: e.target.value })} className="form-input-elegant w-full" />
                   </div>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.endDate')}</label>
-                    <input type="date" value={formEditData.missionEndDate || ''} onChange={(e) => setFormEditData({ ...formEditData, missionEndDate: e.target.value })} className="form-input-elegant" />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('forms.endDate')}</label>
+                    <input type="date" value={formEditData.missionEndDate || ''} onChange={(e) => setFormEditData({ ...formEditData, missionEndDate: e.target.value })} className="form-input-elegant w-full" />
                   </div>
-                  <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label-elegant">{t('forms.missionDestination')}</label>
-                    <input type="text" value={formEditData.missionDestination || ''} onChange={(e) => setFormEditData({ ...formEditData, missionDestination: e.target.value })} className="form-input-elegant" />
+                  <div className={MD_MODAL_FIELD}>
+                    <label className={MD_MODAL_LABEL}>{t('forms.missionDestination')}</label>
+                    <input type="text" value={formEditData.missionDestination || ''} onChange={(e) => setFormEditData({ ...formEditData, missionDestination: e.target.value })} className="form-input-elegant w-full" />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                    <div className="form-group-elegant">
-                      <label className="form-label-elegant">{t('forms.missionFromTime') || 'Time From'}</label>
-                      <input type="time" value={formEditData.missionFromTime || ''} onChange={(e) => setFormEditData({ ...formEditData, missionFromTime: e.target.value })} className="form-input-elegant" />
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="md-modal-field">
+                      <label className={MD_MODAL_LABEL}>{t('forms.missionFromTime') || 'Time From'}</label>
+                      <input type="time" value={formEditData.missionFromTime || ''} onChange={(e) => setFormEditData({ ...formEditData, missionFromTime: e.target.value })} className="form-input-elegant w-full" />
                     </div>
-                    <div className="form-group-elegant">
-                      <label className="form-label-elegant">{t('forms.missionToTime') || 'Time To'}</label>
-                      <input type="time" value={formEditData.missionToTime || ''} onChange={(e) => setFormEditData({ ...formEditData, missionToTime: e.target.value })} className="form-input-elegant" />
+                    <div className="md-modal-field">
+                      <label className={MD_MODAL_LABEL}>{t('forms.missionToTime') || 'Time To'}</label>
+                      <input type="time" value={formEditData.missionToTime || ''} onChange={(e) => setFormEditData({ ...formEditData, missionToTime: e.target.value })} className="form-input-elegant w-full" />
                     </div>
                   </div>
                 </>
               )}
-              <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-                <label className="form-label-elegant">{t('managerComment') || 'Manager Comment'}</label>
-                <textarea value={formEditData.managerComment || ''} onChange={(e) => setFormEditData({ ...formEditData, managerComment: e.target.value })} rows={2} className="form-input-elegant" placeholder="Optional comment" />
+              <div className={MD_MODAL_FIELD}>
+                <label className={MD_MODAL_LABEL}>{t('managerComment') || 'Manager Comment'}</label>
+                <textarea value={formEditData.managerComment || ''} onChange={(e) => setFormEditData({ ...formEditData, managerComment: e.target.value })} rows={2} className="form-input-elegant w-full resize-y" placeholder="Optional comment" />
               </div>
             </div>
             <div className="modal-actions">
-              <button className="cancel-btn" onClick={closeEditFormModal} disabled={formEditSubmitting}>{t('cancel')}</button>
-              <button className="approve-btn" onClick={handleFormEditSubmit} disabled={formEditSubmitting}>
+              <button type="button" className="cancel-btn" onClick={closeEditFormModal} disabled={formEditSubmitting}>{t('cancel')}</button>
+              <button type="button" className={MD_BTN_SAVE} onClick={handleFormEditSubmit} disabled={formEditSubmitting}>
                 {formEditSubmitting ? t('processing') : (t('save') || 'Save')}
               </button>
             </div>

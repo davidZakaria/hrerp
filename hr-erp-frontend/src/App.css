@@ -3363,3 +3363,117 @@
   color: #ffffff !important;
 }
 
+/* Edit / comment modals — beat GlobalStyles input overrides */
+.manager-dashboard .md-edit-modal textarea,
+.manager-dashboard .md-edit-modal textarea.form-input-elegant,
+.manager-dashboard .md-edit-modal input.form-input-elegant,
+.manager-dashboard .md-edit-modal select.form-input-elegant,
+.manager-dashboard .md-comment-modal textarea,
+.manager-dashboard .md-comment-modal textarea.form-input-elegant,
+.manager-dashboard .md-edit-inline-panel input,
+.manager-dashboard .md-edit-inline-panel textarea,
+.manager-dashboard .md-edit-inline-panel select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  font-family: inherit !important;
+  font-style: normal !important;
+}
+
+[data-theme='dark'] .manager-dashboard .md-edit-modal textarea,
+[data-theme='dark'] .manager-dashboard .md-edit-modal textarea.form-input-elegant,
+[data-theme='dark'] .manager-dashboard .md-edit-modal input.form-input-elegant,
+[data-theme='dark'] .manager-dashboard .md-edit-modal select.form-input-elegant,
+[data-theme='dark'] .manager-dashboard .md-comment-modal textarea,
+[data-theme='dark'] .manager-dashboard .md-comment-modal textarea.form-input-elegant,
+[data-theme='dark'] .manager-dashboard .md-edit-inline-panel input,
+[data-theme='dark'] .manager-dashboard .md-edit-inline-panel textarea,
+[data-theme='dark'] .manager-dashboard .md-edit-inline-panel select {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+
+.manager-dashboard .md-edit-modal .md-modal-label,
+.manager-dashboard .md-comment-modal .md-modal-label,
+.manager-dashboard .md-edit-inline-panel .md-modal-label {
+  text-transform: none !important;
+}
+
+.manager-dashboard .md-btn-save:disabled {
+  opacity: 0.6 !important;
+  color: #ffffff !important;
+}
+
+/* Edit modal Save — final cascade beats native button chrome */
+.manager-dashboard .md-edit-modal .modal-actions button.md-btn-save,
+.manager-dashboard .md-edit-modal .modal-actions .md-btn-save.md-btn-refresh {
+  background-color: #4f46e5 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 1rem !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+  box-shadow: none !important;
+  transform: none !important;
+  cursor: pointer !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+.manager-dashboard .md-edit-modal .modal-actions button.md-btn-save:hover:not(:disabled),
+.manager-dashboard .md-edit-modal .modal-actions .md-btn-save.md-btn-refresh:hover:not(:disabled) {
+  background-color: #4338ca !important;
+}
+
+.manager-dashboard .md-edit-modal .modal-actions button.md-btn-save:disabled {
+  opacity: 0.6 !important;
+  color: #ffffff !important;
+  cursor: not-allowed !important;
+}
+
+/* Attendance detail modal — beat GlobalStyles .dashboard-container white headings + dark div text */
+.attendance-modal-custom,
+.attendance-modal-custom * {
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .dashboard-container .attendance-modal-custom h3,
+[data-theme='light'] .dashboard-container .attendance-modal-custom h4,
+[data-theme='light'] .modern-dash .attendance-modal-custom h3,
+[data-theme='light'] .modern-dash .attendance-modal-custom h4,
+[data-theme='light'] .main-content .attendance-modal-custom strong {
+  color: #0f172a !important;
+}
+
+[data-theme='dark'] .dashboard-container .attendance-modal-custom h3,
+[data-theme='dark'] .dashboard-container .attendance-modal-custom h4,
+[data-theme='dark'] .modern-dash .attendance-modal-custom h3,
+[data-theme='dark'] .modern-dash .attendance-modal-custom h4,
+[data-theme='dark'] .dashboard-container .attendance-modal-custom .attendance-detail-stat-value,
+[data-theme='dark'] .dashboard-container .attendance-modal-custom .attendance-detail-stat-label,
+[data-theme='dark'] .dashboard-container .attendance-modal-custom td,
+[data-theme='dark'] .dashboard-container .attendance-modal-custom th,
+[data-theme='dark'] .dashboard-container .attendance-modal-custom strong,
+[data-theme='dark'] .dashboard-container .attendance-modal-custom p,
+[data-theme='dark'] .dashboard-container .attendance-modal-custom span:not([style*='background']),
+[data-theme='dark'] .main-content .attendance-modal-custom strong {
+  color: inherit !important;
+}
+
+[data-theme='dark'] .attendance-modal-custom .attendance-detail-fix-panel input.form-input-elegant,
+[data-theme='dark'] .attendance-modal-custom .attendance-detail-fix-panel textarea.form-input-elegant {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #475569 !important;
+}
+
+[data-theme='light'] .attendance-modal-custom .attendance-detail-fix-panel input.form-input-elegant,
+[data-theme='light'] .attendance-modal-custom .attendance-detail-fix-panel textarea.form-input-elegant {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+

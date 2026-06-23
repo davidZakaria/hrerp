@@ -208,27 +208,6 @@ const AttendanceManagement = () => {
 
   return (
     <div className="saas-attendance modern-dash">
-      <style>{`
-        .attendance-modal-custom * {
-          color: #000000 !important;
-        }
-        .attendance-modal-custom h3 {
-          color: #000000 !important;
-          text-shadow: none !important;
-        }
-        .attendance-modal-custom h4 {
-          color: #000000 !important;
-        }
-        .attendance-modal-custom strong {
-          color: #000000 !important;
-        }
-        .attendance-modal-custom span {
-          color: #000000 !important;
-        }
-        .attendance-modal-custom div {
-          color: #000000 !important;
-        }
-      `}</style>
       <h2 className="!text-slate-900 dark:!text-white" style={{ marginBottom: '2rem', fontSize: '1.5rem', fontWeight: 700 }}>Attendance Management</h2>
 
       {/* ZKTeco status banner */}

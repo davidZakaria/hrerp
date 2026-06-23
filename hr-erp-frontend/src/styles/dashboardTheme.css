@@ -290,8 +290,8 @@
   white-space: nowrap;
 }
 
-[data-theme='dark'] .dash-segment-btn {
-  color: #94a3b8;
+[data-theme='dark'] .dash-segment-btn:not(.dash-segment-btn--active) {
+  color: #cbd5e1 !important;
 }
 
 .dash-segment-btn:hover:not(.dash-segment-btn--active) {
@@ -1165,51 +1165,8 @@
   .xl\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-/* Segmented nav — manager dashboard spec */
-.dash-segment-bar {
-  gap: 0.5rem;
-  padding: 0.375rem;
-  background: rgba(226, 232, 240, 0.7);
-  border-radius: 0.75rem;
-}
+/* Segmented nav — manager dashboard spec (see also base .dash-segment-* above) */
 
-[data-theme='dark'] .dash-segment-bar {
-  background: rgba(30, 41, 59, 0.5);
-}
-
-.dash-segment-btn {
-  background: transparent !important;
-  color: #475569 !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-[data-theme='dark'] .dash-segment-btn {
-  color: #94a3b8 !important;
-}
-
-.dash-segment-btn:hover:not(.dash-segment-btn--active) {
-  background: rgba(203, 213, 225, 0.5) !important;
-  color: #475569 !important;
-}
-
-[data-theme='dark'] .dash-segment-btn:hover:not(.dash-segment-btn--active) {
-  background: rgba(51, 65, 85, 0.8) !important;
-  color: #e2e8f0 !important;
-}
-
-.dash-segment-btn--active {
-  background: #ffffff !important;
-  color: #0f172a !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-}
-
-[data-theme='dark'] .dash-segment-btn--active {
-  background: #4f46e5 !important;
-  color: #ffffff !important;
-}
-
-/* Manager dashboard — theme-aware modals & flags */
 .manager-attendance-spinner {
   width: 40px;
   height: 40px;
@@ -1415,4 +1372,35 @@
 [data-theme='light'] .manager-dashboard .manager-team-attendance table th {
   text-shadow: none !important;
 }
+
+/* Section heads — no legacy dark bars */
+.manager-dashboard .md-section-head {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.manager-dashboard .md-section-head--row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.manager-dashboard .md-section-head-main {
+  flex: 1;
+  min-width: 200px;
+}
+
+.w-12 { width: 3rem; }
+.h-12 { height: 3rem; }
+.rounded-full { border-radius: 9999px; }
+.bg-indigo-100 { background-color: #e0e7ff; }
+[data-theme='dark'] .dark\:bg-indigo-900\/40 { background-color: rgba(30, 27, 75, 0.4); }
 

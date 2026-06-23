@@ -16,25 +16,38 @@ import { normalizeExcuseType, isPaidExcuse } from '../utils/excuseType';
 import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
 import { formatVacationDeductionDays } from '../utils/vacationDays';
 import { persistProfilePicture } from '../utils/avatarHelpers';
+import { ACTION, MISC, MANAGER_NAV } from '../utils/dashboardEmojis';
 
 const MD_PANEL =
   'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl p-6';
 const MD_H2 = 'text-xl font-bold !text-slate-900 dark:!text-white m-0 mb-2';
 const MD_SUB = 'block text-sm !text-slate-500 dark:!text-slate-400 m-0 leading-relaxed';
 const MD_BTN_EDIT =
-  'bg-slate-100 dark:bg-slate-700 !text-slate-700 dark:!text-white rounded-lg px-4 py-2 font-medium border border-slate-300 dark:border-slate-600 shadow-sm cursor-pointer disabled:opacity-50';
+  'md-btn-edit bg-slate-100 dark:bg-slate-700 !text-slate-700 dark:!text-white rounded-lg px-4 py-2 font-medium border border-slate-300 dark:border-slate-600 shadow-sm cursor-pointer disabled:opacity-50';
 const MD_BTN_APPROVE =
-  'bg-emerald-500 hover:bg-emerald-600 !text-white rounded-lg px-4 py-2 font-medium shadow-sm border-none cursor-pointer disabled:opacity-50';
+  'md-btn-approve bg-emerald-500 hover:bg-emerald-600 !text-white rounded-lg px-4 py-2 font-medium shadow-sm border-none cursor-pointer disabled:opacity-50';
 const MD_BTN_REJECT =
-  'bg-rose-500 hover:bg-rose-600 !text-white rounded-lg px-4 py-2 font-medium shadow-sm border-none cursor-pointer disabled:opacity-50';
+  'md-btn-reject bg-rose-500 hover:bg-rose-600 !text-white rounded-lg px-4 py-2 font-medium shadow-sm border-none cursor-pointer disabled:opacity-50';
 const MD_BTN_REFRESH =
-  'bg-indigo-600 hover:bg-indigo-700 !text-white rounded-lg px-4 py-2 font-medium shadow-sm border-none cursor-pointer disabled:opacity-50';
+  'md-btn-refresh bg-indigo-600 hover:bg-indigo-700 !text-white rounded-lg px-4 py-2 font-medium shadow-sm border-none cursor-pointer disabled:opacity-50';
 const MD_PENDING_CARD =
   'bg-white dark:bg-slate-800 border-l-4 border-l-indigo-500 border-y border-r border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-sm mb-4 flex flex-col md:flex-row justify-between gap-4';
 const MD_TEAM_CARD =
   'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl p-5 text-center';
 const MD_FORM_CARD =
   'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-l-4 border-l-indigo-500 shadow-sm rounded-xl p-5';
+const MD_HEAD = 'md-section-head mb-4';
+const MD_HEAD_ROW = 'md-section-head md-section-head--row mb-4';
+
+function memberInitial(name) {
+  return (name || '?').trim().charAt(0).toUpperCase() || '?';
+}
+
+function approvalActorClass(rejected) {
+  return rejected
+    ? '!text-rose-600 dark:!text-rose-400 font-semibold m-0'
+    : '!text-emerald-600 dark:!text-emerald-400 font-semibold m-0';
+}
 
 const ManagerDashboard = ({ onLogout }) => {
   const { t } = useTranslation();
@@ -383,7 +396,7 @@ const ManagerDashboard = ({ onLogout }) => {
         headers: { 'x-auth-token': token }
       });
 
-      setMessage(`âœ… ${t('flags.flagCreated') || 'Flag created successfully'}`);
+      setMessage(t('flags.flagCreated') || 'Flag created successfully');
       closeFlagModal();
       fetchTeamFlags();
       
@@ -407,7 +420,7 @@ const ManagerDashboard = ({ onLogout }) => {
         headers: { 'x-auth-token': token }
       });
 
-      setMessage(`âœ… ${t('flags.flagRemoved') || 'Flag removed successfully'}`);
+      setMessage(t('flags.flagRemoved') || 'Flag removed successfully');
       fetchTeamFlags();
       
       setTimeout(() => setMessage(''), 3000);
@@ -590,7 +603,7 @@ const ManagerDashboard = ({ onLogout }) => {
           })
         );
 
-        setMessage(`âœ… Request ${actionType}d successfully!`);
+        setMessage(`Request ${actionType}d successfully!`);
         closeCommentModal();
         
         // Clear message after 3 seconds
@@ -600,7 +613,7 @@ const ManagerDashboard = ({ onLogout }) => {
         
         // Background refresh for consistency
         setTimeout(async () => {
-          logger.log('ðŸ”„ Background refresh for consistency...');
+          logger.log('Background refresh for consistency...');
           await fetchPendingForms();
           await fetchTeamForms();
         }, 1000);
@@ -781,11 +794,11 @@ const ManagerDashboard = ({ onLogout }) => {
       {user && (
         <DashboardStatGrid columns={3}>
           <DashboardStatCard
-            value={vacationDaysLeft ?? user.vacationDaysLeft ?? 'â€”'}
+            value={vacationDaysLeft ?? user.vacationDaysLeft ?? MISC.emDash}
             label={t('welcomeHero.leaveRemaining')}
           />
           <DashboardStatCard
-            value={user.excuseRequestsLeft ?? 'â€”'}
+            value={user.excuseRequestsLeft ?? MISC.emDash}
             label={t('welcomeHero.excusesRemaining')}
           />
           <DashboardStatCard
@@ -812,12 +825,12 @@ const ManagerDashboard = ({ onLogout }) => {
         activeId={managerNavActiveId}
         subtitle={`${pendingForms.length} ${t('managerDashboard.pendingTeamRequests')}`}
         sections={[
-          { id: 'teamAttendance', label: t('managerDashboard.teamAttendance', 'Team Attendance'), icon: 'ðŸ“Š', onSelect: handleShowTeamAttendance },
-          { id: 'submit', label: t('managerDashboard.submitMyForm'), icon: 'ðŸ“', onSelect: handleShowForm },
-          { id: 'myForms', label: t('managerDashboard.viewMyForms'), icon: 'ðŸ“‹', onSelect: handleShowMyForms },
-          { id: 'teamForms', label: t('managerDashboard.myTeamMembersForms'), icon: 'ðŸ‘¥', onSelect: handleShowTeamForms },
-          { id: 'teamApprovals', label: t('managerDashboard.approveTeamForms'), icon: 'âœ…', onSelect: handleGoToTeamApprovals },
-          { id: 'ats', label: t('managerDashboard.atsSystem', 'ATS'), icon: 'ðŸŽ¯', onSelect: handleShowATS }
+          { id: 'teamAttendance', label: t('managerDashboard.teamAttendance', 'Team Attendance'), icon: MANAGER_NAV.teamAttendance, onSelect: handleShowTeamAttendance },
+          { id: 'submit', label: t('managerDashboard.submitMyForm'), icon: MANAGER_NAV.submit, onSelect: handleShowForm },
+          { id: 'myForms', label: t('managerDashboard.viewMyForms'), icon: MANAGER_NAV.myForms, onSelect: handleShowMyForms },
+          { id: 'teamForms', label: t('managerDashboard.myTeamMembersForms'), icon: MANAGER_NAV.teamForms, onSelect: handleShowTeamForms },
+          { id: 'teamApprovals', label: t('managerDashboard.approveTeamForms'), icon: MANAGER_NAV.approvals, onSelect: handleGoToTeamApprovals },
+          { id: 'ats', label: t('managerDashboard.atsSystem', 'ATS'), icon: MANAGER_NAV.ats, onSelect: handleShowATS }
         ]}
       />
 
@@ -843,7 +856,7 @@ const ManagerDashboard = ({ onLogout }) => {
 
       {/* Manager's Personal Section */}
       <div className={`section manager-personal-section ${MD_PANEL}`}>
-        <div className="section-header mb-4">
+        <div className={MD_HEAD}>
           <h2 className={MD_H2}>{t('managerDashboard.myPersonalFormsAndRequests')}</h2>
         </div>
       </div>
@@ -868,8 +881,8 @@ const ManagerDashboard = ({ onLogout }) => {
       {/* Form Submission */}
       {showForm && (
         <div ref={managerFormRef} className={`section manager-form-section dashboard-section-anchor ${MD_PANEL}`}>
-          <div className="section-header mb-4">
-            <h2 className={MD_H2}>ðŸ“ {t('managerDashboard.submitNewPersonalForm')}</h2>
+          <div className={MD_HEAD}>
+            <h2 className={MD_H2}>{MANAGER_NAV.submit} {t('managerDashboard.submitNewPersonalForm')}</h2>
             <small className={MD_SUB}>{t('managerDashboard.thisIsForYourOwnPersonalRequestsVacationSickLeaveEtc')}</small>
           </div>
           <div className="form-container mt-4">
@@ -881,8 +894,8 @@ const ManagerDashboard = ({ onLogout }) => {
       {/* My Forms Preview */}
       {showMyForms && (
         <div ref={managerMyFormsRef} className={`section manager-forms-view-section dashboard-section-anchor ${MD_PANEL}`}>
-          <div className="section-header mb-4">
-            <h2 className={MD_H2}>ðŸ“‹ {t('managerDashboard.mySubmittedForms')}</h2>
+          <div className={MD_HEAD}>
+            <h2 className={MD_H2}>{MANAGER_NAV.myForms} {t('managerDashboard.mySubmittedForms')}</h2>
             <small className={MD_SUB}>{t('managerDashboard.yourPersonalFormSubmissionsAndTheirStatus')}</small>
           </div>
           {myForms.length > 0 ? (
@@ -910,7 +923,11 @@ const ManagerDashboard = ({ onLogout }) => {
                     
                     {form.type === 'excuse' && (
                       <>
-                        <p><strong>Excuse Type:</strong> <span style={{ color: isPaidExcuse(form) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{isPaidExcuse(form) ? 'ðŸ’° Paid' : 'ðŸ“ Unpaid'}</span></p>
+                        <p><strong>Excuse Type:</strong>{' '}
+                          <span className={isPaidExcuse(form) ? '!text-emerald-600 dark:!text-emerald-400 font-semibold' : '!text-amber-600 dark:!text-amber-400 font-semibold'}>
+                            {isPaidExcuse(form) ? 'Paid' : 'Unpaid'}
+                          </span>
+                        </p>
                         <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
                         <p><strong>{t('time')}:</strong> {form.fromHour} - {form.toHour}</p>
                         <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
@@ -947,7 +964,7 @@ const ManagerDashboard = ({ onLogout }) => {
                       <>
                         <p><strong>{t('forms.startDate')}:</strong> {formatDate(form.missionStartDate)}</p>
                         <p><strong>{t('forms.endDate')}:</strong> {formatDate(form.missionEndDate)}</p>
-                        <p><strong>{t('forms.missionDestination')}:</strong> ðŸ“ {form.missionDestination}</p>
+                        <p><strong>{t('forms.missionDestination')}:</strong> {form.missionDestination}</p>
                       </>
                     )}
                     
@@ -958,11 +975,11 @@ const ManagerDashboard = ({ onLogout }) => {
                         <strong>
                           {form.status === 'manager_rejected' ? t('rejectedByManager') : t('approvedByManager')}:
                         </strong>
-                        <p style={{ color: form.status === 'manager_rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
-                          ðŸ‘” {form.managerApprovedBy.name}
+                        <p className={approvalActorClass(form.status === 'manager_rejected')}>
+                          {form.managerApprovedBy.name}
                           {form.managerApprovedAt && (
-                            <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
-                              {' '}{t('on')} {new Date(form.managerApprovedAt).toLocaleDateString()}
+                            <span className="text-sm font-normal !text-slate-500 dark:!text-slate-400 ml-1">
+                              {t('on')} {new Date(form.managerApprovedAt).toLocaleDateString()}
                             </span>
                           )}
                         </p>
@@ -983,11 +1000,11 @@ const ManagerDashboard = ({ onLogout }) => {
                             ? t('managerDashboard.hrRejectedByHR')
                             : t('managerDashboard.hrApprovedByHR')}:
                         </strong>
-                        <p style={{ color: form.status === 'rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
-                          ðŸ¢ {form.adminApprovedBy.name}
+                        <p className={approvalActorClass(form.status === 'rejected')}>
+                          {form.adminApprovedBy.name}
                           {form.adminApprovedAt && (
-                            <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
-                              {' '}{t('managerDashboard.on')} {new Date(form.adminApprovedAt).toLocaleDateString()}
+                            <span className="text-sm font-normal !text-slate-500 dark:!text-slate-400 ml-1">
+                              {t('managerDashboard.on')} {new Date(form.adminApprovedAt).toLocaleDateString()}
                             </span>
                           )}
                         </p>
@@ -1010,7 +1027,7 @@ const ManagerDashboard = ({ onLogout }) => {
             </div>
           ) : (
             <div className="no-content text-center py-10 !text-slate-500 dark:!text-slate-400">
-              <span className="no-content-icon text-4xl block mb-3">ðŸ“‹</span>
+              <span className="no-content-icon text-4xl block mb-3">{MANAGER_NAV.myForms}</span>
               <p className="!text-slate-900 dark:!text-white m-0 mb-1">{t('managerDashboard.noPersonalFormsSubmittedYet')}</p>
               <small className="text-sm italic">{t('managerDashboard.theseAreYourOwnFormsVacationSickLeaveEtc')}</small>
             </div>
@@ -1021,7 +1038,7 @@ const ManagerDashboard = ({ onLogout }) => {
       {/* Team Members Forms */}
       {showTeamForms && (
         <div ref={managerTeamFormsRef} className={`section team-management-section dashboard-section-anchor ${MD_PANEL}`}>
-          <div className="section-header mb-4">
+          <div className={MD_HEAD}>
             <h2 className={MD_H2}>{t('managerDashboard.myTeamMembersForms')}</h2>
             <small className={MD_SUB}>{t('managerDashboard.allFormsSubmittedByYourTeamMembersFromManagedDepartments')}</small>
           </div>
@@ -1052,7 +1069,11 @@ const ManagerDashboard = ({ onLogout }) => {
                     
                     {form.type === 'excuse' && (
                       <>
-                        <p><strong>Excuse Type:</strong> <span style={{ color: isPaidExcuse(form) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{isPaidExcuse(form) ? 'ðŸ’° Paid' : 'ðŸ“ Unpaid'}</span></p>
+                        <p><strong>Excuse Type:</strong>{' '}
+                          <span className={isPaidExcuse(form) ? '!text-emerald-600 dark:!text-emerald-400 font-semibold' : '!text-amber-600 dark:!text-amber-400 font-semibold'}>
+                            {isPaidExcuse(form) ? 'Paid' : 'Unpaid'}
+                          </span>
+                        </p>
                         <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
                         <p><strong>{t('time')}:</strong> {form.fromHour} - {form.toHour}</p>
                         <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
@@ -1089,7 +1110,7 @@ const ManagerDashboard = ({ onLogout }) => {
                       <>
                         <p><strong>{t('forms.startDate')}:</strong> {formatDate(form.missionStartDate)}</p>
                         <p><strong>{t('forms.endDate')}:</strong> {formatDate(form.missionEndDate)}</p>
-                        <p><strong>{t('forms.missionDestination')}:</strong> ðŸ“ {form.missionDestination}</p>
+                        <p><strong>{t('forms.missionDestination')}:</strong> {form.missionDestination}</p>
                       </>
                     )}
                     
@@ -1100,11 +1121,11 @@ const ManagerDashboard = ({ onLogout }) => {
                         <strong>
                           {form.status === 'manager_rejected' ? t('rejectedByManager') : t('approvedByManager')}:
                         </strong>
-                        <p style={{ color: form.status === 'manager_rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
-                          ðŸ‘” {form.managerApprovedBy.name}
+                        <p className={approvalActorClass(form.status === 'manager_rejected')}>
+                          {form.managerApprovedBy.name}
                           {form.managerApprovedAt && (
-                            <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
-                              {' '}{t('on')} {new Date(form.managerApprovedAt).toLocaleDateString()}
+                            <span className="text-sm font-normal !text-slate-500 dark:!text-slate-400 ml-1">
+                              {t('on')} {new Date(form.managerApprovedAt).toLocaleDateString()}
                             </span>
                           )}
                         </p>
@@ -1125,11 +1146,11 @@ const ManagerDashboard = ({ onLogout }) => {
                             ? t('managerDashboard.hrRejectedByHR')
                             : t('managerDashboard.hrApprovedByHR')}:
                         </strong>
-                        <p style={{ color: form.status === 'rejected' ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
-                          ðŸ¢ {form.adminApprovedBy.name}
+                        <p className={approvalActorClass(form.status === 'rejected')}>
+                          {form.adminApprovedBy.name}
                           {form.adminApprovedAt && (
-                            <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'normal' }}>
-                              {' '}{t('managerDashboard.on')} {new Date(form.adminApprovedAt).toLocaleDateString()}
+                            <span className="text-sm font-normal !text-slate-500 dark:!text-slate-400 ml-1">
+                              {t('managerDashboard.on')} {new Date(form.adminApprovedAt).toLocaleDateString()}
                             </span>
                           )}
                         </p>
@@ -1149,7 +1170,7 @@ const ManagerDashboard = ({ onLogout }) => {
                   </div>
                   <div className="mt-4">
                     <button type="button" onClick={() => openEditFormModal(form)} className={MD_BTN_EDIT}>
-                      âœï¸ {t('edit') || 'Edit'}
+                      {t('edit') || 'Edit'}
                     </button>
                   </div>
                 </div>
@@ -1157,7 +1178,7 @@ const ManagerDashboard = ({ onLogout }) => {
             </div>
           ) : (
             <div className="no-content text-center py-10 !text-slate-500 dark:!text-slate-400">
-              <span className="no-content-icon text-4xl block mb-3">ðŸ‘¥</span>
+              <span className="no-content-icon text-4xl block mb-3">{MANAGER_NAV.teamForms}</span>
               <p className="!text-slate-900 dark:!text-white m-0 mb-1">{t('managerDashboard.noFormsFoundFromYourTeamMembers')}</p>
               <small className="text-sm italic">{t('managerDashboard.yourTeamMembersHaventSubmittedAnyFormsYetOrYouDontHaveAnyManagedDepartmentsAssigned')}</small>
             </div>
@@ -1167,7 +1188,7 @@ const ManagerDashboard = ({ onLogout }) => {
 
       {/* Team Members */}
       <div className={`section team-management-section ${MD_PANEL}`}>
-        <div className="section-header mb-4">
+        <div className={MD_HEAD}>
           <h2 className={MD_H2}>{t('managerDashboard.myTeamMembers')}</h2>
           <small className={MD_SUB}>
             {t('managerDashboard.employeesFromYourManagedDepartments', {
@@ -1181,7 +1202,12 @@ const ManagerDashboard = ({ onLogout }) => {
               const memberFlags = getEmployeeFlags(member._id);
               return (
                 <div key={member._id} className={`team-card team-member-card ${MD_TEAM_CARD}`}>
-                  <div className="member-avatar text-3xl mb-2">ðŸ‘¤</div>
+                  <div
+                    className="member-avatar w-12 h-12 mx-auto mb-2 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center !text-indigo-700 dark:!text-indigo-300 font-bold text-lg"
+                    aria-hidden
+                  >
+                    {memberInitial(member.name)}
+                  </div>
                   <h4 className="!text-slate-900 dark:!text-white font-semibold m-0 mb-1">{member.name}</h4>
                   <p className="member-department !text-slate-500 dark:!text-slate-400 text-sm m-0 mb-2">{member.department}</p>
                   <span className="vacation-days team-stat inline-block bg-indigo-50 dark:bg-indigo-900/30 !text-indigo-700 dark:!text-indigo-300 px-2.5 py-1 rounded-lg text-xs font-semibold">
@@ -1197,12 +1223,12 @@ const ManagerDashboard = ({ onLogout }) => {
                           className={`flag-badge ${flag.type === 'deduction' ? 'flag-deduction' : 'flag-reward'}`}
                           title={`${flag.reason} - ${new Date(flag.createdAt).toLocaleDateString()}`}
                         >
-                          {flag.type === 'deduction' ? 'âš ï¸' : 'â­'} {flag.type === 'deduction' ? t('flags.deduction') : t('flags.reward')}
+                          {flag.type === 'deduction' ? t('flags.deduction') : t('flags.reward')}
                           <button 
                             className="flag-remove-btn"
                             onClick={(e) => { e.stopPropagation(); handleRemoveFlag(flag._id); }}
                             title={t('flags.removeFlag')}
-                          >Ã—</button>
+                          >{'\u00D7'}</button>
                         </div>
                       ))}
                     </div>
@@ -1215,7 +1241,7 @@ const ManagerDashboard = ({ onLogout }) => {
                     onClick={() => openFlagModal(member)}
                     title={t('flags.flagEmployee')}
                   >
-                    ðŸš© {t('flags.flagEmployee') || 'Flag'}
+                    {t('flags.flagEmployee') || 'Flag Employee'}
                   </button>
                 </div>
               );
@@ -1223,7 +1249,7 @@ const ManagerDashboard = ({ onLogout }) => {
           </div>
         ) : (
           <div className="no-content text-center py-10 !text-slate-500 dark:!text-slate-400">
-            <span className="no-content-icon text-4xl block mb-3">ðŸ‘¥</span>
+            <span className="no-content-icon text-4xl block mb-3">{MISC.users}</span>
             <p className="!text-slate-900 dark:!text-white m-0">{t('managerDashboard.noTeamMembersFoundInYourManagedDepartments')}</p>
           </div>
         )}
@@ -1231,8 +1257,8 @@ const ManagerDashboard = ({ onLogout }) => {
 
       {/* Pending Requests */}
       <div ref={pendingApprovalsRef} className={`section team-requests-section dashboard-section-anchor ${MD_PANEL}`}>
-        <div className="section-header section-header--with-actions flex flex-wrap items-start justify-between gap-4 mb-4">
-          <div className="section-header-text flex-1 min-w-[200px]">
+        <div className={MD_HEAD_ROW}>
+          <div className="md-section-head-main flex-1 min-w-[200px]">
             <h2 className={MD_H2}>
               {t('managerDashboard.pendingTeamRequests')}
               {refreshingPending ? ` (${t('managerDashboard.refreshing')})` : ''}
@@ -1274,7 +1300,11 @@ const ManagerDashboard = ({ onLogout }) => {
                   
                   {form.type === 'excuse' && (
                     <>
-                      <p><strong>Excuse Type:</strong> <span style={{ color: isPaidExcuse(form) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>{isPaidExcuse(form) ? 'ðŸ’° Paid' : 'ðŸ“ Unpaid'}</span></p>
+                      <p><strong>Excuse Type:</strong>{' '}
+                        <span className={isPaidExcuse(form) ? '!text-emerald-600 dark:!text-emerald-400 font-semibold' : '!text-amber-600 dark:!text-amber-400 font-semibold'}>
+                          {isPaidExcuse(form) ? 'Paid' : 'Unpaid'}
+                        </span>
+                      </p>
                       <p><strong>{t('excuseDate')}:</strong> {formatDate(form.excuseDate)}</p>
                       <p><strong>{t('timePeriod')}:</strong> {form.fromHour} - {form.toHour}</p>
                       <p><strong>{t('duration')}:</strong> {((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} {t('hours')}</p>
@@ -1314,7 +1344,7 @@ const ManagerDashboard = ({ onLogout }) => {
                       {(form.missionFromTime || form.missionToTime) && (
                         <p><strong>{t('forms.time') || 'Time'}:</strong> {form.missionFromTime || '--'} {t('forms.to')} {form.missionToTime || '--'}</p>
                       )}
-                      <p><strong>{t('forms.missionDestination')}:</strong> ðŸ“ {form.missionDestination}</p>
+                      <p><strong>{t('forms.missionDestination')}:</strong> {form.missionDestination}</p>
                     </>
                   )}
                   
@@ -1329,7 +1359,7 @@ const ManagerDashboard = ({ onLogout }) => {
                     className={MD_BTN_EDIT}
                     title={t('edit') || 'Edit form'}
                   >
-                    âœï¸ {t('edit') || 'Edit'}
+                    {t('edit') || 'Edit'}
                   </button>
                   <button
                     type="button"
@@ -1355,7 +1385,7 @@ const ManagerDashboard = ({ onLogout }) => {
           </div>
         ) : (
           <div className="no-content text-center py-10 !text-slate-500 dark:!text-slate-400">
-            <span className="no-content-icon text-4xl block mb-3">â³</span>
+            <span className="no-content-icon text-4xl block mb-3">{ACTION.processing}</span>
             <p className="!text-slate-900 dark:!text-white m-0 mb-1">{t('managerDashboard.noPendingRequestsFromYourTeam')}</p>
             <small className="text-sm italic">{t('managerDashboard.allCaughtUpYourTeamHaventSubmittedAnyRequestsNeedingApproval')}</small>
           </div>
@@ -1370,7 +1400,7 @@ const ManagerDashboard = ({ onLogout }) => {
               <h3>
                 {actionType === 'approve' ? t('managerDashboard.approveRequest') : t('managerDashboard.rejectRequest')}
               </h3>
-              <button className="close-btn" onClick={closeCommentModal}>Ã—</button>
+              <button type="button" className="close-btn" onClick={closeCommentModal}>{'\u00D7'}</button>
             </div>
             
             {selectedForm && (
@@ -1393,7 +1423,7 @@ const ManagerDashboard = ({ onLogout }) => {
                     <>
                       <p><strong>{t('excuseType') || 'Excuse Type'}:</strong>{' '}
                         <span style={{ color: isPaidExcuse(selectedForm) ? '#4caf50' : '#ff9800', fontWeight: 'bold' }}>
-                          {isPaidExcuse(selectedForm) ? 'ðŸ’° Paid' : 'ðŸ“ Unpaid'}
+                          {isPaidExcuse(selectedForm) ? 'Paid' : 'Unpaid'}
                         </span>
                       </p>
                       <p><strong>{t('excuseDate')}:</strong> {formatDate(selectedForm.excuseDate)}</p>
@@ -1430,7 +1460,7 @@ const ManagerDashboard = ({ onLogout }) => {
 
                 {formEditData && formEditData._id && (
                   <div className="edit-before-submit-section" style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(201, 162, 39, 0.1)', borderRadius: '8px', border: '1px solid rgba(201, 162, 39, 0.3)' }}>
-                    <strong style={{ display: 'block', marginBottom: '0.75rem', color: '#c9a227' }}>âœï¸ {t('edit') || 'Edit'} form before {actionType === 'approve' ? (t('approve') || 'approving') : (t('reject') || 'rejecting')}</strong>
+                    <strong className="block mb-3 !text-slate-900 dark:!text-white">{t('edit') || 'Edit'} form before {actionType === 'approve' ? (t('approve') || 'approving') : (t('reject') || 'rejecting')}</strong>
                     <div className="form-group-elegant" style={{ marginBottom: '0.75rem' }}>
                       <label className="form-label-elegant">{t('reason')}{fieldDirty('reason') ? ' Â· ' + (t('modified') || 'Modified') : ''}</label>
                       <textarea value={formEditData.reason || ''} onChange={(e) => setFormEditData({ ...formEditData, reason: e.target.value })} rows={2} className="form-input-elegant" style={{ width: '100%', boxShadow: fieldDirty('reason') ? '0 0 0 2px rgba(201, 162, 39, 0.6)' : undefined }} />
@@ -1603,8 +1633,8 @@ const ManagerDashboard = ({ onLogout }) => {
         <div className="modal-overlay" onClick={closeEditFormModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
             <div className="modal-header">
-              <h3>âœï¸ {t('edit') || 'Edit'} Form</h3>
-              <button className="close-btn" onClick={closeEditFormModal}>Ã—</button>
+              <h3>{t('edit') || 'Edit'} Form</h3>
+              <button type="button" className="close-btn" onClick={closeEditFormModal}>{'\u00D7'}</button>
             </div>
             <div className="modal-body">
               <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
@@ -1752,13 +1782,18 @@ const ManagerDashboard = ({ onLogout }) => {
         <div className="modal-overlay" onClick={closeFlagModal}>
           <div className="modal-content flag-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>ðŸš© {t('flags.flagEmployee') || 'Flag Employee'}</h3>
-              <button className="close-btn" onClick={closeFlagModal}>Ã—</button>
+              <h3>{t('flags.flagEmployee') || 'Flag Employee'}</h3>
+              <button type="button" className="close-btn" onClick={closeFlagModal}>{'\u00D7'}</button>
             </div>
             
             <div className="modal-body">
               <div className="employee-summary">
-                <div className="employee-avatar">ðŸ‘¤</div>
+                <div
+                  className="employee-avatar w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center !text-indigo-700 dark:!text-indigo-300 font-bold text-lg"
+                  aria-hidden
+                >
+                  {memberInitial(selectedEmployee?.name)}
+                </div>
                 <div className="employee-info">
                   <h4>{selectedEmployee.name}</h4>
                   <p>{selectedEmployee.department}</p>
@@ -1772,13 +1807,13 @@ const ManagerDashboard = ({ onLogout }) => {
                     className={`flag-type-btn ${flagType === 'deduction' ? 'active deduction' : ''}`}
                     onClick={() => setFlagType('deduction')}
                   >
-                    âš ï¸ {t('flags.deduction') || 'Deduction'}
+                    {t('flags.deduction') || 'Deduction'}
                   </button>
                   <button 
                     className={`flag-type-btn ${flagType === 'reward' ? 'active reward' : ''}`}
                     onClick={() => setFlagType('reward')}
                   >
-                    â­ {t('flags.reward') || 'Reward'}
+                    {t('flags.reward') || 'Reward'}
                   </button>
                 </div>
               </div>

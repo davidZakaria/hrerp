@@ -50,7 +50,21 @@ export const MISC = {
   user: '\u{1F464}',
   chart: '\u{1F4CA}',
   beach: '\u{1F3D6}\uFE0F',
-  plane: '\u2708\uFE0F'
+  plane: '\u2708\uFE0F',
+  emDash: '\u2014',
+  pin: '\u{1F4CD}',
+  office: '\u{1F3E2}',
+  users: '\u{1F465}'
+};
+
+/** Manager dashboard section nav icons */
+export const MANAGER_NAV = {
+  teamAttendance: NAV.overview,
+  submit: ACTION.write,
+  myForms: NAV.forms,
+  teamForms: NAV.users,
+  approvals: ACTION.approve,
+  ats: NAV.ats
 };
 
 /** Map form type string to icon emoji */

@@ -3009,6 +3009,20 @@
   color: #0f172a !important;
 }
 
+[data-theme='dark'] .modern-dash .dash-segment-btn:not(.dash-segment-btn--active) {
+  color: #cbd5e1 !important;
+}
+
+[data-theme='dark'] .modern-dash .dash-segment-btn--active {
+  color: #ffffff !important;
+  background: #4f46e5 !important;
+}
+
+[data-theme='dark'] .modern-dash .dash-segment-btn:hover:not(.dash-segment-btn--active) {
+  color: #f8fafc !important;
+  background: rgba(51, 65, 85, 0.8) !important;
+}
+
 [data-theme='light'] .modern-dash .elegant-card,
 [data-theme='light'] .saas-attendance .elegant-card,
 [data-theme='light'] .saas-ot-reports .elegant-card,
@@ -3224,5 +3238,100 @@
 [data-theme='light'] .saas-leaves-report span.leaves-status-badge,
 [data-theme='dark'] .saas-leaves-report span.leaves-status-badge {
   text-shadow: none !important;
+}
+
+/* Manager dashboard — kill legacy dark section-header bars + protect SaaS cards/buttons */
+.manager-dashboard.modern-dash .section-header,
+.manager-dashboard.modern-dash .md-section-head {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 0.25rem !important;
+  margin-bottom: 1rem !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+.manager-dashboard.modern-dash .md-section-head--row {
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 1rem !important;
+}
+
+.manager-dashboard.modern-dash .request-card,
+.manager-dashboard.modern-dash .my-form-card,
+.manager-dashboard.modern-dash .team-member-card {
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .manager-dashboard.modern-dash .request-card,
+[data-theme='light'] .manager-dashboard.modern-dash .my-form-card,
+[data-theme='light'] .manager-dashboard.modern-dash .team-member-card,
+[data-theme='light'] .manager-dashboard.modern-dash .request-card p,
+[data-theme='light'] .manager-dashboard.modern-dash .my-form-card p {
+  color: #334155 !important;
+}
+
+[data-theme='light'] .manager-dashboard.modern-dash .request-card strong,
+[data-theme='light'] .manager-dashboard.modern-dash .my-form-card strong,
+[data-theme='light'] .manager-dashboard.modern-dash .request-card h4,
+[data-theme='light'] .manager-dashboard.modern-dash .my-form-card h4 {
+  color: #0f172a !important;
+}
+
+.manager-dashboard .md-btn-edit {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transform: none !important;
+}
+
+[data-theme='dark'] .manager-dashboard .md-btn-edit {
+  background: #334155 !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+
+.manager-dashboard .md-btn-approve {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.manager-dashboard .md-btn-approve:hover:not(:disabled) {
+  background: #059669 !important;
+}
+
+.manager-dashboard .md-btn-reject {
+  background: #f43f5e !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.manager-dashboard .md-btn-reject:hover:not(:disabled) {
+  background: #e11d48 !important;
+}
+
+.manager-dashboard .md-btn-refresh {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.manager-dashboard .md-btn-refresh:hover:not(:disabled) {
+  background: #4338ca !important;
+}
+
+.manager-dashboard .md-btn-edit:hover:not(:disabled),
+.manager-dashboard .md-btn-approve:hover:not(:disabled),
+.manager-dashboard .md-btn-reject:hover:not(:disabled),
+.manager-dashboard .md-btn-refresh:hover:not(:disabled) {
+  transform: none !important;
 }
 

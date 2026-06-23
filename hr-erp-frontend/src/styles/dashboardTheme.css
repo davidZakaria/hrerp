@@ -1450,6 +1450,54 @@
 .manager-dashboard .md-modal-label {
   text-transform: none !important;
   letter-spacing: normal !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .manager-dashboard .md-edit-modal .md-modal-label,
+[data-theme='light'] .manager-dashboard .md-edit-modal label,
+[data-theme='light'] .manager-dashboard .md-comment-modal .md-modal-label,
+[data-theme='light'] .manager-dashboard .md-comment-modal label,
+[data-theme='light'] .manager-dashboard .md-edit-inline-panel .md-modal-label,
+[data-theme='light'] .manager-dashboard .md-edit-inline-panel label {
+  color: #334155 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .manager-dashboard .md-edit-modal .md-modal-label,
+[data-theme='dark'] .manager-dashboard .md-edit-modal label,
+[data-theme='dark'] .manager-dashboard .md-comment-modal .md-modal-label,
+[data-theme='dark'] .manager-dashboard .md-comment-modal label,
+[data-theme='dark'] .manager-dashboard .md-edit-inline-panel .md-modal-label,
+[data-theme='dark'] .manager-dashboard .md-edit-inline-panel label {
+  color: #cbd5e1 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .manager-dashboard .md-checkbox-row label,
+[data-theme='light'] .manager-dashboard .md-checkbox-row label span,
+[data-theme='light'] .manager-dashboard .md-checkbox-row .md-checkbox-text {
+  color: #334155 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .manager-dashboard .md-checkbox-row label,
+[data-theme='dark'] .manager-dashboard .md-checkbox-row label span,
+[data-theme='dark'] .manager-dashboard .md-checkbox-row .md-checkbox-text {
+  color: #cbd5e1 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .manager-dashboard .md-edit-modal .modal-header h3,
+[data-theme='light'] .manager-dashboard .md-comment-modal .modal-header h3,
+[data-theme='light'] .dashboard-container .manager-dashboard .md-edit-modal .modal-header h3 {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .manager-dashboard .md-edit-modal .cancel-btn,
+[data-theme='light'] .manager-dashboard .md-comment-modal .cancel-btn {
+  color: #334155 !important;
+  text-shadow: none !important;
 }
 
 .manager-dashboard .md-edit-modal textarea.form-input-elegant,

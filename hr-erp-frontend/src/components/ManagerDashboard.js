@@ -1481,14 +1481,14 @@ const ManagerDashboard = ({ onLogout }) => {
                     {formEditData.type === 'vacation' && (
                       <>
                         <div className={`${MD_MODAL_FIELD} md-checkbox-row`}>
-                          <label className="flex items-center gap-2 cursor-pointer !text-slate-700 dark:!text-slate-300 text-sm font-medium">
+                          <label className="md-checkbox-label flex items-center gap-2 cursor-pointer text-sm font-medium">
                             <input
                               type="checkbox"
                               className="md-modal-checkbox"
                               checked={!!formEditData.isHalfDay}
                               onChange={(e) => updateVacationEdit({ isHalfDay: e.target.checked, endDate: e.target.checked ? formEditData.startDate : formEditData.endDate })}
                             />
-                            <span>{t('forms.halfDay')}</span>
+                            <span className="md-checkbox-text">{t('forms.halfDay')}</span>
                           </label>
                         </div>
                         <div className={MD_MODAL_FIELD}>
@@ -1665,14 +1665,14 @@ const ManagerDashboard = ({ onLogout }) => {
               {formEditData.type === 'vacation' && (
                 <>
                   <div className={`${MD_MODAL_FIELD} md-checkbox-row`}>
-                    <label className="flex items-center gap-2 cursor-pointer !text-slate-700 dark:!text-slate-300 text-sm font-medium">
+                    <label className="md-checkbox-label flex items-center gap-2 cursor-pointer text-sm font-medium">
                       <input
                         type="checkbox"
                         className="md-modal-checkbox"
                         checked={!!formEditData.isHalfDay}
                         onChange={(e) => updateVacationEdit({ isHalfDay: e.target.checked, endDate: e.target.checked ? formEditData.startDate : formEditData.endDate })}
                       />
-                      <span>{t('forms.halfDay')}</span>
+                      <span className="md-checkbox-text">{t('forms.halfDay')}</span>
                     </label>
                   </div>
                   <div className={MD_MODAL_FIELD}>

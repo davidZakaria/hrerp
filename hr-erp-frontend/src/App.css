@@ -3398,6 +3398,39 @@
 .manager-dashboard .md-comment-modal .md-modal-label,
 .manager-dashboard .md-edit-inline-panel .md-modal-label {
   text-transform: none !important;
+  text-shadow: none !important;
+}
+
+/* Edit/comment modals — beat GlobalStyles global label { color:#fff; text-shadow } in light mode */
+[data-theme='light'] .dashboard-container .manager-dashboard .md-edit-modal label,
+[data-theme='light'] .dashboard-container .manager-dashboard .md-edit-modal .md-modal-label,
+[data-theme='light'] .dashboard-container .manager-dashboard .md-comment-modal label,
+[data-theme='light'] .dashboard-container .manager-dashboard .md-comment-modal .md-modal-label,
+[data-theme='light'] .dashboard-container .manager-dashboard .md-edit-inline-panel label,
+[data-theme='light'] .dashboard-container .manager-dashboard .md-edit-inline-panel .md-modal-label,
+[data-theme='light'] .modern-dash .manager-dashboard .md-edit-modal label,
+[data-theme='light'] .modern-dash .manager-dashboard .md-edit-modal .md-modal-label {
+  color: #334155 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .manager-dashboard .md-edit-modal input[type='checkbox'] + span,
+[data-theme='light'] .manager-dashboard .md-checkbox-row input[type='checkbox'] + span,
+[data-theme='light'] .manager-dashboard .md-checkbox-row .md-checkbox-text {
+  color: #334155 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .dashboard-container .manager-dashboard .md-edit-modal .modal-header h3,
+[data-theme='light'] .modern-dash .manager-dashboard .md-edit-modal .modal-header h3 {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .dashboard-container .manager-dashboard .md-edit-modal label,
+[data-theme='dark'] .dashboard-container .manager-dashboard .md-edit-modal .md-modal-label,
+[data-theme='dark'] .manager-dashboard .md-edit-modal input[type='checkbox'] + span {
+  text-shadow: none !important;
 }
 
 .manager-dashboard .md-btn-save:disabled {

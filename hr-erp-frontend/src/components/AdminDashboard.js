@@ -12,6 +12,7 @@ import DetailedLeavesReport from './DetailedLeavesReport';
 import FormSubmission from './FormSubmission';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
+import { NAV, ROLE, FORM, ACTION, MISC, formTypeIcon } from '../utils/dashboardEmojis';
 import DashboardSectionNav from './layout/DashboardSectionNav';
 import { smoothScrollToElement } from '../utils/smoothScroll';
 import { formatVacationDeductionDays, formatVacationDateRange } from '../utils/vacationDays';
@@ -344,7 +345,7 @@ const AdminDashboard = () => {
       await axios.delete(`${API_URL}/api/employee-flags/${flagId}`, {
         headers: { 'x-auth-token': token }
       });
-      setMessage('âœ… Flag removed successfully');
+      setMessage('✅ Flag removed successfully');
       fetchAllFlags();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
@@ -910,20 +911,20 @@ const AdminDashboard = () => {
 
   // Simple and reliable print function
   const handlePrintSimple = () => {
-    logger.log('ðŸ–¨ï¸ Simple print function called');
+    logger.log('🖨️ Simple print function called');
     
     if (!reportData || reportData.length === 0) {
       alert('No report data available to print.');
       return;
     }
 
-    const reportHTML = `<!DOCTYPE html><html><head><title>Vacation Days Report</title><style>body{font-family:Arial,sans-serif;margin:20px;color:#333}.header{text-align:center;margin-bottom:30px;border-bottom:2px solid #3498db;padding-bottom:20px}.title{font-size:24px;font-weight:bold;margin:0}.summary{display:flex;justify-content:space-around;margin:20px 0;background:#f8f9fa;padding:15px}.summary-item{text-align:center}.summary-number{font-size:24px;font-weight:bold;color:#3498db}.employee{border:1px solid #ddd;margin:10px 0;padding:15px;page-break-inside:avoid}.employee-name{font-weight:bold;font-size:16px}.badge{padding:4px 8px;border-radius:4px;color:white;font-size:12px}.badge-good{background:#27ae60}.badge-warning{background:#f39c12}.badge-critical{background:#e74c3c}@media print{.badge{-webkit-print-color-adjust:exact;color-adjust:exact}}</style></head><body><div class="header"><h1 class="title">ðŸ–ï¸ Vacation Days Report</h1><p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p></div><div class="summary"><div class="summary-item"><div class="summary-number">${reportData.length}</div><div>Total Employees</div></div><div class="summary-item"><div class="summary-number">${reportData.filter(emp => emp.vacationDaysLeft === 0).length}</div><div>No Days Left</div></div><div class="summary-item"><div class="summary-number">${Math.round(reportData.reduce((acc, emp) => acc + emp.vacationDaysLeft, 0) / reportData.length) || 0}</div><div>Average Days</div></div></div>${reportData.map(emp => `<div class="employee"><div class="employee-name">${emp.name}</div><div><strong>Email:</strong> ${emp.email}</div><div><strong>Department:</strong> ${emp.department}</div><div><strong>Vacation Days:</strong> <span class="badge ${emp.vacationDaysLeft === 0 ? 'badge-critical' : emp.vacationDaysLeft <= 5 ? 'badge-warning' : 'badge-good'}">${emp.vacationDaysLeft} days</span></div></div>`).join('')}<script>window.onload=function(){setTimeout(function(){window.print();setTimeout(function(){window.close()},1000)},500)}</script></body></html>`;
+    const reportHTML = `<!DOCTYPE html><html><head><title>Vacation Days Report</title><style>body{font-family:Arial,sans-serif;margin:20px;color:#333}.header{text-align:center;margin-bottom:30px;border-bottom:2px solid #3498db;padding-bottom:20px}.title{font-size:24px;font-weight:bold;margin:0}.summary{display:flex;justify-content:space-around;margin:20px 0;background:#f8f9fa;padding:15px}.summary-item{text-align:center}.summary-number{font-size:24px;font-weight:bold;color:#3498db}.employee{border:1px solid #ddd;margin:10px 0;padding:15px;page-break-inside:avoid}.employee-name{font-weight:bold;font-size:16px}.badge{padding:4px 8px;border-radius:4px;color:white;font-size:12px}.badge-good{background:#27ae60}.badge-warning{background:#f39c12}.badge-critical{background:#e74c3c}@media print{.badge{-webkit-print-color-adjust:exact;color-adjust:exact}}</style></head><body><div class="header"><h1 class="title">🏖️ Vacation Days Report</h1><p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p></div><div class="summary"><div class="summary-item"><div class="summary-number">${reportData.length}</div><div>Total Employees</div></div><div class="summary-item"><div class="summary-number">${reportData.filter(emp => emp.vacationDaysLeft === 0).length}</div><div>No Days Left</div></div><div class="summary-item"><div class="summary-number">${Math.round(reportData.reduce((acc, emp) => acc + emp.vacationDaysLeft, 0) / reportData.length) || 0}</div><div>Average Days</div></div></div>${reportData.map(emp => `<div class="employee"><div class="employee-name">${emp.name}</div><div><strong>Email:</strong> ${emp.email}</div><div><strong>Department:</strong> ${emp.department}</div><div><strong>Vacation Days:</strong> <span class="badge ${emp.vacationDaysLeft === 0 ? 'badge-critical' : emp.vacationDaysLeft <= 5 ? 'badge-warning' : 'badge-good'}">${emp.vacationDaysLeft} days</span></div></div>`).join('')}<script>window.onload=function(){setTimeout(function(){window.print();setTimeout(function(){window.close()},1000)},500)}</script></body></html>`;
 
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (printWindow) {
       printWindow.document.write(reportHTML);
       printWindow.document.close();
-      logger.log('âœ… Print window opened');
+      logger.log('✅ Print window opened');
     } else {
       alert('Please allow pop-ups to enable printing.');
     }
@@ -1069,11 +1070,11 @@ const AdminDashboard = () => {
         badgeLabel={t('dashboard.nav.badgeAdmin')}
         activeId={activeTab}
         sections={[
-          { id: 'overview', label: t('adminDashboard.navOverview'), icon: 'ðŸ“Š', onSelect: () => setActiveTab('overview') },
-          { id: 'users', label: t('adminDashboard.usersSectionTitle'), icon: 'ðŸ‘¥', onSelect: () => setActiveTab('users') },
-          { id: 'forms', label: t('adminDashboard.formsSectionTitle'), icon: 'ðŸ“‹', onSelect: () => setActiveTab('forms') },
-          { id: 'ats', label: t('adminDashboard.navAts'), icon: 'ðŸŽ¯', onSelect: () => setActiveTab('ats') },
-          { id: 'attendance', label: t('adminDashboard.navAttendance'), icon: 'ðŸ“ˆ', onSelect: () => setActiveTab('attendance') }
+          { id: 'overview', label: t('adminDashboard.navOverview'), icon: NAV.overview, onSelect: () => setActiveTab('overview') },
+          { id: 'users', label: t('adminDashboard.usersSectionTitle'), icon: NAV.users, onSelect: () => setActiveTab('users') },
+          { id: 'forms', label: t('adminDashboard.formsSectionTitle'), icon: NAV.forms, onSelect: () => setActiveTab('forms') },
+          { id: 'ats', label: t('adminDashboard.navAts'), icon: NAV.ats, onSelect: () => setActiveTab('ats') },
+          { id: 'attendance', label: t('adminDashboard.navAttendance'), icon: NAV.attendance, onSelect: () => setActiveTab('attendance') }
         ]}
       />
 
@@ -1134,7 +1135,7 @@ const AdminDashboard = () => {
                             borderRadius: '4px',
                             fontSize: '0.85rem'
                           }}>
-                            {user.role === 'manager' ? 'ðŸ‘” Manager' : 'ðŸ‘¤ Employee'}
+                            {user.role === 'manager' ? '👔 Manager' : '👤 Employee'}
                           </span>
                         </p>
                         <p><strong>{t('adminDashboard.departmentLabel')}:</strong> {user.department}</p>
@@ -1299,7 +1300,7 @@ const AdminDashboard = () => {
               <div className="super-admin-section">
                 <div className="section-title-container">
                   <h3 className="section-title">
-                    â³ Pending Registrations ({currentUser?.role === 'super_admin' 
+                    ⏳ Pending Registrations ({currentUser?.role === 'super_admin' 
                       ? pendingUsers.length 
                       : pendingUsers.filter(u => u.role !== 'super_admin').length})
                   </h3>
@@ -1333,7 +1334,7 @@ const AdminDashboard = () => {
                         <div className="info-row">
                           <span className="info-label">Role:</span>
                           <span className={`role-badge role-${user.role}`}>
-                            {user.role === 'manager' ? 'ðŸ‘” Manager' : 'ðŸ‘¤ Employee'}
+                            {user.role === 'manager' ? '👔 Manager' : '👤 Employee'}
                           </span>
                         </div>
                         <div className="info-row">
@@ -1349,7 +1350,7 @@ const AdminDashboard = () => {
                           if (!eff.length) return null;
                           return (
                           <div className="info-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                            <span className="info-label" style={{ marginBottom: '0.5rem' }}>ðŸŽ¯ Wants to Manage (effective):</span>
+                            <span className="info-label" style={{ marginBottom: '0.5rem' }}>🎯 Wants to Manage (effective):</span>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                               {eff.map((dept, idx) => (
                                 <span key={idx} style={{
@@ -1384,13 +1385,13 @@ const AdminDashboard = () => {
                           className="btn-elegant btn-success btn-sm"
                           onClick={() => handleApproveUser(user._id)}
                         >
-                          âœ… Approve
+                          ✅ Approve
                         </button>
                         <button 
                           className="btn-elegant btn-danger btn-sm"
                           onClick={() => handleRejectUser(user._id)}
                         >
-                          âŒ Reject
+                          ❌ Reject
                         </button>
                       </div>
                     </div>
@@ -1403,13 +1404,13 @@ const AdminDashboard = () => {
             <div className="super-admin-section">
               <div className="section-title-container">
                 <h3 className="section-title">
-                  ðŸ‘¥ Users ({filteredUsers.length})
+                  👥 Users ({filteredUsers.length})
                 </h3>
               </div>
               {userMgmtViewMode === 'table' ? (
                 filteredUsers.length === 0 ? (
                   <div className="no-users-message" style={{ marginTop: '1rem' }}>
-                    <div className="no-users-icon">ðŸ‘¥</div>
+                    <div className="no-users-icon">👥</div>
                     <h3>{t('userManagement.noUsersTitle')}</h3>
                     <p>{t('userManagement.noUsersBody')}</p>
                   </div>
@@ -1503,7 +1504,7 @@ const AdminDashboard = () => {
                       {/* Employee Flags */}
                       {getEmployeeFlags(user._id).length > 0 && (
                         <div className="info-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                          <span className="info-label" style={{ marginBottom: '8px' }}>ðŸš© Active Flags:</span>
+                          <span className="info-label" style={{ marginBottom: '8px' }}>🚩 Active Flags:</span>
                           <div className="employee-flags-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                             {getEmployeeFlags(user._id).map(flag => (
                               <span 
@@ -1511,12 +1512,12 @@ const AdminDashboard = () => {
                                 className={`flag-badge-admin ${flag.type === 'deduction' ? 'deduction' : 'reward'}`}
                                 title={`${flag.reason} - By: ${flag.flaggedBy?.name || 'Manager'} on ${new Date(flag.createdAt).toLocaleDateString()}`}
                               >
-                                {flag.type === 'deduction' ? 'âš ï¸' : 'â­'} {flag.type}
+                                {flag.type === 'deduction' ? '⚠️' : '⭐'} {flag.type}
                                 <button 
                                   className="flag-remove-btn-admin"
                                   onClick={(e) => { e.stopPropagation(); handleRemoveFlag(flag._id); }}
                                   title="Remove flag"
-                                >Ã—</button>
+                                >×</button>
                               </span>
                             ))}
                           </div>
@@ -1530,7 +1531,7 @@ const AdminDashboard = () => {
                           onClick={() => handleReactivateUser(user)}
                           title={t('users.reactivate') || 'Reactivate'}
                         >
-                          âœ… {t('users.reactivate') || 'Reactivate'}
+                          ✅ {t('users.reactivate') || 'Reactivate'}
                         </button>
                       ) : user.role !== 'super_admin' ? (
                         <button 
@@ -1539,27 +1540,27 @@ const AdminDashboard = () => {
                           style={{ background: 'linear-gradient(135deg, #9e9e9e, #757575)' }}
                           title={t('users.moveToDraft') || 'Move to Draft'}
                         >
-                          ðŸ“„ {t('users.moveToDraft') || 'Draft'}
+                          📄 {t('users.moveToDraft') || 'Draft'}
                         </button>
                       ) : null}
                       <button 
                         className="btn-elegant btn-primary btn-sm"
                         onClick={() => handleEditUser(user)}
                       >
-                        âœï¸ Edit User
+                        ✏️ Edit User
                       </button>
                       <button 
                         className="btn-elegant btn-sm"
                         onClick={() => openPasswordResetModal(user)}
                         style={{ background: 'linear-gradient(135deg, #ff9800, #f57c00)' }}
                       >
-                        ðŸ”‘ Reset Password
+                        🔑 Reset Password
                       </button>
                       <button 
                         className="btn-elegant btn-danger btn-sm"
                         onClick={() => handleDeleteUser(user)}
                       >
-                        ðŸ—‘ï¸ Delete
+                        🗑️ Delete
                       </button>
                     </div>
                   </div>
@@ -1634,7 +1635,7 @@ const AdminDashboard = () => {
                 >
                   <div className="vacation-card-header">
                     <div className="vacation-card-icon manage-icon">
-                      ðŸ–ï¸
+                      🏖️
                     </div>
                     <div className="vacation-card-content">
                       <h3 className="vacation-card-title">{t('adminDashboard.vacationCardManageTitle')}</h3>
@@ -1642,7 +1643,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                   <div className="vacation-card-footer">
-                    <span className="vacation-card-action">{t('adminDashboard.vacationCardManageCta')} â†’</span>
+                    <span className="vacation-card-action">{t('adminDashboard.vacationCardManageCta')} →</span>
                   </div>
                 </div>
 
@@ -1660,7 +1661,7 @@ const AdminDashboard = () => {
                 >
                   <div className="vacation-card-header">
                     <div className="vacation-card-icon report-icon">
-                      ðŸ“Š
+                      📊
                     </div>
                     <div className="vacation-card-content">
                       <h3 className="vacation-card-title">{t('adminDashboard.vacationCardReportTitle')}</h3>
@@ -1668,7 +1669,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                   <div className="vacation-card-footer">
-                    <span className="vacation-card-action">{t('adminDashboard.vacationCardReportCta')} â†’</span>
+                    <span className="vacation-card-action">{t('adminDashboard.vacationCardReportCta')} →</span>
                   </div>
                 </div>
 
@@ -1686,7 +1687,7 @@ const AdminDashboard = () => {
                 >
                   <div className="vacation-card-header">
                     <div className="vacation-card-icon manage-icon vacation-card-icon--personal">
-                      âœˆï¸
+                      {FORM.mission}
                     </div>
                     <div className="vacation-card-content">
                       <h3 className="vacation-card-title">{t('adminDashboard.vacationCardPersonalTitle')}</h3>
@@ -1696,8 +1697,8 @@ const AdminDashboard = () => {
                   <div className="vacation-card-footer">
                     <span className="vacation-card-action">
                       {showAdminFormSubmission
-                        ? `${t('adminDashboard.vacationCardPersonalCtaOpen')} â–¼`
-                        : `${t('adminDashboard.vacationCardPersonalCtaClosed')} â†’`}
+                        ? `${t('adminDashboard.vacationCardPersonalCtaOpen')} ▼`
+                        : `${t('adminDashboard.vacationCardPersonalCtaClosed')} →`}
                     </span>
                   </div>
                 </div>
@@ -1707,7 +1708,7 @@ const AdminDashboard = () => {
             {showAdminFormSubmission && (
               <div className="admin-form-submission-section" style={{ marginBottom: '2rem' }}>
                 <div className="section-header">
-                  <h2>ðŸ“ {t('managerDashboard.submitNewPersonalForm', 'Submit New Personal Form')}</h2>
+                  <h2>📝 {t('managerDashboard.submitNewPersonalForm', 'Submit New Personal Form')}</h2>
                   <small className="section-subtitle">{t('managerDashboard.thisIsForYourOwnPersonalRequestsVacationSickLeaveEtc', 'This is for your own personal requests: vacation, mission, sick leave, etc.')}</small>
                 </div>
                 <div className="form-container">
@@ -1754,7 +1755,7 @@ const AdminDashboard = () => {
             <div className="super-admin-section">
               <div className="section-title-container">
                 <h3 className="section-title" style={{ color: '#ff9800' }}>
-                  â³ Pending Manager Approval - {activeFormType.toUpperCase()} ({formsForMonthFilter.filter(f => f.type === activeFormType && f.status === 'pending').length})
+                  ⏳ Pending Manager Approval - {activeFormType.toUpperCase()} ({formsForMonthFilter.filter(f => f.type === activeFormType && f.status === 'pending').length})
                 </h3>
                 <ExportPrintButtons 
                   forms={formsForMonthFilter}
@@ -1774,15 +1775,11 @@ const AdminDashboard = () => {
                   <div key={form._id} className="super-admin-card form-card">
                     <div className="card-header">
                       <div className="form-type-icon">
-                        {form.type === 'vacation' ? 'ðŸ–ï¸' : 
-                         form.type === 'sick_leave' ? 'ðŸ¥' : 
-                         form.type === 'excuse' ? 'ðŸ•' : 
-                         form.type === 'extra_hours' ? 'â±ï¸' : 
-                         form.type === 'mission' ? 'âœˆï¸' : 'ðŸ '}
+                        {formTypeIcon(form.type)}
                       </div>
                       <div className="form-info">
                         <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
-                        <p className="employee-details">{form.user?.email} â€¢ {form.user?.department}</p>
+                        <p className="employee-details">{form.user?.email} • {form.user?.department}</p>
                       </div>
                     </div>
                     <div className="card-content">
@@ -1790,9 +1787,9 @@ const AdminDashboard = () => {
                         <span className="info-label">Type:</span>
                         <span className="info-value">
                           {form.type === 'vacation' ? 'Annual Vacation' :
-                           form.type === 'wfh' ? 'ðŸ  Work From Home' :
-                           form.type === 'extra_hours' ? `â±ï¸ ${t('forms.extra_hours')}` :
-                           form.type === 'mission' ? 'âœˆï¸ Mission' :
+                           form.type === 'wfh' ? '🏠 Work From Home' :
+                           form.type === 'extra_hours' ? `⏱️ ${t('forms.extra_hours')}` :
+                           form.type === 'mission' ? `${FORM.mission} Mission` :
                            form.type}
                         </span>
                       </div>
@@ -1840,7 +1837,7 @@ const AdminDashboard = () => {
                           ) : form.type === 'extra_hours' ? (
                             <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
                           ) : form.type === 'mission' ? (
-                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` â€¢ ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} â€¢ ${form.missionDestination || 'N/A'}`
+                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` • ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} • ${form.missionDestination || 'N/A'}`
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -1874,7 +1871,7 @@ const AdminDashboard = () => {
                 ))}
                 {formsForMonthFilter.filter(f => f.type === activeFormType && f.status === 'pending').length === 0 && (
                   <div className="no-items-message">
-                    <div className="no-items-icon">ðŸ“‹</div>
+                    <div className="no-items-icon">📋</div>
                     <h3>No Pending Forms</h3>
                     <p>No {activeFormType} forms are pending manager approval at this time.</p>
                   </div>
@@ -1886,7 +1883,7 @@ const AdminDashboard = () => {
             <div className="super-admin-section">
               <div className="section-title-container">
                 <h3 className="section-title" style={{ color: '#2196f3' }}>
-                  ðŸ‘¨â€ðŸ’¼ Awaiting HR Approval - {activeFormType.toUpperCase()} ({formsForMonthFilter.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length})
+                  {ACTION.hrAwaiting} Awaiting HR Approval - {activeFormType.toUpperCase()} ({formsForMonthFilter.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length})
                 </h3>
                 <ExportPrintButtons 
                   forms={formsForMonthFilter}
@@ -1906,15 +1903,11 @@ const AdminDashboard = () => {
                   <div key={form._id} className="super-admin-card form-card">
                     <div className="card-header">
                       <div className="form-type-icon">
-                        {form.type === 'vacation' ? 'ðŸ–ï¸' : 
-                         form.type === 'sick_leave' ? 'ðŸ¥' : 
-                         form.type === 'excuse' ? 'ðŸ•' : 
-                         form.type === 'extra_hours' ? 'â±ï¸' : 
-                         form.type === 'mission' ? 'âœˆï¸' : 'ðŸ '}
+                        {formTypeIcon(form.type)}
                       </div>
                       <div className="form-info">
                         <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
-                        <p className="employee-details">{form.user?.email} â€¢ {form.user?.department}</p>
+                        <p className="employee-details">{form.user?.email} • {form.user?.department}</p>
                       </div>
                     </div>
                     <div className="card-content">
@@ -1922,11 +1915,11 @@ const AdminDashboard = () => {
                         <span className="info-label">Type:</span>
                         <span className="info-value">
                           {form.type === 'vacation' ? 'Annual Vacation' :
-                           form.type === 'excuse' && form.excuseType === 'paid' ? 'ðŸ’° Paid Excuse' :
-                           form.type === 'excuse' && form.excuseType === 'unpaid' ? 'ðŸ“ Unpaid Excuse' :
-                           form.type === 'wfh' ? 'ðŸ  Work From Home' :
-                           form.type === 'extra_hours' ? `â±ï¸ ${t('forms.extra_hours')}` :
-                           form.type === 'mission' ? 'âœˆï¸ Mission' :
+                           form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
+                           form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
+                           form.type === 'wfh' ? '🏠 Work From Home' :
+                           form.type === 'extra_hours' ? `⏱️ ${t('forms.extra_hours')}` :
+                           form.type === 'mission' ? `${FORM.mission} Mission` :
                            form.type}
                         </span>
                       </div>
@@ -1989,7 +1982,7 @@ const AdminDashboard = () => {
                           ) : form.type === 'extra_hours' ? (
                             <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
                           ) : form.type === 'mission' ? (
-                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` â€¢ ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} â€¢ ${form.missionDestination || 'N/A'}`
+                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` • ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} • ${form.missionDestination || 'N/A'}`
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -2014,7 +2007,7 @@ const AdminDashboard = () => {
                         <span className="info-label">Manager Approval:</span>
                         <div className="manager-approval-info">
                           <div style={{ color: '#4caf50', fontWeight: 'bold' }}>
-                            âœ… Approved by {form.managerApprovedBy?.name ? `ðŸ‘” ${form.managerApprovedBy.name}` : 'Manager'}
+                            ✅ Approved by {form.managerApprovedBy?.name ? `👔 ${form.managerApprovedBy.name}` : 'Manager'}
                           </div>
                           {form.managerApprovedAt && (
                             <div style={{ fontSize: '0.8rem', color: '#666' }}>
@@ -2060,14 +2053,14 @@ const AdminDashboard = () => {
                           className="btn-elegant btn-success btn-sm"
                           disabled={processingForms.has(form._id) || form._isProcessing}
                         >
-                          {processingForms.has(form._id) || form._isProcessing ? 'â³ Processing...' : 'âœ… FINAL APPROVAL'}
+                          {processingForms.has(form._id) || form._isProcessing ? '⏳ Processing...' : '✅ FINAL APPROVAL'}
                         </button>
                         <button
                           onClick={() => handleFormAction(form._id, 'rejected')}
                           className="btn-elegant btn-danger btn-sm"
                           disabled={processingForms.has(form._id) || form._isProcessing}
                         >
-                          {processingForms.has(form._id) || form._isProcessing ? 'â³ Processing...' : 'âŒ REJECT'}
+                          {processingForms.has(form._id) || form._isProcessing ? '⏳ Processing...' : '❌ REJECT'}
                         </button>
                       </div>
                       <div className="comment-section">
@@ -2084,7 +2077,7 @@ const AdminDashboard = () => {
                 ))}
                 {formsForMonthFilter.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length === 0 && (
                   <div className="no-items-message">
-                    <div className="no-items-icon">ðŸ‘¨â€ðŸ’¼</div>
+                    <div className="no-items-icon">{ACTION.hrAwaiting}</div>
                     <h3>No Forms Awaiting HR</h3>
                     <p>No {activeFormType} forms are awaiting HR approval at this time.</p>
                   </div>
@@ -2096,7 +2089,7 @@ const AdminDashboard = () => {
             <div className="super-admin-section">
               <div className="section-title-container">
                 <h3 className="section-title" style={{ color: '#666' }}>
-                  ðŸ“‹ {activeFormType.toUpperCase()} Forms History ({formsForMonthFilter.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length})
+                  📋 {activeFormType.toUpperCase()} Forms History ({formsForMonthFilter.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length})
                 </h3>
                 <ExportPrintButtons 
                   forms={formsForMonthFilter}
@@ -2116,15 +2109,11 @@ const AdminDashboard = () => {
                   <div key={form._id} className="super-admin-card form-card history-card">
                     <div className="card-header">
                       <div className="form-type-icon">
-                        {form.type === 'vacation' ? 'ðŸ–ï¸' : 
-                         form.type === 'sick_leave' ? 'ðŸ¥' : 
-                         form.type === 'excuse' ? 'ðŸ•' : 
-                         form.type === 'extra_hours' ? 'â±ï¸' : 
-                         form.type === 'mission' ? 'âœˆï¸' : 'ðŸ '}
+                        {formTypeIcon(form.type)}
                       </div>
                       <div className="form-info">
                         <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
-                        <p className="employee-details">{form.user?.email} â€¢ {form.user?.department}</p>
+                        <p className="employee-details">{form.user?.email} • {form.user?.department}</p>
                       </div>
                     </div>
                     <div className="card-content">
@@ -2132,11 +2121,11 @@ const AdminDashboard = () => {
                         <span className="info-label">Type:</span>
                         <span className="info-value">
                           {form.type === 'vacation' ? 'Annual Vacation' :
-                           form.type === 'excuse' && form.excuseType === 'paid' ? 'ðŸ’° Paid Excuse' :
-                           form.type === 'excuse' && form.excuseType === 'unpaid' ? 'ðŸ“ Unpaid Excuse' :
-                           form.type === 'wfh' ? 'ðŸ  Work From Home' :
-                           form.type === 'extra_hours' ? `â±ï¸ ${t('forms.extra_hours')}` :
-                           form.type === 'mission' ? 'âœˆï¸ Mission' :
+                           form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
+                           form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
+                           form.type === 'wfh' ? '🏠 Work From Home' :
+                           form.type === 'extra_hours' ? `⏱️ ${t('forms.extra_hours')}` :
+                           form.type === 'mission' ? `${FORM.mission} Mission` :
                            form.type}
                         </span>
                       </div>
@@ -2199,7 +2188,7 @@ const AdminDashboard = () => {
                           ) : form.type === 'extra_hours' ? (
                             <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
                           ) : form.type === 'mission' ? (
-                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` â€¢ ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} â€¢ ${form.missionDestination || 'N/A'}`
+                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` • ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} • ${form.missionDestination || 'N/A'}`
                           ) : (
                             `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
                           )}
@@ -2209,7 +2198,7 @@ const AdminDashboard = () => {
                         <span className="info-label">Final Status:</span>
                         <div className={`status-badge-history status-${form.status}`}>
                           <span className="status-icon">
-                            {form.status === 'approved' ? 'âœ…' : 'âŒ'}
+                            {form.status === 'approved' ? '✅' : '❌'}
                           </span>
                           <span className="status-text">
                             {form.status === 'manager_rejected' ? 'Rejected by Manager' : form.status}
@@ -2228,7 +2217,7 @@ const AdminDashboard = () => {
                             {form.status === 'manager_rejected' ? 'Rejected by Manager:' : 'Manager Action:'}
                           </span>
                           <span className="info-value manager-name">
-                            ðŸ‘” {form.managerApprovedBy.name}
+                            👔 {form.managerApprovedBy.name}
                             {form.managerApprovedAt && (
                               <span className="approval-date"> ({new Date(form.managerApprovedAt).toLocaleDateString()})</span>
                             )}
@@ -2262,14 +2251,14 @@ const AdminDashboard = () => {
                         className="btn-elegant btn-danger btn-sm"
                         title="Delete this form record"
                       >
-                        ðŸ—‘ï¸ Delete
+                        🗑️ Delete
                       </button>
                     </div>
                   </div>
                 ))}
                 {formsForMonthFilter.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length === 0 && (
                   <div className="no-items-message">
-                    <div className="no-items-icon">ðŸ“‹</div>
+                    <div className="no-items-icon">📋</div>
                     <h3>No Historical Forms</h3>
                     <p>No completed {activeFormType} forms found in the history.</p>
                   </div>
@@ -2722,7 +2711,7 @@ const AdminDashboard = () => {
         <div className="modal-elegant" onClick={() => setShowPasswordResetModal(false)}>
           <div className="modal-content-elegant" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
             <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              ðŸ”‘ Reset Password
+              🔑 Reset Password
             </h2>
             <p style={{ color: '#888', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
               Reset password for: <strong style={{ color: '#fff' }}>{passwordResetUser?.name}</strong>
@@ -2757,7 +2746,7 @@ const AdminDashboard = () => {
               </div>
               {newPassword && confirmPassword && newPassword !== confirmPassword && (
                 <p style={{ color: '#f44336', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                  âš ï¸ Passwords do not match
+                  ⚠️ Passwords do not match
                 </p>
               )}
               <div className="action-buttons" style={{ marginTop: '1.5rem' }}>
@@ -2769,7 +2758,7 @@ const AdminDashboard = () => {
                     opacity: (passwordResetLoading || newPassword !== confirmPassword || newPassword.length < 6) ? 0.6 : 1 
                   }}
                 >
-                  {passwordResetLoading ? 'â³ Resetting...' : 'âœ… Reset Password'}
+                  {passwordResetLoading ? '⏳ Resetting...' : '✅ Reset Password'}
                 </button>
                 <button 
                   type="button" 
@@ -2791,7 +2780,7 @@ const AdminDashboard = () => {
           <div className="vacation-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="vacation-modal-header">
               <div className="modal-title-section">
-                <div className="modal-icon">ðŸ–ï¸</div>
+                <div className="modal-icon">🏖️</div>
                 <div>
                   <h2 className="vacation-modal-title">Manage Vacation Days</h2>
                   <p className="vacation-modal-subtitle">Update employee vacation balances</p>
@@ -2802,14 +2791,14 @@ const AdminDashboard = () => {
                 onClick={() => setShowVacationManager(false)}
                 title="Close"
               >
-                âœ•
+                •
               </button>
             </div>
 
             <div className="vacation-modal-search">
               <input
                 type="text"
-                placeholder="ðŸ” Search by employee name..."
+                placeholder="🔍 Search by employee name..."
                 value={vacationManagerSearch}
                 onChange={e => setVacationManagerSearch(e.target.value)}
                 className="vacation-search-input"
@@ -2825,14 +2814,14 @@ const AdminDashboard = () => {
 
             {vacationManagerError && (
               <div className="vacation-message error">
-                <span className="message-icon">âš ï¸</span>
+                <span className="message-icon">⚠️</span>
                 {vacationManagerError}
               </div>
             )}
 
             {vacationManagerSuccess && (
               <div className="vacation-message success">
-                <span className="message-icon">âœ…</span>
+                <span className="message-icon">✅</span>
                 {vacationManagerSuccess}
               </div>
             )}
@@ -2842,7 +2831,7 @@ const AdminDashboard = () => {
                 <div key={emp._id} className="vacation-employee-card">
                   <div className="vacation-card-header">
                     <div className="employee-avatar">
-                      ðŸ‘¤
+                      👤
                     </div>
                     <div className="employee-basic-info">
                       <h4 className="employee-card-name">{emp.name}</h4>
@@ -2877,7 +2866,7 @@ const AdminDashboard = () => {
                       className="btn-vacation-save" 
                       onClick={() => handleVacationSave(emp._id)}
                     >
-                      ðŸ’¾ Save Changes
+                      💾 Save Changes
                     </button>
                   </div>
                 </div>
@@ -2885,7 +2874,7 @@ const AdminDashboard = () => {
               
               {allEmployees.filter(emp => emp.name.toLowerCase().includes(vacationManagerSearch.toLowerCase())).length === 0 && (
                 <div className="vacation-no-results">
-                  <div className="no-results-icon">ðŸ‘¥</div>
+                  <div className="no-results-icon">👥</div>
                   <h3>No employees found</h3>
                   <p>Try adjusting your search criteria</p>
                 </div>
@@ -2910,7 +2899,7 @@ const AdminDashboard = () => {
           <div className="report-modal-content">
             <div className="report-modal-header">
               <div className="modal-title-section">
-                <div className="modal-icon">ðŸ“Š</div>
+                <div className="modal-icon">📊</div>
                 <div>
                   <h2 className="report-modal-title">Vacation Days Report</h2>
                   <p className="report-modal-subtitle">Comprehensive overview of employee vacation balances</p>
@@ -2921,14 +2910,14 @@ const AdminDashboard = () => {
                   className="btn-print-report"
                   onClick={handlePrintSimple}
                 >
-                  ðŸ–¨ï¸ Print Report
+                  🖨️ Print Report
                 </button>
                 <button 
                   className="report-close-btn" 
                   onClick={() => setShowReport(false)}
                   title="Close"
                 >
-                  âœ•
+                  •
                 </button>
               </div>
             </div>
@@ -2942,7 +2931,7 @@ const AdminDashboard = () => {
 
             {reportError && (
               <div className="report-message error">
-                <span className="message-icon">âš ï¸</span>
+                <span className="message-icon">⚠️</span>
                 {reportError}
               </div>
             )}
@@ -2951,21 +2940,21 @@ const AdminDashboard = () => {
               <>
                 <div className="report-summary">
                   <div className="summary-card">
-                    <div className="summary-icon">ðŸ‘¥</div>
+                    <div className="summary-icon">👥</div>
                     <div className="summary-content">
                       <div className="summary-number">{reportData.length}</div>
                       <div className="summary-label">Total Employees</div>
                     </div>
                   </div>
                   <div className="summary-card">
-                    <div className="summary-icon">âš ï¸</div>
+                    <div className="summary-icon">⚠️</div>
                     <div className="summary-content">
                       <div className="summary-number">{reportData.filter(emp => emp.vacationDaysLeft === 0).length}</div>
                       <div className="summary-label">No Days Left</div>
                     </div>
                   </div>
                   <div className="summary-card">
-                    <div className="summary-icon">ðŸ–ï¸</div>
+                    <div className="summary-icon">🏖️</div>
                     <div className="summary-content">
                       <div className="summary-number">{Math.round(reportData.reduce((acc, emp) => acc + emp.vacationDaysLeft, 0) / reportData.length) || 0}</div>
                       <div className="summary-label">Average Days</div>
@@ -2978,7 +2967,7 @@ const AdminDashboard = () => {
                     <div key={employee._id} className="report-employee-card">
                       <div className="report-card-header">
                         <div className="employee-avatar">
-                          ðŸ‘¤
+                          👤
                         </div>
                         <div className="employee-basic-info">
                           <h4 className="employee-card-name">{employee.name}</h4>
@@ -2999,8 +2988,8 @@ const AdminDashboard = () => {
                           <div className="vacation-progress-label">
                             <span>Vacation Days Balance</span>
                             <span className="vacation-status">
-                              {employee.vacationDaysLeft === 0 ? 'âŒ Depleted' : 
-                               employee.vacationDaysLeft <= 5 ? 'âš ï¸ Low' : 'âœ… Available'}
+                              {employee.vacationDaysLeft === 0 ? '❌ Depleted' : 
+                               employee.vacationDaysLeft <= 5 ? '⚠️ Low' : '✅ Available'}
                             </span>
                           </div>
                           <div className="vacation-progress-bar">
@@ -3041,7 +3030,7 @@ const AdminDashboard = () => {
             onClick={() => setMessage('')}
             className="notification-close"
           >
-            Ã—
+            ×
           </button>
         </div>
       )}

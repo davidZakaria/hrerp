@@ -112,7 +112,7 @@ export default function AdminEmployeeInsights({
       employeeSummary.summary.deductionCount > 0);
 
   return (
-    <div className="dash-panel-card dash-insights-section">
+    <div className="dash-insights-shell dash-insights-section">
       <div className="dash-insights-toolbar">
         <div>
           <h2 className="dash-panel-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

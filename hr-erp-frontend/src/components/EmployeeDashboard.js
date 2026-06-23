@@ -3,14 +3,18 @@ import DashboardSectionNav from './layout/DashboardSectionNav';
 import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
 import DashboardAppHeader from './layout/DashboardAppHeader';
-import UserProfileChips from './users/UserProfileChips';
-import WelcomeHero from './WelcomeHero';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import EmployeeOtReport from './EmployeeOtReport';
+import EmployeeDashboardHero from './employee/EmployeeDashboardHero';
+import LeaveWallet from './employee/LeaveWallet';
+import EmployeeQuickActions from './employee/EmployeeQuickActions';
+import EmployeeMonthlySnapshot from './employee/EmployeeMonthlySnapshot';
 import API_URL from '../config/api';
 import { smoothScrollToElement, DEFAULT_SCROLL_OFFSET } from '../utils/smoothScroll';
 import { formatVacationDeductionDays } from '../utils/vacationDays';
 import { persistProfilePicture } from '../utils/avatarHelpers';
+
+const DEFAULT_QUOTAS = { annual: 15, casual: 6, excuse: 2 };
 
 const EmployeeDashboard = () => {
   const { t } = useTranslation();
@@ -19,8 +23,10 @@ const EmployeeDashboard = () => {
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [vacationDaysLeft, setVacationDaysLeft] = useState(null);
   const [user, setUser] = useState(null);
+  const [quotas, setQuotas] = useState(DEFAULT_QUOTAS);
+  const [snapshotRefreshKey, setSnapshotRefreshKey] = useState(0);
+  const [formIntent, setFormIntent] = useState({ type: 'vacation', vacationType: 'annual' });
   const [myFlags, setMyFlags] = useState([]);
   const overviewRef = useRef(null);
   const previewRef = useRef(null);
@@ -52,10 +58,21 @@ const EmployeeDashboard = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        setVacationDaysLeft(data.vacationDaysLeft);
+        setUser((prev) => prev ? {
+          ...prev,
+          vacationDaysLeft: data.vacationDaysLeft,
+          casualDaysLeft: data.casualDaysLeft,
+          excuseRequestsLeft: data.excuseRequestsLeft
+        } : prev);
       }
     } catch (err) {
       // ignore
+    }
+  };
+
+  const handleSnapshotLoaded = (data) => {
+    if (data?.quotas) {
+      setQuotas(data.quotas);
     }
   };
 
@@ -127,12 +144,16 @@ const EmployeeDashboard = () => {
     setTimeout(() => smoothScrollToElement(previewRef.current, DEFAULT_SCROLL_OFFSET), 80);
   };
 
-  const handleShowForm = () => {
+  const handleShowForm = (type = 'vacation', vacationType = 'annual') => {
+    setFormIntent({ type, vacationType });
     setShowForm(true);
     setShowPreview(false);
     fetchVacationDays();
     setTimeout(() => smoothScrollToElement(submitRef.current, DEFAULT_SCROLL_OFFSET), 80);
   };
+
+  const handleRequestLeave = () => handleShowForm('vacation', 'annual');
+  const handleRequestOvertime = () => handleShowForm('extra_hours', 'annual');
 
   const goOverview = () => {
     setShowForm(false);
@@ -146,10 +167,18 @@ const EmployeeDashboard = () => {
 
   const handleFormSubmitted = () => {
     fetchVacationDays();
+    fetchUserData();
+    setSnapshotRefreshKey((k) => k + 1);
     setShowForm(false);
     setShowPreview(true);
     fetchForms();
   };
+
+  const balances = user ? {
+    vacationDaysLeft: user.vacationDaysLeft,
+    casualDaysLeft: user.casualDaysLeft,
+    excuseRequestsLeft: user.excuseRequestsLeft
+  } : null;
 
   const getStatusBadge = (status) => {
     const badgeClass = status === 'pending' ? 'badge-warning' :
@@ -173,22 +202,18 @@ const EmployeeDashboard = () => {
       {/* Header */}
       <DashboardAppHeader title={t('dashboard.employee')} />
 
-      {/* Welcome hero */}
-      <WelcomeHero
-        user={user}
-        vacationDaysLeft={vacationDaysLeft}
-        variant="employee"
-        onUserUpdate={setUser}
-      />
+      {/* Smart hero */}
+      <EmployeeDashboardHero user={user} onUserUpdate={setUser} />
 
       {user && (
-        <div className="elegant-card hover-lift" style={{
-          marginBottom: '2rem',
-          padding: '1rem 1.25rem',
-          borderRadius: '16px'
-        }}>
-          <UserProfileChips user={user} variant="dark" />
-        </div>
+        <>
+          <LeaveWallet balances={balances} quotas={quotas} />
+          <EmployeeQuickActions
+            onRequestLeave={handleRequestLeave}
+            onRequestOvertime={handleRequestOvertime}
+            onViewRequests={handlePreview}
+          />
+        </>
       )}
 
       {/* Flags Section */}
@@ -275,7 +300,7 @@ const EmployeeDashboard = () => {
           sections={[
             { id: 'overview', label: t('dashboard.overview', 'Overview'), icon: '🏠', onSelect: goOverview },
             { id: 'preview', label: t('dashboard.previewForms'), icon: '📋', onSelect: handlePreview },
-            { id: 'submit', label: t('dashboard.submitNewForm'), icon: '📝', onSelect: handleShowForm },
+            { id: 'submit', label: t('dashboard.submitNewForm'), icon: '📝', onSelect: () => handleShowForm() },
             { id: 'ot-report', label: t('dashboard.otReport', 'My OT Report'), icon: '⏱️', onSelect: scrollToOtReport }
           ]}
         />
@@ -285,32 +310,7 @@ const EmployeeDashboard = () => {
           className="dashboard-section-anchor"
           data-nav-section="overview"
         >
-        {/* Vacation Days Card */}
-        <div className="elegant-card hover-lift" style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
-            {t('dashboard.vacationDays')}
-          </h2>
-          <div className="stats-number" style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
-            {vacationDaysLeft !== null ? Number(vacationDaysLeft).toFixed(1) : '...'}
-          </div>
-          <div className="stats-label">{t('dashboard.daysRemaining')}</div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="action-buttons">
-          <button 
-            className="btn-elegant btn-success"
-            onClick={handlePreview}
-          >
-            {t('dashboard.previewForms')}
-          </button>
-          <button 
-            className="btn-elegant"
-            onClick={handleShowForm}
-          >
-            {t('dashboard.submitNewForm')}
-          </button>
-        </div>
+        <EmployeeMonthlySnapshot refreshKey={snapshotRefreshKey} onLoaded={handleSnapshotLoaded} />
         </div>
 
         {/* Form Submission */}
@@ -321,7 +321,12 @@ const EmployeeDashboard = () => {
             data-nav-section="submit"
           >
             <div className="elegant-card slide-in-left">
-              <FormSubmission onFormSubmitted={handleFormSubmitted} />
+              <FormSubmission
+                key={`${formIntent.type}-${formIntent.vacationType}`}
+                initialType={formIntent.type}
+                initialVacationType={formIntent.vacationType}
+                onFormSubmitted={handleFormSubmitted}
+              />
             </div>
           </div>
         )}

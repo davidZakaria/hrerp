@@ -6,12 +6,12 @@ import logger from '../utils/logger';
 import { getSubmissionPeriodBounds } from '../utils/formSubmissionMonthBounds';
 import { formatVacationDeductionDays } from '../utils/vacationDays';
 
-const FormSubmission = ({ onFormSubmitted }) => {
+const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVacationType = 'annual' }) => {
   const { t } = useTranslation();
   const periodBounds = getSubmissionPeriodBounds();
   const [form, setForm] = useState({
-    type: 'vacation',
-    vacationType: 'annual', // Default to annual (unpaid vacation removed)
+    type: initialType,
+    vacationType: initialVacationType, // Default to annual (unpaid vacation removed)
     startDate: '',
     endDate: '',
     isHalfDay: false,
@@ -61,6 +61,14 @@ const FormSubmission = ({ onFormSubmitted }) => {
   useEffect(() => {
     fetchUserInfo();
   }, []);
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      type: initialType,
+      vacationType: initialVacationType
+    }));
+  }, [initialType, initialVacationType]);
 
   const handleChange = e => {
     const { name, value, type, checked } = e.target;

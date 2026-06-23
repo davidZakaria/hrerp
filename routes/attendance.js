@@ -1339,6 +1339,29 @@ router.get('/my-ot-report', auth, async (req, res) => {
 });
 
 /**
+ * GET /api/attendance/my-monthly-snapshot?startDate=&endDate=
+ * Logged-in employee — personal OT, absences, and shortfall for the pay period.
+ */
+router.get('/my-monthly-snapshot', auth, async (req, res) => {
+    try {
+        const parsed = parseDateRangeQuery(req.query);
+        if (parsed.error) {
+            return res.status(400).json({ msg: parsed.error });
+        }
+        const { rangeStart, rangeEnd } = parsed;
+        const { buildEmployeeMonthlySnapshot } = require('../utils/buildEmployeeMonthlySnapshot');
+        const snapshot = await buildEmployeeMonthlySnapshot(req.user.id, rangeStart, rangeEnd);
+        if (snapshot.error) {
+            return res.status(404).json({ msg: snapshot.error });
+        }
+        res.json(snapshot);
+    } catch (error) {
+        console.error('Error getting employee monthly snapshot:', error);
+        res.status(500).json({ msg: 'Server error', error: error.message });
+    }
+});
+
+/**
  * GET /api/attendance/my-attendance?startDate=&endDate=
  * Logged-in employee — own records, stats, and detail rows for range.
  */

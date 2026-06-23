@@ -26,9 +26,6 @@ function currentMonthYmd() {
   return `${y}-${m}`;
 }
 
-const VARIANCE_OK = '#2e7d32';
-const VARIANCE_PENALTY = '#c62828';
-
 const DetailedLeavesReport = () => {
   const { t } = useTranslation();
   const {
@@ -113,8 +110,8 @@ const DetailedLeavesReport = () => {
   const pageStart = (safePage - 1) * rowsPerPage;
   const pageRows = filteredRows.slice(pageStart, pageStart + rowsPerPage);
 
-  const varianceColor = (variance) => (Number(variance) > 0 ? VARIANCE_PENALTY : VARIANCE_OK);
-  const deductionColor = (deduction) => (Number(deduction) > 0 ? VARIANCE_PENALTY : VARIANCE_OK);
+  const varianceClass = (variance) => (Number(variance) > 0 ? 'saas-stat-danger' : 'saas-stat-success');
+  const deductionClass = (deduction) => (Number(deduction) > 0 ? 'saas-stat-danger' : 'saas-stat-success');
 
   const csvLine = (cells) => cells.map((cell) => {
     const str = String(cell ?? '');
@@ -176,12 +173,14 @@ const DetailedLeavesReport = () => {
   };
 
   return (
-    <div className="elegant-card" style={{ marginTop: '2rem' }}>
+    <div className="saas-leaves-report">
       <style>{REPORT_SCROLL_TABLE_CSS}</style>
 
       <div style={{ marginBottom: '1.25rem' }}>
-        <h3 className="text-gradient" style={{ margin: 0 }}>{t('detailedLeavesReport.title')}</h3>
-        <p style={{ margin: '0.5rem 0 0', color: '#90a4ae', maxWidth: '52rem' }}>
+        <h3 className="!text-slate-900 dark:!text-white saas-panel-heading" style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>
+          {t('detailedLeavesReport.title')}
+        </h3>
+        <p className="saas-section-subtitle" style={{ margin: '0.5rem 0 0', maxWidth: '52rem' }}>
           {t('detailedLeavesReport.subtitle')}
         </p>
       </div>
@@ -216,13 +215,13 @@ const DetailedLeavesReport = () => {
           loading={loading}
         />
       ) : (
-        <div className="elegant-card" style={{ marginBottom: '1.5rem' }}>
+        <div className="dash-panel-card saas-filter-panel" style={{ marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <span className="form-label-elegant">{t('detailedLeavesReport.month')}</span>
               <input
                 type="month"
-                className="form-input-elegant"
+                className="form-input-elegant saas-input"
                 value={calendarMonth}
                 onChange={(e) => setCalendarMonth(e.target.value)}
                 style={{ minWidth: '10rem' }}
@@ -232,7 +231,7 @@ const DetailedLeavesReport = () => {
               {loading ? t('detailedLeavesReport.loading') : t('detailedLeavesReport.refresh')}
             </button>
           </div>
-          <small style={{ color: '#90a4ae', display: 'block', marginTop: '0.5rem' }}>
+          <small className="!text-slate-500 dark:!text-slate-400" style={{ display: 'block', marginTop: '0.5rem' }}>
             {t('detailedLeavesReport.calendarModeHint')}
           </small>
         </div>
@@ -244,14 +243,14 @@ const DetailedLeavesReport = () => {
         </button>
         <input
           type="search"
-          className="form-input-elegant"
+          className="form-input-elegant saas-input"
           placeholder={t('detailedLeavesReport.searchPlaceholder')}
           value={filterSearch}
           onChange={(e) => { setFilterSearch(e.target.value); setPage(1); }}
           style={{ minWidth: '12rem', flex: '1 1 12rem' }}
         />
         <select
-          className="form-input-elegant"
+          className="form-input-elegant saas-input"
           value={filterDepartment}
           onChange={(e) => { setFilterDepartment(e.target.value); setPage(1); }}
           style={{ minWidth: '10rem' }}
@@ -264,23 +263,23 @@ const DetailedLeavesReport = () => {
       </div>
 
       {error && (
-        <div style={{ padding: '0.75rem 1rem', marginBottom: '1rem', background: 'rgba(198,40,40,0.12)', borderRadius: '6px', color: '#ef9a9a' }}>
+        <div className="saas-stat-danger" style={{ padding: '0.75rem 1rem', marginBottom: '1rem', background: 'rgba(220, 38, 38, 0.08)', borderRadius: '6px' }}>
           {error}
         </div>
       )}
 
       {loading && !report && (
-        <p style={{ color: '#90a4ae' }}>{t('detailedLeavesReport.loading')}</p>
+        <p className="!text-slate-500 dark:!text-slate-400">{t('detailedLeavesReport.loading')}</p>
       )}
 
       {!loading && report && filteredRows.length === 0 && (
-        <p style={{ color: '#90a4ae' }}>{t('detailedLeavesReport.noRows')}</p>
+        <p className="!text-slate-500 dark:!text-slate-400">{t('detailedLeavesReport.noRows')}</p>
       )}
 
       {pageRows.length > 0 && (
         <>
           <ReportScrollTable>
-            <table className="report-scroll-table">
+            <table className="ot-reconciliation-table report-scroll-table">
               <thead>
                 <tr>
                   <th>{t('detailedLeavesReport.employeeCode')}</th>
@@ -302,7 +301,7 @@ const DetailedLeavesReport = () => {
                 {pageRows.map((row) => (
                   <tr key={`${row.employeeCode}-${row.name}`}>
                     <td>{row.employeeCode || '—'}</td>
-                    <td>{row.name || '—'}</td>
+                    <td className="!text-slate-900 dark:!text-white" style={{ fontWeight: 600 }}>{row.name || '—'}</td>
                     <td>{row.jobTitle || '—'}</td>
                     <td>{row.department || '—'}</td>
                     <td>{row.location || '—'}</td>
@@ -311,10 +310,10 @@ const DetailedLeavesReport = () => {
                     <td>{formatDays(row.approvedSick)}</td>
                     <td>{formatDays(row.absentRaw)}</td>
                     <td>{formatDays(row.absentActual)}</td>
-                    <td style={{ color: varianceColor(row.variance), fontWeight: 600 }}>
+                    <td className={varianceClass(row.variance)}>
                       {formatDays(row.variance)}
                     </td>
-                    <td style={{ color: deductionColor(row.deduction), fontWeight: 600 }}>
+                    <td className={deductionClass(row.deduction)}>
                       {formatDays(row.deduction)}
                     </td>
                     <td>{row.reason || '—'}</td>

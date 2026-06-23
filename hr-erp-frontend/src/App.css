@@ -2908,9 +2908,10 @@
   text-shadow: none !important;
 }
 
-[data-theme='light'] .modern-dash .text-gradient,
-[data-theme='light'] .saas-attendance .text-gradient,
-[data-theme='light'] .saas-ot-reports .text-gradient {
+[data-theme='light'] .saas-ot-reports .text-gradient,
+[data-theme='light'] .saas-deduction-reports .text-gradient,
+[data-theme='light'] .saas-leaves-report .text-gradient,
+[data-theme='light'] .saas-attendance .text-gradient {
   background: none !important;
   -webkit-background-clip: border-box !important;
   background-clip: border-box !important;
@@ -2927,6 +2928,8 @@
 [data-theme='light'] .employee-dashboard-v2 .text-slate-800,
 [data-theme='light'] .employee-dashboard-v2 .text-slate-700,
 [data-theme='light'] .saas-ot-reports .\!text-slate-900,
+[data-theme='light'] .saas-deduction-reports .\!text-slate-900,
+[data-theme='light'] .saas-leaves-report .\!text-slate-900,
 [data-theme='light'] .saas-attendance .\!text-slate-900 {
   color: #0f172a !important;
   -webkit-text-fill-color: #0f172a !important;
@@ -2937,7 +2940,11 @@
 [data-theme='light'] .employee-dashboard-v2 .text-slate-500,
 [data-theme='light'] .employee-dashboard-v2 .\!text-slate-500,
 [data-theme='light'] .saas-ot-reports .\!text-slate-500,
-[data-theme='light'] .saas-ot-reports .saas-section-subtitle {
+[data-theme='light'] .saas-deduction-reports .\!text-slate-500,
+[data-theme='light'] .saas-leaves-report .\!text-slate-500,
+[data-theme='light'] .saas-ot-reports .saas-section-subtitle,
+[data-theme='light'] .saas-deduction-reports .saas-section-subtitle,
+[data-theme='light'] .saas-leaves-report .saas-section-subtitle {
   color: #64748b !important;
   -webkit-text-fill-color: #64748b !important;
 }
@@ -2979,7 +2986,13 @@
 [data-theme='light'] .modern-dash .elegant-card,
 [data-theme='light'] .saas-attendance .elegant-card,
 [data-theme='light'] .saas-ot-reports .elegant-card,
-[data-theme='light'] .saas-ot-reports .saas-filter-card {
+[data-theme='light'] .saas-ot-reports .saas-filter-card,
+[data-theme='light'] .saas-deduction-reports .elegant-card,
+[data-theme='light'] .saas-deduction-reports .saas-filter-card,
+[data-theme='light'] .saas-deduction-reports .saas-summary-panel,
+[data-theme='light'] .saas-leaves-report .elegant-card,
+[data-theme='light'] .saas-leaves-report .saas-filter-card,
+[data-theme='light'] .saas-leaves-report.saas-leaves-report {
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   color: #0f172a !important;
@@ -3000,7 +3013,9 @@
 
 [data-theme='light'] .modern-dash .form-label-elegant,
 [data-theme='light'] .saas-attendance .form-label-elegant,
-[data-theme='light'] .saas-ot-reports .form-label-elegant {
+[data-theme='light'] .saas-ot-reports .form-label-elegant,
+[data-theme='light'] .saas-deduction-reports .form-label-elegant,
+[data-theme='light'] .saas-leaves-report .form-label-elegant {
   color: #334155 !important;
   text-shadow: none !important;
 }
@@ -3013,6 +3028,10 @@
 [data-theme='light'] .saas-attendance input[type='file'].form-input-elegant,
 [data-theme='light'] .saas-ot-reports input.form-input-elegant,
 [data-theme='light'] .saas-ot-reports select.form-input-elegant,
+[data-theme='light'] .saas-deduction-reports input.form-input-elegant,
+[data-theme='light'] .saas-deduction-reports select.form-input-elegant,
+[data-theme='light'] .saas-leaves-report input.form-input-elegant,
+[data-theme='light'] .saas-leaves-report select.form-input-elegant,
 [data-theme='light'] .employee-dashboard-v2 input.form-input-elegant,
 [data-theme='light'] .employee-dashboard-v2 select.form-input-elegant {
   background: #ffffff !important;
@@ -3029,7 +3048,11 @@
 [data-theme='light'] .saas-attendance input.form-input-elegant:focus,
 [data-theme='light'] .saas-attendance select.form-input-elegant:focus,
 [data-theme='light'] .saas-ot-reports input.form-input-elegant:focus,
-[data-theme='light'] .saas-ot-reports select.form-input-elegant:focus {
+[data-theme='light'] .saas-ot-reports select.form-input-elegant:focus,
+[data-theme='light'] .saas-deduction-reports input.form-input-elegant:focus,
+[data-theme='light'] .saas-deduction-reports select.form-input-elegant:focus,
+[data-theme='light'] .saas-leaves-report input.form-input-elegant:focus,
+[data-theme='light'] .saas-leaves-report select.form-input-elegant:focus {
   border-color: #6366f1 !important;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35) !important;
   background: #ffffff !important;
@@ -3037,7 +3060,9 @@
 
 [data-theme='light'] .modern-dash .dash-panel-title,
 [data-theme='light'] .modern-dash .saas-panel-heading,
-[data-theme='light'] .saas-ot-reports .saas-panel-heading {
+[data-theme='light'] .saas-ot-reports .saas-panel-heading,
+[data-theme='light'] .saas-deduction-reports .saas-panel-heading,
+[data-theme='light'] .saas-leaves-report .saas-panel-heading {
   color: #0f172a !important;
   text-shadow: none !important;
 }

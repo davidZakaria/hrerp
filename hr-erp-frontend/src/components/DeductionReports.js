@@ -308,37 +308,26 @@ const DeductionReports = () => {
   };
 
   return (
-    <div style={{ marginTop: '2rem' }}>
+    <div className="saas-deduction-reports modern-dash" style={{ marginTop: '2rem' }}>
       <style>{`
         ${REPORT_SCROLL_TABLE_CSS}
-        .deduction-table {
+        .deduction-table,
+        .ot-reconciliation-table.deduction-table {
           width: 100%;
           border-collapse: separate;
           border-spacing: 0;
         }
-        .deduction-table th {
-          background: linear-gradient(135deg, #4a1942 0%, #7f1d1d 100%);
-          color: #ffffff;
-          font-weight: 600;
-          padding: 12px 10px;
-          border-bottom: 2px solid #dc2626;
-          text-align: left;
-        }
         .deduction-table td {
           padding: 10px;
-          color: #e2e8f0;
-          border-bottom: 1px solid #334155;
+          border-bottom: 1px solid #e2e8f0;
         }
-        .deduction-table tr:nth-child(even) td {
-          background: rgba(30, 41, 59, 0.7);
-        }
-        .deduction-table tr:nth-child(odd) td {
-          background: rgba(15, 23, 42, 0.7);
+        [data-theme='dark'] .deduction-table td {
+          border-bottom-color: #334155;
         }
       `}</style>
 
-      <h2 className="text-gradient" style={{ marginBottom: '1rem' }}>{t('deductionReports.title')}</h2>
-      <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>{t('deductionReports.subtitle')}</p>
+      <h2 className="!text-slate-900 dark:!text-white" style={{ marginBottom: '1rem', fontSize: '1.5rem', fontWeight: 700 }}>{t('deductionReports.title')}</h2>
+      <p className="saas-section-subtitle">{t('deductionReports.subtitle')}</p>
 
       <ReportPeriodFilter
         i18nPrefix="deductionReports"
@@ -353,12 +342,12 @@ const DeductionReports = () => {
       />
 
       {report?.summary && (
-        <div className="elegant-card" style={{ marginBottom: '1rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem' }}>
-          <div><span style={{ color: '#94a3b8' }}>{t('deductionReports.summaryEmployees')}: </span><strong style={{ color: '#f1f5f9' }}>{report.summary.totalEmployees}</strong></div>
-          <div><span style={{ color: '#94a3b8' }}>{t('deductionReports.summaryPillarA')}: </span><strong style={{ color: '#fbbf24' }}>{formatDays(report.summary.pillarADays)}</strong></div>
-          <div><span style={{ color: '#94a3b8' }}>{t('deductionReports.summaryPillarB')}: </span><strong style={{ color: '#f87171' }}>{formatDays(report.summary.pillarBDays)}</strong></div>
-          <div><span style={{ color: '#94a3b8' }}>{t('deductionReports.summaryPillarC')}: </span><strong style={{ color: '#f87171' }}>{formatDays(report.summary.pillarCDays)}</strong></div>
-          <div><span style={{ color: '#94a3b8' }}>{t('deductionReports.summaryTotal')}: </span><strong style={{ color: '#fca5a5' }}>{formatDays(report.summary.totalDeductionDays)}</strong></div>
+        <div className="dash-panel-card saas-summary-panel">
+          <div><span className="saas-summary-label">{t('deductionReports.summaryEmployees')}: </span><strong className="saas-summary-value">{report.summary.totalEmployees}</strong></div>
+          <div><span className="saas-summary-label">{t('deductionReports.summaryPillarA')}: </span><strong className="saas-stat-danger">{formatDays(report.summary.pillarADays)}</strong></div>
+          <div><span className="saas-summary-label">{t('deductionReports.summaryPillarB')}: </span><strong className="saas-stat-danger">{formatDays(report.summary.pillarBDays)}</strong></div>
+          <div><span className="saas-summary-label">{t('deductionReports.summaryPillarC')}: </span><strong className="saas-stat-danger">{formatDays(report.summary.pillarCDays)}</strong></div>
+          <div><span className="saas-summary-label">{t('deductionReports.summaryTotal')}: </span><strong className="saas-stat-danger">{formatDays(report.summary.totalDeductionDays)}</strong></div>
         </div>
       )}
 
@@ -379,19 +368,19 @@ const DeductionReports = () => {
         )}
       </div>
 
-      {error && <div style={{ color: '#f87171', marginBottom: '1rem' }}>{error}</div>}
-      {loading && !report && <div style={{ color: '#94a3b8' }}>{t('deductionReports.loading')}</div>}
+      {error && <div className="saas-stat-danger" style={{ marginBottom: '1rem' }}>{error}</div>}
+      {loading && !report && <div className="!text-slate-500 dark:!text-slate-400">{t('deductionReports.loading')}</div>}
 
       {report && (
-        <div className="elegant-card" style={{ marginBottom: '1rem', padding: '1rem', background: 'rgba(15, 23, 42, 0.6)' }}>
+        <div className="dash-panel-card saas-filter-panel">
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
             <div style={{ minWidth: '160px', flex: '1 1 160px' }}>
               <label className="form-label-elegant">{t('deductionReports.filterSearch')}</label>
-              <input type="text" className="form-input-elegant" placeholder={t('deductionReports.filterSearchPlaceholder')} value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)} />
+              <input type="text" className="form-input-elegant saas-input" placeholder={t('deductionReports.filterSearchPlaceholder')} value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)} />
             </div>
             <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
               <label className="form-label-elegant">{t('deductionReports.filterDepartment')}</label>
-              <select className="form-input-elegant" value={filterDepartment} onChange={(e) => setFilterDepartment(e.target.value)}>
+              <select className="form-input-elegant saas-input" value={filterDepartment} onChange={(e) => setFilterDepartment(e.target.value)}>
                 <option value="">{t('deductionReports.filterAllDepartments')}</option>
                 {departmentOptions.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
@@ -399,7 +388,7 @@ const DeductionReports = () => {
             {activeView === 'detailed' && (
               <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
                 <label className="form-label-elegant">{t('deductionReports.filterPillar')}</label>
-                <select className="form-input-elegant" value={filterPillar} onChange={(e) => setFilterPillar(e.target.value)}>
+                <select className="form-input-elegant saas-input" value={filterPillar} onChange={(e) => setFilterPillar(e.target.value)}>
                   <option value="all">{t('deductionReports.filterAll')}</option>
                   <option value="A">{t('deductionReports.pillarA')}</option>
                   <option value="B">{t('deductionReports.pillarB')}</option>
@@ -412,7 +401,7 @@ const DeductionReports = () => {
             )}
           </div>
           {activeView === 'detailed' && (
-            <p style={{ margin: '0.75rem 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
+            <p className="!text-slate-500 dark:!text-slate-400" style={{ margin: '0.75rem 0 0', fontSize: '0.85rem' }}>
               {t('deductionReports.filterShowing', { shown: filteredDetailedRows.length, total: detailedRows.length })}
             </p>
           )}
@@ -422,7 +411,7 @@ const DeductionReports = () => {
       {report && activeView === 'detailed' && (
         <div className="elegant-card" style={{ overflowX: 'auto', opacity: loading ? 0.6 : 1 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, color: '#f1f5f9' }}>{t('deductionReports.detailedTitle')}</h3>
+            <h3 className="saas-panel-heading">{t('deductionReports.detailedTitle')}</h3>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <ReportViewModeToggle
                 viewMode={detailViewMode}
@@ -439,9 +428,9 @@ const DeductionReports = () => {
           </div>
 
           {detailedRows.length === 0 ? (
-            <div style={{ color: '#94a3b8' }}><p>{t('deductionReports.noRows')}</p></div>
+            <div className="!text-slate-500 dark:!text-slate-400"><p>{t('deductionReports.noRows')}</p></div>
           ) : filteredDetailedRows.length === 0 ? (
-            <div style={{ color: '#94a3b8' }}>
+            <div className="!text-slate-500 dark:!text-slate-400">
               <p>{t('deductionReports.noFilterResults')}</p>
               <button type="button" className="btn-elegant btn-secondary" onClick={clearFilters}>{t('deductionReports.clearFilters')}</button>
             </div>
@@ -449,9 +438,9 @@ const DeductionReports = () => {
             <>
               {detailViewMode === 'employees' && employeeTotalsFromFiltered.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: '#94a3b8' }}>{t('deductionReports.clickEmployeeHint')}</p>
+                  <p className="!text-slate-500 dark:!text-slate-400" style={{ margin: '0 0 0.75rem', fontSize: '0.8rem' }}>{t('deductionReports.clickEmployeeHint')}</p>
                   <ReportScrollTable maxHeight={560}>
-                  <table className="deduction-table">
+                  <table className="ot-reconciliation-table deduction-table">
                     <thead>
                       <tr>
                         <th>{t('deductionReports.employeeCode')}</th>
@@ -472,8 +461,8 @@ const DeductionReports = () => {
                         return (
                           <React.Fragment key={emp.key}>
                             <tr onClick={() => toggleEmployeeExpanded(emp.key)} style={{ cursor: 'pointer' }}>
-                              <td><span style={{ marginRight: '0.5rem', color: '#f87171' }}>{isExpanded ? '▾' : '▸'}</span>{emp.employeeCode || '—'}</td>
-                              <td style={{ color: '#fca5a5', fontWeight: 600 }}>{emp.employeeName}</td>
+                              <td><span className="!text-slate-500 dark:!text-slate-400" style={{ marginRight: '0.5rem', fontWeight: 700 }}>{isExpanded ? '▾' : '▸'}</span>{emp.employeeCode || '—'}</td>
+                              <td className="!text-slate-900 dark:!text-white" style={{ fontWeight: 600 }}>{emp.employeeName}</td>
                               <td>{emp.jobTitle || '—'}</td>
                               <td>{emp.location || '—'}</td>
                               <td>{emp.department}</td>
@@ -481,13 +470,13 @@ const DeductionReports = () => {
                               <td>{formatDays(emp.pillarADays)}</td>
                               <td>{formatDays(emp.pillarBDays)}</td>
                               <td>{formatDays(emp.pillarCDays)}</td>
-                              <td style={{ color: '#f87171', fontWeight: 700 }}>{formatDays(emp.totalDeductionDays)}</td>
+                              <td className="saas-stat-danger" style={{ fontWeight: 700 }}>{formatDays(emp.totalDeductionDays)}</td>
                             </tr>
                             {isExpanded && (
                               <tr>
-                                <td colSpan={10} style={{ padding: '0.75rem 1rem 1rem', background: 'rgba(15, 23, 42, 0.9)' }}>
+                                <td colSpan={10} className="ot-nested-expand-cell">
                                   <ReportNestedTable>
-                                  <table className="deduction-table" style={{ fontSize: '0.85rem' }}>
+                                  <table className="ot-reconciliation-table deduction-table" style={{ fontSize: '0.85rem' }}>
                                     <thead>
                                       <tr>
                                         <th>{t('deductionReports.date')}</th>
@@ -506,7 +495,7 @@ const DeductionReports = () => {
                                           <td>{row.shortfallMinutes > 0 ? row.shortfallMinutes : '—'}</td>
                                           <td>{formatAbsenceCell(row, t)}</td>
                                           <td>{formatWaivedCell(row, t)}</td>
-                                          <td style={{ color: row.deductionDays > 0 ? '#f87171' : '#e2e8f0', fontWeight: row.deductionDays > 0 ? 700 : 400 }}>
+                                          <td className={row.deductionDays > 0 ? 'saas-stat-danger' : ''} style={{ fontWeight: row.deductionDays > 0 ? 700 : 400 }}>
                                             {formatDays(row.deductionDays)}
                                           </td>
                                         </tr>
@@ -514,10 +503,8 @@ const DeductionReports = () => {
                                     </tbody>
                                     <tfoot>
                                       <tr>
-                                        <td colSpan={5} style={{ fontWeight: 700, color: '#fca5a5', background: 'rgba(74, 25, 66, 0.9)' }}>
-                                          {t('deductionReports.subtotal', { name: emp.employeeName, count: emp.days })}
-                                        </td>
-                                        <td style={{ fontWeight: 700, color: '#f87171', background: 'rgba(74, 25, 66, 0.9)' }}>
+                                        <td colSpan={5}>{t('deductionReports.subtotal', { name: emp.employeeName, count: emp.days })}</td>
+                                        <td className="saas-stat-danger" style={{ fontWeight: 700 }}>
                                           {formatDays(emp.totalDeductionDays)}
                                         </td>
                                       </tr>
@@ -533,14 +520,12 @@ const DeductionReports = () => {
                     </tbody>
                     <tfoot>
                       <tr>
-                        <td colSpan={3} style={{ fontWeight: 700, color: '#fca5a5', background: 'rgba(74, 25, 66, 0.9)' }}>
-                          {t('deductionReports.grandTotal', { count: employeeTotalsFromFiltered.length })}
-                        </td>
-                        <td style={{ fontWeight: 700, background: 'rgba(74, 25, 66, 0.9)' }}>{grandTotals.days}</td>
-                        <td style={{ fontWeight: 700, background: 'rgba(74, 25, 66, 0.9)' }}>{formatDays(grandTotals.pillarADays)}</td>
-                        <td style={{ fontWeight: 700, background: 'rgba(74, 25, 66, 0.9)' }}>{formatDays(grandTotals.pillarBDays)}</td>
-                        <td style={{ fontWeight: 700, background: 'rgba(74, 25, 66, 0.9)' }}>{formatDays(grandTotals.pillarCDays)}</td>
-                        <td style={{ fontWeight: 700, color: '#f87171', background: 'rgba(74, 25, 66, 0.9)' }}>{formatDays(grandTotals.totalDeductionDays)}</td>
+                        <td colSpan={5}>{t('deductionReports.grandTotal', { count: employeeTotalsFromFiltered.length })}</td>
+                        <td>{grandTotals.days}</td>
+                        <td>{formatDays(grandTotals.pillarADays)}</td>
+                        <td>{formatDays(grandTotals.pillarBDays)}</td>
+                        <td>{formatDays(grandTotals.pillarCDays)}</td>
+                        <td className="saas-stat-danger" style={{ fontWeight: 700 }}>{formatDays(grandTotals.totalDeductionDays)}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -555,9 +540,9 @@ const DeductionReports = () => {
 
               {detailViewMode === 'allRows' && (
               <div>
-              <h4 style={{ margin: '0 0 0.75rem', color: '#fca5a5' }}>{t('deductionReports.dailyBreakdownTitle')}</h4>
+              <h4 className="ot-table-subheading" style={{ margin: '0 0 0.75rem' }}>{t('deductionReports.dailyBreakdownTitle')}</h4>
               <ReportScrollTable maxHeight={560}>
-              <table className="deduction-table">
+              <table className="ot-reconciliation-table deduction-table">
                 <thead>
                   <tr>
                     <th>{t('deductionReports.employeeCode')}</th>
@@ -586,7 +571,7 @@ const DeductionReports = () => {
                       <td>{row.shortfallMinutes > 0 ? `${row.shortfallMinutes} (${row.minutesLate || 0}+${row.minutesEarly || 0})` : '—'}</td>
                       <td>{formatAbsenceCell(row, t)}</td>
                       <td>{formatWaivedCell(row, t)}</td>
-                      <td style={{ color: row.deductionDays > 0 ? '#f87171' : '#e2e8f0', fontWeight: row.deductionDays > 0 ? 700 : 400 }}>
+                      <td className={row.deductionDays > 0 ? 'saas-stat-danger' : ''} style={{ fontWeight: row.deductionDays > 0 ? 700 : 400 }}>
                         {formatDays(row.deductionDays)}
                       </td>
                     </tr>
@@ -608,13 +593,13 @@ const DeductionReports = () => {
 
       {report && activeView === 'summary' && (
         <div className="elegant-card" style={{ overflowX: 'auto', opacity: loading ? 0.6 : 1 }}>
-          <h3 style={{ marginBottom: '1rem', color: '#f1f5f9' }}>{t('deductionReports.summaryTitle')}</h3>
+          <h3 className="saas-panel-heading" style={{ marginBottom: '1rem' }}>{t('deductionReports.summaryTitle')}</h3>
           {filteredEmployees.length === 0 ? (
-            <div style={{ color: '#94a3b8' }}><p>{t('deductionReports.noRows')}</p></div>
+            <div className="!text-slate-500 dark:!text-slate-400"><p>{t('deductionReports.noRows')}</p></div>
           ) : (
             <>
             <ReportScrollTable maxHeight={520}>
-            <table className="deduction-table">
+            <table className="ot-reconciliation-table deduction-table">
               <thead>
                 <tr>
                   <th>{t('deductionReports.employeeCode')}</th>
@@ -641,9 +626,9 @@ const DeductionReports = () => {
                     <td>{formatDays(emp.pillarADays)}</td>
                     <td>{formatDays(emp.pillarBDays)}</td>
                     <td>{formatDays(emp.pillarCDays)}</td>
-                    <td style={{ color: '#f87171', fontWeight: 700 }}>{formatDays(emp.totalDeductionDays)}</td>
-                    <td style={{ color: '#4ade80' }}>{formatHours(emp.totalOtHours)}</td>
-                    <td style={{ color: '#4ade80' }}>{formatHours(emp.otDays)}</td>
+                    <td className="saas-stat-danger" style={{ fontWeight: 700 }}>{formatDays(emp.totalDeductionDays)}</td>
+                    <td className="saas-stat-success">{formatHours(emp.totalOtHours)}</td>
+                    <td className="saas-stat-success">{formatHours(emp.otDays)}</td>
                   </tr>
                 ))}
               </tbody>

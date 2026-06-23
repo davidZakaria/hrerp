@@ -97,7 +97,11 @@
 .saas-attendance .saas-input,
 .saas-attendance input[type='file'],
 .saas-ot-reports .form-input-elegant,
-.saas-ot-reports .saas-input {
+.saas-ot-reports .saas-input,
+.saas-deduction-reports .form-input-elegant,
+.saas-deduction-reports .saas-input,
+.saas-leaves-report .form-input-elegant,
+.saas-leaves-report .saas-input {
   background-color: #ffffff !important;
   border: 1px solid #cbd5e1 !important;
   color: #0f172a !important;
@@ -112,7 +116,11 @@
 [data-theme='dark'] .saas-attendance .saas-input,
 [data-theme='dark'] .saas-attendance input[type='file'],
 [data-theme='dark'] .saas-ot-reports .form-input-elegant,
-[data-theme='dark'] .saas-ot-reports .saas-input {
+[data-theme='dark'] .saas-ot-reports .saas-input,
+[data-theme='dark'] .saas-deduction-reports .form-input-elegant,
+[data-theme='dark'] .saas-deduction-reports .saas-input,
+[data-theme='dark'] .saas-leaves-report .form-input-elegant,
+[data-theme='dark'] .saas-leaves-report .saas-input {
   background-color: #0f172a !important;
   border-color: #334155 !important;
   color: #ffffff !important;
@@ -391,13 +399,15 @@
   color: #e2e8f0 !important;
 }
 
-.saas-ot-reports .ot-table-subheading {
+.saas-ot-reports .ot-table-subheading,
+.saas-deduction-reports .ot-table-subheading {
   margin: 0;
   color: #0f172a !important;
   font-weight: 600;
 }
 
-[data-theme='dark'] .saas-ot-reports .ot-table-subheading {
+[data-theme='dark'] .saas-ot-reports .ot-table-subheading,
+[data-theme='dark'] .saas-deduction-reports .ot-table-subheading {
   color: #cbd5e1 !important;
 }
 
@@ -468,4 +478,208 @@
 
 [data-theme='light'] .saas-attendance .elegant-card p {
   color: #64748b !important;
+}
+
+/* ===== Deduction & Leaves reports (same SaaS shell as OT) ===== */
+.saas-deduction-reports .saas-section-subtitle,
+.saas-leaves-report .saas-section-subtitle {
+  color: #64748b !important;
+  margin-bottom: 1.5rem;
+}
+
+[data-theme='dark'] .saas-deduction-reports .saas-section-subtitle,
+[data-theme='dark'] .saas-leaves-report .saas-section-subtitle {
+  color: #94a3b8 !important;
+}
+
+.saas-deduction-reports .saas-filter-panel,
+.saas-leaves-report .saas-filter-panel {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='dark'] .saas-deduction-reports .saas-filter-panel,
+[data-theme='dark'] .saas-leaves-report .saas-filter-panel {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+.saas-deduction-reports .saas-panel-heading,
+.saas-leaves-report .saas-panel-heading {
+  margin: 0;
+  color: #0f172a !important;
+}
+
+[data-theme='dark'] .saas-deduction-reports .saas-panel-heading,
+[data-theme='dark'] .saas-leaves-report .saas-panel-heading {
+  color: #f8fafc !important;
+}
+
+.saas-deduction-reports .saas-summary-panel {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='dark'] .saas-deduction-reports .saas-summary-panel {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+.saas-deduction-reports .saas-summary-label {
+  color: #64748b !important;
+}
+
+.saas-deduction-reports .saas-summary-value {
+  color: #0f172a !important;
+  font-weight: 700;
+}
+
+.saas-stat-danger {
+  color: #dc2626 !important;
+  font-weight: 600;
+}
+
+.saas-stat-success {
+  color: #059669 !important;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .saas-stat-danger {
+  color: #f87171 !important;
+}
+
+[data-theme='dark'] .saas-stat-success {
+  color: #4ade80 !important;
+}
+
+.deduction-table thead tr,
+.report-scroll-table thead tr {
+  background: #e2e8f0 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+[data-theme='dark'] .deduction-table thead tr,
+[data-theme='dark'] .report-scroll-table thead tr {
+  background: #1e293b !important;
+  border-bottom-color: #334155 !important;
+}
+
+.deduction-table th,
+.report-scroll-table th {
+  padding: 12px 10px !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: #334155 !important;
+  text-align: left;
+  border-bottom: 1px solid #cbd5e1 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .deduction-table th,
+[data-theme='dark'] .report-scroll-table th {
+  color: #cbd5e1 !important;
+  border-bottom-color: #334155 !important;
+}
+
+[data-theme='light'] .saas-deduction-reports .deduction-table tbody tr,
+[data-theme='light'] .saas-deduction-reports .ot-reconciliation-table tbody tr,
+[data-theme='light'] .saas-leaves-report .report-scroll-table tbody tr,
+[data-theme='light'] .saas-leaves-report .ot-reconciliation-table tbody tr {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme='light'] .saas-deduction-reports .deduction-table tbody tr:nth-child(even),
+[data-theme='light'] .saas-deduction-reports .ot-reconciliation-table tbody tr:nth-child(even),
+[data-theme='light'] .saas-leaves-report .report-scroll-table tbody tr:nth-child(even),
+[data-theme='light'] .saas-leaves-report .ot-reconciliation-table tbody tr:nth-child(even) {
+  background: #f8fafc !important;
+}
+
+[data-theme='light'] .saas-deduction-reports .deduction-table tbody td,
+[data-theme='light'] .saas-deduction-reports .ot-reconciliation-table tbody td,
+[data-theme='light'] .saas-leaves-report .report-scroll-table tbody td,
+[data-theme='light'] .saas-leaves-report .ot-reconciliation-table tbody td {
+  color: #334155 !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+[data-theme='light'] .saas-deduction-reports .deduction-table tfoot td,
+[data-theme='light'] .saas-deduction-reports .ot-reconciliation-table tfoot td,
+[data-theme='light'] .saas-leaves-report .report-scroll-table tfoot td {
+  background: #e2e8f0 !important;
+  color: #334155 !important;
+  font-weight: 700;
+  border-top: 1px solid #cbd5e1 !important;
+}
+
+[data-theme='dark'] .saas-deduction-reports .deduction-table tbody tr:nth-child(even) td,
+[data-theme='dark'] .saas-deduction-reports .ot-reconciliation-table tr:nth-child(even) td,
+[data-theme='dark'] .saas-leaves-report .report-scroll-table tbody tr:nth-child(even) td {
+  background: rgba(30, 41, 59, 0.7) !important;
+}
+
+[data-theme='dark'] .saas-deduction-reports .deduction-table tbody tr:nth-child(odd) td,
+[data-theme='dark'] .saas-deduction-reports .ot-reconciliation-table tr:nth-child(odd) td,
+[data-theme='dark'] .saas-leaves-report .report-scroll-table tbody tr:nth-child(odd) td {
+  background: rgba(15, 23, 42, 0.7) !important;
+}
+
+[data-theme='dark'] .saas-deduction-reports .deduction-table tbody td,
+[data-theme='dark'] .saas-deduction-reports .ot-reconciliation-table td,
+[data-theme='dark'] .saas-leaves-report .report-scroll-table tbody td {
+  color: #e2e8f0 !important;
+  border-bottom-color: #334155 !important;
+}
+
+[data-theme='light'] .modern-dash .report-scroll-table-wrap,
+[data-theme='light'] .saas-deduction-reports .report-scroll-table-wrap,
+[data-theme='light'] .saas-leaves-report .report-scroll-table-wrap,
+[data-theme='light'] .saas-ot-reports .report-scroll-table-wrap {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.5rem;
+}
+
+[data-theme='light'] .modern-dash .report-scroll-table-wrap thead th,
+[data-theme='light'] .saas-leaves-report .report-scroll-table-wrap thead th,
+[data-theme='light'] .saas-deduction-reports .report-scroll-table-wrap thead th {
+  background: #e2e8f0 !important;
+  color: #334155 !important;
+  text-shadow: none !important;
+  box-shadow: 0 1px 0 #cbd5e1 !important;
+}
+
+[data-theme='light'] .modern-dash .table-scroll-hint.is-visible,
+[data-theme='light'] .saas-leaves-report .table-scroll-hint.is-visible {
+  color: #475569 !important;
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.saas-leaves-report.saas-leaves-report {
+  margin-top: 2rem;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='dark'] .saas-leaves-report.saas-leaves-report {
+  background: #1e293b !important;
+  border-color: #334155 !important;
 }

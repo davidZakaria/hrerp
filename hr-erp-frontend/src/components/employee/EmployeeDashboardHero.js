@@ -35,14 +35,14 @@ const EmployeeDashboardHero = ({ user, onUserUpdate }) => {
         onPictureUpdated={handlePictureUpdated}
       />
       <div className="w-full" style={{ minWidth: 0 }}>
-        <h1 className="font-bold text-slate-900 dark:text-white" style={{ fontSize: 'clamp(1.35rem, 4vw, 1.75rem)', lineHeight: 1.25, margin: 0 }}>
+        <h1 className="font-bold !text-slate-900 dark:!text-white" style={{ fontSize: 'clamp(1.35rem, 4vw, 1.75rem)', lineHeight: 1.25, margin: 0 }}>
           {t('welcomeHero.greetingLine', { greeting: t(greeting.key), name: firstName })}
           {' '}{greeting.emoji}
         </h1>
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-200" style={{ marginTop: '0.5rem', fontSize: '1rem', fontWeight: 600 }}>
+        <p className="text-sm font-medium !text-slate-700 dark:!text-slate-200" style={{ marginTop: '0.5rem', fontSize: '1rem', fontWeight: 600 }}>
           {jobTitle}
         </p>
-        <p className="text-sm text-slate-500" style={{ marginTop: '0.2rem' }}>
+        <p className="text-sm !text-slate-500 dark:!text-slate-400" style={{ marginTop: '0.2rem' }}>
           {departmentLabel}
         </p>
       </div>

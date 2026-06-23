@@ -26,14 +26,14 @@ function WalletCard({ themeKey, label, remaining, quota, quotaSuffix, t }) {
   return (
     <article className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
       <div className="flex justify-between items-start">
-        <span className="text-sm font-medium text-slate-500">{label}</span>
+        <span className="text-sm font-medium !text-slate-500 dark:!text-slate-400">{label}</span>
         <div className={`p-3 rounded-xl ${iconBg} text-2xl`} aria-hidden="true">
           {icon}
         </div>
       </div>
       <div className="mt-4 flex items-baseline gap-2">
-        <span className="text-4xl font-bold text-slate-900 dark:text-white">{formatBalance(remaining)}</span>
-        <span className="text-sm text-slate-500">{quotaSuffix}</span>
+        <span className="text-4xl font-bold !text-slate-900 dark:!text-white">{formatBalance(remaining)}</span>
+        <span className="text-sm !text-slate-500 dark:!text-slate-400">{quotaSuffix}</span>
       </div>
     </article>
   );
@@ -48,7 +48,7 @@ const LeaveWallet = ({ balances, quotas }) => {
 
   return (
     <section aria-labelledby="ed-leave-wallet-title">
-      <h2 id="ed-leave-wallet-title" className="text-4xl font-bold text-slate-900 dark:text-white" style={{ fontSize: '1.125rem', marginBottom: '0.75rem' }}>
+      <h2 id="ed-leave-wallet-title" className="text-4xl font-bold !text-slate-900 dark:!text-white" style={{ fontSize: '1.125rem', marginBottom: '0.75rem' }}>
         {t('employeeDashboard.leaveWallet')}
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

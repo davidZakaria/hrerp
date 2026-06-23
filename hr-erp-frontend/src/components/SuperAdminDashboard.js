@@ -1360,7 +1360,7 @@ const SuperAdminDashboard = () => {
   }, [activeTab]);
 
   return (
-    <div className="dashboard-container super-admin-dashboard modern-dash min-h-screen bg-slate-50 dark:bg-slate-900 fade-in">
+    <div className="dashboard-container super-admin-dashboard modern-dash min-h-screen bg-slate-100 dark:bg-slate-900 fade-in">
       <DashboardAppHeader title={t('superAdminDashboard.title')} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6 w-full main-content">

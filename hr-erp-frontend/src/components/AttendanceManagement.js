@@ -207,7 +207,7 @@ const AttendanceManagement = () => {
   };
 
   return (
-    <div>
+    <div className="saas-attendance modern-dash">
       <style>{`
         .attendance-modal-custom * {
           color: #000000 !important;
@@ -227,62 +227,6 @@ const AttendanceManagement = () => {
         }
         .attendance-modal-custom div {
           color: #000000 !important;
-        }
-        
-        /* Detailed attendance view styles - Dark Theme */
-        .attendance-detailed-card {
-          background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
-          border: 1px solid #334155 !important;
-          color: #e2e8f0 !important;
-        }
-        .attendance-detailed-card h4 {
-          color: #f1f5f9 !important;
-        }
-        .attendance-detailed-card code {
-          background: #334155 !important;
-          color: #94a3b8 !important;
-        }
-        .attendance-detailed-card .employee-info {
-          color: #94a3b8 !important;
-        }
-        .attendance-detailed-table {
-          border-collapse: separate !important;
-          border-spacing: 0 !important;
-        }
-        .attendance-detailed-table th {
-          background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%) !important;
-          color: #ffffff !important;
-          font-weight: 600 !important;
-          padding: 12px 10px !important;
-          border-bottom: 2px solid #3b82f6 !important;
-        }
-        .attendance-detailed-table td {
-          padding: 10px !important;
-          color: #e2e8f0 !important;
-          border-bottom: 1px solid #334155 !important;
-        }
-        .attendance-detailed-table tr:nth-child(even) td {
-          background: rgba(30, 41, 59, 0.7) !important;
-        }
-        .attendance-detailed-table tr:nth-child(odd) td {
-          background: rgba(15, 23, 42, 0.7) !important;
-        }
-        .attendance-detailed-table .clock-time {
-          color: #f1f5f9 !important;
-          font-family: 'Courier New', monospace !important;
-          font-weight: 700 !important;
-          font-size: 0.95rem !important;
-        }
-        .attendance-detailed-table .late-value {
-          color: #f87171 !important;
-          font-weight: 700 !important;
-        }
-        .attendance-detailed-table .overtime-value {
-          color: #4ade80 !important;
-          font-weight: 700 !important;
-        }
-        .attendance-detailed-table .dash-value {
-          color: #64748b !important;
         }
       `}</style>
       <h2 className="text-gradient" style={{ marginBottom: '2rem' }}>Attendance Management</h2>
@@ -315,7 +259,7 @@ const AttendanceManagement = () => {
             multiple
             accept=".xls,.xlsx"
             onChange={handleFileSelect}
-            className="form-input-elegant"
+            className="form-input-elegant saas-input"
             style={{ padding: '0.75rem' }}
           />
           {uploadFiles.length > 0 && (
@@ -428,7 +372,7 @@ const AttendanceManagement = () => {
               type="date"
               value={rangeStart}
               onChange={(e) => setRangeStart(e.target.value)}
-              className="form-input-elegant"
+              className="form-input-elegant saas-input"
               style={{ maxWidth: '180px' }}
             />
           </div>
@@ -438,7 +382,7 @@ const AttendanceManagement = () => {
               type="date"
               value={rangeEnd}
               onChange={(e) => setRangeEnd(e.target.value)}
-              className="form-input-elegant"
+              className="form-input-elegant saas-input"
               style={{ maxWidth: '180px' }}
             />
           </div>
@@ -465,7 +409,7 @@ const AttendanceManagement = () => {
               placeholder="Search by name, code, or department..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="form-input-elegant"
+              className="form-input-elegant saas-input"
               style={{ width: '100%' }}
             />
           </div>
@@ -677,12 +621,12 @@ const AttendanceManagement = () => {
               </div>
             )}
 
-            <div style={{ marginBottom: '1.5rem', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div className="saas-table-meta">
               <div>
-                <strong style={{ color: '#e2e8f0' }}>Total Employees:</strong>{' '}
-                <span style={{ color: '#f1f5f9' }}>{attendanceReport.totalEmployees}</span>
+                <strong>Total Employees:</strong>{' '}
+                <span>{attendanceReport.totalEmployees}</span>
                 {searchQuery && (
-                  <span style={{ marginLeft: '1rem', color: '#4a90e2' }}>
+                  <span style={{ marginLeft: '1rem', color: '#4f46e5' }}>
                     (Showing {attendanceReport.report.filter(emp => 
                       emp.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                       (emp.user.employeeCode || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -701,29 +645,23 @@ const AttendanceManagement = () => {
             {/* Summary View */}
             {activeView === 'summary' && (
               <div className="attendance-table-scroll responsive-table-wrap" style={{ marginTop: '1rem' }}>
-                <table style={{ 
-                  width: '100%', 
-                  minWidth: '1200px',
-                  borderCollapse: 'separate',
-                  borderSpacing: '0',
-                  fontSize: '0.9rem'
-                }}>
+                <table className="saas-table attendance-summary-table" style={{ minWidth: '1200px' }}>
                   <thead>
-                    <tr style={{ background: 'linear-gradient(135deg, #1a202c 0%, #2d3748 100%)' }}>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#fff', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '150px' }}>Employee</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fff', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '60px' }}>Code</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'left', color: '#fff', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '120px' }}>Department</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fff', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '50px' }}>Days</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#4ade80', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '60px' }}>Present</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fb923c', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '50px' }}>Late</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#f87171', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '55px' }}>Absent</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#c084fc', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '55px' }}>Leave</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#38bdf8', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '50px' }}>WFH</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#60a5fa', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '60px' }}>Excused</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fbbf24', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '70px' }}>FP Miss</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#f87171', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '70px' }}>Deduct</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#4ade80', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '70px' }}>OT</th>
-                      <th style={{ padding: '12px 10px', textAlign: 'center', color: '#fff', fontWeight: '600', borderBottom: '2px solid #4a5568', minWidth: '90px' }}>Actions</th>
+                    <tr>
+                      <th style={{ minWidth: '150px' }}>Employee</th>
+                      <th className="saas-th-center" style={{ minWidth: '60px' }}>Code</th>
+                      <th style={{ minWidth: '120px' }}>Department</th>
+                      <th className="saas-th-center" style={{ minWidth: '50px' }}>Days</th>
+                      <th className="saas-th-center" style={{ minWidth: '60px' }}>Present</th>
+                      <th className="saas-th-center" style={{ minWidth: '50px' }}>Late</th>
+                      <th className="saas-th-center" style={{ minWidth: '55px' }}>Absent</th>
+                      <th className="saas-th-center" style={{ minWidth: '55px' }}>Leave</th>
+                      <th className="saas-th-center" style={{ minWidth: '50px' }}>WFH</th>
+                      <th className="saas-th-center" style={{ minWidth: '60px' }}>Excused</th>
+                      <th className="saas-th-center" style={{ minWidth: '70px' }}>FP Miss</th>
+                      <th className="saas-th-center" style={{ minWidth: '70px' }}>Deduct</th>
+                      <th className="saas-th-center" style={{ minWidth: '70px' }}>OT</th>
+                      <th className="saas-th-center" style={{ minWidth: '90px' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>

@@ -26,7 +26,7 @@ function formatPeriodLabel(startDate, endDate, locale) {
 function StatBox({ label, value, valueClass = '' }) {
   return (
     <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
-      <div className="text-sm text-slate-500">{label}</div>
+      <div className="text-sm !text-slate-500 dark:!text-slate-400">{label}</div>
       <div className={`text-stat ${valueClass}`.trim()}>{value}</div>
     </div>
   );
@@ -91,10 +91,10 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
       aria-labelledby="ed-snapshot-title"
     >
       <div style={{ marginBottom: '1.25rem' }}>
-        <h2 id="ed-snapshot-title" className="text-4xl font-bold text-slate-900 dark:text-white" style={{ fontSize: '1.25rem', margin: 0 }}>
+        <h2 id="ed-snapshot-title" className="text-4xl font-bold !text-slate-900 dark:!text-white" style={{ fontSize: '1.25rem', margin: 0 }}>
           {t('employeeDashboard.monthlySnapshot')}
         </h2>
-        <p className="text-sm text-slate-500" style={{ marginTop: '0.35rem' }}>
+        <p className="text-sm !text-slate-500 dark:!text-slate-400" style={{ marginTop: '0.35rem' }}>
           {t('employeeDashboard.payPeriod')}: {periodLabel}
         </p>
       </div>
@@ -114,7 +114,7 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
       {!loading && !error && snapshot && (
         <>
           <div style={{ marginBottom: '1.5rem' }}>
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200" style={{ marginBottom: '0.75rem', fontWeight: 700 }}>
+            <h3 className="text-sm font-medium !text-slate-700 dark:!text-slate-200" style={{ marginBottom: '0.75rem', fontWeight: 700 }}>
               ⏱️ {t('employeeDashboard.myOvertime')}
             </h3>
             <div className="grid grid-cols-1 gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', marginBottom: '1rem' }}>
@@ -129,7 +129,7 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
               />
             </div>
             {otRows.length === 0 ? (
-              <p className="text-sm text-slate-500">{t('employeeDashboard.noOtThisPeriod')}</p>
+              <p className="text-sm !text-slate-500 dark:!text-slate-400">{t('employeeDashboard.noOtThisPeriod')}</p>
             ) : (
               otRows.map((row) => (
                 <div
@@ -137,18 +137,18 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
                   className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-200 dark:border-slate-700"
                   style={{ marginBottom: '0.5rem' }}
                 >
-                  <div className="text-sm font-medium text-slate-900 dark:text-white" style={{ fontWeight: 600, marginBottom: '0.35rem' }}>
+                  <div className="text-sm font-medium !text-slate-900 dark:!text-white" style={{ fontWeight: 600, marginBottom: '0.35rem' }}>
                     {formatOtDate(row.otDate)}
                   </div>
-                  <div className="text-sm text-slate-500">
-                    {t('forms.requestedOtHours')}: <span className="text-slate-900 dark:text-white">{formatHours(row.requestedHours)}</span>
+                  <div className="text-sm !text-slate-500 dark:!text-slate-400">
+                    {t('forms.requestedOtHours')}: <span className="!text-slate-900 dark:!text-white">{formatHours(row.requestedHours)}</span>
                   </div>
-                  <div className="text-sm text-slate-500">
-                    {t('forms.approvedOtHours')}: <span className="text-slate-900 dark:text-white">{formatHours(row.approvedHours)}</span>
+                  <div className="text-sm !text-slate-500 dark:!text-slate-400">
+                    {t('forms.approvedOtHours')}: <span className="!text-slate-900 dark:!text-white">{formatHours(row.approvedHours)}</span>
                   </div>
-                  <div className="text-sm text-slate-500">
+                  <div className="text-sm !text-slate-500 dark:!text-slate-400">
                     {t('otReports.otReason')}:{' '}
-                    <span className={row.hasOtFormSubmission === false ? 'text-stat--danger' : 'text-slate-900 dark:text-white'}>
+                    <span className={row.hasOtFormSubmission === false ? 'text-stat--danger' : '!text-slate-900 dark:!text-white'}>
                       {row.otReason || t('otReports.noFormSubmittedReason')}
                     </span>
                   </div>
@@ -158,7 +158,7 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200" style={{ marginBottom: '0.75rem', fontWeight: 700 }}>
+            <h3 className="text-sm font-medium !text-slate-700 dark:!text-slate-200" style={{ marginBottom: '0.75rem', fontWeight: 700 }}>
               📋 {t('employeeDashboard.myAbsences')}
             </h3>
             <div className="grid grid-cols-1 gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
@@ -175,14 +175,14 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
               />
             </div>
             {absences.reason && absences.reason !== '—' && (
-              <p className="text-sm text-slate-500" style={{ marginTop: '0.75rem', lineHeight: 1.5 }}>
+              <p className="text-sm !text-slate-500 dark:!text-slate-400" style={{ marginTop: '0.75rem', lineHeight: 1.5 }}>
                 {absences.reason}
               </p>
             )}
           </div>
 
           <div>
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200" style={{ marginBottom: '0.75rem', fontWeight: 700 }}>
+            <h3 className="text-sm font-medium !text-slate-700 dark:!text-slate-200" style={{ marginBottom: '0.75rem', fontWeight: 700 }}>
               ⏰ {t('employeeDashboard.myShortfall')}
             </h3>
             <StatBox

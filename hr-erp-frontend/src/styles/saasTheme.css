@@ -1,0 +1,468 @@
+/**
+ * Premium SaaS theme — light-mode contrast enforcement with !important where legacy CSS fights back.
+ * Dark mode: [data-theme="dark"] on <html>
+ */
+
+/* ===== Page shell ===== */
+.bg-slate-100 { background-color: #f1f5f9; }
+[data-theme='dark'] .dark\:bg-slate-900 { background-color: #0f172a; }
+
+.App.min-h-screen.bg-slate-100 {
+  background-color: #f1f5f9;
+  min-height: 100vh;
+}
+
+[data-theme='dark'] .App.min-h-screen.dark\:bg-slate-900 {
+  background-color: #0f172a;
+}
+
+/* ===== Tailwind-style !important text utilities ===== */
+.\!text-slate-900 { color: #0f172a !important; }
+.\!text-slate-500 { color: #64748b !important; }
+.\!text-slate-700 { color: #334155 !important; }
+
+[data-theme='dark'] .dark\:\!text-white { color: #ffffff !important; }
+[data-theme='dark'] .dark\:\!text-slate-400 { color: #94a3b8 !important; }
+[data-theme='dark'] .dark\:\!text-slate-200 { color: #e2e8f0 !important; }
+
+.employee-dashboard-v2 .\!text-slate-900,
+.modern-dash .\!text-slate-900,
+.saas-app-header .\!text-slate-900 {
+  color: #0f172a !important;
+}
+
+[data-theme='dark'] .employee-dashboard-v2 .dark\:\!text-white,
+[data-theme='dark'] .modern-dash .dark\:\!text-white,
+[data-theme='dark'] .saas-app-header .dark\:\!text-white {
+  color: #ffffff !important;
+}
+
+/* ===== Logout — force readable label ===== */
+[data-theme='light'] .saas-app-header .app-header-logout,
+[data-theme='light'] .saas-app-header .app-header-logout .app-header-logout-text {
+  color: #0f172a !important;
+}
+
+[data-theme='dark'] .saas-app-header .app-header-logout,
+[data-theme='dark'] .saas-app-header .app-header-logout .app-header-logout-text {
+  color: #ffffff !important;
+}
+
+.saas-app-header .saas-btn-secondary {
+  width: auto !important;
+}
+
+/* ===== Secondary action buttons (employee dashboard) ===== */
+.saas-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  width: 100%;
+  font-weight: 500;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  background-color: #ffffff !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+@media (min-width: 640px) {
+  .saas-btn-secondary { width: auto; }
+}
+
+.saas-btn-secondary:hover:not(:disabled) {
+  background-color: #f8fafc !important;
+}
+
+[data-theme='dark'] .saas-btn-secondary {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #475569 !important;
+}
+
+[data-theme='dark'] .saas-btn-secondary:hover:not(:disabled) {
+  background-color: #334155 !important;
+}
+
+/* ===== Adaptive inputs (Attendance, OT, Admin quick actions) ===== */
+.modern-dash .form-input-elegant,
+.modern-dash .saas-input,
+.saas-attendance .form-input-elegant,
+.saas-attendance .saas-input,
+.saas-attendance input[type='file'],
+.saas-ot-reports .form-input-elegant,
+.saas-ot-reports .saas-input {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+[data-theme='dark'] .modern-dash .form-input-elegant,
+[data-theme='dark'] .modern-dash .saas-input,
+[data-theme='dark'] .saas-attendance .form-input-elegant,
+[data-theme='dark'] .saas-attendance .saas-input,
+[data-theme='dark'] .saas-attendance input[type='file'],
+[data-theme='dark'] .saas-ot-reports .form-input-elegant,
+[data-theme='dark'] .saas-ot-reports .saas-input {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+.modern-dash .form-input-elegant:focus,
+.modern-dash .saas-input:focus,
+.saas-attendance .form-input-elegant:focus,
+.saas-attendance .saas-input:focus,
+.saas-ot-reports .form-input-elegant:focus,
+.saas-ot-reports .saas-input:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px #6366f1 !important;
+  border-color: #6366f1 !important;
+}
+
+.modern-dash .form-label-elegant,
+.saas-attendance .form-label-elegant,
+.saas-ot-reports .form-label-elegant {
+  color: #334155 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .modern-dash .form-label-elegant,
+[data-theme='dark'] .saas-attendance .form-label-elegant,
+[data-theme='dark'] .saas-ot-reports .form-label-elegant {
+  color: #cbd5e1 !important;
+}
+
+/* ===== SaaS data tables ===== */
+.saas-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+}
+
+.saas-table thead tr,
+.ot-reconciliation-table thead tr,
+.attendance-detailed-table thead tr {
+  background: #e2e8f0 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+[data-theme='dark'] .saas-table thead tr,
+[data-theme='dark'] .ot-reconciliation-table thead tr,
+[data-theme='dark'] .attendance-detailed-table thead tr {
+  background: #1e293b !important;
+  border-bottom-color: #334155 !important;
+}
+
+.saas-table thead th,
+.ot-reconciliation-table th,
+.attendance-detailed-table th {
+  padding: 12px 10px !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: #334155 !important;
+  text-align: left;
+  border-bottom: 1px solid #cbd5e1 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .saas-table thead th,
+[data-theme='dark'] .ot-reconciliation-table th,
+[data-theme='dark'] .attendance-detailed-table th {
+  color: #cbd5e1 !important;
+  border-bottom-color: #334155 !important;
+}
+
+.saas-table thead th.saas-th-center,
+.ot-reconciliation-table th.saas-th-center {
+  text-align: center;
+}
+
+/* Summary / OT table body — light mode readable rows */
+[data-theme='light'] .saas-attendance .attendance-summary-table tbody tr,
+[data-theme='light'] .saas-ot-reports .ot-reconciliation-table tbody tr {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme='light'] .saas-attendance .attendance-summary-table tbody tr:nth-child(even),
+[data-theme='light'] .saas-ot-reports .ot-reconciliation-table tbody tr:nth-child(even) {
+  background: #f8fafc !important;
+}
+
+[data-theme='light'] .saas-attendance .attendance-summary-table tbody td,
+[data-theme='light'] .saas-ot-reports .ot-reconciliation-table tbody td {
+  color: #334155 !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+[data-theme='light'] .saas-attendance .attendance-summary-table tbody code {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+}
+
+[data-theme='dark'] .saas-attendance .attendance-summary-table tbody tr:nth-child(even) td,
+[data-theme='dark'] .saas-ot-reports .ot-reconciliation-table tr:nth-child(even) td {
+  background: rgba(30, 41, 59, 0.7) !important;
+}
+
+[data-theme='dark'] .saas-attendance .attendance-summary-table tbody tr:nth-child(odd) td,
+[data-theme='dark'] .saas-ot-reports .ot-reconciliation-table tr:nth-child(odd) td {
+  background: rgba(15, 23, 42, 0.7) !important;
+}
+
+[data-theme='dark'] .saas-attendance .attendance-summary-table tbody td,
+[data-theme='dark'] .saas-ot-reports .ot-reconciliation-table td {
+  color: #e2e8f0 !important;
+  border-bottom-color: #334155 !important;
+}
+
+/* Detailed attendance cards — adaptive */
+[data-theme='light'] .saas-attendance .attendance-detailed-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+[data-theme='light'] .saas-attendance .attendance-detailed-card h4 {
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .saas-attendance .attendance-detailed-card code {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+}
+
+[data-theme='light'] .saas-attendance .attendance-detailed-card .employee-info {
+  color: #64748b !important;
+}
+
+[data-theme='light'] .saas-attendance .attendance-detailed-table td {
+  color: #334155 !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+[data-theme='light'] .saas-attendance .attendance-detailed-table tr:nth-child(even) td {
+  background: #f8fafc !important;
+}
+
+[data-theme='light'] .saas-attendance .attendance-detailed-table tr:nth-child(odd) td {
+  background: #ffffff !important;
+}
+
+[data-theme='light'] .saas-attendance .attendance-detailed-table .clock-time {
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .saas-attendance .attendance-detailed-table .late-value {
+  color: #dc2626 !important;
+}
+
+[data-theme='light'] .saas-attendance .attendance-detailed-table .overtime-value {
+  color: #059669 !important;
+}
+
+[data-theme='dark'] .saas-attendance .attendance-detailed-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme='dark'] .saas-attendance .attendance-detailed-card h4 {
+  color: #f1f5f9 !important;
+}
+
+/* OT reports — section copy & filter panel */
+.saas-ot-reports .saas-section-subtitle {
+  color: #64748b !important;
+  margin-bottom: 1.5rem;
+}
+
+[data-theme='dark'] .saas-ot-reports .saas-section-subtitle {
+  color: #94a3b8 !important;
+}
+
+.saas-ot-reports .saas-filter-panel {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='dark'] .saas-ot-reports .saas-filter-panel {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+.saas-ot-reports .saas-panel-heading {
+  margin: 0;
+  color: #0f172a !important;
+}
+
+[data-theme='dark'] .saas-ot-reports .saas-panel-heading {
+  color: #f8fafc !important;
+}
+
+[data-theme='light'] .saas-ot-reports .ot-reconciliation-table td {
+  color: #334155 !important;
+}
+
+[data-theme='light'] .saas-ot-reports .ot-variance-positive {
+  color: #059669 !important;
+  font-weight: 600;
+}
+
+[data-theme='light'] .saas-ot-reports .ot-variance-negative {
+  color: #dc2626 !important;
+  font-weight: 600;
+}
+
+[data-theme='light'] .saas-ot-reports .ot-reason-missing {
+  color: #dc2626 !important;
+  font-style: italic;
+}
+
+[data-theme='dark'] .saas-attendance .attendance-detailed-table td {
+  color: #e2e8f0 !important;
+  border-bottom-color: #334155 !important;
+}
+
+[data-theme='dark'] .saas-attendance .attendance-detailed-table tr:nth-child(even) td {
+  background: rgba(30, 41, 59, 0.7) !important;
+}
+
+[data-theme='dark'] .saas-attendance .attendance-detailed-table tr:nth-child(odd) td {
+  background: rgba(15, 23, 42, 0.7) !important;
+}
+
+[data-theme='dark'] .saas-attendance .attendance-detailed-table .clock-time {
+  color: #f1f5f9 !important;
+  font-family: 'Courier New', monospace !important;
+  font-weight: 700 !important;
+}
+
+[data-theme='dark'] .saas-attendance .attendance-detailed-table .late-value {
+  color: #f87171 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme='dark'] .saas-attendance .attendance-detailed-table .overtime-value {
+  color: #4ade80 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme='dark'] .saas-attendance .attendance-detailed-table .dash-value {
+  color: #64748b !important;
+}
+
+[data-theme='dark'] .saas-attendance .attendance-detailed-table th {
+  padding: 12px 10px !important;
+}
+
+[data-theme='light'] .saas-ot-reports .ot-reason-missing {
+  color: #dc2626 !important;
+  font-style: italic;
+}
+
+[data-theme='light'] .saas-ot-reports .ot-reason-ok {
+  color: #334155 !important;
+}
+
+[data-theme='dark'] .saas-ot-reports .ot-reason-missing {
+  color: #f87171 !important;
+  font-style: italic;
+}
+
+[data-theme='dark'] .saas-ot-reports .ot-reason-ok {
+  color: #e2e8f0 !important;
+}
+
+.saas-ot-reports .ot-table-subheading {
+  margin: 0;
+  color: #0f172a !important;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .saas-ot-reports .ot-table-subheading {
+  color: #cbd5e1 !important;
+}
+
+.saas-ot-reports .ot-reconciliation-table tfoot td {
+  background: #e2e8f0 !important;
+  color: #334155 !important;
+  font-weight: 700;
+  border-top: 1px solid #cbd5e1 !important;
+}
+
+[data-theme='dark'] .saas-ot-reports .ot-reconciliation-table tfoot td {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-top-color: #334155 !important;
+}
+
+.saas-ot-reports .ot-nested-expand-cell {
+  padding: 0.75rem 1rem 1rem !important;
+  background: #f8fafc !important;
+}
+
+[data-theme='dark'] .saas-ot-reports .ot-nested-expand-cell {
+  background: rgba(15, 23, 42, 0.9) !important;
+}
+
+[data-theme='light'] .saas-ot-reports .ot-reconciliation-table tbody td {
+  color: #334155 !important;
+}
+
+[data-theme='light'] .saas-ot-reports .ot-final-status-panel {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+[data-theme='dark'] .saas-ot-reports .ot-final-status-panel {
+  background: rgba(30, 58, 95, 0.5) !important;
+  border-color: #334155 !important;
+}
+
+/* Attendance meta bar above tables */
+.saas-attendance .saas-table-meta {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: #64748b !important;
+}
+
+.saas-attendance .saas-table-meta strong {
+  color: #0f172a !important;
+}
+
+[data-theme='dark'] .saas-attendance .saas-table-meta {
+  color: #94a3b8 !important;
+}
+
+[data-theme='dark'] .saas-attendance .saas-table-meta strong {
+  color: #e2e8f0 !important;
+}
+
+/* Attendance section headings inside elegant-card */
+[data-theme='light'] .saas-attendance .elegant-card h3 {
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .saas-attendance .elegant-card p {
+  color: #64748b !important;
+}

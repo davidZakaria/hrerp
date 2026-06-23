@@ -164,7 +164,7 @@ const EmployeeDashboard = () => {
   };
 
   return (
-    <div className="dashboard-container employee-dashboard-v2 min-h-screen bg-slate-50 dark:bg-slate-900 fade-in">
+    <div className="dashboard-container employee-dashboard-v2 min-h-screen bg-slate-100 dark:bg-slate-900 fade-in">
       <DashboardAppHeader title={t('dashboard.employee')} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col gap-6">

@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 const logoutClasses =
-  'app-header-logout ed-header-control px-4 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-white border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm font-medium';
+  'app-header-logout ed-header-control saas-btn-secondary px-4 py-2 !text-slate-900 dark:!text-white border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm font-medium';
 
 const LogoutButton = () => {
   const { t } = useTranslation();
@@ -20,7 +20,7 @@ const LogoutButton = () => {
       className={logoutClasses}
       aria-label={t('common.logout')}
     >
-      <span className="app-header-logout-text">{t('common.logout')}</span>
+      <span className="app-header-logout-text !text-slate-900 dark:!text-white">{t('common.logout')}</span>
       <span className="app-header-logout-icon" aria-hidden="true">{'\u{1F6AA}'}</span>
     </button>
   );

@@ -40,9 +40,16 @@ function isMissingOtReason(row) {
 
 function otReasonStyle(row) {
   if (isMissingOtReason(row)) {
-    return { color: '#f87171', fontStyle: 'italic', opacity: 0.9 };
+    return { fontStyle: 'italic' };
   }
-  return { color: '#e2e8f0' };
+  return {};
+}
+
+function otReasonClass(row) {
+  if (isMissingOtReason(row)) {
+    return 'ot-reason-missing';
+  }
+  return 'ot-reason-ok';
 }
 
 function displayOtReason(row, t) {
@@ -425,7 +432,7 @@ const OtReconciliationReports = () => {
   const totalsColSpan = showExtendedDetails ? 13 : 9;
 
   return (
-    <div style={{ marginTop: '2rem' }}>
+    <div className="saas-ot-reports modern-dash" style={{ marginTop: '2rem' }}>
       <style>{`
         ${REPORT_SCROLL_TABLE_CSS}
         .ot-reconciliation-table {
@@ -433,29 +440,17 @@ const OtReconciliationReports = () => {
           border-collapse: separate;
           border-spacing: 0;
         }
-        .ot-reconciliation-table th {
-          background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%);
-          color: #ffffff;
-          font-weight: 600;
-          padding: 12px 10px;
-          border-bottom: 2px solid #3b82f6;
-          text-align: left;
-        }
         .ot-reconciliation-table td {
           padding: 10px;
-          color: #e2e8f0;
-          border-bottom: 1px solid #334155;
+          border-bottom: 1px solid #e2e8f0;
         }
-        .ot-reconciliation-table tr:nth-child(even) td {
-          background: rgba(30, 41, 59, 0.7);
-        }
-        .ot-reconciliation-table tr:nth-child(odd) td {
-          background: rgba(15, 23, 42, 0.7);
+        [data-theme='dark'] .ot-reconciliation-table td {
+          border-bottom-color: #334155;
         }
       `}</style>
 
-      <h2 className="text-gradient" style={{ marginBottom: '1rem' }}>{t('otReports.title')}</h2>
-      <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>{t('otReports.subtitle')}</p>
+      <h2 className="!text-slate-900 dark:!text-white" style={{ marginBottom: '1rem', fontSize: '1.5rem', fontWeight: 700 }}>{t('otReports.title')}</h2>
+      <p className="saas-section-subtitle">{t('otReports.subtitle')}</p>
 
       <ReportPeriodFilter
         i18nPrefix="otReports"
@@ -507,9 +502,9 @@ const OtReconciliationReports = () => {
       {report && activeView === 'detailed' && (
         <div className="elegant-card" style={{ overflowX: 'auto', opacity: loading ? 0.6 : 1 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, color: '#f1f5f9' }}>
+            <h3 className="saas-panel-heading">
               {t('otReports.detailedTitle')}
-              {loading && <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem', color: '#94a3b8' }}>{t('otReports.loading')}</span>}
+              {loading && <span className="!text-slate-500 dark:!text-slate-400" style={{ marginLeft: '0.75rem', fontSize: '0.85rem' }}>{t('otReports.loading')}</span>}
             </h3>
             {detailedRows.length > 0 && (
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -530,13 +525,13 @@ const OtReconciliationReports = () => {
             )}
           </div>
           {detailedRows.length > 0 && (
-            <div className="elegant-card" style={{ marginBottom: '1rem', padding: '1rem', background: 'rgba(15, 23, 42, 0.6)' }}>
+            <div className="dash-panel-card saas-filter-panel">
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
                 <div style={{ minWidth: '160px', flex: '1 1 160px' }}>
                   <label className="form-label-elegant">{t('otReports.filterSearch')}</label>
                   <input
                     type="text"
-                    className="form-input-elegant"
+                    className="form-input-elegant saas-input"
                     placeholder={t('otReports.filterSearchPlaceholder')}
                     value={filterSearch}
                     onChange={(e) => setFilterSearch(e.target.value)}
@@ -545,7 +540,7 @@ const OtReconciliationReports = () => {
                 <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
                   <label className="form-label-elegant">{t('otReports.filterDepartment')}</label>
                   <select
-                    className="form-input-elegant"
+                    className="form-input-elegant saas-input"
                     value={filterDepartment}
                     onChange={(e) => setFilterDepartment(e.target.value)}
                   >
@@ -558,7 +553,7 @@ const OtReconciliationReports = () => {
                 <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
                   <label className="form-label-elegant">{t('otReports.filterVariance')}</label>
                   <select
-                    className="form-input-elegant"
+                    className="form-input-elegant saas-input"
                     value={filterVariance}
                     onChange={(e) => setFilterVariance(e.target.value)}
                   >
@@ -571,7 +566,7 @@ const OtReconciliationReports = () => {
                 <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
                   <label className="form-label-elegant">{t('otReports.filterForm')}</label>
                   <select
-                    className="form-input-elegant"
+                    className="form-input-elegant saas-input"
                     value={filterForm}
                     onChange={(e) => setFilterForm(e.target.value)}
                   >
@@ -602,7 +597,7 @@ const OtReconciliationReports = () => {
                     <label className="form-label-elegant">{t('otReports.filterDateFrom')}</label>
                     <input
                       type="date"
-                      className="form-input-elegant"
+                      className="form-input-elegant saas-input"
                       value={filterDateFrom}
                       onChange={(e) => setFilterDateFrom(e.target.value)}
                     />
@@ -611,7 +606,7 @@ const OtReconciliationReports = () => {
                     <label className="form-label-elegant">{t('otReports.filterDateTo')}</label>
                     <input
                       type="date"
-                      className="form-input-elegant"
+                      className="form-input-elegant saas-input"
                       value={filterDateTo}
                       onChange={(e) => setFilterDateTo(e.target.value)}
                     />
@@ -622,7 +617,7 @@ const OtReconciliationReports = () => {
                       type="number"
                       min="0"
                       step="0.25"
-                      className="form-input-elegant"
+                      className="form-input-elegant saas-input"
                       placeholder="0.00"
                       value={filterMinFp}
                       onChange={(e) => setFilterMinFp(e.target.value)}
@@ -634,7 +629,7 @@ const OtReconciliationReports = () => {
                       type="number"
                       min="0"
                       step="0.25"
-                      className="form-input-elegant"
+                      className="form-input-elegant saas-input"
                       placeholder="0.00"
                       value={filterMinVariance}
                       onChange={(e) => setFilterMinVariance(e.target.value)}
@@ -643,7 +638,7 @@ const OtReconciliationReports = () => {
                   <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
                     <label className="form-label-elegant">{t('otReports.filterWorkday')}</label>
                     <select
-                      className="form-input-elegant"
+                      className="form-input-elegant saas-input"
                       value={filterWorkday}
                       onChange={(e) => setFilterWorkday(e.target.value)}
                     >
@@ -688,10 +683,10 @@ const OtReconciliationReports = () => {
             {detailViewMode === 'employees' && (
               <div style={{ marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                  <h4 style={{ margin: 0, color: '#93c5fd' }}>
+                  <h4 className="ot-table-subheading">
                     {t('otReports.employeeTotalsTitle')}
                     {hasActiveFilters && (
-                      <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: '#94a3b8', fontWeight: 400 }}>
+                      <span className="!text-slate-500 dark:!text-slate-400" style={{ marginLeft: '0.5rem', fontSize: '0.8rem', fontWeight: 400 }}>
                         {t('otReports.employeeTotalsFiltered')}
                       </span>
                     )}
@@ -700,7 +695,7 @@ const OtReconciliationReports = () => {
                     {allExpanded ? t('otReports.collapseAll') : t('otReports.expandAll')}
                   </button>
                 </div>
-                <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+                <p className="!text-slate-500 dark:!text-slate-400" style={{ margin: '0 0 0.75rem', fontSize: '0.8rem' }}>
                   {t('otReports.clickEmployeeHint')}
                 </p>
                 <ReportScrollTable maxHeight={560}>
@@ -746,7 +741,7 @@ const OtReconciliationReports = () => {
                               </span>
                               {emp.employeeCode || '—'}
                             </td>
-                            <td style={{ color: '#93c5fd', fontWeight: 600 }}>{emp.employeeName}</td>
+                            <td className="!text-slate-900 dark:!text-white" style={{ fontWeight: 600 }}>{emp.employeeName}</td>
                             <td>{emp.jobTitle || '—'}</td>
                             <td>{emp.location || '—'}</td>
                             <td>{emp.department}</td>
@@ -767,11 +762,11 @@ const OtReconciliationReports = () => {
                             <td style={varianceTotalStyle(emp.totalVariance)}>
                               {emp.totalVariance > 0 ? '+' : ''}{formatHours(emp.totalVariance)}
                             </td>
-                            <td style={{ color: '#4ade80', fontWeight: 600 }}>{formatHours(emp.totalFinalPayable)}</td>
+                            <td className="!text-slate-900 dark:!text-white" style={{ fontWeight: 600 }}>{formatHours(emp.totalFinalPayable)}</td>
                           </tr>
                           {isExpanded && (
                             <tr>
-                              <td colSpan={totalsColSpan} style={{ padding: '0.75rem 1rem 1rem', background: 'rgba(15, 23, 42, 0.9)' }}>
+                              <td colSpan={totalsColSpan} className="ot-nested-expand-cell">
                                 <ReportNestedTable>
                                 <table className="ot-reconciliation-table" style={{ fontSize: '0.85rem' }}>
                                   <thead>
@@ -801,30 +796,28 @@ const OtReconciliationReports = () => {
                                         <td>{formatHours(row.actualPunchingHours)}</td>
                                         <td>{row.requestedHours != null ? formatHours(row.requestedHours) : '—'}</td>
                                         <td>{row.hasApprovedForm ? t('otReports.yes') : t('otReports.no')}</td>
-                                        <td style={otReasonStyle(row)}>{displayOtReason(row, t)}</td>
+                                        <td className={otReasonClass(row)} style={otReasonStyle(row)}>{displayOtReason(row, t)}</td>
                                         <td>{formatHours(row.approvedHours)}</td>
                                         <td style={varianceStyle(row.varianceFlag)}>
                                           {row.variance > 0 ? '+' : ''}{formatHours(row.variance)}
                                         </td>
-                                        <td style={{ color: '#4ade80', fontWeight: 600 }}>{formatHours(row.finalPayableHours)}</td>
+                                        <td className="!text-slate-900 dark:!text-white" style={{ fontWeight: 600 }}>{formatHours(row.finalPayableHours)}</td>
                                       </tr>
                                     ))}
                                   </tbody>
                                   <tfoot>
                                     <tr>
-                                      <td colSpan={4} style={{ fontWeight: 700, color: '#93c5fd', background: 'rgba(30, 58, 95, 0.9)' }}>
-                                        {t('otReports.subtotal', { name: emp.employeeName, count: emp.days })}
-                                      </td>
-                                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(emp.totalPunched)}</td>
-                                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(emp.totalFingerprint)}</td>
-                                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(emp.totalRequested)}</td>
-                                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{emp.daysWithForm}</td>
-                                      <td style={{ background: 'rgba(30, 58, 95, 0.9)' }} />
-                                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(emp.totalApproved)}</td>
-                                      <td style={{ ...varianceTotalStyle(emp.totalVariance), background: 'rgba(30, 58, 95, 0.9)' }}>
+                                      <td colSpan={4}>{t('otReports.subtotal', { name: emp.employeeName, count: emp.days })}</td>
+                                      <td>{formatHours(emp.totalPunched)}</td>
+                                      <td>{formatHours(emp.totalFingerprint)}</td>
+                                      <td>{formatHours(emp.totalRequested)}</td>
+                                      <td>{emp.daysWithForm}</td>
+                                      <td />
+                                      <td>{formatHours(emp.totalApproved)}</td>
+                                      <td style={varianceTotalStyle(emp.totalVariance)}>
                                         {emp.totalVariance > 0 ? '+' : ''}{formatHours(emp.totalVariance)}
                                       </td>
-                                      <td style={{ color: '#4ade80', fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>
+                                      <td className="!text-slate-900 dark:!text-white" style={{ fontWeight: 700 }}>
                                         {formatHours(emp.totalFinalPayable)}
                                       </td>
                                     </tr>
@@ -840,27 +833,25 @@ const OtReconciliationReports = () => {
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td colSpan={5} style={{ fontWeight: 700, color: '#93c5fd', background: 'rgba(30, 58, 95, 0.9)' }}>
-                        {t('otReports.grandTotal', { count: employeeTotals.length })}
-                      </td>
+                      <td colSpan={5}>{t('otReports.grandTotal', { count: employeeTotals.length })}</td>
                       {showExtendedDetails && (
                         <>
-                          <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{grandTotals.workdays}</td>
-                          <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(grandTotals.totalPunched)}</td>
+                          <td>{grandTotals.workdays}</td>
+                          <td>{formatHours(grandTotals.totalPunched)}</td>
                         </>
                       )}
-                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(grandTotals.totalFingerprint)}</td>
+                      <td>{formatHours(grandTotals.totalFingerprint)}</td>
                       {showExtendedDetails && (
                         <>
-                          <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(grandTotals.totalRequested)}</td>
-                          <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{grandTotals.daysWithForm}</td>
+                          <td>{formatHours(grandTotals.totalRequested)}</td>
+                          <td>{grandTotals.daysWithForm}</td>
                         </>
                       )}
-                      <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(grandTotals.totalApproved)}</td>
-                      <td style={{ ...varianceTotalStyle(grandTotals.totalVariance), background: 'rgba(30, 58, 95, 0.9)' }}>
+                      <td>{formatHours(grandTotals.totalApproved)}</td>
+                      <td style={varianceTotalStyle(grandTotals.totalVariance)}>
                         {grandTotals.totalVariance > 0 ? '+' : ''}{formatHours(grandTotals.totalVariance)}
                       </td>
-                      <td style={{ color: '#4ade80', fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>
+                      <td className="!text-slate-900 dark:!text-white" style={{ fontWeight: 700 }}>
                         {formatHours(grandTotals.totalFinalPayable)}
                       </td>
                     </tr>
@@ -876,7 +867,7 @@ const OtReconciliationReports = () => {
             )}
             {detailViewMode === 'allRows' && (
               <div>
-                <h4 style={{ margin: '0 0 0.75rem', color: '#93c5fd' }}>{t('otReports.dailyBreakdownTitle')}</h4>
+                <h4 className="ot-table-subheading" style={{ margin: '0 0 0.75rem' }}>{t('otReports.dailyBreakdownTitle')}</h4>
                 <ReportScrollTable maxHeight={560}>
             <table className="ot-reconciliation-table">
               <thead>
@@ -932,14 +923,14 @@ const OtReconciliationReports = () => {
                       <>
                         <td>{row.requestedHours != null ? formatHours(row.requestedHours) : '—'}</td>
                         <td>{row.hasApprovedForm ? t('otReports.yes') : t('otReports.no')}</td>
-                        <td style={otReasonStyle(row)}>{displayOtReason(row, t)}</td>
+                        <td className={otReasonClass(row)} style={otReasonStyle(row)}>{displayOtReason(row, t)}</td>
                       </>
                     )}
                     <td>{formatHours(row.approvedHours)}</td>
                     <td style={varianceStyle(row.varianceFlag)}>
                       {row.variance > 0 ? '+' : ''}{formatHours(row.variance)}
                     </td>
-                    <td style={{ color: '#4ade80', fontWeight: 600 }}>{formatHours(row.finalPayableHours)}</td>
+                    <td className="!text-slate-900 dark:!text-white" style={{ fontWeight: 600 }}>{formatHours(row.finalPayableHours)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -959,21 +950,15 @@ const OtReconciliationReports = () => {
 
       {report && activeView === 'final' && (
         <div className="elegant-card" style={{ overflowX: 'auto', opacity: loading ? 0.6 : 1 }}>
-          <h3 style={{ marginBottom: '1rem', color: '#f1f5f9' }}>
+          <h3 className="saas-panel-heading" style={{ marginBottom: '1rem' }}>
             {t('otReports.finalTitle')}
-            {loading && <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem', color: '#94a3b8' }}>{t('otReports.loading')}</span>}
+            {loading && <span className="!text-slate-500 dark:!text-slate-400" style={{ marginLeft: '0.75rem', fontSize: '0.85rem' }}>{t('otReports.loading')}</span>}
           </h3>
           {finalRows.length === 0 ? (
-            <div style={{ color: '#94a3b8' }}>
-              <p style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: '1rem' }}>{t('otReports.noFinalRows')}</p>
-              <div style={{
-                background: 'rgba(30, 58, 95, 0.5)',
-                border: '1px solid #334155',
-                borderRadius: '8px',
-                padding: '1rem 1.25rem',
-                marginBottom: '1rem'
-              }}>
-                <p style={{ color: '#93c5fd', fontWeight: 600, marginBottom: '0.75rem' }}>{t('otReports.finalStatusTitle')}</p>
+            <div className="!text-slate-500 dark:!text-slate-400">
+              <p className="!text-slate-900 dark:!text-white" style={{ fontWeight: 600, marginBottom: '1rem' }}>{t('otReports.noFinalRows')}</p>
+              <div className="ot-final-status-panel" style={{ borderRadius: '8px', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
+                <p className="!text-slate-900 dark:!text-white" style={{ fontWeight: 600, marginBottom: '0.75rem' }}>{t('otReports.finalStatusTitle')}</p>
                 <ul style={{ margin: 0, paddingLeft: '1.25rem', lineHeight: 1.8 }}>
                   {(report.fingerprintOtDays ?? 0) > 0 && (
                     <li>{t('otReports.statFingerprintDays', { count: report.fingerprintOtDays })}</li>
@@ -993,7 +978,7 @@ const OtReconciliationReports = () => {
                   <p style={{ color: '#fbbf24', marginTop: '0.75rem', marginBottom: 0 }}>{t('otReports.statNoFormsYet')}</p>
                 )}
                 {(report.pendingHrApprovalCount ?? 0) > 0 && (
-                  <p style={{ color: '#4ade80', marginTop: '0.75rem', marginBottom: 0 }}>{t('otReports.statGoApprove')}</p>
+                  <p className="!text-slate-700 dark:!text-slate-200" style={{ marginTop: '0.75rem', marginBottom: 0 }}>{t('otReports.statGoApprove')}</p>
                 )}
               </div>
               <ul style={{ paddingLeft: '1.25rem' }}>
@@ -1024,7 +1009,7 @@ const OtReconciliationReports = () => {
                     <td>{row.location || '—'}</td>
                     <td>{row.department}</td>
                     <td>{formatOtDate(row.otDate)}</td>
-                    <td style={{ color: '#4ade80', fontWeight: 700 }}>{formatHours(row.finalPayableHours)}</td>
+                    <td className="!text-slate-900 dark:!text-white" style={{ fontWeight: 700 }}>{formatHours(row.finalPayableHours)}</td>
                   </tr>
                 ))}
               </tbody>

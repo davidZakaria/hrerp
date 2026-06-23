@@ -198,23 +198,22 @@ const EmployeeDashboard = () => {
   const employeeNavActiveId = showForm ? 'submit' : showPreview ? 'preview' : scrollSpySection;
 
   return (
-    <div className="dashboard-container fade-in">
-      {/* Header */}
+    <div className="dashboard-container employee-dashboard-v2 fade-in">
       <DashboardAppHeader title={t('dashboard.employee')} />
 
-      {/* Smart hero */}
-      <EmployeeDashboardHero user={user} onUserUpdate={setUser} />
+      <div className="employee-dashboard-stack">
+        <EmployeeDashboardHero user={user} onUserUpdate={setUser} />
 
-      {user && (
-        <>
-          <LeaveWallet balances={balances} quotas={quotas} />
-          <EmployeeQuickActions
-            onRequestLeave={handleRequestLeave}
-            onRequestOvertime={handleRequestOvertime}
-            onViewRequests={handlePreview}
-          />
-        </>
-      )}
+        {user && (
+          <>
+            <LeaveWallet balances={balances} quotas={quotas} />
+            <EmployeeQuickActions
+              onRequestLeave={handleRequestLeave}
+              onRequestOvertime={handleRequestOvertime}
+              onViewRequests={handlePreview}
+            />
+          </>
+        )}
 
       {/* Flags Section */}
       {myFlags.length > 0 && (
@@ -288,8 +287,10 @@ const EmployeeDashboard = () => {
         </div>
       )}
 
+      </div>
+
       {/* Main Content */}
-      <div className="main-content">
+      <div className="main-content employee-dashboard-stack" style={{ paddingTop: 0 }}>
         <DashboardSectionNav
           variant="light"
           role="employee"

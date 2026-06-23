@@ -9,18 +9,7 @@ const EmployeeDashboardHero = ({ user, onUserUpdate }) => {
   const firstName = getFirstName(user?.name);
 
   if (!user) {
-    return (
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 55%, #f093fb 120%)',
-          borderRadius: '16px',
-          padding: '2rem',
-          marginBottom: '1.75rem',
-          minHeight: '120px',
-          boxShadow: '0 12px 40px rgba(102, 126, 234, 0.22)'
-        }}
-      />
-    );
+    return <div className="ed-hero ed-hero--loading" aria-hidden="true" />;
   }
 
   const departmentLabel = user.department
@@ -33,48 +22,22 @@ const EmployeeDashboardHero = ({ user, onUserUpdate }) => {
   };
 
   return (
-    <div
-      className="employee-dashboard-hero"
-      style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 55%, #f093fb 120%)',
-        borderRadius: '16px',
-        padding: '1.75rem 1.85rem',
-        marginBottom: '1.75rem',
-        color: '#fff',
-        boxShadow: '0 12px 40px rgba(102, 126, 234, 0.28)',
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '1.5rem',
-        alignItems: 'center'
-      }}
-    >
+    <header className="ed-hero">
       <UserAvatar
         user={user}
         size="xl"
         editable
         onPictureUpdated={handlePictureUpdated}
       />
-      <div style={{ flex: '1 1 220px' }}>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 'clamp(1.4rem, 3.5vw, 2rem)',
-            fontWeight: 700,
-            lineHeight: 1.25,
-            letterSpacing: '-0.02em'
-          }}
-        >
+      <div className="ed-hero-text">
+        <h1 className="ed-hero-greeting">
           {t('welcomeHero.greetingLine', { greeting: t(greeting.key), name: firstName })}
           {' '}{greeting.emoji}
         </h1>
-        <p style={{ margin: '0.65rem 0 0', fontSize: '1.05rem', fontWeight: 600, opacity: 0.95 }}>
-          {jobTitle}
-        </p>
-        <p style={{ margin: '0.25rem 0 0', fontSize: '0.92rem', opacity: 0.85 }}>
-          {departmentLabel}
-        </p>
+        <p className="ed-hero-job">{jobTitle}</p>
+        <p className="ed-hero-dept">{departmentLabel}</p>
       </div>
-    </div>
+    </header>
   );
 };
 

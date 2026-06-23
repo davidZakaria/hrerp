@@ -312,6 +312,10 @@
     "changePhoto": "Change profile photo",
     "uploadFailed": "Could not upload photo. Use JPEG, PNG, or WebP under 2MB."
   },
+  "theme": {
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode"
+  },
   "systemSettings": {
     "title": "System settings",
     "subtitle": "Configure company-wide HR policies without code deployments",

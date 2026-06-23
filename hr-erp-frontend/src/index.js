@@ -3,11 +3,15 @@ import ReactDOM from 'react-dom/client';
 import axios from 'axios';
 import App from './App';
 import { NotificationProvider } from './components/NotificationSystem';
+import { ThemeProvider } from './context/ThemeContext';
+import { initTheme } from './utils/theme';
 import { handleSessionExpired } from './utils/sessionExpired';
 import './index.css';
 import './i18n'; // Initialize i18n configuration
 import reportWebVitals from './reportWebVitals';
 import logger from './utils/logger';
+
+initTheme();
 
 // Global 401 handler: redirect to login when token is invalid
 const originalFetch = window.fetch;
@@ -41,9 +45,11 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 // Strict mode helps identify potential problems
 root.render(
   <React.StrictMode>
-    <NotificationProvider>
-      <App />
-    </NotificationProvider>
+    <ThemeProvider>
+      <NotificationProvider>
+        <App />
+      </NotificationProvider>
+    </ThemeProvider>
   </React.StrictMode>
 );
 

@@ -67,30 +67,16 @@ const UserAvatar = ({
     }
   };
 
-  const circleStyle = {
-    width: dimension,
-    height: dimension,
-    borderRadius: '50%',
-    flexShrink: 0,
-    position: 'relative',
-    overflow: 'hidden',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: imageSrc ? '#e8eaf6' : bgColor,
-    color: '#fff',
-    fontWeight: 700,
-    fontSize: dimension * 0.34,
-    letterSpacing: '0.02em',
-    boxShadow: compact ? '0 1px 4px rgba(0,0,0,0.1)' : '0 4px 14px rgba(0,0,0,0.12)',
-    border: compact ? '2px solid rgba(255,255,255,0.65)' : '3px solid rgba(255,255,255,0.85)'
-  };
+  const sizeClass = compact ? 'user-avatar--compact' : `user-avatar--${size}`;
 
   return (
-    <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div className="user-avatar-wrap">
       <div
-        style={circleStyle}
-        className={editable ? 'user-avatar-editable' : undefined}
+        className={`user-avatar ${sizeClass}${editable ? ' user-avatar-editable' : ''}`}
+        style={{
+          background: imageSrc ? 'var(--theme-bg-subtle)' : bgColor,
+          fontSize: dimension * 0.34
+        }}
         onClick={editable ? () => fileInputRef.current?.click() : undefined}
         onKeyDown={editable ? (ev) => ev.key === 'Enter' && fileInputRef.current?.click() : undefined}
         role={editable ? 'button' : undefined}
@@ -109,20 +95,10 @@ const UserAvatar = ({
 
         {editable && (
           <div
-            className="user-avatar-overlay"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'rgba(0,0,0,0.45)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: uploading ? 1 : 0,
-              transition: 'opacity 0.2s ease',
-              cursor: uploading ? 'wait' : 'pointer'
-            }}
+            className={`user-avatar-overlay${uploading ? ' user-avatar-overlay--visible' : ''}`}
+            style={{ fontSize: dimension * 0.28 }}
           >
-            <span style={{ fontSize: dimension * 0.28 }}>{uploading ? '⏳' : '📷'}</span>
+            <span aria-hidden="true">{uploading ? '⏳' : '📷'}</span>
           </div>
         )}
 
@@ -137,17 +113,10 @@ const UserAvatar = ({
       </div>
 
       {uploadError && (
-        <span style={{ color: '#ffcdd2', fontSize: '0.75rem', marginTop: '0.35rem', maxWidth: dimension + 40, textAlign: 'center' }}>
+        <span className="user-avatar-error" style={{ maxWidth: dimension + 40 }}>
           {uploadError}
         </span>
       )}
-
-      <style>{`
-        .user-avatar-editable:hover .user-avatar-overlay,
-        .user-avatar-editable:focus .user-avatar-overlay {
-          opacity: 1;
-        }
-      `}</style>
     </div>
   );
 };

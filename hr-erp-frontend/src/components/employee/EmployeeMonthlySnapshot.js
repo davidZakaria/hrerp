@@ -1,8 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import API_URL from '../../config/api';
 import { getCurrentSubmissionPeriodRange } from '../../utils/formSubmissionMonthBounds';
-import { otRowCardStyle, sectionCardStyle, snapshotMetricStyle } from './employeeDashboardStyles';
 
 function formatHours(value) {
   if (value == null || Number.isNaN(Number(value))) return '—';
@@ -29,6 +28,8 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
   const [snapshot, setSnapshot] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const onLoadedRef = useRef(onLoaded);
+  onLoadedRef.current = onLoaded;
 
   const period = getCurrentSubmissionPeriodRange();
 
@@ -49,7 +50,7 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
         throw new Error(data.msg || t('employeeDashboard.snapshotError'));
       }
       setSnapshot(data);
-      onLoaded?.(data);
+      onLoadedRef.current?.(data);
     } catch (err) {
       setError(err.message || t('employeeDashboard.snapshotError'));
       setSnapshot(null);
@@ -72,18 +73,17 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
   const absences = snapshot?.absences || {};
   const shortfall = snapshot?.shortfall || {};
   const otSummary = snapshot?.overtime?.summary || {};
+  const hasPenalty = (absences.deduction || 0) > 0;
 
   return (
-    <section style={sectionCardStyle}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '1.25rem' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 700, color: '#1e293b' }}>
-            {t('employeeDashboard.monthlySnapshot')}
-          </h2>
-          <p style={{ margin: '0.35rem 0 0', fontSize: '0.88rem', color: '#64748b' }}>
-            {t('employeeDashboard.payPeriod')}: {periodLabel}
-          </p>
-        </div>
+    <section className="ed-snapshot" aria-labelledby="ed-snapshot-title">
+      <div style={{ marginBottom: '1.25rem' }}>
+        <h2 id="ed-snapshot-title" className="ed-section-title">
+          {t('employeeDashboard.monthlySnapshot')}
+        </h2>
+        <p className="ed-section-subtitle">
+          {t('employeeDashboard.payPeriod')}: {periodLabel}
+        </p>
       </div>
 
       {loading && (
@@ -100,51 +100,45 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
 
       {!loading && !error && snapshot && (
         <>
-          {/* Overtime */}
-          <div style={{ marginBottom: '1.75rem' }}>
-            <h3 style={{ margin: '0 0 0.85rem', fontSize: '1.05rem', fontWeight: 700, color: '#334155' }}>
+          <div className="ed-snapshot-block">
+            <h3 className="ed-snapshot-block-title">
               ⏱️ {t('employeeDashboard.myOvertime')}
             </h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
-              <div style={snapshotMetricStyle}>
-                <div style={{ fontSize: '0.82rem', color: '#64748b' }}>{t('employeeDashboard.otApproved')}</div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 700, color: '#1565c0' }}>
-                  {formatHours(otSummary.totalApproved)} {t('forms.hours')}
+            <div className="ed-metrics-row" style={{ marginBottom: '1rem' }}>
+              <div className="ed-metric">
+                <div className="ed-metric-label">{t('employeeDashboard.otApproved')}</div>
+                <div className="ed-metric-value ed-metric-value--sm">
+                  {formatHours(otSummary.totalApproved)}
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, marginLeft: '0.25rem' }}>
+                    {t('forms.hours')}
+                  </span>
                 </div>
               </div>
-              <div style={snapshotMetricStyle}>
-                <div style={{ fontSize: '0.82rem', color: '#64748b' }}>{t('employeeDashboard.otPayable')}</div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 700, color: '#2e7d32' }}>
-                  {formatHours(otSummary.totalFinalPayable)} {t('forms.hours')}
+              <div className="ed-metric">
+                <div className="ed-metric-label">{t('employeeDashboard.otPayable')}</div>
+                <div className="ed-metric-value ed-metric-value--sm ed-metric-value--success">
+                  {formatHours(otSummary.totalFinalPayable)}
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, marginLeft: '0.25rem' }}>
+                    {t('forms.hours')}
+                  </span>
                 </div>
               </div>
             </div>
             {otRows.length === 0 ? (
-              <p style={{ margin: 0, color: '#64748b', fontSize: '0.92rem' }}>
-                {t('employeeDashboard.noOtThisPeriod')}
-              </p>
+              <p className="ed-empty-hint">{t('employeeDashboard.noOtThisPeriod')}</p>
             ) : (
               otRows.map((row) => (
-                <div key={row.otDateKey || row.otDate} style={otRowCardStyle}>
-                  <div style={{ flex: '1 1 120px', fontWeight: 600, color: '#334155' }}>
-                    {formatOtDate(row.otDate)}
+                <div key={row.otDateKey || row.otDate} className="ed-ot-row">
+                  <div className="ed-ot-row-date">{formatOtDate(row.otDate)}</div>
+                  <div className="ed-ot-row-meta">
+                    {t('forms.requestedOtHours')}: <strong>{formatHours(row.requestedHours)}</strong>
                   </div>
-                  <div style={{ flex: '0 1 auto', fontSize: '0.88rem' }}>
-                    <span style={{ color: '#64748b' }}>{t('forms.requestedOtHours')}: </span>
-                    <strong>{formatHours(row.requestedHours)}</strong>
+                  <div className="ed-ot-row-meta">
+                    {t('forms.approvedOtHours')}: <strong>{formatHours(row.approvedHours)}</strong>
                   </div>
-                  <div style={{ flex: '0 1 auto', fontSize: '0.88rem' }}>
-                    <span style={{ color: '#64748b' }}>{t('forms.approvedOtHours')}: </span>
-                    <strong style={{ color: '#2e7d32' }}>{formatHours(row.approvedHours)}</strong>
-                  </div>
-                  <div style={{ flex: '1 1 200px', fontSize: '0.88rem' }}>
-                    <span style={{ color: '#64748b' }}>{t('otReports.otReason')}: </span>
-                    <span
-                      style={{
-                        fontStyle: row.hasOtFormSubmission === false ? 'italic' : 'normal',
-                        color: row.hasOtFormSubmission === false ? '#c62828' : '#475569'
-                      }}
-                    >
+                  <div className="ed-ot-row-meta">
+                    {t('otReports.otReason')}:{' '}
+                    <span className={row.hasOtFormSubmission === false ? 'ed-ot-row-meta--danger' : undefined}>
                       {row.otReason || t('otReports.noFormSubmittedReason')}
                     </span>
                   </div>
@@ -153,61 +147,54 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
             )}
           </div>
 
-          {/* Absences */}
-          <div style={{ marginBottom: '1.75rem' }}>
-            <h3 style={{ margin: '0 0 0.85rem', fontSize: '1.05rem', fontWeight: 700, color: '#334155' }}>
+          <div className="ed-snapshot-block">
+            <h3 className="ed-snapshot-block-title">
               📋 {t('employeeDashboard.myAbsences')}
             </h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-              <div style={snapshotMetricStyle}>
-                <div style={{ fontSize: '0.82rem', color: '#64748b' }}>{t('employeeDashboard.absentDays')}</div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 700, color: '#334155' }}>
-                  {absences.absentActual ?? 0}
-                </div>
+            <div className="ed-metrics-row">
+              <div className="ed-metric">
+                <div className="ed-metric-label">{t('employeeDashboard.absentDays')}</div>
+                <div className="ed-metric-value">{absences.absentActual ?? 0}</div>
               </div>
-              <div style={snapshotMetricStyle}>
-                <div style={{ fontSize: '0.82rem', color: '#64748b' }}>{t('employeeDashboard.variance')}</div>
+              <div className="ed-metric">
+                <div className="ed-metric-label">{t('employeeDashboard.variance')}</div>
                 <div
-                  style={{
-                    fontSize: '1.35rem',
-                    fontWeight: 700,
-                    color: (absences.variance || 0) > 0 ? '#c62828' : '#2e7d32'
-                  }}
+                  className={`ed-metric-value ${
+                    (absences.variance || 0) > 0 ? 'ed-metric-value--danger' : 'ed-metric-value--success'
+                  }`}
                 >
                   {(absences.variance || 0) > 0 ? '+' : ''}{absences.variance ?? 0}
                 </div>
               </div>
-              <div style={snapshotMetricStyle}>
-                <div style={{ fontSize: '0.82rem', color: '#64748b' }}>{t('employeeDashboard.penaltyDeduction')}</div>
+              <div className="ed-metric">
+                <div className="ed-metric-label">{t('employeeDashboard.penaltyDeduction')}</div>
                 <div
-                  style={{
-                    fontSize: '1.35rem',
-                    fontWeight: 700,
-                    color: (absences.deduction || 0) > 0 ? '#c62828' : '#64748b'
-                  }}
+                  className={`ed-metric-value ed-metric-value--sm ${
+                    hasPenalty ? 'ed-metric-value--danger' : 'ed-metric-value--success'
+                  }`}
                 >
-                  {(absences.deduction || 0) > 0
+                  {hasPenalty
                     ? t('employeeDashboard.deductionDays', { days: absences.deduction })
                     : t('employeeDashboard.noDeduction')}
                 </div>
               </div>
             </div>
             {absences.reason && absences.reason !== '—' && (
-              <p style={{ margin: '0.85rem 0 0', fontSize: '0.88rem', color: '#64748b', lineHeight: 1.5 }}>
-                {absences.reason}
-              </p>
+              <p className="ed-reason-text">{absences.reason}</p>
             )}
           </div>
 
-          {/* Shortfall */}
-          <div>
-            <h3 style={{ margin: '0 0 0.85rem', fontSize: '1.05rem', fontWeight: 700, color: '#334155' }}>
+          <div className="ed-snapshot-block">
+            <h3 className="ed-snapshot-block-title">
               ⏰ {t('employeeDashboard.myShortfall')}
             </h3>
-            <div style={{ ...snapshotMetricStyle, maxWidth: '280px' }}>
-              <div style={{ fontSize: '0.82rem', color: '#64748b' }}>{t('employeeDashboard.totalLateness')}</div>
-              <div style={{ fontSize: '1.35rem', fontWeight: 700, color: '#e65100' }}>
-                {shortfall.totalLatenessMinutes ?? 0} {t('employeeDashboard.minutes')}
+            <div className="ed-metric" style={{ maxWidth: '280px' }}>
+              <div className="ed-metric-label">{t('employeeDashboard.totalLateness')}</div>
+              <div className="ed-metric-value">
+                {shortfall.totalLatenessMinutes ?? 0}
+                <span style={{ fontSize: '0.875rem', fontWeight: 600, marginLeft: '0.25rem' }}>
+                  {t('employeeDashboard.minutes')}
+                </span>
               </div>
             </div>
           </div>

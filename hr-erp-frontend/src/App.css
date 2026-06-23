@@ -2821,15 +2821,15 @@
   color: #581c87 !important;
 }
 
-/* Employee insights alert cards — black text on light backgrounds */
-.insights-alert-text,
-.insights-alert-text * {
+/* Employee insights alert cards — dark text on light backgrounds (light mode only) */
+[data-theme='light'] .insights-alert-text,
+[data-theme='light'] .insights-alert-text * {
   color: #000000 !important;
   text-shadow: none !important;
 }
 
-.elegant-card #employee-insights-alerts,
-.elegant-card #employee-insights-alerts * {
+[data-theme='light'] .elegant-card #employee-insights-alerts,
+[data-theme='light'] .elegant-card #employee-insights-alerts * {
   color: #000000 !important;
   text-shadow: none !important;
 }
@@ -3065,5 +3065,53 @@
 [data-theme='light'] .saas-leaves-report .saas-panel-heading {
   color: #0f172a !important;
   text-shadow: none !important;
+}
+
+/* Employee insights table — dark mode readability (beats legacy GlobalStyles white-text rules) */
+[data-theme='dark'] .modern-dash #employee-insights-table td,
+[data-theme='dark'] .modern-dash #employee-insights-table td div,
+[data-theme='dark'] .modern-dash .saas-insights-table td,
+[data-theme='dark'] .modern-dash .dash-insights-td,
+[data-theme='dark'] .modern-dash .dash-insights-emp-name {
+  color: #ffffff !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .modern-dash .dash-insights-emp-email {
+  color: #94a3b8 !important;
+}
+
+[data-theme='dark'] .modern-dash #employee-insights-table thead tr,
+[data-theme='dark'] .modern-dash .saas-insights-table thead tr {
+  background: rgba(15, 23, 42, 0.5) !important;
+}
+
+[data-theme='dark'] .modern-dash #employee-insights-table th,
+[data-theme='dark'] .modern-dash .dash-insights-th {
+  color: #94a3b8 !important;
+  background: transparent !important;
+}
+
+[data-theme='dark'] .modern-dash .dash-insights-table-wrap {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+[data-theme='light'] .modern-dash #employee-insights-table td,
+[data-theme='light'] .modern-dash .dash-insights-td,
+[data-theme='light'] .modern-dash .dash-insights-emp-name {
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .modern-dash .dash-insights-emp-email {
+  color: #64748b !important;
+}
+
+[data-theme='dark'] #employee-insights-alerts .dash-insights-alert-title {
+  color: #f8fafc !important;
+}
+
+[data-theme='dark'] #employee-insights-alerts .dash-insights-alert-desc {
+  color: #94a3b8 !important;
 }
 

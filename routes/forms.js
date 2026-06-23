@@ -1299,8 +1299,8 @@ router.get('/vacation-days-report', auth, async (req, res) => {
         }
         // Use lean() for faster queries - returns plain JS objects instead of Mongoose documents
         const users = await User.find(
-            { status: 'active' }, 
-            '_id name email department vacationDaysLeft excuseRequestsLeft'
+            { status: 'active' },
+            '_id name email department vacationDaysLeft casualDaysLeft excuseRequestsLeft'
         ).lean();
         res.json(users);
     } catch (err) {

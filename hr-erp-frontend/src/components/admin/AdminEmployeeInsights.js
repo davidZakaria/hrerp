@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { LOW_ANNUAL_BALANCE } from '../../constants/leavePolicy';
 
 function badgeClass(kind) {
   const map = {
@@ -12,7 +13,7 @@ function badgeClass(kind) {
 }
 
 function vacationBadgeClass(days) {
-  return days < 5 ? badgeClass('warn') : badgeClass('good');
+  return days <= LOW_ANNUAL_BALANCE ? badgeClass('warn') : badgeClass('good');
 }
 
 function absenceBadgeClass(days) {
@@ -171,52 +172,52 @@ export default function AdminEmployeeInsights({
             ))}
           </div>
 
-          <div className="dash-insights-table-wrap">
+          <div className="dash-insights-table-wrap saas-insights-table-wrap">
             <div className="dash-insights-table-head">
-              <h3>All Employees Data</h3>
+              <h3 className="!text-slate-900 dark:!text-white">All Employees Data</h3>
               <span className="dash-insights-table-meta">
                 {employeeSummary.allEmployees?.length || 0} employees |{' '}
                 {employeeSummary.periodLabel || employeeSummary.currentMonth}
               </span>
             </div>
             <div className="dash-insights-table-scroll">
-              <table id="employee-insights-table">
+              <table id="employee-insights-table" className="ot-reconciliation-table saas-insights-table">
                 <thead>
                   <tr>
-                    <th style={{ textAlign: 'left' }}>Employee</th>
-                    <th style={{ textAlign: 'left' }}>Department</th>
-                    <th style={{ textAlign: 'center' }}>Vacation Days</th>
-                    <th style={{ textAlign: 'center' }}>Present</th>
-                    <th style={{ textAlign: 'center' }}>Absent</th>
-                    <th style={{ textAlign: 'center' }}>Late</th>
-                    <th style={{ textAlign: 'center' }}>{t('adminDashboard.insightsColDeductionDays')}</th>
-                    <th style={{ textAlign: 'center' }}>{t('adminDashboard.insightsColOtHours')}</th>
-                    <th style={{ textAlign: 'center' }}>Attendance %</th>
+                    <th className="dash-insights-th">Employee</th>
+                    <th className="dash-insights-th">Department</th>
+                    <th className="dash-insights-th dash-insights-th--center">Vacation Days</th>
+                    <th className="dash-insights-th dash-insights-th--center">Present</th>
+                    <th className="dash-insights-th dash-insights-th--center">Absent</th>
+                    <th className="dash-insights-th dash-insights-th--center">Late</th>
+                    <th className="dash-insights-th dash-insights-th--center">{t('adminDashboard.insightsColDeductionDays')}</th>
+                    <th className="dash-insights-th dash-insights-th--center">{t('adminDashboard.insightsColOtHours')}</th>
+                    <th className="dash-insights-th dash-insights-th--center">Attendance %</th>
                   </tr>
                 </thead>
                 <tbody>
                   {employeeSummary.allEmployees?.map((emp) => (
                     <tr key={emp._id}>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{emp.name}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{emp.email}</div>
+                      <td className="dash-insights-td">
+                        <div className="dash-insights-emp-name">{emp.name}</div>
+                        <div className="dash-insights-emp-email">{emp.email}</div>
                       </td>
-                      <td>{emp.department}</td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td className="dash-insights-td">{emp.department}</td>
+                      <td className="dash-insights-td dash-insights-td--center">
                         <span className={vacationBadgeClass(emp.vacationDaysLeft)}>{emp.vacationDaysLeft}</span>
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td className="dash-insights-td dash-insights-td--center">
                         <span className={badgeClass('good')}>{emp.presentDays || 0}</span>
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td className="dash-insights-td dash-insights-td--center">
                         <span className={absenceBadgeClass(emp.absentDays || 0)}>{emp.absentDays || 0}</span>
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td className="dash-insights-td dash-insights-td--center">
                         <span className={(emp.lateDays || 0) > 5 ? badgeClass('warn') : badgeClass('neutral')}>
                           {emp.lateDays || 0}
                         </span>
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td className="dash-insights-td dash-insights-td--center">
                         <span
                           className={(emp.deductions || 0) > 0 ? badgeClass('bad') : badgeClass('neutral')}
                           title={emp.deductions > 0 ? `A: ${emp.pillarADays} | B: ${emp.pillarBDays} | C: ${emp.pillarCDays}` : ''}
@@ -224,12 +225,12 @@ export default function AdminEmployeeInsights({
                           {emp.deductions > 0 ? Number(emp.deductions).toFixed(4) : '0'}
                         </span>
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td className="dash-insights-td dash-insights-td--center">
                         <span className={(emp.totalOtHours ?? 0) > 0 ? badgeClass('good') : badgeClass('neutral')}>
                           {Number(emp.totalOtHours ?? 0).toFixed(2)}
                         </span>
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td className="dash-insights-td dash-insights-td--center">
                         <span className={attendanceBadgeClass(emp.attendanceRate)}>
                           {emp.attendanceRate !== '-' ? `${emp.attendanceRate}%` : 'No data'}
                         </span>

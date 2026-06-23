@@ -26,6 +26,8 @@ import UserAvatar from './UserAvatar';
 import DashboardWelcomeCard from './dashboard/DashboardWelcomeCard';
 import { DashboardStatCard, DashboardStatGrid } from './dashboard/DashboardStatCard';
 import AdminEmployeeInsights from './admin/AdminEmployeeInsights';
+import VacationReportModal from './admin/VacationReportModal';
+import VacationManagerModal from './admin/VacationManagerModal';
 import {
   filterFormsByManagementMonths,
   currentYearMonth,
@@ -81,24 +83,12 @@ const AdminDashboard = () => {
   const [showVacationManager, setShowVacationManager] = useState(false);
   const [showReport, setShowReport] = useState(false);
   
-  // Reports state
-  const [reportData, setReportData] = useState([]);
-  const [reportLoading, setReportLoading] = useState(false);
-  const [reportError, setReportError] = useState('');
-  
   // Employee Summary state (for Overview insights)
   const [employeeSummary, setEmployeeSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [insightsPeriodMonth, setInsightsPeriodMonth] = useState(() => getCurrentPeriodClosingMonthKey());
   
   // Vacation Manager state
-  const [allEmployees, setAllEmployees] = useState([]);
-  const [vacationEdits, setVacationEdits] = useState({});
-  const [vacationManagerLoading, setVacationManagerLoading] = useState(false);
-  const [vacationManagerError, setVacationManagerError] = useState('');
-  const [vacationManagerSuccess, setVacationManagerSuccess] = useState('');
-  const [vacationManagerSearch, setVacationManagerSearch] = useState('');
-  
   // Create User state
   const [newUser, setNewUser] = useState({ 
     name: '', 
@@ -827,107 +817,8 @@ const AdminDashboard = () => {
     }
   };
 
-  // Vacation Management Functions
-  const fetchVacationDaysReport = async () => {
-    setReportLoading(true);
-    setReportError('');
-    const token = localStorage.getItem('token');
-    try {
-      const res = await fetch(`${API_URL}/api/forms/vacation-days-report`, {
-        headers: { 'x-auth-token': token }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setReportData(data);
-      } else {
-        setReportError(data.msg || 'Failed to fetch report.');
-      }
-    } catch (err) {
-      setReportError('Error connecting to server.');
-    }
-    setReportLoading(false);
-  };
-
-  const fetchAllEmployees = async () => {
-    setVacationManagerLoading(true);
-    setVacationManagerError('');
-    setVacationManagerSuccess('');
-    const token = localStorage.getItem('token');
-    try {
-      const res = await fetch(`${API_URL}/api/forms/vacation-days-report`, {
-        headers: { 'x-auth-token': token }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setAllEmployees(data);
-        setVacationEdits({});
-      } else {
-        setVacationManagerError(data.msg || 'Failed to fetch employees.');
-      }
-    } catch (err) {
-      setVacationManagerError('Error connecting to server.');
-    }
-    setVacationManagerLoading(false);
-  };
-
-  const handleVacationEdit = (userId, value) => {
-    setVacationEdits(edits => ({ ...edits, [userId]: value }));
-  };
-
-  const handleVacationSave = async (userId) => {
-    setVacationManagerError('');
-    setVacationManagerSuccess('');
-    const token = localStorage.getItem('token');
-    const newDays = Number(vacationEdits[userId]);
-    if (isNaN(newDays) || newDays < 0) {
-      setVacationManagerError('Invalid vacation days value.');
-      return;
-    }
-    try {
-      const res = await fetch(`${API_URL}/api/users/${userId}/vacation-days`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-auth-token': token
-        },
-        body: JSON.stringify({ vacationDaysLeft: newDays })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setVacationManagerSuccess('Vacation days updated.');
-        setAllEmployees(emps => emps.map(emp => emp._id === userId ? { ...emp, vacationDaysLeft: newDays } : emp));
-      } else {
-        setVacationManagerError(data.msg || 'Failed to update vacation days.');
-      }
-    } catch (err) {
-      setVacationManagerError('Error connecting to server.');
-    }
-  };
-
   const handleShowReport = () => {
     setShowReport(true);
-    fetchVacationDaysReport();
-  };
-
-  // Simple and reliable print function
-  const handlePrintSimple = () => {
-    logger.log('🖨️ Simple print function called');
-    
-    if (!reportData || reportData.length === 0) {
-      alert('No report data available to print.');
-      return;
-    }
-
-    const reportHTML = `<!DOCTYPE html><html><head><title>Vacation Days Report</title><style>body{font-family:Arial,sans-serif;margin:20px;color:#333}.header{text-align:center;margin-bottom:30px;border-bottom:2px solid #3498db;padding-bottom:20px}.title{font-size:24px;font-weight:bold;margin:0}.summary{display:flex;justify-content:space-around;margin:20px 0;background:#f8f9fa;padding:15px}.summary-item{text-align:center}.summary-number{font-size:24px;font-weight:bold;color:#3498db}.employee{border:1px solid #ddd;margin:10px 0;padding:15px;page-break-inside:avoid}.employee-name{font-weight:bold;font-size:16px}.badge{padding:4px 8px;border-radius:4px;color:white;font-size:12px}.badge-good{background:#27ae60}.badge-warning{background:#f39c12}.badge-critical{background:#e74c3c}@media print{.badge{-webkit-print-color-adjust:exact;color-adjust:exact}}</style></head><body><div class="header"><h1 class="title">🏖️ Vacation Days Report</h1><p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p></div><div class="summary"><div class="summary-item"><div class="summary-number">${reportData.length}</div><div>Total Employees</div></div><div class="summary-item"><div class="summary-number">${reportData.filter(emp => emp.vacationDaysLeft === 0).length}</div><div>No Days Left</div></div><div class="summary-item"><div class="summary-number">${Math.round(reportData.reduce((acc, emp) => acc + emp.vacationDaysLeft, 0) / reportData.length) || 0}</div><div>Average Days</div></div></div>${reportData.map(emp => `<div class="employee"><div class="employee-name">${emp.name}</div><div><strong>Email:</strong> ${emp.email}</div><div><strong>Department:</strong> ${emp.department}</div><div><strong>Vacation Days:</strong> <span class="badge ${emp.vacationDaysLeft === 0 ? 'badge-critical' : emp.vacationDaysLeft <= 5 ? 'badge-warning' : 'badge-good'}">${emp.vacationDaysLeft} days</span></div></div>`).join('')}<script>window.onload=function(){setTimeout(function(){window.print();setTimeout(function(){window.close()},1000)},500)}</script></body></html>`;
-
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    if (printWindow) {
-      printWindow.document.write(reportHTML);
-      printWindow.document.close();
-      logger.log('✅ Print window opened');
-    } else {
-      alert('Please allow pop-ups to enable printing.');
-    }
   };
 
   const filteredUsers = useMemo(() => {
@@ -1217,10 +1108,7 @@ const AdminDashboard = () => {
                 </button>
                 <button 
                   className="btn-elegant"
-                  onClick={() => {
-                    setShowVacationManager(true);
-                    fetchAllEmployees();
-                  }}
+                  onClick={() => setShowVacationManager(true)}
                 >
                   {t('adminDashboard.manageVacation')}
                 </button>
@@ -1621,15 +1509,11 @@ const AdminDashboard = () => {
                   role="button"
                   tabIndex={0}
                   className="vacation-action-card manage-card"
-                  onClick={() => {
-                    setShowVacationManager(true);
-                    fetchAllEmployees();
-                  }}
+                  onClick={() => setShowVacationManager(true)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       setShowVacationManager(true);
-                      fetchAllEmployees();
                     }
                   }}
                 >
@@ -2774,253 +2658,8 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Vacation Manager Modal */}
-      {showVacationManager && (
-        <div className="modal-elegant" onClick={() => setShowVacationManager(false)}>
-          <div className="vacation-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="vacation-modal-header">
-              <div className="modal-title-section">
-                <div className="modal-icon">🏖️</div>
-                <div>
-                  <h2 className="vacation-modal-title">Manage Vacation Days</h2>
-                  <p className="vacation-modal-subtitle">Update employee vacation balances</p>
-                </div>
-              </div>
-              <button 
-                className="vacation-close-btn" 
-                onClick={() => setShowVacationManager(false)}
-                title="Close"
-              >
-                •
-              </button>
-            </div>
-
-            <div className="vacation-modal-search">
-              <input
-                type="text"
-                placeholder="🔍 Search by employee name..."
-                value={vacationManagerSearch}
-                onChange={e => setVacationManagerSearch(e.target.value)}
-                className="vacation-search-input"
-              />
-            </div>
-
-            {vacationManagerLoading && (
-              <div className="vacation-loading">
-                <div className="spinner-elegant"></div>
-                <p>Loading employees...</p>
-              </div>
-            )}
-
-            {vacationManagerError && (
-              <div className="vacation-message error">
-                <span className="message-icon">⚠️</span>
-                {vacationManagerError}
-              </div>
-            )}
-
-            {vacationManagerSuccess && (
-              <div className="vacation-message success">
-                <span className="message-icon">✅</span>
-                {vacationManagerSuccess}
-              </div>
-            )}
-            
-            <div className="vacation-employees-grid">
-              {allEmployees.filter(emp => emp.name.toLowerCase().includes(vacationManagerSearch.toLowerCase())).map(emp => (
-                <div key={emp._id} className="vacation-employee-card">
-                  <div className="vacation-card-header">
-                    <div className="employee-avatar">
-                      👤
-                    </div>
-                    <div className="employee-basic-info">
-                      <h4 className="employee-card-name">{emp.name}</h4>
-                      <p className="employee-card-email">{emp.email}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="vacation-card-content">
-                    <div className="vacation-info-row">
-                      <span className="vacation-info-label">Department:</span>
-                      <span className="vacation-info-value">{emp.department}</span>
-                    </div>
-                    
-                    <div className="vacation-days-section">
-                      <label className="vacation-days-label">Vacation Days Balance:</label>
-                      <div className="vacation-input-group">
-                        <input
-                          type="number"
-                          min="0"
-                          max="50"
-                          value={vacationEdits[emp._id] !== undefined ? vacationEdits[emp._id] : emp.vacationDaysLeft}
-                          onChange={e => handleVacationEdit(emp._id, e.target.value)}
-                          className="vacation-days-input"
-                        />
-                        <span className="vacation-input-suffix">days</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="vacation-card-actions">
-                    <button 
-                      className="btn-vacation-save" 
-                      onClick={() => handleVacationSave(emp._id)}
-                    >
-                      💾 Save Changes
-                    </button>
-                  </div>
-                </div>
-              ))}
-              
-              {allEmployees.filter(emp => emp.name.toLowerCase().includes(vacationManagerSearch.toLowerCase())).length === 0 && (
-                <div className="vacation-no-results">
-                  <div className="no-results-icon">👥</div>
-                  <h3>No employees found</h3>
-                  <p>Try adjusting your search criteria</p>
-                </div>
-              )}
-            </div>
-            
-            <div className="vacation-modal-footer">
-              <button 
-                className="btn-vacation-close"
-                onClick={() => setShowVacationManager(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Vacation Days Report Modal */}
-      {showReport && (
-        <div className="modal-elegant">
-          <div className="report-modal-content">
-            <div className="report-modal-header">
-              <div className="modal-title-section">
-                <div className="modal-icon">📊</div>
-                <div>
-                  <h2 className="report-modal-title">Vacation Days Report</h2>
-                  <p className="report-modal-subtitle">Comprehensive overview of employee vacation balances</p>
-                </div>
-              </div>
-              <div className="report-actions">
-                <button 
-                  className="btn-print-report"
-                  onClick={handlePrintSimple}
-                >
-                  🖨️ Print Report
-                </button>
-                <button 
-                  className="report-close-btn" 
-                  onClick={() => setShowReport(false)}
-                  title="Close"
-                >
-                  •
-                </button>
-              </div>
-            </div>
-
-            {reportLoading && (
-              <div className="report-loading">
-                <div className="spinner-elegant"></div>
-                <p>Generating report...</p>
-              </div>
-            )}
-
-            {reportError && (
-              <div className="report-message error">
-                <span className="message-icon">⚠️</span>
-                {reportError}
-              </div>
-            )}
-            
-            {!reportLoading && !reportError && (
-              <>
-                <div className="report-summary">
-                  <div className="summary-card">
-                    <div className="summary-icon">👥</div>
-                    <div className="summary-content">
-                      <div className="summary-number">{reportData.length}</div>
-                      <div className="summary-label">Total Employees</div>
-                    </div>
-                  </div>
-                  <div className="summary-card">
-                    <div className="summary-icon">⚠️</div>
-                    <div className="summary-content">
-                      <div className="summary-number">{reportData.filter(emp => emp.vacationDaysLeft === 0).length}</div>
-                      <div className="summary-label">No Days Left</div>
-                    </div>
-                  </div>
-                  <div className="summary-card">
-                    <div className="summary-icon">🏖️</div>
-                    <div className="summary-content">
-                      <div className="summary-number">{Math.round(reportData.reduce((acc, emp) => acc + emp.vacationDaysLeft, 0) / reportData.length) || 0}</div>
-                      <div className="summary-label">Average Days</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="report-employees-grid">
-                  {reportData.map(employee => (
-                    <div key={employee._id} className="report-employee-card">
-                      <div className="report-card-header">
-                        <div className="employee-avatar">
-                          👤
-                        </div>
-                        <div className="employee-basic-info">
-                          <h4 className="employee-card-name">{employee.name}</h4>
-                          <p className="employee-card-email">{employee.email}</p>
-                        </div>
-                        <div className={`vacation-badge ${employee.vacationDaysLeft === 0 ? 'critical' : employee.vacationDaysLeft <= 5 ? 'warning' : 'good'}`}>
-                          {Number(employee.vacationDaysLeft).toFixed(1)} days
-                        </div>
-                      </div>
-                      
-                      <div className="report-card-content">
-                        <div className="report-info-row">
-                          <span className="report-info-label">Department:</span>
-                          <span className="report-info-value">{employee.department}</span>
-                        </div>
-                        
-                        <div className="vacation-progress-section">
-                          <div className="vacation-progress-label">
-                            <span>Vacation Days Balance</span>
-                            <span className="vacation-status">
-                              {employee.vacationDaysLeft === 0 ? '❌ Depleted' : 
-                               employee.vacationDaysLeft <= 5 ? '⚠️ Low' : '✅ Available'}
-                            </span>
-                          </div>
-                          <div className="vacation-progress-bar">
-                            <div 
-                              className="vacation-progress-fill"
-                              style={{ 
-                                width: `${Math.min((employee.vacationDaysLeft / 30) * 100, 100)}%`,
-                                backgroundColor: employee.vacationDaysLeft === 0 ? '#f44336' : 
-                                               employee.vacationDaysLeft <= 5 ? '#ff9800' : '#4caf50'
-                              }}
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-            
-            <div className="report-modal-footer">
-              <button 
-                className="btn-report-close"
-                onClick={() => setShowReport(false)}
-              >
-                Close Report
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <VacationManagerModal open={showVacationManager} onClose={() => setShowVacationManager(false)} />
+      <VacationReportModal open={showReport} onClose={() => setShowReport(false)} />
 
       {/* Message Notification */}
       {message && (

@@ -282,41 +282,41 @@ const DetailedLeavesReport = () => {
             <table className="ot-reconciliation-table report-scroll-table">
               <thead>
                 <tr>
-                  <th>{t('detailedLeavesReport.employeeCode')}</th>
+                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.employeeCode')}</th>
                   <th>{t('detailedLeavesReport.employeeName')}</th>
-                  <th>{t('detailedLeavesReport.jobTitle')}</th>
-                  <th>{t('detailedLeavesReport.department')}</th>
-                  <th>{t('detailedLeavesReport.location')}</th>
-                  <th>{t('detailedLeavesReport.approvedAnnual', { quota: annualQuota })}</th>
-                  <th>{t('detailedLeavesReport.approvedCasual', { quota: casualQuota })}</th>
-                  <th>{t('detailedLeavesReport.approvedSick')}</th>
-                  <th>{t('detailedLeavesReport.absentRaw')}</th>
-                  <th>{t('detailedLeavesReport.absentActual')}</th>
-                  <th>{t('detailedLeavesReport.variance')}</th>
-                  <th>{t('detailedLeavesReport.deduction')}</th>
-                  <th>{t('detailedLeavesReport.reason')}</th>
+                  <th className="detailed-leaves-meta-col">{t('detailedLeavesReport.jobTitle')}</th>
+                  <th className="detailed-leaves-meta-col">{t('detailedLeavesReport.department')}</th>
+                  <th className="detailed-leaves-meta-col">{t('detailedLeavesReport.location')}</th>
+                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.approvedAnnual', { quota: annualQuota })}</th>
+                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.approvedCasual', { quota: casualQuota })}</th>
+                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.approvedSick')}</th>
+                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.absentRaw')}</th>
+                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.absentActual')}</th>
+                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.variance')}</th>
+                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.deduction')}</th>
+                  <th className="detailed-leaves-reason-col">{t('detailedLeavesReport.reason')}</th>
                 </tr>
               </thead>
               <tbody>
                 {pageRows.map((row) => (
                   <tr key={`${row.employeeCode}-${row.name}`}>
-                    <td>{row.employeeCode || '—'}</td>
+                    <td className="detailed-leaves-compact-col">{row.employeeCode || '—'}</td>
                     <td className="!text-slate-900 dark:!text-white" style={{ fontWeight: 600 }}>{row.name || '—'}</td>
-                    <td>{row.jobTitle || '—'}</td>
-                    <td>{row.department || '—'}</td>
-                    <td>{row.location || '—'}</td>
-                    <td>{formatQuota(row.approvedAnnual, annualQuota)}</td>
-                    <td>{formatQuota(row.approvedCasual, casualQuota)}</td>
-                    <td>{formatDays(row.approvedSick)}</td>
-                    <td>{formatDays(row.absentRaw)}</td>
-                    <td>{formatDays(row.absentActual)}</td>
-                    <td className={varianceClass(row.variance)}>
+                    <td className="detailed-leaves-meta-col">{row.jobTitle || '—'}</td>
+                    <td className="detailed-leaves-meta-col">{row.department || '—'}</td>
+                    <td className="detailed-leaves-meta-col">{row.location || '—'}</td>
+                    <td className="detailed-leaves-compact-col">{formatQuota(row.approvedAnnual, annualQuota)}</td>
+                    <td className="detailed-leaves-compact-col">{formatQuota(row.approvedCasual, casualQuota)}</td>
+                    <td className="detailed-leaves-compact-col">{formatDays(row.approvedSick)}</td>
+                    <td className="detailed-leaves-compact-col">{formatDays(row.absentRaw)}</td>
+                    <td className="detailed-leaves-compact-col">{formatDays(row.absentActual)}</td>
+                    <td className={`detailed-leaves-compact-col ${varianceClass(row.variance)}`}>
                       {formatDays(row.variance)}
                     </td>
-                    <td className={deductionClass(row.deduction)}>
+                    <td className={`detailed-leaves-compact-col ${deductionClass(row.deduction)}`}>
                       {formatDays(row.deduction)}
                     </td>
-                    <td>{row.reason || '—'}</td>
+                    <td className="detailed-leaves-reason-col !text-slate-900 dark:!text-white">{row.reason || '—'}</td>
                   </tr>
                 ))}
               </tbody>

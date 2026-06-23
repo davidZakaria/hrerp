@@ -684,6 +684,37 @@
   border-color: #334155 !important;
 }
 
+/* Detailed leaves report — column widths (reason needs room to wrap naturally) */
+.saas-leaves-report .report-scroll-table {
+  min-width: 1320px;
+}
+
+.saas-leaves-report .detailed-leaves-compact-col {
+  min-width: 5.75rem;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.saas-leaves-report .detailed-leaves-meta-col {
+  min-width: 7.5rem;
+  max-width: 11rem;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.saas-leaves-report .detailed-leaves-reason-col {
+  min-width: 22rem;
+  max-width: 32rem;
+  width: 22rem;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.45;
+  vertical-align: top;
+  text-align: left;
+  hyphens: auto;
+}
+
 /* ===== Vacation Days Report modal ===== */
 .saas-vacation-modal-overlay {
   padding: 1rem;

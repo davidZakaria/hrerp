@@ -788,6 +788,8 @@
     "requestedOt": "Requested OT",
     "finalOtPreview": "Final OT (preview)",
     "hasForm": "OT Form",
+    "otReason": "REASON",
+    "noFormSubmittedReason": "No form submitted",
     "workday": "Workday",
     "yes": "Yes",
     "no": "No",

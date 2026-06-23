@@ -32,6 +32,26 @@ function formatHours(value) {
   return Number(value).toFixed(2);
 }
 
+const OT_REASON_NO_FORM = 'No form submitted';
+
+function isMissingOtReason(row) {
+  return row?.hasOtFormSubmission === false || row?.otReason === OT_REASON_NO_FORM;
+}
+
+function otReasonStyle(row) {
+  if (isMissingOtReason(row)) {
+    return { color: '#f87171', fontStyle: 'italic', opacity: 0.9 };
+  }
+  return { color: '#e2e8f0' };
+}
+
+function displayOtReason(row, t) {
+  if (isMissingOtReason(row)) {
+    return t('otReports.noFormSubmittedReason');
+  }
+  return row.otReason || '—';
+}
+
 const OtReconciliationReports = () => {
   const { t } = useTranslation();
   const {
@@ -297,6 +317,7 @@ const OtReconciliationReports = () => {
       t('otReports.fingerprintActuals'),
       t('otReports.requestedOt'),
       t('otReports.hasForm'),
+      t('otReports.otReason'),
       t('otReports.approvedOt'),
       t('otReports.variance'),
       t('otReports.finalOtPreview')
@@ -316,6 +337,7 @@ const OtReconciliationReports = () => {
       formatHours(row.actualPunchingHours),
       row.requestedHours != null ? formatHours(row.requestedHours) : '',
       row.hasApprovedForm ? yes : no,
+      displayOtReason(row, t),
       formatHours(row.approvedHours),
       formatHours(row.variance),
       formatHours(row.finalPayableHours)
@@ -762,6 +784,7 @@ const OtReconciliationReports = () => {
                                       <th>{t('otReports.fingerprintActuals')}</th>
                                       <th>{t('otReports.requestedOt')}</th>
                                       <th>{t('otReports.hasForm')}</th>
+                                      <th>{t('otReports.otReason')}</th>
                                       <th>{t('otReports.approvedOt')}</th>
                                       <th>{t('otReports.variance')}</th>
                                       <th>{t('otReports.finalOtPreview')}</th>
@@ -778,6 +801,7 @@ const OtReconciliationReports = () => {
                                         <td>{formatHours(row.actualPunchingHours)}</td>
                                         <td>{row.requestedHours != null ? formatHours(row.requestedHours) : '—'}</td>
                                         <td>{row.hasApprovedForm ? t('otReports.yes') : t('otReports.no')}</td>
+                                        <td style={otReasonStyle(row)}>{displayOtReason(row, t)}</td>
                                         <td>{formatHours(row.approvedHours)}</td>
                                         <td style={varianceStyle(row.varianceFlag)}>
                                           {row.variance > 0 ? '+' : ''}{formatHours(row.variance)}
@@ -795,6 +819,7 @@ const OtReconciliationReports = () => {
                                       <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(emp.totalFingerprint)}</td>
                                       <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(emp.totalRequested)}</td>
                                       <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{emp.daysWithForm}</td>
+                                      <td style={{ background: 'rgba(30, 58, 95, 0.9)' }} />
                                       <td style={{ fontWeight: 700, background: 'rgba(30, 58, 95, 0.9)' }}>{formatHours(emp.totalApproved)}</td>
                                       <td style={{ ...varianceTotalStyle(emp.totalVariance), background: 'rgba(30, 58, 95, 0.9)' }}>
                                         {emp.totalVariance > 0 ? '+' : ''}{formatHours(emp.totalVariance)}
@@ -876,6 +901,7 @@ const OtReconciliationReports = () => {
                     <>
                       <th>{t('otReports.requestedOt')}</th>
                       <th>{t('otReports.hasForm')}</th>
+                      <th>{t('otReports.otReason')}</th>
                     </>
                   )}
                   <th>{t('otReports.approvedOt')}</th>
@@ -906,6 +932,7 @@ const OtReconciliationReports = () => {
                       <>
                         <td>{row.requestedHours != null ? formatHours(row.requestedHours) : '—'}</td>
                         <td>{row.hasApprovedForm ? t('otReports.yes') : t('otReports.no')}</td>
+                        <td style={otReasonStyle(row)}>{displayOtReason(row, t)}</td>
                       </>
                     )}
                     <td>{formatHours(row.approvedHours)}</td>

@@ -38,7 +38,7 @@ async function buildOtReconciliationPayload(rangeStart, rangeEnd, { userId = nul
     const userScope = userId ? { user: userId } : {};
     const dateFilter = { extraHoursDate: { $gte: rangeStart, $lte: rangeEnd } };
 
-    const [attendanceRecords, forms, pendingHrCount, pendingManagerCount, totalOtInRange] = await Promise.all([
+    const [attendanceRecords, forms, otFormsForReason, pendingHrCount, pendingManagerCount, totalOtInRange] = await Promise.all([
         Attendance.find({
             date: { $gte: rangeStart, $lte: rangeEnd },
             clockIn: { $exists: true, $ne: '' },
@@ -48,6 +48,14 @@ async function buildOtReconciliationPayload(rangeStart, rangeEnd, { userId = nul
         Form.find({
             type: 'extra_hours',
             status: 'approved',
+            ...dateFilter,
+            ...userScope
+        })
+            .populate('user', USER_POPULATE)
+            .sort({ extraHoursDate: 1 }),
+        Form.find({
+            type: 'extra_hours',
+            status: { $ne: 'rejected' },
             ...dateFilter,
             ...userScope
         })
@@ -78,6 +86,15 @@ async function buildOtReconciliationPayload(rangeStart, rangeEnd, { userId = nul
         formMap.set(otReconciliationDateKey(form.user._id, form.extraHoursDate), form);
     }
 
+    const reasonFormMap = new Map();
+    for (const form of otFormsForReason) {
+        if (!form.user?._id) continue;
+        const key = otReconciliationDateKey(form.user._id, form.extraHoursDate);
+        if (!reasonFormMap.has(key)) {
+            reasonFormMap.set(key, form);
+        }
+    }
+
     const rowMap = new Map();
 
     for (const att of attendanceRecords) {
@@ -87,10 +104,12 @@ async function buildOtReconciliationPayload(rangeStart, rangeEnd, { userId = nul
 
         const key = otReconciliationDateKey(att.user._id, att.date);
         const form = formMap.get(key) || null;
+        const reasonForm = reasonFormMap.get(key) || null;
         rowMap.set(
             key,
             buildOtReconciliationRow({
                 form,
+                reasonForm,
                 attendanceRecord: att,
                 user: att.user,
                 otDate: att.date,
@@ -107,6 +126,25 @@ async function buildOtReconciliationPayload(rangeStart, rangeEnd, { userId = nul
             key,
             buildOtReconciliationRow({
                 form,
+                reasonForm: reasonFormMap.get(key) || form,
+                attendanceRecord: null,
+                user: form.user,
+                actualHours: 0,
+                otDate: form.extraHoursDate,
+                rowKey: key
+            })
+        );
+    }
+
+    for (const form of otFormsForReason) {
+        if (!form.user?._id) continue;
+        const key = otReconciliationDateKey(form.user._id, form.extraHoursDate);
+        if (rowMap.has(key)) continue;
+        rowMap.set(
+            key,
+            buildOtReconciliationRow({
+                form: formMap.get(key) || null,
+                reasonForm: form,
                 attendanceRecord: null,
                 user: form.user,
                 actualHours: 0,
@@ -126,6 +164,7 @@ async function buildOtReconciliationPayload(rangeStart, rangeEnd, { userId = nul
                 rowMap.get(key) ||
                 buildOtReconciliationRow({
                     form,
+                    reasonForm: reasonFormMap.get(key) || form,
                     attendanceRecord: null,
                     user: form.user,
                     actualHours: 0,

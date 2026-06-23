@@ -10,6 +10,7 @@ function isWeekendLocal(date) {
 }
 
 const STANDARD_WORK_MINUTES = 8 * 60;
+const OT_REASON_NO_FORM = 'No form submitted';
 
 function roundHours(hours) {
     return Math.round(hours * 100) / 100;
@@ -94,7 +95,13 @@ function reconcileOvertime(actualPunchingHours, approvedHours) {
     };
 }
 
-function buildOtReconciliationRow({ form, attendanceRecord, user, actualHours, otDate, rowKey }) {
+function resolveOtReason(form) {
+    if (!form) return OT_REASON_NO_FORM;
+    const text = String(form.reason || form.extraHoursDescription || '').trim();
+    return text || '—';
+}
+
+function buildOtReconciliationRow({ form, reasonForm, attendanceRecord, user, actualHours, otDate, rowKey }) {
     const fp = attendanceRecord
         ? getFingerprintOtForAttendance(attendanceRecord)
         : { minutes: 0, hours: actualHours != null ? Number(actualHours) : 0 };
@@ -108,6 +115,8 @@ function buildOtReconciliationRow({ form, attendanceRecord, user, actualHours, o
         ? punchDurationMinutes(attendanceRecord.clockIn, attendanceRecord.clockOut)
         : null;
 
+    const otReason = resolveOtReason(reasonForm || form);
+
     return {
         rowKey: rowKey || `${user._id}_${dateKeyFromDate(otDate)}`,
         formId: form?._id || null,
@@ -118,8 +127,10 @@ function buildOtReconciliationRow({ form, attendanceRecord, user, actualHours, o
         location: user.location || '',
         otDate,
         otDateKey: dateKeyFromDate(otDate),
-        requestedHours: form?.extraHoursWorked ?? null,
+        requestedHours: form?.extraHoursWorked ?? reasonForm?.extraHoursWorked ?? null,
         hasApprovedForm: !!form,
+        otReason,
+        hasOtFormSubmission: otReason !== OT_REASON_NO_FORM,
         clockIn: attendanceRecord?.clockIn || null,
         clockOut: attendanceRecord?.clockOut || null,
         totalPunchedHours: totalPunchedMinutes != null
@@ -137,8 +148,10 @@ function otReconciliationDateKey(userId, date) {
 
 module.exports = {
     STANDARD_WORK_MINUTES,
+    OT_REASON_NO_FORM,
     reconcileOvertime,
     buildOtReconciliationRow,
+    resolveOtReason,
     roundHours,
     punchDurationMinutes,
     isOvertimeEligibleWorkday,

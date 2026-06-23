@@ -810,6 +810,8 @@
     "requestedOt": "العمل الإضافي المطلوب",
     "finalOtPreview": "العمل الإضافي النهائي (معاينة)",
     "hasForm": "نموذج OT",
+    "otReason": "السبب",
+    "noFormSubmittedReason": "لم يُقدَّم نموذج",
     "workday": "يوم عمل",
     "yes": "نعم",
     "no": "لا",

@@ -14,7 +14,7 @@ const LogoutButton = () => {
     <button
       type="button"
       onClick={handleLogout}
-      className="btn-elegant app-header-logout"
+      className="btn-elegant app-header-logout ed-header-control"
       aria-label={t('common.logout')}
     >
       <span className="app-header-logout-text">{t('common.logout')}</span>

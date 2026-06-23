@@ -164,10 +164,10 @@ const EmployeeDashboard = () => {
   };
 
   return (
-    <div className="dashboard-container employee-dashboard-v2 fade-in">
+    <div className="dashboard-container employee-dashboard-v2 min-h-screen bg-slate-50 dark:bg-slate-900 fade-in">
       <DashboardAppHeader title={t('dashboard.employee')} />
 
-      <div className="employee-dashboard-stack">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col gap-6">
         <EmployeeDashboardHero user={user} onUserUpdate={setUser} />
 
         {user && (
@@ -230,7 +230,7 @@ const EmployeeDashboard = () => {
 
         {showForm && (
           <div ref={submitRef} className="dashboard-section-anchor">
-            <div className="ed-forms-panel slide-in-left">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 slide-in-left">
               <FormSubmission
                 key={`${formIntent.type}-${formIntent.vacationType}`}
                 initialType={formIntent.type}
@@ -243,8 +243,8 @@ const EmployeeDashboard = () => {
 
         {showPreview && (
           <div ref={previewRef} className="dashboard-section-anchor">
-            <div className="ed-forms-panel slide-in-right">
-              <h2 className="section-title" style={{ marginBottom: '1.25rem' }}>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 slide-in-right">
+              <h2 className="text-4xl font-bold text-slate-900 dark:text-white" style={{ fontSize: '1.35rem', marginBottom: '1.25rem' }}>
                 {t('dashboard.yourSubmittedForms')}
               </h2>
             

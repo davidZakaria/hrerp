@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import DashboardSectionNav from './layout/DashboardSectionNav';
-import LanguageSwitcher from './LanguageSwitcher';
+import DashboardAppHeader from './layout/DashboardAppHeader';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import FormSubmission from './FormSubmission';
 import MedicalDocumentViewer from './MedicalDocumentViewer';
 import ATSDashboard from './ATS/ATSDashboard';
 import ManagerTeamAttendance from './ManagerTeamAttendance';
-import WelcomeHero from './WelcomeHero';
+import DashboardWelcomeCard from './dashboard/DashboardWelcomeCard';
+import { DashboardStatCard, DashboardStatGrid } from './dashboard/DashboardStatCard';
+import { formatShiftTime } from '../utils/welcomeGreeting';
 import API_URL from '../config/api';
 import logger from '../utils/logger';
 import { normalizeExcuseType, isPaidExcuse } from '../utils/excuseType';
@@ -767,29 +769,36 @@ const ManagerDashboard = ({ onLogout }) => {
   }
 
   return (
-    <div className="manager-dashboard">
-      {/* Header */}
-      <div className="dashboard-header">
-        <div className="user-info">
-          <h1>{t('managerDashboard.managerDashboard')}</h1>
-          <p className="departments">
+    <div className="manager-dashboard dashboard-container modern-dash min-h-screen bg-slate-50 dark:bg-slate-900">
+      <DashboardAppHeader title={t('managerDashboard.managerDashboard')} />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6 w-full">
+      {user && (
+        <DashboardWelcomeCard user={user} showAvatar showGreeting onUserUpdate={setUser}>
+          <p className="text-sm text-slate-500 dark:text-slate-400" style={{ margin: '0.5rem 0 0' }}>
             {t('managerDashboard.managing', {
               departments: effectiveDeptList.length ? effectiveDeptList.join(', ') : t('managerDashboard.noDepartmentsAssigned')
             })}
           </p>
-        </div>
-        <div className="manager-header-actions">
-          <LanguageSwitcher compact />
-          <button type="button" onClick={onLogout} className="logout-btn">{t('common.logout')}</button>
-        </div>
-      </div>
+        </DashboardWelcomeCard>
+      )}
 
-      <WelcomeHero
-        user={user}
-        vacationDaysLeft={vacationDaysLeft}
-        variant="manager"
-        onUserUpdate={setUser}
-      />
+      {user && (
+        <DashboardStatGrid columns={3}>
+          <DashboardStatCard
+            value={vacationDaysLeft ?? user.vacationDaysLeft ?? '—'}
+            label={t('welcomeHero.leaveRemaining')}
+          />
+          <DashboardStatCard
+            value={user.excuseRequestsLeft ?? '—'}
+            label={t('welcomeHero.excusesRemaining')}
+          />
+          <DashboardStatCard
+            value={formatShiftTime(user.workSchedule)}
+            label={t('welcomeHero.todaysShift')}
+          />
+        </DashboardStatGrid>
+      )}
 
       {/* Message */}
       {message && (
@@ -800,6 +809,7 @@ const ManagerDashboard = ({ onLogout }) => {
 
       <DashboardSectionNav
         stickyBelowAppHeader={false}
+        variant="light"
         role="manager"
         title={t('dashboard.nav.managerTitle')}
         description={t('dashboard.nav.managerDesc')}
@@ -816,45 +826,30 @@ const ManagerDashboard = ({ onLogout }) => {
         ]}
       />
 
-      {/* Stats */}
-      <div className="stats-section">
-        <div className="stat-card">
-          <h3>{teamMembers.length}</h3>
-          <p>{t('managerDashboard.myTeamMembers')}</p>
-          <small>{t('managerDashboard.activeEmployeesInManagedDepartments')}</small>
-        </div>
-        <div
-          className="stat-card stat-card-clickable pending-approvals-stat"
+      <DashboardStatGrid>
+        <DashboardStatCard
+          value={teamMembers.length}
+          label={t('managerDashboard.myTeamMembers')}
+          subtitle={t('managerDashboard.activeEmployeesInManagedDepartments')}
+        />
+        <DashboardStatCard
+          value={pendingForms.length}
+          label={t('managerDashboard.pendingTeamRequests')}
+          subtitle={t('managerDashboard.awaitingYourApproval')}
           onClick={handleGoToTeamApprovals}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && handleGoToTeamApprovals()}
           title={t('managerDashboard.approveTeamFormsHint')}
-        >
-          <h3>{pendingForms.length}</h3>
-          <p>{t('managerDashboard.pendingTeamRequests')}</p>
-          <small>{t('managerDashboard.awaitingYourApproval')}</small>
-        </div>
-        <div className="stat-card">
-          <h3>{effectiveDeptList.length}</h3>
-          <p>{t('common.managedDepartments')}</p>
-          <small>{t('managerDashboard.underYourSupervision')}</small>
-        </div>
-      </div>
+        />
+        <DashboardStatCard
+          value={effectiveDeptList.length}
+          label={t('common.managedDepartments')}
+          subtitle={t('managerDashboard.underYourSupervision')}
+        />
+      </DashboardStatGrid>
 
       {/* Manager's Personal Section */}
       <div className="section manager-personal-section">
         <div className="section-header">
           <h2>{t('managerDashboard.myPersonalFormsAndRequests')}</h2>
-        </div>
-        
-        <div className="stats-section manager-stats" style={{ marginBottom: '20px' }}>
-          <div className="stat-card manager-stat-card">
-            <div className="stat-icon">🏖️</div>
-            <h3>{vacationDaysLeft !== null ? vacationDaysLeft : '...'}</h3>
-            <p>{t('managerDashboard.vacationDaysLeft')}</p>
-            <small>{t('managerDashboard.yourAnnualAllowanceRemaining')}</small>
-          </div>
         </div>
       </div>
 
@@ -1819,12 +1814,11 @@ const ManagerDashboard = ({ onLogout }) => {
         </div>
       )}
 
+      </div>
+
       <style>{`
         .manager-dashboard {
-          min-height: 100vh;
-          background: linear-gradient(165deg, #0c0a08 0%, #1a1610 50%, #12100c 100%);
-          padding: 20px;
-          color: #ffffff;
+          padding: 0;
         }
 
         .dashboard-header {

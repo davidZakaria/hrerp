@@ -3,6 +3,8 @@
 @import './styles/GlobalStyles.css';
 @import './styles/theme.css';
 @import './styles/employeeDashboard.css';
+@import './styles/employeeTailwindUtilities.css';
+@import './styles/dashboardTheme.css';
 @import './styles/dashboardNav.css';
 @import './styles/mobile-responsive.css';
 

@@ -20,9 +20,10 @@ import FormManagementMonthFilterBar from './forms/FormManagementMonthFilterBar';
 import UserManagementToolbar from './users/UserManagementToolbar';
 import UserManagementUsersTable from './users/UserManagementUsersTable';
 import UserTitleLocationImportModal from './users/UserTitleLocationImportModal';
-import UserProfileChips from './users/UserProfileChips';
 import UserCardDetails from './users/UserCardDetails';
 import UserAvatar from './UserAvatar';
+import DashboardWelcomeCard from './dashboard/DashboardWelcomeCard';
+import { DashboardStatCard, DashboardStatGrid } from './dashboard/DashboardStatCard';
 import {
   filterFormsByManagementMonths,
   currentYearMonth,
@@ -1048,19 +1049,19 @@ const AdminDashboard = () => {
 
   if (usersLoading && activeTab === 'overview') {
     return (
-      <div className="dashboard-container">
+      <div className="dashboard-container admin-dashboard modern-dash min-h-screen bg-slate-50 dark:bg-slate-900">
         <div className="spinner-elegant"></div>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-container admin-dashboard fade-in">
-      {/* Header */}
+    <div className="dashboard-container admin-dashboard modern-dash min-h-screen bg-slate-50 dark:bg-slate-900 fade-in">
       <DashboardAppHeader title={t('adminDashboard.title')} />
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6 w-full">
       <DashboardSectionNav
-        variant="dark"
+        variant="light"
         role="admin"
         title={t('dashboard.nav.adminTitle')}
         description={t('dashboard.nav.adminDesc')}
@@ -1079,55 +1080,35 @@ const AdminDashboard = () => {
       <div className="main-content dashboard-section-anchor admin-dashboard-main" ref={mainContentRef}>
         {/* Overview Tab */}
         {activeTab === 'overview' && (
-          <div className="overview-section admin-dashboard-tab-panel">
-            {/* Stats Cards */}
+          <div className="overview-section admin-dashboard-tab-panel flex flex-col gap-6">
             <p className="admin-dashboard-stats-hint">{t('adminDashboard.statsHint')}</p>
 
             {currentUser && (
-              <div
-                className="elegant-card hover-lift"
-                style={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  textAlign: 'center',
-                  padding: '1.75rem',
-                  marginBottom: '1.5rem',
-                  borderRadius: '16px'
-                }}
-              >
-                <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 600 }}>
-                  👋 {t('dashboard.welcome')}, {currentUser.name}
-                </h2>
-                <UserProfileChips user={currentUser} />
-              </div>
+              <DashboardWelcomeCard user={currentUser} />
             )}
 
-            <div className="grid-4">
-              <div className="stats-card hover-lift">
-                <div className="stats-number">
-                  {currentUser?.role === 'super_admin' 
-                    ? users.length 
-                    : users.filter(u => u.role !== 'super_admin').length}
-                </div>
-                <div className="stats-label">{t('adminDashboard.statsActiveUsers')}</div>
-              </div>
-              <div className="stats-card hover-lift">
-                <div className="stats-number">
-                  {currentUser?.role === 'super_admin' 
-                    ? pendingUsers.length 
-                    : pendingUsers.filter(u => u.role !== 'super_admin').length}
-                </div>
-                <div className="stats-label">{t('adminDashboard.statsPendingApprovals')}</div>
-              </div>
-              <div className="stats-card hover-lift">
-                <div className="stats-number">{forms.length}</div>
-                <div className="stats-label">{t('adminDashboard.statsTotalForms')}</div>
-              </div>
-              <div className="stats-card hover-lift">
-                <div className="stats-number">{forms.filter(f => f.status === 'pending').length}</div>
-                <div className="stats-label">{t('adminDashboard.statsPendingForms')}</div>
-              </div>
-            </div>
+            <DashboardStatGrid>
+              <DashboardStatCard
+                value={currentUser?.role === 'super_admin'
+                  ? users.length
+                  : users.filter(u => u.role !== 'super_admin').length}
+                label={t('adminDashboard.statsActiveUsers')}
+              />
+              <DashboardStatCard
+                value={currentUser?.role === 'super_admin'
+                  ? pendingUsers.length
+                  : pendingUsers.filter(u => u.role !== 'super_admin').length}
+                label={t('adminDashboard.statsPendingApprovals')}
+              />
+              <DashboardStatCard
+                value={forms.length}
+                label={t('adminDashboard.statsTotalForms')}
+              />
+              <DashboardStatCard
+                value={forms.filter(f => f.status === 'pending').length}
+                label={t('adminDashboard.statsPendingForms')}
+              />
+            </DashboardStatGrid>
 
             {/* Pending User Approvals */}
             {filteredPendingUsers.length > 0 && (
@@ -2769,6 +2750,7 @@ const AdminDashboard = () => {
             <DetailedLeavesReport />
           </div>
         )}
+      </div>
       </div>
 
       <UserTitleLocationImportModal

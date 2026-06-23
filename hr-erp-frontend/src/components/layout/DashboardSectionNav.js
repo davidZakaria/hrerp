@@ -204,7 +204,7 @@ const DashboardSectionNav = ({
         <div className="dashboard-nav-track-wrap">
           <div
             ref={trackRef}
-            className="dashboard-nav-track"
+            className="dash-segment-bar dashboard-nav-track"
             role="tablist"
             aria-orientation="horizontal"
           >
@@ -234,7 +234,7 @@ const DashboardSectionNav = ({
                   tabIndex={active ? 0 : -1}
                   onClick={s.onSelect}
                   onKeyDown={(e) => onKeyDown(e, index)}
-                  className={`dashboard-section-nav-btn${active ? ' active' : ''}`}
+                  className={`dash-segment-btn${active ? ' dash-segment-btn--active' : ''}`}
                 >
                   {s.icon ? `${s.icon} ` : ''}
                   {s.label}

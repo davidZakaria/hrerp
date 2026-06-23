@@ -1,0 +1,166 @@
+/**
+ * Tailwind-compatible utilities for Employee Dashboard (no Tailwind build required).
+ * Dark mode: [data-theme="dark"] on <html>
+ */
+
+.min-h-screen { min-height: 100vh; }
+.w-full { width: 100%; }
+.max-w-7xl { max-width: 80rem; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+.p-3 { padding: 0.75rem; }
+.p-5 { padding: 1.25rem; }
+.p-6 { padding: 1.5rem; }
+.px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.mt-4 { margin-top: 1rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.gap-6 { gap: 1.5rem; }
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.items-baseline { align-items: baseline; }
+.justify-between { justify-content: space-between; }
+.text-center { text-align: center; }
+
+.grid { display: grid; }
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+
+@media (min-width: 640px) {
+  .sm\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+  .sm\:flex-row { flex-direction: row; }
+  .sm\:w-auto { width: auto; }
+  .sm\:items-start { align-items: flex-start; }
+}
+
+@media (min-width: 768px) {
+  .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .lg\:px-8 { padding-left: 2rem; padding-right: 2rem; }
+}
+
+.bg-slate-50 { background-color: #f8fafc; }
+.bg-white { background-color: #ffffff; }
+.bg-blue-50 { background-color: #eff6ff; }
+.bg-pink-50 { background-color: #fdf2f8; }
+.bg-orange-50 { background-color: #fff7ed; }
+.bg-indigo-600 { background-color: #4f46e5; }
+.text-slate-500 { color: #64748b; }
+.text-slate-700 { color: #334155; }
+.text-slate-900 { color: #0f172a; }
+.text-white { color: #ffffff; }
+.text-2xl { font-size: 1.5rem; line-height: 2rem; }
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+.font-medium { font-weight: 500; }
+.font-bold { font-weight: 700; }
+
+.border { border-width: 1px; border-style: solid; }
+.border-slate-200 { border-color: #e2e8f0; }
+.border-slate-300 { border-color: #cbd5e1; }
+.rounded-xl { border-radius: 0.75rem; }
+.rounded-2xl { border-radius: 1rem; }
+.shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+
+[data-theme='dark'] .dark\:bg-slate-900 { background-color: #0f172a; }
+[data-theme='dark'] .dark\:bg-slate-800 { background-color: #1e293b; }
+[data-theme='dark'] .dark\:bg-slate-800\/50 { background-color: rgba(30, 41, 59, 0.5); }
+[data-theme='dark'] .dark\:bg-blue-900\/30 { background-color: rgba(30, 58, 138, 0.3); }
+[data-theme='dark'] .dark\:bg-pink-900\/30 { background-color: rgba(131, 24, 67, 0.3); }
+[data-theme='dark'] .dark\:bg-orange-900\/30 { background-color: rgba(124, 45, 18, 0.3); }
+[data-theme='dark'] .dark\:text-white { color: #ffffff; }
+[data-theme='dark'] .dark\:text-slate-200 { color: #e2e8f0; }
+[data-theme='dark'] .dark\:border-slate-700 { border-color: #334155; }
+[data-theme='dark'] .dark\:border-slate-600 { border-color: #475569; }
+
+.text-stat { font-size: 1.5rem; line-height: 2rem; font-weight: 700; color: #0f172a; }
+[data-theme='dark'] .text-stat { color: #ffffff; }
+.text-stat-label { font-size: 0.875rem; line-height: 1.25rem; color: #64748b; }
+.text-stat--danger { color: #ef4444 !important; }
+.text-stat--success { color: #10b981 !important; }
+
+.ed-btn-primary {
+  background-color: #4f46e5;
+  color: #ffffff !important;
+  border: none;
+  cursor: pointer;
+}
+.ed-btn-primary:hover:not(:disabled) { background-color: #4338ca; }
+.hover\:bg-indigo-700:hover { background-color: #4338ca; }
+.ed-btn-secondary {
+  background-color: #ffffff;
+  color: #334155 !important;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+}
+[data-theme='dark'] .ed-btn-secondary {
+  background-color: #1e293b;
+  color: #e2e8f0 !important;
+  border-color: #334155;
+}
+.ed-btn-secondary:hover:not(:disabled) { background-color: #f8fafc; }
+[data-theme='dark'] .ed-btn-secondary:hover:not(:disabled) { background-color: #334155; }
+
+[data-theme='light'] .app-header .ed-header-control {
+  color: #334155 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  text-shadow: none !important;
+}
+[data-theme='dark'] .app-header .ed-header-control {
+  color: #e2e8f0 !important;
+  background-color: #1e293b !important;
+  border: 1px solid #475569 !important;
+  text-shadow: none !important;
+}
+[data-theme='light'] .app-header .language-switcher.ed-header-lang {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+}
+[data-theme='light'] .app-header .language-switcher.ed-header-lang .lang-btn {
+  color: #334155 !important;
+  text-shadow: none !important;
+}
+[data-theme='light'] .app-header .language-switcher.ed-header-lang .lang-btn--active {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+}
+[data-theme='dark'] .app-header .language-switcher.ed-header-lang {
+  background: #1e293b !important;
+  border: 1px solid #475569 !important;
+}
+[data-theme='dark'] .app-header .language-switcher.ed-header-lang .lang-btn {
+  color: #e2e8f0 !important;
+}
+
+.dashboard-container.employee-dashboard-v2,
+.dashboard-container.employee-dashboard-v2 * {
+  text-shadow: none !important;
+}
+
+.dashboard-container.employee-dashboard-v2 h1,
+.dashboard-container.employee-dashboard-v2 h2,
+.dashboard-container.employee-dashboard-v2 h3 {
+  color: inherit !important;
+}
+
+.employee-dashboard-v2 .text-slate-900 { color: #0f172a !important; }
+.employee-dashboard-v2 .text-slate-500 { color: #64748b !important; }
+.employee-dashboard-v2 .text-slate-700 { color: #334155 !important; }
+[data-theme='dark'] .employee-dashboard-v2 .dark\:text-white { color: #ffffff !important; }
+[data-theme='dark'] .employee-dashboard-v2 .dark\:text-slate-200 { color: #e2e8f0 !important; }
+
+.employee-dashboard-v2 .ed-btn-primary.text-white { color: #ffffff !important; }
+
+[data-theme='light'] .app-header .app-title {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}

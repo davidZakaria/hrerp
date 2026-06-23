@@ -23,6 +23,15 @@ function formatPeriodLabel(startDate, endDate, locale) {
   return `${start.toLocaleDateString(locale, opts)} – ${end.toLocaleDateString(locale, opts)}`;
 }
 
+function StatBox({ label, value, valueClass = '' }) {
+  return (
+    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+      <div className="text-sm text-slate-500">{label}</div>
+      <div className={`text-stat ${valueClass}`.trim()}>{value}</div>
+    </div>
+  );
+}
+
 const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
   const { t, i18n } = useTranslation();
   const [snapshot, setSnapshot] = useState(null);
@@ -74,14 +83,18 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
   const shortfall = snapshot?.shortfall || {};
   const otSummary = snapshot?.overtime?.summary || {};
   const hasPenalty = (absences.deduction || 0) > 0;
+  const variancePositive = (absences.variance || 0) > 0;
 
   return (
-    <section className="ed-snapshot" aria-labelledby="ed-snapshot-title">
+    <section
+      className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700"
+      aria-labelledby="ed-snapshot-title"
+    >
       <div style={{ marginBottom: '1.25rem' }}>
-        <h2 id="ed-snapshot-title" className="ed-section-title">
+        <h2 id="ed-snapshot-title" className="text-4xl font-bold text-slate-900 dark:text-white" style={{ fontSize: '1.25rem', margin: 0 }}>
           {t('employeeDashboard.monthlySnapshot')}
         </h2>
-        <p className="ed-section-subtitle">
+        <p className="text-sm text-slate-500" style={{ marginTop: '0.35rem' }}>
           {t('employeeDashboard.payPeriod')}: {periodLabel}
         </p>
       </div>
@@ -100,45 +113,42 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
 
       {!loading && !error && snapshot && (
         <>
-          <div className="ed-snapshot-block">
-            <h3 className="ed-snapshot-block-title">
+          <div style={{ marginBottom: '1.5rem' }}>
+            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200" style={{ marginBottom: '0.75rem', fontWeight: 700 }}>
               ⏱️ {t('employeeDashboard.myOvertime')}
             </h3>
-            <div className="ed-metrics-row" style={{ marginBottom: '1rem' }}>
-              <div className="ed-metric">
-                <div className="ed-metric-label">{t('employeeDashboard.otApproved')}</div>
-                <div className="ed-metric-value ed-metric-value--sm">
-                  {formatHours(otSummary.totalApproved)}
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600, marginLeft: '0.25rem' }}>
-                    {t('forms.hours')}
-                  </span>
-                </div>
-              </div>
-              <div className="ed-metric">
-                <div className="ed-metric-label">{t('employeeDashboard.otPayable')}</div>
-                <div className="ed-metric-value ed-metric-value--sm ed-metric-value--success">
-                  {formatHours(otSummary.totalFinalPayable)}
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600, marginLeft: '0.25rem' }}>
-                    {t('forms.hours')}
-                  </span>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', marginBottom: '1rem' }}>
+              <StatBox
+                label={t('employeeDashboard.otApproved')}
+                value={`${formatHours(otSummary.totalApproved)} ${t('forms.hours')}`}
+              />
+              <StatBox
+                label={t('employeeDashboard.otPayable')}
+                value={`${formatHours(otSummary.totalFinalPayable)} ${t('forms.hours')}`}
+                valueClass="text-stat--success"
+              />
             </div>
             {otRows.length === 0 ? (
-              <p className="ed-empty-hint">{t('employeeDashboard.noOtThisPeriod')}</p>
+              <p className="text-sm text-slate-500">{t('employeeDashboard.noOtThisPeriod')}</p>
             ) : (
               otRows.map((row) => (
-                <div key={row.otDateKey || row.otDate} className="ed-ot-row">
-                  <div className="ed-ot-row-date">{formatOtDate(row.otDate)}</div>
-                  <div className="ed-ot-row-meta">
-                    {t('forms.requestedOtHours')}: <strong>{formatHours(row.requestedHours)}</strong>
+                <div
+                  key={row.otDateKey || row.otDate}
+                  className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-200 dark:border-slate-700"
+                  style={{ marginBottom: '0.5rem' }}
+                >
+                  <div className="text-sm font-medium text-slate-900 dark:text-white" style={{ fontWeight: 600, marginBottom: '0.35rem' }}>
+                    {formatOtDate(row.otDate)}
                   </div>
-                  <div className="ed-ot-row-meta">
-                    {t('forms.approvedOtHours')}: <strong>{formatHours(row.approvedHours)}</strong>
+                  <div className="text-sm text-slate-500">
+                    {t('forms.requestedOtHours')}: <span className="text-slate-900 dark:text-white">{formatHours(row.requestedHours)}</span>
                   </div>
-                  <div className="ed-ot-row-meta">
+                  <div className="text-sm text-slate-500">
+                    {t('forms.approvedOtHours')}: <span className="text-slate-900 dark:text-white">{formatHours(row.approvedHours)}</span>
+                  </div>
+                  <div className="text-sm text-slate-500">
                     {t('otReports.otReason')}:{' '}
-                    <span className={row.hasOtFormSubmission === false ? 'ed-ot-row-meta--danger' : undefined}>
+                    <span className={row.hasOtFormSubmission === false ? 'text-stat--danger' : 'text-slate-900 dark:text-white'}>
                       {row.otReason || t('otReports.noFormSubmittedReason')}
                     </span>
                   </div>
@@ -147,56 +157,38 @@ const EmployeeMonthlySnapshot = ({ refreshKey = 0, onLoaded }) => {
             )}
           </div>
 
-          <div className="ed-snapshot-block">
-            <h3 className="ed-snapshot-block-title">
+          <div style={{ marginBottom: '1.5rem' }}>
+            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200" style={{ marginBottom: '0.75rem', fontWeight: 700 }}>
               📋 {t('employeeDashboard.myAbsences')}
             </h3>
-            <div className="ed-metrics-row">
-              <div className="ed-metric">
-                <div className="ed-metric-label">{t('employeeDashboard.absentDays')}</div>
-                <div className="ed-metric-value">{absences.absentActual ?? 0}</div>
-              </div>
-              <div className="ed-metric">
-                <div className="ed-metric-label">{t('employeeDashboard.variance')}</div>
-                <div
-                  className={`ed-metric-value ${
-                    (absences.variance || 0) > 0 ? 'ed-metric-value--danger' : 'ed-metric-value--success'
-                  }`}
-                >
-                  {(absences.variance || 0) > 0 ? '+' : ''}{absences.variance ?? 0}
-                </div>
-              </div>
-              <div className="ed-metric">
-                <div className="ed-metric-label">{t('employeeDashboard.penaltyDeduction')}</div>
-                <div
-                  className={`ed-metric-value ed-metric-value--sm ${
-                    hasPenalty ? 'ed-metric-value--danger' : 'ed-metric-value--success'
-                  }`}
-                >
-                  {hasPenalty
-                    ? t('employeeDashboard.deductionDays', { days: absences.deduction })
-                    : t('employeeDashboard.noDeduction')}
-                </div>
-              </div>
+            <div className="grid grid-cols-1 gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
+              <StatBox label={t('employeeDashboard.absentDays')} value={absences.absentActual ?? 0} />
+              <StatBox
+                label={t('employeeDashboard.variance')}
+                value={`${variancePositive ? '+' : ''}${absences.variance ?? 0}`}
+                valueClass={variancePositive ? 'text-stat--danger' : 'text-stat--success'}
+              />
+              <StatBox
+                label={t('employeeDashboard.penaltyDeduction')}
+                value={hasPenalty ? t('employeeDashboard.deductionDays', { days: absences.deduction }) : t('employeeDashboard.noDeduction')}
+                valueClass={hasPenalty ? 'text-stat--danger' : 'text-stat--success'}
+              />
             </div>
             {absences.reason && absences.reason !== '—' && (
-              <p className="ed-reason-text">{absences.reason}</p>
+              <p className="text-sm text-slate-500" style={{ marginTop: '0.75rem', lineHeight: 1.5 }}>
+                {absences.reason}
+              </p>
             )}
           </div>
 
-          <div className="ed-snapshot-block">
-            <h3 className="ed-snapshot-block-title">
+          <div>
+            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200" style={{ marginBottom: '0.75rem', fontWeight: 700 }}>
               ⏰ {t('employeeDashboard.myShortfall')}
             </h3>
-            <div className="ed-metric" style={{ maxWidth: '280px' }}>
-              <div className="ed-metric-label">{t('employeeDashboard.totalLateness')}</div>
-              <div className="ed-metric-value">
-                {shortfall.totalLatenessMinutes ?? 0}
-                <span style={{ fontSize: '0.875rem', fontWeight: 600, marginLeft: '0.25rem' }}>
-                  {t('employeeDashboard.minutes')}
-                </span>
-              </div>
-            </div>
+            <StatBox
+              label={t('employeeDashboard.totalLateness')}
+              value={`${shortfall.totalLatenessMinutes ?? 0} ${t('employeeDashboard.minutes')}`}
+            />
           </div>
         </>
       )}

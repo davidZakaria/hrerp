@@ -18,7 +18,7 @@ const LanguageSwitcher = ({ compact = false }) => {
 
   return (
     <div
-      className={`language-switcher${compact ? ' language-switcher--compact' : ''}`}
+      className={`language-switcher ed-header-lang${compact ? ' language-switcher--compact' : ''}`}
       role="group"
       aria-label="Language"
     >

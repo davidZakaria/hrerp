@@ -24,6 +24,7 @@ import UserTitleLocationImportModal from './users/UserTitleLocationImportModal';
 import UserCardDetails from './users/UserCardDetails';
 import UserAvatar from './UserAvatar';
 import SystemSettings from './SystemSettings';
+import { DashboardStatCard, DashboardStatGrid } from './dashboard/DashboardStatCard';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -1359,33 +1360,33 @@ const SuperAdminDashboard = () => {
   }, [activeTab]);
 
   return (
-    <div className="dashboard-container super-admin-dashboard fade-in">
+    <div className="dashboard-container super-admin-dashboard modern-dash min-h-screen bg-slate-50 dark:bg-slate-900 fade-in">
       <DashboardAppHeader title={t('superAdminDashboard.title')} />
 
-      <div className="main-content">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6 w-full main-content">
         <p className="super-admin-stats-hint">{t('superAdminDashboard.statsHint')}</p>
-        <div className="grid-4 super-admin-stats-grid">
-          <div className="stats-card hover-lift">
-            <div className="stats-number">{users.length + pendingUsers.length}</div>
-            <div className="stats-label">{t('superAdminDashboard.statsTotalAccounts')}</div>
-          </div>
-          <div className="stats-card hover-lift">
-            <div className="stats-number">{users.length}</div>
-            <div className="stats-label">{t('superAdminDashboard.statsActiveUsers')}</div>
-          </div>
-          <div className="stats-card hover-lift" style={{ background: pendingUsers.length > 0 ? 'linear-gradient(135deg, #ff9800, #f57c00)' : undefined }}>
-            <div className="stats-number">{pendingUsers.length}</div>
-            <div className="stats-label">{t('superAdminDashboard.statsPendingRegistrations')}</div>
-          </div>
-          <div className="stats-card hover-lift">
-            <div className="stats-number">{formsStatsBaseline.length}</div>
-            <div className="stats-label">{t('superAdminDashboard.statsFormsLoaded')}</div>
-          </div>
-          <div className="stats-card hover-lift">
-            <div className="stats-number">{formsStatsBaseline.filter(f => f.status === 'pending').length}</div>
-            <div className="stats-label">{t('superAdminDashboard.statsPendingForms')}</div>
-          </div>
-        </div>
+        <DashboardStatGrid>
+          <DashboardStatCard
+            value={users.length + pendingUsers.length}
+            label={t('superAdminDashboard.statsTotalAccounts')}
+          />
+          <DashboardStatCard
+            value={users.length}
+            label={t('superAdminDashboard.statsActiveUsers')}
+          />
+          <DashboardStatCard
+            value={pendingUsers.length}
+            label={t('superAdminDashboard.statsPendingRegistrations')}
+          />
+          <DashboardStatCard
+            value={formsStatsBaseline.length}
+            label={t('superAdminDashboard.statsFormsLoaded')}
+          />
+          <DashboardStatCard
+            value={formsStatsBaseline.filter(f => f.status === 'pending').length}
+            label={t('superAdminDashboard.statsPendingForms')}
+          />
+        </DashboardStatGrid>
 
         <DashboardSectionNav
           variant="light"
@@ -2471,7 +2472,6 @@ const SuperAdminDashboard = () => {
             </div>
           )}
         </div>
-      </div>
 
       {/* Edit User Modal (outside .elegant-card — avoids overflow/backdrop clipping fixed overlays) */}
       {selectedUser && (
@@ -4004,6 +4004,7 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

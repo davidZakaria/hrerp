@@ -16,8 +16,8 @@ export default function DashboardProfileBadges({ user }) {
     <div className="dash-profile-grid">
       {items.map((item) => (
         <div key={item.label} className="dash-profile-badge">
-          <div className="dash-profile-badge-label">{item.label}</div>
-          <div className="dash-profile-badge-value">{item.value}</div>
+          <div className="dash-profile-badge-label !text-slate-500 dark:!text-slate-400">{item.label}</div>
+          <div className="dash-profile-badge-value !text-slate-900 dark:!text-white">{item.value}</div>
         </div>
       ))}
     </div>

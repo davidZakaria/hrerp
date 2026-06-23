@@ -36,7 +36,7 @@ export default function DashboardWelcomeCard({
           />
         )}
         <div className="w-full" style={{ minWidth: 0 }}>
-          <h2 className="font-bold text-slate-900 dark:text-white" style={{ margin: 0, fontSize: 'clamp(1.25rem, 3vw, 1.75rem)' }}>
+          <h2 className="font-bold !text-slate-900 dark:!text-white" style={{ margin: 0, fontSize: 'clamp(1.25rem, 3vw, 1.75rem)' }}>
             {showGreeting && greeting
               ? `${t('welcomeHero.greetingLine', { greeting: t(greeting.key), name: firstName })} ${greeting.emoji}`
               : `👋 ${t('dashboard.welcome')}, ${user.name}`}

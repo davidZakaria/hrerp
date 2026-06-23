@@ -229,7 +229,7 @@ const AttendanceManagement = () => {
           color: #000000 !important;
         }
       `}</style>
-      <h2 className="text-gradient" style={{ marginBottom: '2rem' }}>Attendance Management</h2>
+      <h2 className="!text-slate-900 dark:!text-white" style={{ marginBottom: '2rem', fontSize: '1.5rem', fontWeight: 700 }}>Attendance Management</h2>
 
       {/* ZKTeco status banner */}
       {zktecoEnabled && (

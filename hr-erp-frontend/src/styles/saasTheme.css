@@ -20,6 +20,9 @@
 .\!text-slate-900 { color: #0f172a !important; }
 .\!text-slate-500 { color: #64748b !important; }
 .\!text-slate-700 { color: #334155 !important; }
+.\!text-indigo-600 { color: #4f46e5 !important; }
+
+[data-theme='dark'] .dark\:\!text-indigo-400 { color: #818cf8 !important; }
 
 [data-theme='dark'] .dark\:\!text-white { color: #ffffff !important; }
 [data-theme='dark'] .dark\:\!text-slate-400 { color: #94a3b8 !important; }

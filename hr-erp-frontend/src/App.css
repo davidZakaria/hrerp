@@ -2847,3 +2847,198 @@
 .user-import-cell-input { width: 100%; min-width: 90px; padding: 0.25rem 0.35rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.78rem; color: #111 !important; background: #fff !important; }
 .user-import-error { margin-top: 1rem; padding: 0.75rem 1rem; background: rgba(244,67,54,0.15); border: 1px solid rgba(244,67,54,0.4); border-radius: 8px; color: #ffcdd2; }
 .user-import-footer { padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 0.75rem; justify-content: flex-end; }
+
+/* ==========================================================================
+   PREMIUM SAAS LIGHT MODE — FINAL CASCADE (must remain last in this file)
+   Beats legacy App.css + GlobalStyles white-text / dark-input rules on dashboards.
+   ========================================================================== */
+
+[data-theme='light'] .modern-dash.dashboard-container,
+[data-theme='light'] .employee-dashboard-v2.dashboard-container {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  padding: 0 !important;
+}
+
+[data-theme='light'] .modern-dash .main-content,
+[data-theme='light'] .employee-dashboard-v2 .main-content {
+  color: #0f172a !important;
+  padding: 0 !important;
+  max-width: none !important;
+}
+
+[data-theme='light'] .modern-dash.dashboard-container h1,
+[data-theme='light'] .modern-dash.dashboard-container h2,
+[data-theme='light'] .modern-dash.dashboard-container h3,
+[data-theme='light'] .modern-dash.dashboard-container h4,
+[data-theme='light'] .modern-dash.dashboard-container h5,
+[data-theme='light'] .modern-dash.dashboard-container h6,
+[data-theme='light'] .employee-dashboard-v2.dashboard-container h1,
+[data-theme='light'] .employee-dashboard-v2.dashboard-container h2,
+[data-theme='light'] .employee-dashboard-v2.dashboard-container h3,
+[data-theme='light'] .employee-dashboard-v2.dashboard-container h4,
+[data-theme='light'] .employee-dashboard-v2.dashboard-container h5,
+[data-theme='light'] .employee-dashboard-v2.dashboard-container h6 {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .modern-dash .main-content p,
+[data-theme='light'] .modern-dash .main-content span,
+[data-theme='light'] .modern-dash .main-content div,
+[data-theme='light'] .modern-dash .main-content label,
+[data-theme='light'] .modern-dash .main-content li,
+[data-theme='light'] .employee-dashboard-v2 .main-content p,
+[data-theme='light'] .employee-dashboard-v2 .main-content span,
+[data-theme='light'] .employee-dashboard-v2 .main-content div,
+[data-theme='light'] .employee-dashboard-v2 .main-content label,
+[data-theme='light'] .employee-dashboard-v2 .main-content li {
+  color: inherit;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .modern-dash .section-title,
+[data-theme='light'] .modern-dash .subsection-title {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .modern-dash .admin-dashboard-stats-hint {
+  color: #64748b !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .modern-dash .text-gradient,
+[data-theme='light'] .saas-attendance .text-gradient,
+[data-theme='light'] .saas-ot-reports .text-gradient {
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: #0f172a !important;
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .modern-dash .text-slate-900,
+[data-theme='light'] .modern-dash .\!text-slate-900,
+[data-theme='light'] .modern-dash .text-slate-800,
+[data-theme='light'] .modern-dash .text-slate-700,
+[data-theme='light'] .employee-dashboard-v2 .text-slate-900,
+[data-theme='light'] .employee-dashboard-v2 .\!text-slate-900,
+[data-theme='light'] .employee-dashboard-v2 .text-slate-800,
+[data-theme='light'] .employee-dashboard-v2 .text-slate-700,
+[data-theme='light'] .saas-ot-reports .\!text-slate-900,
+[data-theme='light'] .saas-attendance .\!text-slate-900 {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+[data-theme='light'] .modern-dash .text-slate-500,
+[data-theme='light'] .modern-dash .\!text-slate-500,
+[data-theme='light'] .employee-dashboard-v2 .text-slate-500,
+[data-theme='light'] .employee-dashboard-v2 .\!text-slate-500,
+[data-theme='light'] .saas-ot-reports .\!text-slate-500,
+[data-theme='light'] .saas-ot-reports .saas-section-subtitle {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+}
+
+[data-theme='light'] .modern-dash .dash-stat-value,
+[data-theme='light'] .modern-dash .dash-stat-value.\!text-indigo-600 {
+  color: #4f46e5 !important;
+}
+
+[data-theme='light'] .modern-dash .dash-stat-label,
+[data-theme='light'] .modern-dash .dash-stat-subtitle,
+[data-theme='light'] .modern-dash .dash-stat-label.\!text-slate-500 {
+  color: #64748b !important;
+}
+
+[data-theme='light'] .modern-dash .dash-profile-badge-label,
+[data-theme='light'] .modern-dash .dash-profile-badge-label.\!text-slate-500 {
+  color: #64748b !important;
+}
+
+[data-theme='light'] .modern-dash .dash-profile-badge-value,
+[data-theme='light'] .modern-dash .dash-profile-badge-value.\!text-slate-900 {
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .modern-dash .dash-segment-btn {
+  color: #475569 !important;
+}
+
+[data-theme='light'] .modern-dash .dash-segment-btn--active {
+  color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+[data-theme='light'] .modern-dash .dash-segment-btn:hover:not(.dash-segment-btn--active) {
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .modern-dash .elegant-card,
+[data-theme='light'] .saas-attendance .elegant-card,
+[data-theme='light'] .saas-ot-reports .elegant-card,
+[data-theme='light'] .saas-ot-reports .saas-filter-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme='light'] .modern-dash .elegant-card h1,
+[data-theme='light'] .modern-dash .elegant-card h2,
+[data-theme='light'] .modern-dash .elegant-card h3,
+[data-theme='light'] .modern-dash .elegant-card h4,
+[data-theme='light'] .modern-dash .elegant-card p,
+[data-theme='light'] .saas-attendance .elegant-card h3,
+[data-theme='light'] .saas-attendance .elegant-card p {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .modern-dash .form-label-elegant,
+[data-theme='light'] .saas-attendance .form-label-elegant,
+[data-theme='light'] .saas-ot-reports .form-label-elegant {
+  color: #334155 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .modern-dash input.form-input-elegant,
+[data-theme='light'] .modern-dash select.form-input-elegant,
+[data-theme='light'] .modern-dash textarea.form-input-elegant,
+[data-theme='light'] .saas-attendance input.form-input-elegant,
+[data-theme='light'] .saas-attendance select.form-input-elegant,
+[data-theme='light'] .saas-attendance input[type='file'].form-input-elegant,
+[data-theme='light'] .saas-ot-reports input.form-input-elegant,
+[data-theme='light'] .saas-ot-reports select.form-input-elegant,
+[data-theme='light'] .employee-dashboard-v2 input.form-input-elegant,
+[data-theme='light'] .employee-dashboard-v2 select.form-input-elegant {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 0.5rem !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme='light'] .modern-dash input.form-input-elegant:focus,
+[data-theme='light'] .modern-dash select.form-input-elegant:focus,
+[data-theme='light'] .saas-attendance input.form-input-elegant:focus,
+[data-theme='light'] .saas-attendance select.form-input-elegant:focus,
+[data-theme='light'] .saas-ot-reports input.form-input-elegant:focus,
+[data-theme='light'] .saas-ot-reports select.form-input-elegant:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35) !important;
+  background: #ffffff !important;
+}
+
+[data-theme='light'] .modern-dash .dash-panel-title,
+[data-theme='light'] .modern-dash .saas-panel-heading,
+[data-theme='light'] .saas-ot-reports .saas-panel-heading {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+

@@ -75,7 +75,7 @@ export function ReportPeriodFilter({
         <div className={isSleek ? 'eot-filter-field' : undefined} style={isSleek ? undefined : { minWidth: '200px', flex: '1 1 200px' }}>
           <label className={isSleek ? 'eot-filter-label' : 'form-label-elegant'}>{t(`${i18nPrefix}.payPeriod`)}</label>
           <select
-            className={isSleek ? 'eot-filter-select' : 'form-input-elegant'}
+            className={isSleek ? 'eot-filter-select' : 'form-input-elegant saas-input'}
             value={selectedPeriod === 'custom' ? '' : selectedPeriod}
             onChange={(e) => applyPeriod(e.target.value || 'custom')}
           >
@@ -91,7 +91,7 @@ export function ReportPeriodFilter({
           <label className={isSleek ? 'eot-filter-label' : 'form-label-elegant'}>{t(`${i18nPrefix}.startDate`)}</label>
           <input
             type="date"
-            className={isSleek ? 'eot-filter-input' : 'form-input-elegant'}
+            className={isSleek ? 'eot-filter-input' : 'form-input-elegant saas-input'}
             value={rangeStart}
             onChange={(e) => setRangeStart(e.target.value)}
           />
@@ -100,7 +100,7 @@ export function ReportPeriodFilter({
           <label className={isSleek ? 'eot-filter-label' : 'form-label-elegant'}>{t(`${i18nPrefix}.endDate`)}</label>
           <input
             type="date"
-            className={isSleek ? 'eot-filter-input' : 'form-input-elegant'}
+            className={isSleek ? 'eot-filter-input' : 'form-input-elegant saas-input'}
             value={rangeEnd}
             onChange={(e) => setRangeEnd(e.target.value)}
           />
@@ -115,7 +115,7 @@ export function ReportPeriodFilter({
         </button>
       </div>
       {selectedOption && selectedPeriod !== 'custom' && (
-        <p className={isSleek ? 'eot-filter-hint' : undefined} style={isSleek ? undefined : { margin: '0.75rem 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
+        <p className={isSleek ? 'eot-filter-hint' : '!text-slate-500 dark:!text-slate-400'} style={isSleek ? undefined : { margin: '0.75rem 0 0', fontSize: '0.85rem' }}>
           {t(`${i18nPrefix}.periodHint`, {
             day: PERIOD_ANCHOR_DAY,
             start: selectedOption.startDate,
@@ -132,7 +132,7 @@ export function ReportPeriodFilter({
   }
 
   return (
-    <div className="elegant-card" style={{ marginBottom: '1.5rem' }}>
+    <div className="elegant-card saas-filter-card" style={{ marginBottom: '1.5rem' }}>
       {filterContent}
     </div>
   );

@@ -2482,6 +2482,7 @@ const SuperAdminDashboard = () => {
               <button 
                 className="close-btn" 
                 onClick={() => setSelectedUser(null)}
+                aria-label="Close"
                 style={{
                   background: 'rgba(255, 255, 255, 0.2)',
                   border: '1px solid rgba(255, 255, 255, 0.3)',
@@ -2758,6 +2759,7 @@ const SuperAdminDashboard = () => {
               <button 
                 className="close-btn" 
                 onClick={() => setShowFormModal(false)}
+                aria-label="Close"
                 style={{
                   background: 'rgba(255, 255, 255, 0.2)',
                   border: '1px solid rgba(255, 255, 255, 0.3)',
@@ -3509,6 +3511,7 @@ const SuperAdminDashboard = () => {
               <button 
                 className="close-btn" 
                 onClick={() => setShowDeleteConfirm(null)}
+                aria-label="Close"
                 style={{
                   background: 'rgba(255, 255, 255, 0.2)',
                   border: '1px solid rgba(255, 255, 255, 0.3)',
@@ -3644,6 +3647,7 @@ const SuperAdminDashboard = () => {
               <button 
                 className="close-btn" 
                 onClick={() => setShowCreateUserModal(false)}
+                aria-label="Close"
                 style={{
                   background: 'rgba(255, 255, 255, 0.2)',
                   border: '1px solid rgba(255, 255, 255, 0.3)',
@@ -3910,6 +3914,7 @@ const SuperAdminDashboard = () => {
               <button 
                 className="close-btn" 
                 onClick={() => setShowClearModal(false)}
+                aria-label="Close"
                 style={{
                   background: 'rgba(255, 255, 255, 0.2)',
                   border: '1px solid rgba(255, 255, 255, 0.3)',

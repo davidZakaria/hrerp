@@ -278,7 +278,7 @@ const EmployeeAttendanceDetailModal = ({
         )}
 
         <div className="attendance-detail-footer">
-          <button type="button" className="attendance-detail-close-btn" onClick={onClose}>
+          <button type="button" className="attendance-detail-close-btn" onClick={onClose} aria-label="Close">
             Close
           </button>
         </div>

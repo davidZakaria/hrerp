@@ -1,0 +1,4 @@
+## 2024-06-24 - Partial Path Traversal via startsWith Bypass
+**Vulnerability:** A partial path traversal vulnerability existed in `server.js`'s file serving middleware. The path validation checked `normalizedPath.startsWith(uploadsDir)`. An attacker could access files in folders with names starting with the target folder's name (e.g., `/uploads/medical-documents-fake/` when the target is `/uploads/medical-documents/`).
+**Learning:** Using `.startsWith()` directly on path strings is insufficient for path validation because it matches string prefixes, not path segments. A folder like `documents-secret` matches the prefix `documents`.
+**Prevention:** Always append a trailing directory separator (`path.sep`) to the target directory path when using `.startsWith()` for boundary checks, or use `path.relative()` to ensure the resolved path does not start with `..`.

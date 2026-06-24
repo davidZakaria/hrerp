@@ -388,12 +388,22 @@ const auth = require('./middleware/auth');
 // Protected file access middleware - validates file path and logs access
 const protectedFileAccess = (baseDir, resourceType) => {
     return (req, res, next) => {
-        const filePath = path.join(__dirname, 'uploads', baseDir, req.params[0] || req.path);
+        let reqPath;
+        try {
+            // SECURITY: Decode the URL component to prevent %2E%2E bypasses
+            reqPath = decodeURIComponent(req.params[0] || req.path);
+        } catch (e) {
+            console.warn(`Blocked malformed URL attempt: ${req.path}`);
+            return res.status(400).json({ msg: 'Invalid path encoding' });
+        }
+
+        const filePath = path.join(__dirname, 'uploads', baseDir, reqPath);
         const normalizedPath = path.normalize(filePath);
-        const uploadsDir = path.join(__dirname, 'uploads', baseDir);
+        // Appending path.sep prevents partial folder matches (e.g., 'medical-documents-hacked')
+        const uploadsDir = path.join(__dirname, 'uploads', baseDir) + path.sep;
         
         // Prevent directory traversal attacks
-        if (!normalizedPath.startsWith(uploadsDir)) {
+        if (!normalizedPath.startsWith(uploadsDir) && normalizedPath !== path.join(__dirname, 'uploads', baseDir)) {
             console.warn(`Blocked directory traversal attempt: ${req.path}`);
             return res.status(403).json({ msg: 'Access denied' });
         }

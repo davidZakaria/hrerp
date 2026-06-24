@@ -13,7 +13,7 @@ router.get('/', auth, async (req, res) => {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
-    const recruits = await Recruitment.find().sort({ createdAt: -1 });
+    const recruits = await Recruitment.find().sort({ createdAt: -1 }).lean();
     res.json(recruits);
   } catch (err) {
     console.error(err.message);

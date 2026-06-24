@@ -388,12 +388,16 @@ const auth = require('./middleware/auth');
 // Protected file access middleware - validates file path and logs access
 const protectedFileAccess = (baseDir, resourceType) => {
     return (req, res, next) => {
-        const filePath = path.join(__dirname, 'uploads', baseDir, req.params[0] || req.path);
+        // req.params and req.path are already URL-decoded in Express.
+        // To prevent bypasses with URL encoding, we only need to secure the boundary.
+        const reqPath = req.params[0] || req.path;
+        const filePath = path.join(__dirname, 'uploads', baseDir, reqPath);
         const normalizedPath = path.normalize(filePath);
         const uploadsDir = path.join(__dirname, 'uploads', baseDir);
         
         // Prevent directory traversal attacks
-        if (!normalizedPath.startsWith(uploadsDir)) {
+        // Append path.sep to prevent partial folder matches (e.g. /uploads/avatars-fake matching /uploads/avatars)
+        if (!normalizedPath.startsWith(uploadsDir + path.sep) && normalizedPath !== uploadsDir) {
             console.warn(`Blocked directory traversal attempt: ${req.path}`);
             return res.status(403).json({ msg: 'Access denied' });
         }

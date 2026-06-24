@@ -1413,7 +1413,7 @@ const ManagerDashboard = ({ onLogout }) => {
               <h3>
                 {actionType === 'approve' ? t('managerDashboard.approveRequest') : t('managerDashboard.rejectRequest')}
               </h3>
-              <button type="button" className="close-btn" onClick={closeCommentModal}>{'\u00D7'}</button>
+              <button type="button" className="close-btn" onClick={closeCommentModal} aria-label="Close">{'\u00D7'}</button>
             </div>
             
             {selectedForm && (

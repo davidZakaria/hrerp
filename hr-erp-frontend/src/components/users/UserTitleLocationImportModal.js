@@ -108,7 +108,7 @@ export default function UserTitleLocationImportModal({ open, onClose, onApplied,
       <div className="modal-content-elegant user-import-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '96vw', width: '1100px' }}>
         <div className="modal-header-elegant">
           <h2>{t('userTitleImport.title')}</h2>
-          <button type="button" className="modal-close-elegant" onClick={onClose}>×</button>
+          <button type="button" className="modal-close-elegant" onClick={onClose} aria-label="Close">×</button>
         </div>
 
         <div className="user-import-body">

@@ -1241,6 +1241,7 @@ const ManagerDashboard = ({ onLogout }) => {
                             className="flag-remove-btn"
                             onClick={(e) => { e.stopPropagation(); handleRemoveFlag(flag._id); }}
                             title={t('flags.removeFlag')}
+                            aria-label={t('flags.removeFlag') || 'Remove flag'}
                           >{'\u00D7'}</button>
                         </div>
                       ))}
@@ -1413,7 +1414,7 @@ const ManagerDashboard = ({ onLogout }) => {
               <h3>
                 {actionType === 'approve' ? t('managerDashboard.approveRequest') : t('managerDashboard.rejectRequest')}
               </h3>
-              <button type="button" className="close-btn" onClick={closeCommentModal}>{'\u00D7'}</button>
+              <button type="button" className="close-btn" onClick={closeCommentModal} aria-label="Close">{'\u00D7'}</button>
             </div>
             
             {selectedForm && (

@@ -236,9 +236,11 @@ router.get('/', auth, async (req, res) => {
             query.assignedInterviewer = req.user.id;
         }
 
+        // Optimization: Use .lean() for read-only query to improve performance and reduce memory usage
         const applications = await JobApplication.find(query)
             .populate('assignedInterviewer', 'name email')
-            .sort({ appliedAt: -1 });
+            .sort({ appliedAt: -1 })
+            .lean();
 
         res.json(applications);
 
@@ -430,9 +432,11 @@ router.get('/:id/evaluations', auth, validateObjectId('id'), async (req, res) =>
             return res.status(403).json({ msg: 'You are not authorized to view these evaluations' });
         }
 
+        // Optimization: Use .lean() for read-only query to improve performance and reduce memory usage
         const evaluations = await Evaluation.find({ jobApplication: req.params.id })
             .populate('evaluator', 'name email role')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
 
         res.json(evaluations);
 

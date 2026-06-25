@@ -96,12 +96,14 @@ router.post('/', auth, async (req, res) => {
 // @access  Private
 router.get('/my-flags', auth, async (req, res) => {
     try {
+        // Optimization: Use .lean() for read-only query to improve performance and reduce memory usage
         const flags = await EmployeeFlag.find({
             employee: req.user.id,
             isActive: true
         })
         .populate('flaggedBy', 'name email')
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .lean();
 
         res.json({
             success: true,
@@ -139,22 +141,25 @@ router.get('/team', auth, async (req, res) => {
         }
 
         // Get all employees in managed departments
+        // Optimization: Use .lean() for read-only query to improve performance and reduce memory usage
         const teamMembers = await User.find({
             department: { $in: eff },
             role: 'employee',
             status: 'active'
-        }).select('_id');
+        }).select('_id').lean();
 
         const teamMemberIds = teamMembers.map(m => m._id);
 
         // Get flags for these employees
+        // Optimization: Use .lean() for read-only query to improve performance and reduce memory usage
         const flags = await EmployeeFlag.find({
             employee: { $in: teamMemberIds },
             isActive: true
         })
         .populate('employee', 'name email department')
         .populate('flaggedBy', 'name email')
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .lean();
 
         res.json({
             success: true,
@@ -185,11 +190,13 @@ router.get('/all', auth, async (req, res) => {
         const { includeInactive } = req.query;
         const query = includeInactive === 'true' ? {} : { isActive: true };
 
+        // Optimization: Use .lean() for read-only query to improve performance and reduce memory usage
         const flags = await EmployeeFlag.find(query)
             .populate('employee', 'name email department')
             .populate('flaggedBy', 'name email')
             .populate('deactivatedBy', 'name email')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
 
         res.json({
             success: true,
@@ -230,12 +237,14 @@ router.get('/employee/:employeeId', auth, validateObjectId('employeeId'), async 
             return res.status(403).json({ msg: 'Not authorized to view these flags' });
         }
 
+        // Optimization: Use .lean() for read-only query to improve performance and reduce memory usage
         const flags = await EmployeeFlag.find({
             employee: employeeId,
             isActive: true
         })
         .populate('flaggedBy', 'name email')
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .lean();
 
         res.json({
             success: true,

@@ -325,11 +325,12 @@ async function buildTeamReportPayload(manager, rangeStart, rangeEnd) {
         return { report: [], overtimeSummary: emptyOvertime, kpi: emptyKpi };
     }
 
+    // ⚡ Bolt: Add .lean() to prevent Mongoose document hydration for better performance
     const teamMembers = await User.find({
         department: { $in: effectiveManaged },
         role: 'employee',
         status: 'active'
-    }).select('name email employeeCode department workSchedule');
+    }).select('name email employeeCode department workSchedule').lean();
 
     if (teamMembers.length === 0) {
         return { report: [], overtimeSummary: emptyOvertime, kpi: emptyKpi };
@@ -366,12 +367,14 @@ async function buildTeamReportPayload(manager, rangeStart, rangeEnd) {
         };
     }
 
+    // ⚡ Bolt: Add .lean() to read-only queries for improved performance
     const attendanceRecords = await Attendance.find({
         date: { $gte: rangeStart, $lte: rangeEnd },
         user: { $in: teamMemberIds }
     })
         .populate('relatedForm', 'type status')
-        .sort({ date: 1 });
+        .sort({ date: 1 })
+        .lean();
 
     for (const record of attendanceRecords) {
         const userId = record.user.toString();
@@ -1534,14 +1537,16 @@ router.get('/data-summary/:month', auth, async (req, res) => {
         const { month } = req.params;
         
         // Get all users with employee codes
+        // ⚡ Bolt: Add .lean() for faster data retrieval
         const users = await User.find({ 
             employeeCode: { $exists: true, $ne: null } 
-        }).select('name employeeCode department');
+        }).select('name employeeCode department').lean();
         
         // Get all attendance records for the month
         const records = await Attendance.find({ month: month })
             .populate('user', 'name employeeCode department')
-            .sort({ date: 1 });
+            .sort({ date: 1 })
+            .lean();
         
         // Build detailed summary per employee
         const employeeSummaries = [];

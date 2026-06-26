@@ -1430,8 +1430,9 @@ const SuperAdminDashboard = () => {
                   cursor: 'pointer',
                   fontSize: '1.2rem'
                 }}
+                aria-label="Close"
               >
-                ×
+                <span aria-hidden="true">×</span>
               </button>
             </div>
           )}
@@ -1449,8 +1450,9 @@ const SuperAdminDashboard = () => {
                   cursor: 'pointer',
                   fontSize: '1.2rem'
                 }}
+                aria-label="Close"
               >
-                ×
+                <span aria-hidden="true">×</span>
               </button>
             </div>
           )}
@@ -1785,7 +1787,8 @@ const SuperAdminDashboard = () => {
                                       className="flag-remove-btn-admin"
                                       onClick={(e) => { e.stopPropagation(); handleRemoveFlag(flag._id); }}
                                       title="Remove flag"
-                                    >×</button>
+                                      aria-label="Remove flag"
+                                    ><span aria-hidden="true">×</span></button>
                                   </span>
                                 ))}
                               </div>
@@ -2312,8 +2315,9 @@ const SuperAdminDashboard = () => {
                       cursor: 'pointer',
                       fontSize: '1.2rem'
                     }}
+                    aria-label="Close"
                   >
-                    ×
+                    <span aria-hidden="true">×</span>
                   </button>
                 </div>
               )}
@@ -2497,8 +2501,9 @@ const SuperAdminDashboard = () => {
                   justifyContent: 'center',
                   lineHeight: '1'
                 }}
+                aria-label="Close"
               >
-                ×
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
@@ -2773,8 +2778,9 @@ const SuperAdminDashboard = () => {
                   justifyContent: 'center',
                   lineHeight: '1'
                 }}
+                aria-label="Close"
               >
-                ×
+                <span aria-hidden="true">×</span>
               </button>
             </div>
             
@@ -3127,8 +3133,9 @@ const SuperAdminDashboard = () => {
                   color: 'inherit',
                   padding: '0 0.5rem'
                 }}
+                aria-label="Close"
               >
-                ×
+                <span aria-hidden="true">×</span>
               </button>
             </div>
           )}
@@ -3524,8 +3531,9 @@ const SuperAdminDashboard = () => {
                   justifyContent: 'center',
                   lineHeight: '1'
                 }}
+                aria-label="Close"
               >
-                ×
+                <span aria-hidden="true">×</span>
               </button>
             </div>
             
@@ -3660,8 +3668,9 @@ const SuperAdminDashboard = () => {
                   lineHeight: '1'
                 }}
                 title="Close"
+                aria-label="Close"
               >
-                ×
+                <span aria-hidden="true">×</span>
               </button>
             </div>
             
@@ -3925,8 +3934,9 @@ const SuperAdminDashboard = () => {
                   justifyContent: 'center',
                   lineHeight: '1'
                 }}
+                aria-label="Close"
               >
-                ×
+                <span aria-hidden="true">×</span>
               </button>
             </div>
             

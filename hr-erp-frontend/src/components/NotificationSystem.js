@@ -243,7 +243,7 @@ const NotificationItem = ({ notification, onRemove }) => {
 
       {notification.closable !== false && (
         <button className="close-btn" onClick={handleRemove} aria-label="Close notification">
-          ×
+          <span aria-hidden="true">×</span>
         </button>
       )}
 

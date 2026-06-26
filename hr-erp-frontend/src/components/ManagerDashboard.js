@@ -1413,7 +1413,7 @@ const ManagerDashboard = ({ onLogout }) => {
               <h3>
                 {actionType === 'approve' ? t('managerDashboard.approveRequest') : t('managerDashboard.rejectRequest')}
               </h3>
-              <button type="button" className="close-btn" onClick={closeCommentModal}>{'\u00D7'}</button>
+              <button type="button" className="close-btn" onClick={closeCommentModal} aria-label="Close"><span aria-hidden="true">{'\u00D7'}</span></button>
             </div>
             
             {selectedForm && (
@@ -1650,7 +1650,7 @@ const ManagerDashboard = ({ onLogout }) => {
           <div className="modal-content md-edit-modal max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{t('edit') || 'Edit'} Form</h3>
-              <button type="button" className="close-btn" onClick={closeEditFormModal} aria-label="Close">{'\u00D7'}</button>
+              <button type="button" className="close-btn" onClick={closeEditFormModal} aria-label="Close"><span aria-hidden="true">{'\u00D7'}</span></button>
             </div>
             <div className="modal-body">
               <div className={MD_MODAL_FIELD}>
@@ -1800,7 +1800,7 @@ const ManagerDashboard = ({ onLogout }) => {
           <div className="modal-content flag-modal md-flag-modal max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{t('flags.flagEmployee') || 'Flag Employee'}</h3>
-              <button type="button" className="close-btn" onClick={closeFlagModal} aria-label="Close">{'\u00D7'}</button>
+              <button type="button" className="close-btn" onClick={closeFlagModal} aria-label="Close"><span aria-hidden="true">{'\u00D7'}</span></button>
             </div>
 
             <div className="modal-body">

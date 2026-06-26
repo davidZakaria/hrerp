@@ -172,7 +172,7 @@ const VacationReportModal = ({ open, onClose }) => {
               Print Report
             </button>
             <button type="button" className="saas-vacation-close-btn" onClick={onClose} aria-label="Close">
-              ×
+              <span aria-hidden="true">×</span>
             </button>
           </div>
         </div>

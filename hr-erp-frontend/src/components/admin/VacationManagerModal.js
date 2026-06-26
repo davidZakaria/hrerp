@@ -191,7 +191,7 @@ const VacationManagerModal = ({ open, onClose }) => {
             </p>
           </div>
           <button type="button" className="saas-vacation-close-btn" onClick={onClose} aria-label="Close">
-            ×
+            <span aria-hidden="true">×</span>
           </button>
         </div>
 

@@ -1101,7 +1101,7 @@ router.get('/team-members', auth, async (req, res) => {
             department: { $in: effectiveDepts },
             role: 'employee',
             status: 'active'
-        }).select('name email department vacationDaysLeft role');
+        }).select('name email department vacationDaysLeft role').lean();
 
         res.json(teamMembers);
     } catch (err) {

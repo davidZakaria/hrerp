@@ -43,8 +43,14 @@ function UserRowActions({
         <button type="button" className="user-mgmt-sheet-btn user-mgmt-sheet-btn-primary" onClick={() => onEdit(user)}>
           {t('common.edit')}
         </button>
-        <button type="button" className="user-mgmt-sheet-btn user-mgmt-sheet-btn-warn" onClick={() => onResetPassword(user)}>
-          🔑
+        <button
+          type="button"
+          className="user-mgmt-sheet-btn user-mgmt-sheet-btn-warn"
+          onClick={() => onResetPassword(user)}
+          title={t('users.resetPassword') || 'Reset Password'}
+          aria-label={t('users.resetPassword') || 'Reset Password'}
+        >
+          <span aria-hidden="true">🔑</span>
         </button>
         <button type="button" className="user-mgmt-sheet-btn user-mgmt-sheet-btn-danger" onClick={() => onDelete(user)}>
           {t('common.delete')}
@@ -57,10 +63,11 @@ function UserRowActions({
               key={flag._id}
               type="button"
               className="user-mgmt-sheet-flag-x"
-              title={flag.reason}
+              title={`${t('flags.removeFlag') || 'Remove flag'}: ${flag.reason}`}
+              aria-label={`${t('flags.removeFlag') || 'Remove flag'} ${flag.type}`}
               onClick={() => onRemoveFlag(flag._id)}
             >
-              × {flag.type}
+              <span aria-hidden="true">×</span> {flag.type}
             </button>
           ))}
         </div>

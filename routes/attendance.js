@@ -1536,20 +1536,28 @@ router.get('/data-summary/:month', auth, async (req, res) => {
         // Get all users with employee codes
         const users = await User.find({ 
             employeeCode: { $exists: true, $ne: null } 
-        }).select('name employeeCode department');
+        }).select('name employeeCode department').lean();
         
         // Get all attendance records for the month
         const records = await Attendance.find({ month: month })
             .populate('user', 'name employeeCode department')
-            .sort({ date: 1 });
+            .sort({ date: 1 }).lean();
         
+        // Pre-group records by user ID to avoid O(N*M) lookups
+        const recordsByUser = {};
+        for (const record of records) {
+            if (record.user && record.user._id) {
+                const uid = record.user._id.toString();
+                if (!recordsByUser[uid]) recordsByUser[uid] = [];
+                recordsByUser[uid].push(record);
+            }
+        }
+
         // Build detailed summary per employee
         const employeeSummaries = [];
         
         for (const user of users) {
-            const userRecords = records.filter(r => 
-                r.user && r.user._id.toString() === user._id.toString()
-            );
+            const userRecords = recordsByUser[user._id.toString()] || [];
             
             if (userRecords.length === 0) continue;
             

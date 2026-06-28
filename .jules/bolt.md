@@ -1,0 +1,3 @@
+## 2025-01-20 - [Avoid O(N*M) nested iterations over read-only Mongoose result sets]
+**Learning:** Using `.filter()` inside loops over large datasets, such as filtering through attendance records for every user, leads to O(N*M) time complexity. Using `.lean()` on large dataset lookups drastically reduces instantiation and memory footprint.
+**Action:** When mapping or building reports referencing multiple un-joined datasets, pre-group the items in an O(N) map dictionary by the foreign key (e.g., grouping `records` by `user._id`), and then retrieve them in O(1) inside the loop (yielding O(N+M) performance), and append `.lean()` to any pure read queries.

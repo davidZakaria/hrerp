@@ -371,7 +371,7 @@ async function buildTeamReportPayload(manager, rangeStart, rangeEnd) {
         user: { $in: teamMemberIds }
     })
         .populate('relatedForm', 'type status')
-        .sort({ date: 1 });
+        .sort({ date: 1 }).lean();
 
     for (const record of attendanceRecords) {
         const userId = record.user.toString();
@@ -778,7 +778,7 @@ router.post('/recalc-overtime', auth, async (req, res) => {
             date: { $gte: rangeStart, $lte: rangeEnd },
             clockIn: { $exists: true, $ne: '' },
             clockOut: { $exists: true, $ne: '' }
-        }).populate('user', 'workSchedule');
+        }).populate('user', 'workSchedule'); // NOT lean because we call save() later
 
         const settings = await getSystemSettings();
         let updated = 0;
@@ -847,10 +847,10 @@ router.get('/deduction-report', auth, async (req, res) => {
         const [users, attendanceRecords, waiverForms, otForms] = await Promise.all([
             User.find({ employeeCode: { $exists: true, $ne: '' } })
                 .select('name department employeeCode workSchedule jobTitle location')
-                .sort({ name: 1 }),
+                .sort({ name: 1 }).lean(),
             Attendance.find({
                 date: { $gte: extendedStart, $lte: rangeEnd }
-            }).populate('user', 'name department employeeCode workSchedule jobTitle location'),
+            }).populate('user', 'name department employeeCode workSchedule jobTitle location').lean(),
             Form.find({
                 type: { $in: WAIVER_FORM_TYPES },
                 status: { $in: APPROVED_WAIVER_STATUSES },
@@ -860,12 +860,12 @@ router.get('/deduction-report', auth, async (req, res) => {
                     { type: 'wfh', wfhDate: { $gte: extendedStart, $lte: rangeEnd } },
                     { type: 'mission', missionEndDate: { $gte: extendedStart }, missionStartDate: { $lte: rangeEnd } }
                 ]
-            }).populate('user', 'name department employeeCode'),
+            }).populate('user', 'name department employeeCode').lean(),
             Form.find({
                 type: 'extra_hours',
                 status: 'approved',
                 extraHoursDate: { $gte: rangeStart, $lte: rangeEnd }
-            }).populate('user', 'name department employeeCode')
+            }).populate('user', 'name department employeeCode').lean()
         ]);
 
         const settings = await getSystemSettings();
@@ -939,10 +939,10 @@ router.get('/detailed-leaves-report', auth, async (req, res) => {
         const [users, attendanceRecords, forms] = await Promise.all([
             User.find({ employeeCode: { $exists: true, $ne: '' } })
                 .select('name department employeeCode jobTitle location')
-                .sort({ name: 1 }),
+                .sort({ name: 1 }).lean(),
             Attendance.find({
                 date: { $gte: rangeStart, $lte: rangeEnd }
-            }).populate('user', 'name employeeCode'),
+            }).populate('user', 'name employeeCode').lean(),
             Form.find({
                 type: { $in: ['vacation', 'sick_leave', 'wfh', 'mission'] },
                 $or: [
@@ -971,7 +971,7 @@ router.get('/detailed-leaves-report', auth, async (req, res) => {
                     'type vacationType status startDate endDate sickLeaveStartDate sickLeaveEndDate ' +
                     'wfhDate wfhWorkingOn missionStartDate missionEndDate reason isHalfDay user'
                 )
-                .populate('user', 'name employeeCode')
+                .populate('user', 'name employeeCode').lean()
         ]);
 
         const report = buildDetailedLeavesReport({
@@ -1541,7 +1541,7 @@ router.get('/data-summary/:month', auth, async (req, res) => {
         // Get all attendance records for the month
         const records = await Attendance.find({ month: month })
             .populate('user', 'name employeeCode department')
-            .sort({ date: 1 });
+            .sort({ date: 1 }).lean();
         
         // Build detailed summary per employee
         const employeeSummaries = [];

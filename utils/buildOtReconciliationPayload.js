@@ -44,7 +44,7 @@ async function buildOtReconciliationPayload(rangeStart, rangeEnd, { userId = nul
             clockIn: { $exists: true, $ne: '' },
             clockOut: { $exists: true, $ne: '' },
             ...userScope
-        }).populate('user', USER_POPULATE),
+        }).populate('user', USER_POPULATE).lean(),
         Form.find({
             type: 'extra_hours',
             status: 'approved',
@@ -52,7 +52,7 @@ async function buildOtReconciliationPayload(rangeStart, rangeEnd, { userId = nul
             ...userScope
         })
             .populate('user', USER_POPULATE)
-            .sort({ extraHoursDate: 1 }),
+            .sort({ extraHoursDate: 1 }).lean(),
         Form.find({
             type: 'extra_hours',
             status: { $ne: 'rejected' },
@@ -60,7 +60,7 @@ async function buildOtReconciliationPayload(rangeStart, rangeEnd, { userId = nul
             ...userScope
         })
             .populate('user', USER_POPULATE)
-            .sort({ extraHoursDate: 1 }),
+            .sort({ extraHoursDate: 1 }).lean(),
         Form.countDocuments({
             type: 'extra_hours',
             status: { $in: ['manager_approved', 'manager_submitted'] },

@@ -47,7 +47,8 @@ router.get('/', auth, async (req, res) => {
       .populate('targetUser', 'name email')
       .sort({ timestamp: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     const total = await Audit.countDocuments(filter);
 
@@ -109,6 +110,7 @@ router.get('/stats', auth, async (req, res) => {
         .populate('performedBy', 'name email')
         .sort({ timestamp: -1 })
         .limit(5)
+        .lean()
     };
 
     res.json(stats);
@@ -135,7 +137,8 @@ router.get('/user/:userId', auth, validateObjectId('userId'), async (req, res) =
     .populate('performedBy', 'name email role')
     .populate('targetUser', 'name email')
     .sort({ timestamp: -1 })
-    .limit(100);
+    .limit(100)
+    .lean();
 
     res.json(audits);
   } catch (err) {
@@ -168,7 +171,8 @@ router.get('/download', auth, async (req, res) => {
       .populate('performedBy', 'name email role')
       .populate('targetUser', 'name email')
       .sort({ timestamp: -1 })
-      .limit(10000); // Limit to prevent server overload
+      .limit(10000)
+      .lean(); // Limit to prevent server overload
 
     // Create CSV content
     const csvHeaders = [

@@ -1,0 +1,4 @@
+## 2026-06-30 - [Partial Folder Match Bypass in path traversal checks]
+**Vulnerability:** Partial folder match bypass in directory traversal protection using `startsWith()`. When `path.startsWith(allowedDir)` is used without appending a trailing slash/separator, an attacker can access sibling directories that start with the same prefix (e.g., accessing `/uploads/avatars-hack` when only `/uploads/avatars` is allowed).
+**Learning:** `startsWith()` alone is insufficient for boundary checks on file paths because it operates on strings, not path segments. This is a common and subtle flaw in custom directory traversal prevention logic.
+**Prevention:** Always append a trailing directory separator (`path.sep`) to the target directory path before performing boundary checks with `startsWith()`. Additionally, ensure you still allow exact matches to the target directory if root access is expected.

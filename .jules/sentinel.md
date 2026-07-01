@@ -1,0 +1,4 @@
+## 2024-10-24 - [Partial Folder Match Bypass in Path Validation]
+**Vulnerability:** The `protectedFileAccess` middleware validated paths using `normalizedPath.startsWith(uploadsDir)`. This allowed partial folder match bypasses, where an attacker could access a sibling directory that shares the same prefix (e.g., `uploads/resumes-secret` matches the prefix `uploads/resumes`).
+**Learning:** `startsWith` on file paths is unsafe for boundary checks because it treats the path as a raw string rather than directory components, failing to distinguish between `/dir/file` and `/dir-suffix/file`.
+**Prevention:** When validating that a normalized path is within a base directory, use strict exact match `normalizedPath === uploadsDir` or append a path separator `normalizedPath.startsWith(uploadsDir + path.sep)` to ensure the prefix is a complete directory name.

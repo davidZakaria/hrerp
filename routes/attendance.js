@@ -1546,10 +1546,18 @@ router.get('/data-summary/:month', auth, async (req, res) => {
         // Build detailed summary per employee
         const employeeSummaries = [];
         
+        // Group records by user ID to avoid O(N*M) nested filter operations
+        const recordsByUser = {};
+        for (const record of records) {
+            if (record.user && record.user._id) {
+                const userIdStr = record.user._id.toString();
+                if (!recordsByUser[userIdStr]) recordsByUser[userIdStr] = [];
+                recordsByUser[userIdStr].push(record);
+            }
+        }
+
         for (const user of users) {
-            const userRecords = records.filter(r => 
-                r.user && r.user._id.toString() === user._id.toString()
-            );
+            const userRecords = recordsByUser[user._id.toString()] || [];
             
             if (userRecords.length === 0) continue;
             

@@ -844,13 +844,17 @@ router.get('/deduction-report', auth, async (req, res) => {
 
         const extendedStart = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1, 0, 0, 0, 0);
 
+        // ⚡ Bolt: Using .lean() to return plain JS objects instead of heavy Mongoose documents
+        // This significantly reduces memory overhead and improves performance for read-only reporting queries.
         const [users, attendanceRecords, waiverForms, otForms] = await Promise.all([
             User.find({ employeeCode: { $exists: true, $ne: '' } })
                 .select('name department employeeCode workSchedule jobTitle location')
-                .sort({ name: 1 }),
+                .sort({ name: 1 })
+                .lean(),
             Attendance.find({
                 date: { $gte: extendedStart, $lte: rangeEnd }
-            }).populate('user', 'name department employeeCode workSchedule jobTitle location'),
+            }).populate('user', 'name department employeeCode workSchedule jobTitle location')
+              .lean(),
             Form.find({
                 type: { $in: WAIVER_FORM_TYPES },
                 status: { $in: APPROVED_WAIVER_STATUSES },
@@ -860,12 +864,14 @@ router.get('/deduction-report', auth, async (req, res) => {
                     { type: 'wfh', wfhDate: { $gte: extendedStart, $lte: rangeEnd } },
                     { type: 'mission', missionEndDate: { $gte: extendedStart }, missionStartDate: { $lte: rangeEnd } }
                 ]
-            }).populate('user', 'name department employeeCode'),
+            }).populate('user', 'name department employeeCode')
+              .lean(),
             Form.find({
                 type: 'extra_hours',
                 status: 'approved',
                 extraHoursDate: { $gte: rangeStart, $lte: rangeEnd }
             }).populate('user', 'name department employeeCode')
+              .lean()
         ]);
 
         const settings = await getSystemSettings();

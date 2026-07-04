@@ -1,0 +1,3 @@
+## 2025-01-20 - Use `.lean()` on Heavy Concurrent Read-Only Mongoose Queries
+**Learning:** Using `Promise.all` with multiple `.find().populate()` queries over large datasets (like `Attendance`, `User`, `Form`) without `.lean()` causes significant memory overhead and impacts response time. Mongoose model hydration is unnecessary for reporting endpoints where objects are only iterated over to generate a payload. Note that `.lean()` safely retains `populate()` functionality and `_id` references.
+**Action:** Always append `.lean()` to Mongoose `find()` queries in read-only endpoints (e.g., reports, aggregations) to skip hydration, especially when queries run concurrently via `Promise.all()`.

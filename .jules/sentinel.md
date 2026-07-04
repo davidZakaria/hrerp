@@ -1,0 +1,4 @@
+## 2025-07-04 - [Path Traversal in protectedFileAccess middleware]
+**Vulnerability:** The `protectedFileAccess` middleware uses `startsWith(uploadsDir)` to prevent directory traversal. However, if an attacker accesses a file like `../avatars-secret/file.txt`, `normalizedPath` becomes `/app/uploads/avatars-secret/file.txt`, and `uploadsDir` is `/app/uploads/avatars`. Because `/app/uploads/avatars-secret...` starts with `/app/uploads/avatars`, the check passes.
+**Learning:** `startsWith` on paths without a trailing directory separator (`path.sep`) can allow partial folder match bypasses.
+**Prevention:** When implementing path validation in Express to prevent directory traversal, ensure `startsWith` boundary checks append a trailing `path.sep` to the target directory path, while explicitly allowing exact matches to the target directory if base access is expected.

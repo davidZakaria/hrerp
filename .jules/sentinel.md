@@ -1,0 +1,4 @@
+## 2024-07-05 - Path validation logic flaw allows partial match bypass
+**Vulnerability:** In `server.js`, `protectedFileAccess` uses `normalizedPath.startsWith(uploadsDir)` to prevent directory traversal. However, if `uploadsDir` is `/app/uploads/resumes`, a path like `/app/uploads/resumes-backup/secret.txt` will also pass the `startsWith` check, allowing access to a sibling directory that shares the same prefix. This is a partial match bypass.
+**Learning:** `startsWith` on paths without a trailing directory separator (e.g., `path.sep`) can match unintended sibling directories that begin with the same string.
+**Prevention:** Always append a trailing `path.sep` to the target directory path when using `startsWith` for boundary checks, or use a robust path boundary check function that handles separators properly. Allow exact matches to the target directory if base access is expected.

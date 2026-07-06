@@ -1,0 +1,4 @@
+## 2024-07-06 - [HIGH] Fix path traversal bypass in file access middleware
+**Vulnerability:** Partial folder match bypass in Express route path validation (`startsWith`).
+**Learning:** Using `!normalizedPath.startsWith(uploadsDir)` allows attackers to bypass directory traversal protections. For example, if `uploadsDir` is `/app/uploads/avatars`, accessing `/app/uploads/avatars-fake/secret.txt` starts with the `uploadsDir` string, therefore bypassing the check and allowing access to files outside the intended directory.
+**Prevention:** When validating paths to prevent directory traversal using `startsWith`, always append `path.sep` (e.g. `!normalizedPath.startsWith(uploadsDir + path.sep)`) and explicitly allow exact matches to the target directory if base access is expected (`normalizedPath !== uploadsDir`).

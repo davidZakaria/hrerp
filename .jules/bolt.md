@@ -1,0 +1,3 @@
+## 2024-05-18 - Applying .lean() to Heavy Mongoose Reporting Queries
+**Learning:** For reporting endpoints and large bulk data retrieval operations where documents are never updated and re-saved, standard Mongoose queries return heavily hydrated Mongoose Document objects which carry significant CPU and memory overhead.
+**Action:** When working with endpoints that only read data (such as attendance reports or data summaries), always append `.lean()` to `find()` queries. It makes the queries measurably faster by returning plain JavaScript objects. `populate()` still works correctly with `.lean()`. Also remember not to commit unintended file changes like frontend `pnpm-lock.yaml` which violate the <50 line optimization constraint.

@@ -1,0 +1,3 @@
+## 2024-07-07 - Refactored O(N*M) Array.filter with O(N) hash map and used .lean()
+**Learning:** For Mongoose operations, array `.filter` inside loops can be incredibly slow and lead to O(N*M) time complexity. Using hash maps to pre-group arrays by keys improves the algorithm efficiency to O(N). Also, using `.lean()` in read-only Mongoose queries avoids instantiating heavy Mongoose Document objects.
+**Action:** When finding loops with `.filter` methods operating on large arrays in Mongoose responses, consider refactoring them with hash map groupings. Additionally, always append `.lean()` to Mongoose queries if the results only need to be read.

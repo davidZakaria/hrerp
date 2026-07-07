@@ -1,0 +1,4 @@
+## 2024-05-18 - Path Traversal bypass via partial folder match
+**Vulnerability:** The `protectedFileAccess` middleware validated paths using `normalizedPath.startsWith(uploadsDir)`. This allowed accessing directories like `/uploads/avatars-malicious` using path traversal (e.g., `../avatars-malicious/file.txt`), since `.../avatars-malicious` starts with `.../avatars`.
+**Learning:** `startsWith` should not be used directly on string paths for directory boundary checking without adding a trailing separator (`path.sep`), otherwise partial string matches can bypass the check.
+**Prevention:** When validating paths to prevent directory traversal, always append `path.sep` to the target directory path, and explicitly allow exact matches if necessary (`normalizedPath === uploadsDir || normalizedPath.startsWith(uploadsDir + path.sep)`).

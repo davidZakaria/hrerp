@@ -8,12 +8,13 @@ const User = require('../models/User');
 // Get all recruits (admin only)
 router.get('/', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (user.role !== 'admin') {
+    // ⚡ Bolt: removed unnecessary User.findById query since req.user.role is attached by auth middleware
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
-    const recruits = await Recruitment.find().sort({ createdAt: -1 });
+    // ⚡ Bolt: added .lean() to skip document instantiation for read-only query
+    const recruits = await Recruitment.find().sort({ createdAt: -1 }).lean();
     res.json(recruits);
   } catch (err) {
     console.error(err.message);
@@ -24,8 +25,8 @@ router.get('/', auth, async (req, res) => {
 // Add new recruit (admin only)
 router.post('/', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (user.role !== 'admin') {
+    // ⚡ Bolt: removed unnecessary User.findById query
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
@@ -64,8 +65,8 @@ router.post('/', auth, async (req, res) => {
 // Update recruit (admin only)
 router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (user.role !== 'admin') {
+    // ⚡ Bolt: removed unnecessary User.findById query
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 
@@ -108,8 +109,8 @@ router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
 // Delete recruit (admin only)
 router.delete('/:id', auth, validateObjectId('id'), async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (user.role !== 'admin') {
+    // ⚡ Bolt: removed unnecessary User.findById query
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ msg: 'Not authorized' });
     }
 

@@ -174,6 +174,7 @@ const ExportPrintButtons = ({
       <button 
         className="btn-elegant btn-sm"
         onClick={handleExportCSV}
+        aria-label="Export to CSV"
         style={{ 
           backgroundColor: '#4CAF50', 
           color: 'white',
@@ -184,11 +185,12 @@ const ExportPrintButtons = ({
           fontSize: '0.85rem'
         }}
       >
-        📥 Export CSV
+        <span aria-hidden="true">📥</span> Export CSV
       </button>
       <button 
         className="btn-elegant btn-sm"
         onClick={handlePrint}
+        aria-label="Print report"
         style={{ 
           backgroundColor: '#2196F3', 
           color: 'white',
@@ -199,7 +201,7 @@ const ExportPrintButtons = ({
           fontSize: '0.85rem'
         }}
       >
-        🖨️ Print
+        <span aria-hidden="true">🖨️</span> Print
       </button>
     </div>
   );

@@ -184,7 +184,7 @@ const ExportPrintButtons = ({
           fontSize: '0.85rem'
         }}
       >
-        📥 Export CSV
+        <span aria-hidden="true">📥</span> Export CSV
       </button>
       <button 
         className="btn-elegant btn-sm"
@@ -199,7 +199,7 @@ const ExportPrintButtons = ({
           fontSize: '0.85rem'
         }}
       >
-        🖨️ Print
+        <span aria-hidden="true">🖨️</span> Print
       </button>
     </div>
   );

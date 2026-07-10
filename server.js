@@ -393,7 +393,7 @@ const protectedFileAccess = (baseDir, resourceType) => {
         const uploadsDir = path.join(__dirname, 'uploads', baseDir);
         
         // Prevent directory traversal attacks
-        if (!normalizedPath.startsWith(uploadsDir)) {
+        if (!normalizedPath.startsWith(uploadsDir + path.sep) && normalizedPath !== uploadsDir) {
             console.warn(`Blocked directory traversal attempt: ${req.path}`);
             return res.status(403).json({ msg: 'Access denied' });
         }

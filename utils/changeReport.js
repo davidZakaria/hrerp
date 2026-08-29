@@ -9,6 +9,43 @@ const path = require('path');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 
+/** Paths ignored in uncommitted-file lists (server noise, not app source changes) */
+const GIT_NOISE_PREFIXES = [
+  'node_modules/',
+  'hr-erp-frontend/node_modules/',
+  'hr-erp-frontend/build/',
+  'backups/',
+  'uploads/'
+];
+
+function parseGitStatusPath(line) {
+  const match = line.match(/^.. (.+)$/);
+  if (!match) return null;
+  let filePath = match[1].trim();
+  if (filePath.includes(' -> ')) filePath = filePath.split(' -> ').pop().trim();
+  return filePath.replace(/\\/g, '/');
+}
+
+function isNoiseGitPath(filePath) {
+  if (!filePath) return true;
+  const p = filePath.replace(/\\/g, '/');
+  return GIT_NOISE_PREFIXES.some((prefix) => p.startsWith(prefix) || p.includes(`/${prefix}`));
+}
+
+function filterGitStatusLines(statusLines) {
+  const meaningful = [];
+  let ignoredCount = 0;
+  for (const line of statusLines) {
+    const filePath = parseGitStatusPath(line);
+    if (isNoiseGitPath(filePath)) {
+      ignoredCount++;
+      continue;
+    }
+    meaningful.push(line);
+  }
+  return { files: meaningful, count: meaningful.length, ignoredCount };
+}
+
 function runGit(args, fallback = '') {
   try {
     return execSync(`git ${args}`, {
@@ -35,8 +72,9 @@ function getGitSnapshot() {
     .map((l) => l.trim())
     .filter(Boolean);
 
-  const unstagedStat = runGit('diff --stat', '');
-  const stagedStat = runGit('diff --cached --stat', '');
+  const filtered = filterGitStatusLines(statusLines);
+  const unstagedStat = runGit('diff --stat -- . ":(exclude)node_modules" ":(exclude)hr-erp-frontend/node_modules" ":(exclude)hr-erp-frontend/build" ":(exclude)backups" ":(exclude)uploads"', '');
+  const stagedStat = runGit('diff --cached --stat -- . ":(exclude)node_modules" ":(exclude)hr-erp-frontend/node_modules" ":(exclude)hr-erp-frontend/build" ":(exclude)backups" ":(exclude)uploads"', '');
 
   return {
     branch,
@@ -46,21 +84,48 @@ function getGitSnapshot() {
     author: authorEmail ? `${author} <${authorEmail}>` : author,
     commitDate,
     uncommitted: {
-      count: statusLines.length,
-      files: statusLines,
+      count: filtered.count,
+      ignoredCount: filtered.ignoredCount,
+      files: filtered.files,
       unstagedDiffStat: unstagedStat || null,
       stagedDiffStat: stagedStat || null
     }
   };
 }
 
-function getGitChangesSince(baseCommit) {
+function getGitChangesSince(baseCommit, sinceDate) {
   if (!baseCommit || baseCommit === 'unknown') {
+    if (!sinceDate) {
+      return {
+        baseCommit: null,
+        sinceDate: null,
+        commits: [],
+        commitCount: 0,
+        diffStat: null,
+        filesChanged: []
+      };
+    }
+
+    const since = new Date(sinceDate).toISOString();
+    const commitsRaw = runGit(`log --since="${since}" --oneline`, '');
+    const commits = commitsRaw
+      ? commitsRaw.split('\n').map((line) => {
+          const space = line.indexOf(' ');
+          return {
+            hash: space > 0 ? line.slice(0, space) : line,
+            message: space > 0 ? line.slice(space + 1) : ''
+          };
+        })
+      : [];
+
     return {
       baseCommit: null,
-      commits: [],
+      sinceDate: since,
+      commitCount: commits.length,
+      commits,
       diffStat: null,
-      filesChanged: []
+      filesChanged: [],
+      note: 'Previous backup had no git commit recorded; listing commits since that backup time.'
     };
   }
 
@@ -87,6 +152,7 @@ function getGitChangesSince(baseCommit) {
 
   return {
     baseCommit,
+    sinceDate: null,
     commitCount: commits.length,
     commits,
     diffStat,
@@ -179,9 +245,12 @@ function diffCounts(current, previous) {
   return Object.keys(delta).length ? delta : null;
 }
 
-function buildDataDelta(currentSnapshot, previousSnapshot) {
+function buildDataDelta(currentSnapshot, previousSnapshot, baselineMeta) {
   if (!previousSnapshot) {
-    return { hasBaseline: false, message: 'No previous backup snapshot — counts recorded for next comparison.' };
+    const message = baselineMeta?.backupId
+      ? `Previous backup \`${baselineMeta.backupId}\` (${baselineMeta.createdAt}) had no data snapshot (standard backup). Counts below are saved for the next detailed backup comparison.`
+      : 'No previous backup — counts recorded for next comparison.';
+    return { hasBaseline: false, message };
   }
 
   return {
@@ -226,6 +295,11 @@ function renderMarkdown(report) {
   lines.push(`- **Date:** ${report.git.commitDate}`);
   lines.push('');
 
+  if (report.previousBackup) {
+    lines.push(`- **Compared to backup:** \`${report.previousBackup.id}\` (${report.previousBackup.createdAt})`);
+    lines.push('');
+  }
+
   if (report.gitChanges.baseCommit) {
     lines.push(`### Commits since last backup (\`${report.gitChanges.baseCommit.slice(0, 7)}\`)`);
     lines.push('');
@@ -234,7 +308,7 @@ function renderMarkdown(report) {
         lines.push(`- \`${c.hash}\` ${c.message}`);
       }
     } else {
-      lines.push('- _(no new commits)_');
+      lines.push('- _(no new commits — same git revision as previous backup)_');
     }
     lines.push('');
     if (report.gitChanges.filesChanged.length) {
@@ -251,14 +325,33 @@ function renderMarkdown(report) {
       lines.push('```');
       lines.push('');
     }
+  } else if (report.gitChanges.sinceDate && report.gitChanges.commits?.length) {
+    lines.push(`### Commits since previous backup time`);
+    lines.push('');
+    if (report.gitChanges.note) {
+      lines.push(`> ${report.gitChanges.note}`);
+      lines.push('');
+    }
+    for (const c of report.gitChanges.commits) {
+      lines.push(`- \`${c.hash}\` ${c.message}`);
+    }
+    lines.push('');
+  } else if (report.previousBackup) {
+    lines.push('### Commits since last backup');
+    lines.push('');
+    lines.push('- _(no new commits since previous backup)_');
+    lines.push('');
   }
 
   if (report.git.uncommitted.count > 0) {
-    lines.push('### Uncommitted local changes (not yet in git commit)');
+    lines.push('### Uncommitted app changes (excluding node_modules, build, backups, uploads)');
     lines.push('');
     for (const f of report.git.uncommitted.files) {
       lines.push(`- ${f}`);
     }
+    lines.push('');
+  } else if (report.git.uncommitted.ignoredCount > 0) {
+    lines.push(`> ${report.git.uncommitted.ignoredCount} server-only file changes ignored (node_modules, build artifacts, backups, uploads).`);
     lines.push('');
   }
 
@@ -383,7 +476,7 @@ async function generateChangeReport(backupId, backupPath, options = {}) {
       ? options.baseline
       : getPreviousBackupBaseline({ excludeBackupId: backupId });
   const git = getGitSnapshot();
-  const gitChanges = getGitChangesSince(baseline?.gitCommit);
+  const gitChanges = getGitChangesSince(baseline?.gitCommit, baseline?.createdAt);
 
   let dataSnapshot = null;
   let dataDelta = null;
@@ -392,7 +485,7 @@ async function generateChangeReport(backupId, backupPath, options = {}) {
     const mongoose = require('mongoose');
     try {
       dataSnapshot = await getDataSnapshot(mongoose);
-      dataDelta = buildDataDelta(dataSnapshot, baseline?.dataSnapshot);
+      dataDelta = buildDataDelta(dataSnapshot, baseline?.dataSnapshot, baseline);
     } finally {
       if (mongoose.connection.readyState === 1) {
         await mongoose.disconnect();

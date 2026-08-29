@@ -107,7 +107,9 @@ async function main() {
     console.log(`  Negative vacation users: ${(summary.dataSnapshot.negativeVacationUsers || []).length}`);
   }
   if (summary.git.uncommitted.count) {
-    console.log(`  ⚠ Uncommitted files: ${summary.git.uncommitted.count}`);
+    console.log(`  ⚠ Uncommitted app files: ${summary.git.uncommitted.count}`);
+  } else if (summary.git.uncommitted.ignoredCount) {
+    console.log(`  (ignored ${summary.git.uncommitted.ignoredCount} server noise paths: node_modules/build/backups)`);
   }
   console.log('='.repeat(60) + '\n');
 

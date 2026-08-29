@@ -466,6 +466,20 @@ function generateManifest(backupPath, results) {
     config: results.config,
     checksums: {}
   };
+
+  try {
+    const { getGitSnapshot } = require('./changeReport');
+    const git = getGitSnapshot();
+    manifest.git = {
+      branch: git.branch,
+      commit: git.commit,
+      shortCommit: git.shortCommit,
+      subject: git.subject,
+      commitDate: git.commitDate
+    };
+  } catch (e) {
+    manifest.git = null;
+  }
   
   // Generate checksums for all backed up files
   const allFiles = getAllFiles(backupPath);

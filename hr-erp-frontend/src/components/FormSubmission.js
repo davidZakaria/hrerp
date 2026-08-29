@@ -1006,7 +1006,6 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
               }
               value={form.reason} 
               onChange={handleChange} 
-              className="form-input-elegant"
               rows="4"
               required 
               className="form-input-elegant bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 !text-slate-900 dark:!text-white rounded-lg"

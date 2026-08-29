@@ -42,11 +42,13 @@ const ExportPrintButtons = ({
       case 'pending':
         return forms.filter(f => f.type === activeFormType && f.status === 'pending');
       case 'awaiting':
-        return forms.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted'));
+        return forms.filter(f => f.type === activeFormType && f.status === 'pending');
       case 'history':
-        return forms.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status));
+        return forms.filter(f => f.type === activeFormType && ['approved', 'rejected'].includes(f.status));
+      case 'all':
+        return forms.filter(f => f.type === activeFormType);
       default:
-        return [];
+        return forms.filter(f => f.type === activeFormType);
     }
   };
 
@@ -149,7 +151,7 @@ const ExportPrintButtons = ({
                   <td>${getFormDetails(form)}</td>
                   <td>${getFormDatesTime(form)}</td>
                   <td>${form.reason || ''}</td>
-                  <td class="status-${form.status}">${form.status === 'manager_rejected' ? 'Rejected by Manager' : form.status}</td>
+                  <td class="status-${form.status}">${form.status}</td>
                   ${sectionType === 'awaiting' ? `<td>${form.managerComment || 'Approved by Manager'}</td>` : ''}
                   ${sectionType === 'history' ? `<td>${[form.managerComment, form.adminComment].filter(Boolean).join(' | ')}</td>` : ''}
                 </tr>

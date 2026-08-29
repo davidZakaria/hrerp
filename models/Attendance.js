@@ -208,7 +208,7 @@ attendanceSchema.methods.checkFormCoverage = async function() {
     if (!form) return false;
     
     // Check if form is approved
-    const approvedStatuses = ['approved', 'manager_approved', 'manager_submitted'];
+    const approvedStatuses = ['approved'];
     return approvedStatuses.includes(form.status);
 };
 

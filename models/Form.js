@@ -70,7 +70,7 @@ const formSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'manager_approved', 'manager_submitted', 'approved', 'rejected', 'manager_rejected'],
+        enum: ['pending', 'approved', 'rejected'],
         default: 'pending'
     },
     adminComment: {

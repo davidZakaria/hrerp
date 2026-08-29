@@ -35,6 +35,61 @@ const {
     defaultVacationBalance,
     deductVacationBalanceOnApproval
 } = require('../utils/vacationBalance');
+const { findOverlappingForm } = require('../utils/formOverlapCheck');
+
+const APPROVED_FORM_STATUSES = ['approved'];
+
+async function applyVacationDeductionOnApproval(form, employee, performedBy, req, approvedByLabel, { persist = true } = {}) {
+    if (form.type !== 'vacation' || !DEDUCTIBLE_VACATION_TYPES.includes(form.vacationType)) {
+        return { ok: true };
+    }
+
+    const settings = await getSystemSettings();
+    const deduction = deductVacationBalanceOnApproval(employee, form, settings);
+    if (deduction.error) {
+        return { ok: false, error: deduction.error };
+    }
+
+    if (!deduction.days || !persist) {
+        return { ok: true, deduction };
+    }
+
+    await employee.save();
+
+    await createAuditLog({
+        action: 'VACATION_DAYS_MODIFIED',
+        performedBy,
+        targetUser: employee._id,
+        targetResource: 'user',
+        targetResourceId: employee._id,
+        description: `${form.vacationType} vacation days automatically deducted for ${employee.name}: ${deduction.days} days due to approved vacation (Form ID: ${form._id})`,
+        oldValues: {
+            [deduction.field]: deduction.oldBalance
+        },
+        newValues: {
+            [deduction.field]: deduction.newBalance
+        },
+        details: {
+            targetUserName: employee.name,
+            targetUserEmail: employee.email,
+            targetUserDepartment: employee.department,
+            changeAmount: -(deduction.days),
+            formId: form._id.toString(),
+            formType: 'vacation',
+            vacationType: form.vacationType,
+            vacationStartDate: form.startDate,
+            vacationEndDate: form.endDate,
+            daysDeducted: deduction.days,
+            reason: 'Automatic deduction upon vacation approval',
+            approvedBy: approvedByLabel
+        },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        severity: 'MEDIUM'
+    });
+
+    return { ok: true, deduction };
+}
 
 /** Express can duplicate query keys; normalize to a single trimmed YYYY-MM string */
 function firstQueryParam(val) {
@@ -335,6 +390,37 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             })
         };
 
+        let overlapStart;
+        let overlapEnd;
+        if (type === 'vacation') {
+            overlapStart = startDate;
+            overlapEnd = endDate;
+        } else if (type === 'sick_leave') {
+            overlapStart = sickLeaveStartDate;
+            overlapEnd = sickLeaveEndDate;
+        } else if (type === 'mission') {
+            overlapStart = missionStartDate;
+            overlapEnd = missionEndDate;
+        } else if (type === 'wfh') {
+            overlapStart = wfhDate;
+            overlapEnd = wfhDate;
+        } else if (type === 'extra_hours') {
+            overlapStart = extraHoursDate;
+            overlapEnd = extraHoursDate;
+        }
+
+        if (overlapStart && overlapEnd) {
+            const overlapping = await findOverlappingForm(req.user.id, type, overlapStart, overlapEnd);
+            if (overlapping) {
+                if (req.file) {
+                    fs.unlink(req.file.path, () => {});
+                }
+                return res.status(400).json({
+                    msg: 'You already have a pending or approved request for overlapping dates.'
+                });
+            }
+        }
+
         const form = new Form(formData);
         await form.save();
 
@@ -536,9 +622,7 @@ router.get('/manager/team-forms', auth, async (req, res) => {
         const forms = await Form.find(applyHideExcuseFilter({
             $or: [
                 { user: { $in: teamMemberIds } },
-                { user: manager._id, status: 'manager_submitted' },
-                { user: manager._id, status: 'approved' },
-                { user: manager._id, status: 'rejected' }
+                { user: manager._id, status: { $in: ['pending', 'approved', 'rejected'] } }
             ]
         }))
         .populate('user', 'name email department')
@@ -553,39 +637,26 @@ router.get('/manager/team-forms', auth, async (req, res) => {
     }
 });
 
-// Manager approve/reject form (Enhanced security)
-router.put('/manager/:id', auth, async (req, res) => {
+// Manager / admin / super_admin approve or reject form (1-step workflow)
+router.put('/manager/:id', auth, validateObjectId('id'), async (req, res) => {
     try {
-        console.log('Manager action request:', {
-            managerId: req.user.id,
-            formId: req.params.id,
-            action: req.body.action,
-            hasComment: !!req.body.managerComment
-        });
-
-        const manager = await User.findById(req.user.id);
-        if (!manager) {
-            return res.status(404).json({ msg: 'Manager not found' });
+        const actor = await User.findById(req.user.id);
+        if (!actor) {
+            return res.status(404).json({ msg: 'User not found' });
         }
 
-        if (manager.role !== 'manager') {
-            return res.status(403).json({ msg: 'Not authorized - Manager role required' });
-        }
-
-        const effectiveDepts = getEffectiveManagedDepartmentsForQueries(manager);
-        if (effectiveDepts.length === 0) {
-            return res.status(403).json({ msg: 'No departments assigned to manage' });
+        const allowedRoles = ['manager', 'admin', 'super_admin'];
+        if (!allowedRoles.includes(actor.role)) {
+            return res.status(403).json({ msg: 'Not authorized' });
         }
 
         const { action, managerComment, startDate, endDate, isHalfDay, reason, excuseDate, excuseType, fromHour, toHour, sickLeaveStartDate, sickLeaveEndDate, wfhDate, wfhWorkingOn, extraHoursDate, extraHoursWorked, approvedHours, extraHoursDescription, missionStartDate, missionEndDate, missionDestination, missionFromTime, missionToTime } = req.body;
-        
-        // Validate action parameter
+
         if (!action || !['approve', 'reject'].includes(action)) {
             return res.status(400).json({ msg: 'Invalid action. Must be "approve" or "reject"' });
         }
 
         const form = await Form.findById(req.params.id).populate('user');
-
         if (!form) {
             return res.status(404).json({ msg: 'Form not found' });
         }
@@ -594,28 +665,24 @@ router.put('/manager/:id', auth, async (req, res) => {
             return res.status(404).json({ msg: 'Form not found' });
         }
 
-        console.log('Processing form:', {
-            formId: form._id,
-            formType: form.type,
-            formStatus: form.status,
-            employeeName: form.user.name,
-            employeeDepartment: form.user.department,
-            hasMedicalDocument: !!form.medicalDocument
-        });
+        if (actor.role === 'manager') {
+            const effectiveDepts = getEffectiveManagedDepartmentsForQueries(actor);
+            if (effectiveDepts.length === 0) {
+                return res.status(403).json({ msg: 'No departments assigned to manage' });
+            }
 
-        // Double-check: Ensure the form's user is an active employee in manager's departments
-        const isTeamMember = await User.findOne({
-            _id: form.user._id,
-            department: { $in: effectiveDepts },
-            role: 'employee',
-            status: 'active'
-        });
+            const isTeamMember = await User.findOne({
+                _id: form.user._id,
+                department: { $in: effectiveDepts },
+                role: 'employee',
+                status: 'active'
+            });
 
-        if (!isTeamMember) {
-            return res.status(403).json({ msg: 'Not authorized - User is not in your managed departments' });
+            if (!isTeamMember) {
+                return res.status(403).json({ msg: 'Not authorized - User is not in your managed departments' });
+            }
         }
 
-        // Apply form edits before approval/rejection (all managers with team scope)
         if (startDate) form.startDate = startDate;
         if (endDate) form.endDate = endDate;
         if (isHalfDay !== undefined) form.isHalfDay = parseIsHalfDay(isHalfDay);
@@ -649,30 +716,17 @@ router.put('/manager/:id', auth, async (req, res) => {
         if (missionFromTime !== undefined) form.missionFromTime = missionFromTime?.trim() || undefined;
         if (missionToTime !== undefined) form.missionToTime = missionToTime?.trim() || undefined;
 
-        if (form.type === 'excuse') {
-            form.excuseType = normalizeExcuseType(form);
-        }
-
-        // Only allow action on pending forms
         if (form.status !== 'pending') {
-            let statusMessage = form.status;
-            if (form.status === 'manager_approved') {
-                statusMessage = 'already approved by a manager';
-            } else if (form.status === 'manager_rejected') {
-                statusMessage = 'already rejected by a manager';
-            } else if (form.status === 'approved') {
-                statusMessage = 'already approved by admin';
-            } else if (form.status === 'rejected') {
-                statusMessage = 'already rejected by admin';
-            }
-            
-            return res.status(400).json({ 
-                msg: `This form has been ${statusMessage}. Please refresh the page to see the current status.`,
+            return res.status(400).json({
+                msg: `This form has already been ${form.status}. Please refresh the page to see the current status.`,
                 currentStatus: form.status,
                 formId: form._id,
                 isAlreadyProcessed: true
             });
         }
+
+        let pendingDeduction = null;
+        let pendingEmployee = null;
 
         if (action === 'approve') {
             if (form.type === 'extra_hours') {
@@ -685,49 +739,113 @@ router.put('/manager/:id', auth, async (req, res) => {
                 form.approvedHours = hoursToApprove;
             }
 
-            form.status = 'manager_approved';
+            pendingEmployee = await User.findById(form.user._id || form.user);
+            if (pendingEmployee) {
+                const deductResult = await applyVacationDeductionOnApproval(
+                    form,
+                    pendingEmployee,
+                    actor._id,
+                    req,
+                    actor.role,
+                    { persist: false }
+                );
+                if (!deductResult.ok) {
+                    return res.status(400).json({ msg: deductResult.error });
+                }
+                pendingDeduction = deductResult.deduction;
+            }
+
+            form.status = 'approved';
             form.managerComment = managerComment || '';
             form.managerApprovedBy = req.user.id;
             form.managerApprovedAt = Date.now();
-        } else if (action === 'reject') {
-            form.status = 'manager_rejected';
+        } else {
+            form.status = 'rejected';
             form.managerComment = managerComment || 'Rejected by manager';
             form.managerApprovedBy = req.user.id;
             form.managerApprovedAt = Date.now();
         }
 
         form.updatedAt = Date.now();
-        await form.save();
 
-        await form.populate('managerApprovedBy', 'name');
+        const updateFields = {
+            status: form.status,
+            managerComment: form.managerComment,
+            managerApprovedBy: form.managerApprovedBy,
+            managerApprovedAt: form.managerApprovedAt,
+            updatedAt: form.updatedAt
+        };
+        if (form.approvedHours != null) updateFields.approvedHours = form.approvedHours;
+        if (form.startDate) updateFields.startDate = form.startDate;
+        if (form.endDate) updateFields.endDate = form.endDate;
+        if (form.isHalfDay !== undefined) updateFields.isHalfDay = form.isHalfDay;
+        if (form.reason) updateFields.reason = form.reason;
 
-        // Clear relevant caches after form action
+        const saved = await Form.findOneAndUpdate(
+            { _id: form._id, status: 'pending' },
+            { $set: updateFields },
+            { new: true }
+        ).populate('user', 'name email department').populate('managerApprovedBy', 'name');
+
+        if (!saved) {
+            return res.status(400).json({
+                msg: 'This form was already processed by another user. Please refresh.',
+                isAlreadyProcessed: true
+            });
+        }
+
+        if (action === 'approve' && pendingDeduction?.days) {
+            const freshEmployee = await User.findById(form.user._id || form.user);
+            if (freshEmployee) {
+                freshEmployee[pendingDeduction.field] = pendingDeduction.newBalance;
+                await freshEmployee.save();
+
+                await createAuditLog({
+                    action: 'VACATION_DAYS_MODIFIED',
+                    performedBy: actor._id,
+                    targetUser: freshEmployee._id,
+                    targetResource: 'user',
+                    targetResourceId: freshEmployee._id,
+                    description: `${saved.vacationType} vacation days automatically deducted for ${freshEmployee.name}: ${pendingDeduction.days} days due to approved vacation (Form ID: ${saved._id})`,
+                    oldValues: { [pendingDeduction.field]: pendingDeduction.oldBalance },
+                    newValues: { [pendingDeduction.field]: pendingDeduction.newBalance },
+                    details: {
+                        targetUserName: freshEmployee.name,
+                        targetUserEmail: freshEmployee.email,
+                        targetUserDepartment: freshEmployee.department,
+                        changeAmount: -(pendingDeduction.days),
+                        formId: saved._id.toString(),
+                        formType: 'vacation',
+                        vacationType: saved.vacationType,
+                        vacationStartDate: saved.startDate,
+                        vacationEndDate: saved.endDate,
+                        daysDeducted: pendingDeduction.days,
+                        reason: 'Automatic deduction upon vacation approval',
+                        approvedBy: actor.role
+                    },
+                    ipAddress: req.ip || req.connection.remoteAddress,
+                    userAgent: req.get('User-Agent'),
+                    severity: 'MEDIUM'
+                });
+            }
+        }
+
         cache.delete(`forms-${form.user._id}`);
         cache.delete('forms-admin');
-
-        console.log('Form action completed successfully:', {
-            formId: form._id,
-            newStatus: form.status,
-            action: action,
-            managerComment: form.managerComment
-        });
 
         res.json({
             success: true,
             message: `Form ${action}d successfully`,
-            form: form
+            form: saved
         });
     } catch (err) {
         console.error('Manager action error:', {
             error: err.message,
             stack: err.stack,
             formId: req.params.id,
-            managerId: req.user.id
+            userId: req.user.id
         });
-        res.status(500).json({ 
-            msg: 'Server error while processing form action',
-            error: process.env.NODE_ENV === 'development' ? err.message : undefined
-        });
+        res.status(500).json({ msg: 'Server error' });
     }
 });
 
@@ -1058,125 +1176,20 @@ router.put('/:id', auth, validateObjectId('id'), async (req, res) => {
             return res.json({ msg: 'Form updated successfully', form });
         }
 
-        // Original admin approval/rejection logic for regular admin users
-        if (user.role === 'admin') {
-            // Prevent actions on forms that are not in appropriate status
-            if (status === 'approved' || status === 'rejected') {
-                const validStatuses = ['pending', 'manager_approved', 'manager_submitted'];
-                if (!validStatuses.includes(form.status)) {
-                    return res.status(400).json({ 
-                        msg: `Cannot ${status} form: Form is in ${form.status} status. Only forms with status: ${validStatuses.join(', ')} can be processed.`,
-                        currentStatus: form.status,
-                        formId: form._id
-                    });
-                }
-            }
-            // Check remaining vacation days before approving annual or casual vacation
-            if (
-                form.type === 'vacation' &&
-                DEDUCTIBLE_VACATION_TYPES.includes(form.vacationType) &&
-                status === 'approved' &&
-                (form.status === 'pending' || form.status === 'manager_approved' || form.status === 'manager_submitted')
-            ) {
-                const employee = await User.findById(form.user);
-                if (employee) {
-                    const settings = await getSystemSettings();
-                    const deduction = deductVacationBalanceOnApproval(employee, form, settings);
-                    if (deduction.error) {
-                        return res.status(400).json({ msg: deduction.error });
-                    }
-                    if (deduction.days) {
-                        await employee.save();
-
-                        const admin = await User.findById(req.user.id);
-                        await createAuditLog({
-                            action: 'VACATION_DAYS_MODIFIED',
-                            performedBy: admin._id,
-                            targetUser: employee._id,
-                            targetResource: 'user',
-                            targetResourceId: employee._id,
-                            description: `${form.vacationType} vacation days automatically deducted for ${employee.name}: ${deduction.days} days due to approved vacation (Form ID: ${form._id})`,
-                            oldValues: {
-                                [deduction.field]: deduction.oldBalance
-                            },
-                            newValues: {
-                                [deduction.field]: deduction.newBalance
-                            },
-                            details: {
-                                targetUserName: employee.name,
-                                targetUserEmail: employee.email,
-                                targetUserDepartment: employee.department,
-                                adminName: admin.name,
-                                adminEmail: admin.email,
-                                changeAmount: -(deduction.days),
-                                formId: form._id,
-                                formType: 'vacation',
-                                vacationType: form.vacationType,
-                                vacationStartDate: form.startDate,
-                                vacationEndDate: form.endDate,
-                                daysDeducted: deduction.days,
-                                reason: 'Automatic deduction upon vacation approval'
-                            },
-                            ipAddress: req.ip || req.connection.remoteAddress,
-                            userAgent: req.get('User-Agent'),
-                            severity: 'MEDIUM'
-                        });
-                    }
-                }
-            } else if (
-                form.type === 'vacation' &&
-                form.vacationType === 'unpaid'
-            ) {
-                // Unpaid vacation is no longer allowed
-                return res.status(400).json({ 
-                    msg: 'Unpaid vacation requests are no longer allowed. Only annual vacation leave is available.'
-                });
-            }
-            // Note: Sick leave and WFH forms don't affect any day allowances
-
-            if (form.type === 'excuse') {
-                return res.status(404).json({ msg: 'Form not found' });
-            }
-
-            if (form.type === 'extra_hours' && approvedHours !== undefined) {
-                const hours = Number(approvedHours);
-                if (!hours || hours <= 0) {
-                    return res.status(400).json({ msg: 'Approved OT hours must be greater than 0' });
-                }
-                form.approvedHours = hours;
-            } else if (
-                form.type === 'extra_hours' &&
-                status === 'approved' &&
-                !form.approvedHours
-            ) {
-                form.approvedHours = form.extraHoursWorked;
-            }
-
-            form.status = status;
-            form.adminComment = adminComment;
-            form.adminApprovedBy = user._id;
-            form.adminApprovedAt = new Date();
-            form.updatedAt = Date.now();
-
-            await form.save();
-            
-            // Clear relevant caches after admin form action
-            cache.delete(`forms-${form.user._id}`);
-            cache.delete('forms-admin');
-            
-            console.log('Admin form action completed successfully:', {
-                formId: form._id,
-                newStatus: form.status,
-                adminComment: form.adminComment,
-                actionPerformedBy: user.name
-            });
-
-            return res.json({
-                success: true,
-                message: `Form ${status} successfully`,
-                form: form
+        // DEPRECATED (2026): HR admin approve/reject removed — 1-step manager workflow only.
+        // Regular admins use Forms tab as read-only tracking. Use PUT /manager/:id or super_admin override.
+        if (user.role === 'admin' && (status === 'approved' || status === 'rejected')) {
+            return res.status(410).json({
+                msg: 'HR approval step has been removed. Managers approve forms directly via the manager workflow.'
             });
         }
+
+        /*
+        // Original admin approval/rejection logic — deprecated
+        if (user.role === 'admin') {
+            ...
+        }
+        */
 
         return res.status(403).json({ msg: 'Not authorized for this operation' });
     } catch (err) {
@@ -1329,7 +1342,7 @@ router.get('/approved-by-month/:month', auth, async (req, res) => {
         const startOfMonth = new Date(year, monthNum - 1, 1);
         const endOfMonth = new Date(year, monthNum, 0, 23, 59, 59, 999);
         
-        const approvedStatuses = ['approved', 'manager_approved', 'manager_submitted'];
+        const approvedStatuses = APPROVED_FORM_STATUSES;
         
         // Find all approved forms that overlap with the selected month
         const forms = await Form.find({
@@ -1379,7 +1392,7 @@ router.get('/approved-by-range', auth, async (req, res) => {
         }
         const { rangeStart, rangeEnd } = parsed;
 
-        const approvedStatuses = ['approved', 'manager_approved', 'manager_submitted'];
+        const approvedStatuses = APPROVED_FORM_STATUSES;
 
         const forms = await Form.find({
             status: { $in: approvedStatuses },
@@ -1486,11 +1499,13 @@ router.put('/super/:formId', auth, async (req, res) => {
         if (fromHour) form.fromHour = fromHour;
         if (toHour) form.toHour = toHour;
 
-        // Handle vacation days adjustment if needed
+        // Handle vacation days adjustment if needed (only on transition to approved)
+        const previousStatus = originalForm.status;
         if (
             form.type === 'vacation' &&
             DEDUCTIBLE_VACATION_TYPES.includes(form.vacationType) &&
-            status === 'approved'
+            status === 'approved' &&
+            previousStatus !== 'approved'
         ) {
             const employee = await User.findById(form.user);
             if (employee) {

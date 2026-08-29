@@ -320,16 +320,11 @@ const ManagerDashboard = ({ onLogout }) => {
 
   const getStatusBadge = (status) => {
     const badgeClass = status === 'pending' ? 'badge-warning' :
-                     status === 'manager_approved' ? 'badge-info' :
-                     status === 'manager_submitted' ? 'badge-info' :
                      status === 'approved' ? 'badge-success' :
-                     status.includes('rejected') ? 'badge-danger' : 'badge-secondary';
-    
-    const statusText = status === 'manager_approved' ? t('managerDashboard.managerApproved') :
-                      status === 'manager_submitted' ? t('managerDashboard.awaitingHRApproval') :
-                      status === 'manager_rejected' ? t('managerDashboard.managerRejected') :
-                      status.charAt(0).toUpperCase() + status.slice(1);
-    
+                     status === 'rejected' ? 'badge-danger' : 'badge-secondary';
+
+    const statusText = t(`status.${status}`) || status.charAt(0).toUpperCase() + status.slice(1);
+
     return <span className={`badge-elegant ${badgeClass}`}>{statusText}</span>;
   };
 
@@ -552,12 +547,7 @@ const ManagerDashboard = ({ onLogout }) => {
       // Check if response is successful
       if (response.status === 200) {
         const serverForm = response.data?.form;
-        const fallbackStatus =
-          actionType === 'approve'
-            ? selectedForm.type === 'excuse'
-              ? 'approved'
-              : 'manager_approved'
-            : 'manager_rejected';
+        const fallbackStatus = actionType === 'approve' ? 'approved' : 'rejected';
 
         const applyLocalEdits = (base) => {
           if (!formEditData || !formEditData._id) {
@@ -986,9 +976,9 @@ const ManagerDashboard = ({ onLogout }) => {
                     {form.managerApprovedBy && (
                       <div className="comment-section manager-action-section">
                         <strong>
-                          {form.status === 'manager_rejected' ? t('rejectedByManager') : t('approvedByManager')}:
+                          {form.status === 'rejected' ? t('rejectedByManager') : t('approvedByManager')}:
                         </strong>
-                        <p className={approvalActorClass(form.status === 'manager_rejected')}>
+                        <p className={approvalActorClass(form.status === 'rejected')}>
                           {form.managerApprovedBy.name}
                           {form.managerApprovedAt && (
                             <span className="text-sm font-normal !text-slate-500 dark:!text-slate-400 ml-1">
@@ -1132,9 +1122,9 @@ const ManagerDashboard = ({ onLogout }) => {
                     {form.managerApprovedBy && (
                       <div className="comment-section manager-action-section">
                         <strong>
-                          {form.status === 'manager_rejected' ? t('rejectedByManager') : t('approvedByManager')}:
+                          {form.status === 'rejected' ? t('rejectedByManager') : t('approvedByManager')}:
                         </strong>
-                        <p className={approvalActorClass(form.status === 'manager_rejected')}>
+                        <p className={approvalActorClass(form.status === 'rejected')}>
                           {form.managerApprovedBy.name}
                           {form.managerApprovedAt && (
                             <span className="text-sm font-normal !text-slate-500 dark:!text-slate-400 ml-1">

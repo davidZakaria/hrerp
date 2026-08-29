@@ -63,16 +63,11 @@ async function buildOtReconciliationPayload(rangeStart, rangeEnd, { userId = nul
             .sort({ extraHoursDate: 1 }),
         Form.countDocuments({
             type: 'extra_hours',
-            status: { $in: ['manager_approved', 'manager_submitted'] },
-            ...dateFilter,
-            ...userScope
-        }),
-        Form.countDocuments({
-            type: 'extra_hours',
             status: 'pending',
             ...dateFilter,
             ...userScope
         }),
+        Promise.resolve(0),
         Form.countDocuments({
             type: 'extra_hours',
             ...dateFilter,

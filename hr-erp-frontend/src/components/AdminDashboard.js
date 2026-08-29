@@ -17,6 +17,7 @@ import DashboardSectionNav from './layout/DashboardSectionNav';
 import { smoothScrollToElement } from '../utils/smoothScroll';
 import { formatVacationDeductionDays, formatVacationDateRange } from '../utils/vacationDays';
 import { getEffectiveManagedDepartmentsClient } from '../utils/effectiveManagedDepartments';
+import AdminFormsTrackingTable from './forms/AdminFormsTrackingTable';
 import FormManagementMonthFilterBar from './forms/FormManagementMonthFilterBar';
 import UserManagementToolbar from './users/UserManagementToolbar';
 import UserManagementUsersTable from './users/UserManagementUsersTable';
@@ -272,6 +273,14 @@ const AdminDashboard = () => {
     () => filterFormsByManagementMonths(forms, formsSubmittedMonth, formsEventMonth),
     [forms, formsSubmittedMonth, formsEventMonth]
   );
+
+  const formsTypeCounts = useMemo(() => ({
+    vacation: formsForMonthFilter.filter((f) => f.type === 'vacation').length,
+    wfh: formsForMonthFilter.filter((f) => f.type === 'wfh').length,
+    sick_leave: formsForMonthFilter.filter((f) => f.type === 'sick_leave').length,
+    extra_hours: formsForMonthFilter.filter((f) => f.type === 'extra_hours').length,
+    mission: formsForMonthFilter.filter((f) => f.type === 'mission').length
+  }), [formsForMonthFilter]);
 
   const fetchCurrentUser = useCallback(async () => {
     try {
@@ -783,6 +792,32 @@ const AdminDashboard = () => {
         updated.delete(id);
         return updated;
       });
+    }
+  };
+
+  const handleForceOverride = async (form) => {
+    if (!window.confirm(t('adminDashboard.forceOverrideConfirm', 'Force approve this pending form?'))) {
+      return;
+    }
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/forms/manager/${form._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({ action: 'approve', managerComment: 'Force override approval' })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFormsSuccess(t('adminDashboard.formActionSuccess'));
+        fetchForms();
+      } else {
+        setFormsError(data.msg || 'Override failed');
+      }
+    } catch (err) {
+      setFormsError('Error connecting to server.');
     }
   };
 
@@ -1473,14 +1508,6 @@ const AdminDashboard = () => {
                 ) : null}
               </div>
               <div className="section-actions admin-dashboard-toolbar-actions">
-                <input
-                  type="search"
-                  placeholder={t('adminDashboard.searchFormsPlaceholder')}
-                  value={formsSearch}
-                  onChange={(e) => setFormsSearch(e.target.value)}
-                  className="search-input admin-dashboard-toolbar-search"
-                  autoComplete="off"
-                />
                 <button
                   className="btn-elegant admin-forms-refresh"
                   onClick={() => fetchForms()}
@@ -1601,554 +1628,24 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            <div className="form-mgmt-filters-bar admin-form-type-shell admin-form-type-pipeline-panel">
-              <div className="admin-form-type-pipeline-panel__row">
-                <div className="form-mgmt-type-row admin-form-type-pipeline-panel__type">
-                  <label htmlFor="admin-form-type">{t('formManagement.typeLabel')}</label>
-                  <select
-                    id="admin-form-type"
-                    className="form-mgmt-select"
-                    value={activeFormType}
-                    onChange={(e) => setActiveFormType(e.target.value)}
-                  >
-                    <option value="vacation">{t('forms.vacation')} ({formsForMonthFilter.filter((f) => f.type === 'vacation').length})</option>
-                    <option value="wfh">{t('forms.workFromHome')} ({formsForMonthFilter.filter((f) => f.type === 'wfh').length})</option>
-                    <option value="sick_leave">{t('forms.sickLeave')} ({formsForMonthFilter.filter((f) => f.type === 'sick_leave').length})</option>
-                    <option value="extra_hours">{t('forms.extra_hours')} ({formsForMonthFilter.filter((f) => f.type === 'extra_hours').length})</option>
-                    <option value="mission">{t('forms.mission')} ({formsForMonthFilter.filter((f) => f.type === 'mission').length})</option>
-                  </select>
-                </div>
-                <div className="form-mgmt-pipeline-inline admin-form-type-pipeline-panel__pipeline" aria-label={t('formManagement.pipelineSummary')}>
-                  <strong className="form-mgmt-pipeline-strong">{t('formManagement.pipelineSummary')}</strong>
-                  <span>{t('adminDashboard.summaryPendingManager')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && f.status === 'pending').length}</span>
-                  <span className="pipe-sep">|</span>
-                  <span>{t('adminDashboard.summaryAwaitingHr')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length}</span>
-                  <span className="pipe-sep">|</span>
-                  <span>{t('adminDashboard.summaryApproved')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && f.status === 'approved').length}</span>
-                  <span className="pipe-sep">|</span>
-                  <span>{t('adminDashboard.summaryRejected')}: {formsForMonthFilter.filter((f) => f.type === activeFormType && (f.status === 'rejected' || f.status === 'manager_rejected')).length}</span>
-                </div>
-              </div>
-            </div>
-
             {formsSuccess && <div className="success-message">{formsSuccess}</div>}
             {formsError && <div className="error-message">{formsError}</div>}
-            {formsLoading && <div className="spinner-elegant"></div>}
 
-            {/* Pending Manager Approval Section */}
-            <div className="super-admin-section">
-              <div className="section-title-container">
-                <h3 className="section-title" style={{ color: '#ff9800' }}>
-                  ⏳ Pending Manager Approval - {activeFormType.toUpperCase()} ({formsForMonthFilter.filter(f => f.type === activeFormType && f.status === 'pending').length})
-                </h3>
-                <ExportPrintButtons 
-                  forms={formsForMonthFilter}
-                  activeFormType={activeFormType}
-                  sectionType="pending"
-                  sectionTitle="Pending Manager Approval"
-                />
-              </div>
-              <div className="super-admin-card-grid">
-                {formsForMonthFilter.filter(form => 
-                  form.type === activeFormType &&
-                  form.status === 'pending' && 
-                  (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
-                   form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()) ||
-                   form.user?.department?.toLowerCase().includes(formsSearch.toLowerCase()))
-                ).map(form => (
-                  <div key={form._id} className="super-admin-card form-card">
-                    <div className="card-header">
-                      <div className="form-type-icon">
-                        {formTypeIcon(form.type)}
-                      </div>
-                      <div className="form-info">
-                        <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
-                        <p className="employee-details">{form.user?.email} • {form.user?.department}</p>
-                      </div>
-                    </div>
-                    <div className="card-content">
-                      <div className="info-row">
-                        <span className="info-label">Type:</span>
-                        <span className="info-value">
-                          {form.type === 'vacation' ? 'Annual Vacation' :
-                           form.type === 'wfh' ? '🏠 Work From Home' :
-                           form.type === 'extra_hours' ? `⏱️ ${t('forms.extra_hours')}` :
-                           form.type === 'mission' ? `${FORM.mission} Mission` :
-                           form.type}
-                        </span>
-                      </div>
-                      {form.type === 'extra_hours' && (
-                        <>
-                          <div className="info-row">
-                            <span className="info-label">Date:</span>
-                            <span className="info-value">{form.extraHoursDate?.slice(0,10) || 'N/A'}</span>
-                          </div>
-                          <div className="info-row">
-                            <span className="info-label">{t('forms.requestedOtHours')}:</span>
-                            <span className="info-value" style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked || 0} hours</span>
-                          </div>
-                          {form.approvedHours != null && (
-                            <div className="info-row">
-                              <span className="info-label">{t('forms.approvedOtHours')}:</span>
-                              <span className="info-value" style={{ color: '#2E7D32', fontWeight: 'bold' }}>{form.approvedHours} hours</span>
-                            </div>
-                          )}
-                          <div className="info-row">
-                            <span className="info-label">Work Done:</span>
-                            <span className="info-value">{form.extraHoursDescription || 'N/A'}</span>
-                          </div>
-                        </>
-                      )}
-                      {form.type === 'wfh' && (
-                        <>
-                          <div className="info-row">
-                            <span className="info-label">WFH Date:</span>
-                            <span className="info-value">{form.wfhDate?.slice(0,10) || 'N/A'}</span>
-                          </div>
-                          <div className="info-row">
-                            <span className="info-label">Working On:</span>
-                            <span className="info-value">{form.wfhWorkingOn || form.wfhDescription || 'N/A'}</span>
-                          </div>
-                        </>
-                      )}
-                      <div className="info-row">
-                        <span className="info-label">Duration:</span>
-                        <span className="info-value">
-                          {form.type === 'vacation' ? (
-                            `${formatVacationDateRange(form)} (${formatVacationDeductionDays(form)} days${form.isHalfDay ? ', half day' : ''})`
-                          ) : form.type === 'wfh' ? (
-                            form.wfhDate?.slice(0,10) || 'N/A'
-                          ) : form.type === 'extra_hours' ? (
-                            <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
-                          ) : form.type === 'mission' ? (
-                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` • ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} • ${form.missionDestination || 'N/A'}`
-                          ) : (
-                            `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
-                          )}
-                        </span>
-                      </div>
-                      <div className="info-row">
-                        <span className="info-label">Submitted:</span>
-                        <span className="info-value">
-                          {new Date(form.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="info-row">
-                        <span className="info-label">Status:</span>
-                        <span className="status-badge status-pending">
-                          Pending Manager
-                        </span>
-                      </div>
-                      {form.reason && (
-                        <div className="reason-section">
-                          <span className="info-label">Reason:</span>
-                          <div className="reason-content">{form.reason}</div>
-                        </div>
-                      )}
-                      {form.type === 'sick_leave' && (
-                        <div className="medical-document-section">
-                          <MedicalDocumentViewer form={form} userRole="admin" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {formsForMonthFilter.filter(f => f.type === activeFormType && f.status === 'pending').length === 0 && (
-                  <div className="no-items-message">
-                    <div className="no-items-icon">📋</div>
-                    <h3>No Pending Forms</h3>
-                    <p>No {activeFormType} forms are pending manager approval at this time.</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <AdminFormsTrackingTable
+              forms={formsForMonthFilter}
+              activeFormType={activeFormType}
+              onActiveFormTypeChange={setActiveFormType}
+              formsSearch={formsSearch}
+              onFormsSearchChange={setFormsSearch}
+              formsLoading={formsLoading}
+              onRefresh={fetchForms}
+              refreshing={refreshingForms}
+              onForceOverride={handleForceOverride}
+              onDeleteForm={handleDeleteForm}
+              currentUserRole={currentUser?.role}
+              typeCounts={formsTypeCounts}
+            />
 
-            {/* Awaiting HR Approval Section */}
-            <div className="super-admin-section">
-              <div className="section-title-container">
-                <h3 className="section-title" style={{ color: '#2196f3' }}>
-                  {ACTION.hrAwaiting} Awaiting HR Approval - {activeFormType.toUpperCase()} ({formsForMonthFilter.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length})
-                </h3>
-                <ExportPrintButtons 
-                  forms={formsForMonthFilter}
-                  activeFormType={activeFormType}
-                  sectionType="awaiting"
-                  sectionTitle="Awaiting HR Approval"
-                />
-              </div>
-              <div className="super-admin-card-grid">
-                {formsForMonthFilter.filter(form => 
-                  form.type === activeFormType &&
-                  (form.status === 'manager_approved' || form.status === 'manager_submitted') && 
-                  (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
-                   form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()) ||
-                   form.user?.department?.toLowerCase().includes(formsSearch.toLowerCase()))
-                ).map(form => (
-                  <div key={form._id} className="super-admin-card form-card">
-                    <div className="card-header">
-                      <div className="form-type-icon">
-                        {formTypeIcon(form.type)}
-                      </div>
-                      <div className="form-info">
-                        <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
-                        <p className="employee-details">{form.user?.email} • {form.user?.department}</p>
-                      </div>
-                    </div>
-                    <div className="card-content">
-                      <div className="info-row">
-                        <span className="info-label">Type:</span>
-                        <span className="info-value">
-                          {form.type === 'vacation' ? 'Annual Vacation' :
-                           form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
-                           form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
-                           form.type === 'wfh' ? '🏠 Work From Home' :
-                           form.type === 'extra_hours' ? `⏱️ ${t('forms.extra_hours')}` :
-                           form.type === 'mission' ? `${FORM.mission} Mission` :
-                           form.type}
-                        </span>
-                      </div>
-                      {form.type === 'excuse' && (
-                        <div className="info-row">
-                          <span className="info-label">Excuse Date:</span>
-                          <span className="info-value">{form.excuseDate?.slice(0,10) || 'N/A'}</span>
-                        </div>
-                      )}
-                      {form.type === 'wfh' && (
-                        <>
-                          <div className="info-row">
-                            <span className="info-label">WFH Date:</span>
-                            <span className="info-value">{form.wfhDate?.slice(0,10) || 'N/A'}</span>
-                          </div>
-                          <div className="info-row">
-                            <span className="info-label">Working On:</span>
-                            <span className="info-value">{form.wfhWorkingOn || form.wfhDescription || 'N/A'}</span>
-                          </div>
-                        </>
-                      )}
-                      {form.type === 'extra_hours' && (
-                        <>
-                          <div className="info-row">
-                            <span className="info-label">Date:</span>
-                            <span className="info-value">{form.extraHoursDate?.slice(0,10) || 'N/A'}</span>
-                          </div>
-                          <div className="info-row">
-                            <span className="info-label">{t('forms.requestedOtHours')}:</span>
-                            <span className="info-value" style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked || 0} hours</span>
-                          </div>
-                          {form.approvedHours != null && (
-                            <div className="info-row">
-                              <span className="info-label">{t('forms.approvedOtHours')}:</span>
-                              <span className="info-value" style={{ color: '#2E7D32', fontWeight: 'bold' }}>{form.approvedHours} hours</span>
-                            </div>
-                          )}
-                          <div className="info-row">
-                            <span className="info-label">Work Done:</span>
-                            <span className="info-value">{form.extraHoursDescription || 'N/A'}</span>
-                          </div>
-                        </>
-                      )}
-                      <div className="info-row">
-                        <span className="info-label">Duration:</span>
-                        <span className="info-value">
-                          {form.type === 'vacation' ? (
-                            `${formatVacationDateRange(form)} (${formatVacationDeductionDays(form)} days${form.isHalfDay ? ', half day' : ''})`
-                          ) : form.type === 'excuse' ? (
-                            <>
-                              {form.fromHour || 'N/A'} to {form.toHour || 'N/A'}
-                              {form.fromHour && form.toHour && (
-                                <span style={{ marginLeft: '0.5rem', color: '#4caf50' }}>
-                                  ({((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours)
-                                </span>
-                              )}
-                            </>
-                          ) : form.type === 'wfh' ? (
-                            form.wfhDate?.slice(0,10) || 'N/A'
-                          ) : form.type === 'extra_hours' ? (
-                            <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
-                          ) : form.type === 'mission' ? (
-                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` • ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} • ${form.missionDestination || 'N/A'}`
-                          ) : (
-                            `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
-                          )}
-                        </span>
-                      </div>
-                      <div className="info-row">
-                        <span className="info-label">Days Left:</span>
-                        <span className="info-value">
-                          {form.user?._id ? (
-                            vacationDaysMap[form.user._id] !== undefined ? (
-                              <>
-                                {Number(vacationDaysMap[form.user._id]).toFixed(1)}
-                                {vacationDaysMap[form.user._id] === 0 && (
-                                  <span className="no-days-warning"> (No days left!)</span>
-                                )}
-                              </>
-                            ) : '...'
-                          ) : '-'}
-                        </span>
-                      </div>
-                      <div className="info-row">
-                        <span className="info-label">Manager Approval:</span>
-                        <div className="manager-approval-info">
-                          <div style={{ color: '#4caf50', fontWeight: 'bold' }}>
-                            ✅ Approved by {form.managerApprovedBy?.name ? `👔 ${form.managerApprovedBy.name}` : 'Manager'}
-                          </div>
-                          {form.managerApprovedAt && (
-                            <div style={{ fontSize: '0.8rem', color: '#666' }}>
-                              {new Date(form.managerApprovedAt).toLocaleDateString()}
-                            </div>
-                          )}
-                          {form.managerComment && (
-                            <div style={{ fontSize: '0.85rem', color: '#555', marginTop: '4px', fontStyle: 'italic' }}>
-                              "{form.managerComment}"
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {form.reason && (
-                        <div className="reason-section">
-                          <span className="info-label">Reason:</span>
-                          <div className="reason-content">{form.reason}</div>
-                        </div>
-                      )}
-                      {form.type === 'sick_leave' && (
-                        <div className="medical-document-section">
-                          <MedicalDocumentViewer form={form} userRole="admin" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="card-actions hr-actions">
-                      {form.type === 'extra_hours' && (
-                        <div className="form-group-elegant" style={{ marginBottom: '0.75rem', width: '100%' }}>
-                          <label className="form-label-elegant">{t('forms.approvedOtHours')}</label>
-                          <input
-                            type="number"
-                            min="0.5"
-                            step="0.5"
-                            className="form-input-elegant"
-                            value={approvedHoursEdits[form._id] ?? form.approvedHours ?? form.extraHoursWorked ?? ''}
-                            onChange={(e) => handleApprovedHoursChange(form._id, Number(e.target.value))}
-                          />
-                        </div>
-                      )}
-                      <div className="action-buttons-section">
-                        <button
-                          onClick={() => handleFormAction(form._id, 'approved')}
-                          className="btn-elegant btn-success btn-sm"
-                          disabled={processingForms.has(form._id) || form._isProcessing}
-                        >
-                          {processingForms.has(form._id) || form._isProcessing ? '⏳ Processing...' : '✅ FINAL APPROVAL'}
-                        </button>
-                        <button
-                          onClick={() => handleFormAction(form._id, 'rejected')}
-                          className="btn-elegant btn-danger btn-sm"
-                          disabled={processingForms.has(form._id) || form._isProcessing}
-                        >
-                          {processingForms.has(form._id) || form._isProcessing ? '⏳ Processing...' : '❌ REJECT'}
-                        </button>
-                      </div>
-                      <div className="comment-section">
-                        <textarea
-                          placeholder="HR comment..."
-                          value={comments[form._id] || ''}
-                          onChange={(e) => handleCommentChange(form._id, e.target.value)}
-                          className="comment-textarea"
-                          rows="2"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {formsForMonthFilter.filter(f => f.type === activeFormType && (f.status === 'manager_approved' || f.status === 'manager_submitted')).length === 0 && (
-                  <div className="no-items-message">
-                    <div className="no-items-icon">{ACTION.hrAwaiting}</div>
-                    <h3>No Forms Awaiting HR</h3>
-                    <p>No {activeFormType} forms are awaiting HR approval at this time.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Completed Forms Section */}
-            <div className="super-admin-section">
-              <div className="section-title-container">
-                <h3 className="section-title" style={{ color: '#666' }}>
-                  📋 {activeFormType.toUpperCase()} Forms History ({formsForMonthFilter.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length})
-                </h3>
-                <ExportPrintButtons 
-                  forms={formsForMonthFilter}
-                  activeFormType={activeFormType}
-                  sectionType="history"
-                  sectionTitle="Forms History"
-                />
-              </div>
-              <div className="super-admin-card-grid">
-                {formsForMonthFilter.filter(form => 
-                  form.type === activeFormType &&
-                  ['approved', 'rejected', 'manager_rejected'].includes(form.status) &&
-                  (form.user?.name?.toLowerCase().includes(formsSearch.toLowerCase()) || 
-                   form.user?.email?.toLowerCase().includes(formsSearch.toLowerCase()) ||
-                   form.user?.department?.toLowerCase().includes(formsSearch.toLowerCase()))
-                ).map(form => (
-                  <div key={form._id} className="super-admin-card form-card history-card">
-                    <div className="card-header">
-                      <div className="form-type-icon">
-                        {formTypeIcon(form.type)}
-                      </div>
-                      <div className="form-info">
-                        <h4 className="employee-name">{form.user?.name || 'Unknown'}</h4>
-                        <p className="employee-details">{form.user?.email} • {form.user?.department}</p>
-                      </div>
-                    </div>
-                    <div className="card-content">
-                      <div className="info-row">
-                        <span className="info-label">Type:</span>
-                        <span className="info-value">
-                          {form.type === 'vacation' ? 'Annual Vacation' :
-                           form.type === 'excuse' && form.excuseType === 'paid' ? '💰 Paid Excuse' :
-                           form.type === 'excuse' && form.excuseType === 'unpaid' ? '📝 Unpaid Excuse' :
-                           form.type === 'wfh' ? '🏠 Work From Home' :
-                           form.type === 'extra_hours' ? `⏱️ ${t('forms.extra_hours')}` :
-                           form.type === 'mission' ? `${FORM.mission} Mission` :
-                           form.type}
-                        </span>
-                      </div>
-                      {form.type === 'excuse' && (
-                        <div className="info-row">
-                          <span className="info-label">Excuse Date:</span>
-                          <span className="info-value">{form.excuseDate?.slice(0,10) || 'N/A'}</span>
-                        </div>
-                      )}
-                      {form.type === 'wfh' && (
-                        <>
-                          <div className="info-row">
-                            <span className="info-label">WFH Date:</span>
-                            <span className="info-value">{form.wfhDate?.slice(0,10) || 'N/A'}</span>
-                          </div>
-                          <div className="info-row">
-                            <span className="info-label">Working On:</span>
-                            <span className="info-value">{form.wfhWorkingOn || form.wfhDescription || 'N/A'}</span>
-                          </div>
-                        </>
-                      )}
-                      {form.type === 'extra_hours' && (
-                        <>
-                          <div className="info-row">
-                            <span className="info-label">Date:</span>
-                            <span className="info-value">{form.extraHoursDate?.slice(0,10) || 'N/A'}</span>
-                          </div>
-                          <div className="info-row">
-                            <span className="info-label">{t('forms.requestedOtHours')}:</span>
-                            <span className="info-value" style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked || 0} hours</span>
-                          </div>
-                          {form.approvedHours != null && (
-                            <div className="info-row">
-                              <span className="info-label">{t('forms.approvedOtHours')}:</span>
-                              <span className="info-value" style={{ color: '#2E7D32', fontWeight: 'bold' }}>{form.approvedHours} hours</span>
-                            </div>
-                          )}
-                          <div className="info-row">
-                            <span className="info-label">Work Done:</span>
-                            <span className="info-value">{form.extraHoursDescription || 'N/A'}</span>
-                          </div>
-                        </>
-                      )}
-                      <div className="info-row">
-                        <span className="info-label">Duration:</span>
-                        <span className="info-value">
-                          {form.type === 'vacation' ? (
-                            `${formatVacationDateRange(form)} (${formatVacationDeductionDays(form)} days${form.isHalfDay ? ', half day' : ''})`
-                          ) : form.type === 'excuse' ? (
-                            <>
-                              {form.fromHour || 'N/A'} to {form.toHour || 'N/A'}
-                              {form.fromHour && form.toHour && (
-                                <span style={{ marginLeft: '0.5rem', color: '#4caf50' }}>
-                                  ({((new Date(`2000-01-01T${form.toHour}`) - new Date(`2000-01-01T${form.fromHour}`)) / (1000 * 60 * 60)).toFixed(1)} hours)
-                                </span>
-                              )}
-                            </>
-                          ) : form.type === 'wfh' ? (
-                            form.wfhDate?.slice(0,10) || 'N/A'
-                          ) : form.type === 'extra_hours' ? (
-                            <span style={{ color: '#E65100' }}>{form.extraHoursWorked || 0} hours</span>
-                          ) : form.type === 'mission' ? (
-                            `${form.missionStartDate?.slice(0,10)} to ${form.missionEndDate?.slice(0,10)}${(form.missionFromTime || form.missionToTime) ? ` • ${form.missionFromTime || '--'} - ${form.missionToTime || '--'}` : ''} • ${form.missionDestination || 'N/A'}`
-                          ) : (
-                            `${form.fromHour || 'N/A'} to ${form.toHour || 'N/A'}`
-                          )}
-                        </span>
-                      </div>
-                      <div className="info-row">
-                        <span className="info-label">Final Status:</span>
-                        <div className={`status-badge-history status-${form.status}`}>
-                          <span className="status-icon">
-                            {form.status === 'approved' ? '✅' : '❌'}
-                          </span>
-                          <span className="status-text">
-                            {form.status === 'manager_rejected' ? 'Rejected by Manager' : form.status}
-                          </span>
-                        </div>
-                      </div>
-                      {form.reason && (
-                        <div className="reason-section">
-                          <span className="info-label">Reason:</span>
-                          <div className="reason-content">{form.reason}</div>
-                        </div>
-                      )}
-                      {form.managerApprovedBy && (
-                        <div className="info-row">
-                          <span className="info-label">
-                            {form.status === 'manager_rejected' ? 'Rejected by Manager:' : 'Manager Action:'}
-                          </span>
-                          <span className="info-value manager-name">
-                            👔 {form.managerApprovedBy.name}
-                            {form.managerApprovedAt && (
-                              <span className="approval-date"> ({new Date(form.managerApprovedAt).toLocaleDateString()})</span>
-                            )}
-                          </span>
-                        </div>
-                      )}
-                      {(form.managerComment || form.adminComment) && (
-                        <div className="comments-section">
-                          <span className="info-label">Comments:</span>
-                          {form.managerComment && (
-                            <div className="comment-block manager-comment">
-                              <strong>Manager ({form.managerApprovedBy?.name || 'Unknown'}):</strong> {form.managerComment}
-                            </div>
-                          )}
-                          {form.adminComment && (
-                            <div className="comment-block admin-comment">
-                              <strong>HR ({form.adminApprovedBy?.name || 'Unknown'}):</strong> {form.adminComment}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      {form.type === 'sick_leave' && (
-                        <div className="medical-document-section">
-                          <MedicalDocumentViewer form={form} userRole="admin" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="card-actions">
-                      <button
-                        onClick={() => handleDeleteForm(form._id)}
-                        className="btn-elegant btn-danger btn-sm"
-                        title="Delete this form record"
-                      >
-                        🗑️ Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {formsForMonthFilter.filter(f => f.type === activeFormType && ['approved', 'rejected', 'manager_rejected'].includes(f.status)).length === 0 && (
-                  <div className="no-items-message">
-                    <div className="no-items-icon">📋</div>
-                    <h3>No Historical Forms</h3>
-                    <p>No completed {activeFormType} forms found in the history.</p>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         )}
 

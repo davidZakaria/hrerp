@@ -7,7 +7,7 @@ const { isHolidayDateKey } = require('./attendanceHolidays');
 const { dateKeyFromDate, countLeaveDaysInRange } = require('./vacationDays');
 const { formCoversDate } = require('./deductionCalculator');
 
-const APPROVED_LEAVE_STATUSES = ['approved', 'manager_approved', 'manager_submitted'];
+const APPROVED_LEAVE_STATUSES = ['approved'];
 
 function roundDays(value) {
     return Math.round(Number(value) * 10000) / 10000;

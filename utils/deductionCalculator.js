@@ -19,7 +19,7 @@ const GRACE_MINUTES = 15;
 const STANDARD_SHIFT_MINUTES = 8 * 60;
 const DEFAULT_WORK_SCHEDULE = { startTime: '10:00', endTime: '19:00' };
 
-const APPROVED_WAIVER_STATUSES = ['approved', 'manager_approved', 'manager_submitted'];
+const APPROVED_WAIVER_STATUSES = ['approved'];
 const WAIVER_FORM_TYPES = ['vacation', 'sick_leave', 'wfh', 'mission'];
 
 function roundDays(days) {

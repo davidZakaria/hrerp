@@ -145,7 +145,7 @@ async function crossReferenceWithForms(date, userId) {
         endOfDay.setHours(23, 59, 59, 999);
         
         // Check for approved forms that cover this date
-        const approvedStatuses = ['approved', 'manager_approved', 'manager_submitted'];
+        const approvedStatuses = ['approved'];
         
         // Check vacation forms
         const vacationForm = await Form.findOne({

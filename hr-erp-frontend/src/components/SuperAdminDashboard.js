@@ -1966,11 +1966,9 @@ const SuperAdminDashboard = () => {
                   <strong className="form-mgmt-pipeline-strong">{t('superAdminDashboard.pipelineCompact')}:</strong>
                   <span>{t('adminDashboard.summaryPendingManager')}: {superAdminPipelineForms.filter((f) => f.status === 'pending').length}</span>
                   <span className="pipe-sep">|</span>
-                  <span>{t('adminDashboard.summaryAwaitingHr')}: {superAdminPipelineForms.filter((f) => f.status === 'manager_approved' || f.status === 'manager_submitted').length}</span>
-                  <span className="pipe-sep">|</span>
                   <span>{t('adminDashboard.summaryApproved')}: {superAdminPipelineForms.filter((f) => f.status === 'approved').length}</span>
                   <span className="pipe-sep">|</span>
-                  <span>{t('adminDashboard.summaryRejected')}: {superAdminPipelineForms.filter((f) => f.status === 'rejected' || f.status === 'manager_rejected').length}</span>
+                  <span>{t('adminDashboard.summaryRejected')}: {superAdminPipelineForms.filter((f) => f.status === 'rejected').length}</span>
                 </div>
 
                 <div className="forms-container">
@@ -2007,7 +2005,7 @@ const SuperAdminDashboard = () => {
                       switch(status) {
                         case 'approved': return '#4caf50';
                         case 'rejected': return '#f44336';
-                        case 'manager_rejected': return '#f44336';
+                        case 'rejected': return '#f44336';
                         case 'pending': return '#ff9800';
                         default: return '#757575';
                       }
@@ -2038,7 +2036,7 @@ const SuperAdminDashboard = () => {
                               className="form-status-badge"
                               style={{ backgroundColor: getStatusColor(form.status) }}
                             >
-                              {form.status === 'manager_rejected' ? 'rejected' : form.status}
+                              {form.status}
                             </span>
                           </div>
                         </div>
@@ -2864,7 +2862,6 @@ const SuperAdminDashboard = () => {
                     <option value="pending">Pending</option>
                     <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
-                    <option value="manager_rejected">Manager Rejected</option>
                   </select>
                 </div>
                 

@@ -150,16 +150,11 @@ const EmployeeDashboard = () => {
 
   const getStatusBadge = (status) => {
     const badgeClass = status === 'pending' ? 'badge-warning' :
-                     status === 'manager_approved' ? 'badge-info' :
-                     status === 'manager_submitted' ? 'badge-info' :
                      status === 'approved' ? 'badge-success' :
-                     status.includes('rejected') ? 'badge-danger' : 'badge-secondary';
-    
-    const statusText = status === 'manager_approved' ? t('dashboard.managerApproved') :
-                      status === 'manager_submitted' ? t('dashboard.awaitingHRApproval') :
-                      status === 'manager_rejected' ? t('dashboard.managerRejected') :
-                      t(`status.${status}`) || status.charAt(0).toUpperCase() + status.slice(1);
-    
+                     status === 'rejected' ? 'badge-danger' : 'badge-secondary';
+
+    const statusText = t(`status.${status}`) || status.charAt(0).toUpperCase() + status.slice(1);
+
     return <span className={`badge-elegant ${badgeClass}`}>{statusText}</span>;
   };
 
@@ -330,7 +325,7 @@ const EmployeeDashboard = () => {
                               ⏱️ {form.extraHoursWorked} {t('forms.hours')}
                             </span>
                           </div>
-                          {['manager_approved', 'approved'].includes(form.status) && form.approvedHours != null && (
+                          {form.status === 'approved' && form.approvedHours != null && (
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                               <span className="form-label-elegant">{t('forms.approvedOtHours')}:</span>
                               <span className="text-elegant" style={{ color: '#2E7D32', fontWeight: 'bold' }}>
@@ -408,15 +403,15 @@ const EmployeeDashboard = () => {
                             {t('forms.managerAction')}:
                           </div>
                           <div style={{ 
-                            background: form.status === 'manager_rejected' ? 'rgba(244, 67, 54, 0.1)' : 'rgba(76, 175, 80, 0.1)', 
+                            background: form.status === 'rejected' ? 'rgba(244, 67, 54, 0.1)' : 'rgba(76, 175, 80, 0.1)', 
                             padding: '0.75rem', 
                             borderRadius: '8px',
                             fontSize: '0.9rem',
-                            color: form.status === 'manager_rejected' ? '#d32f2f' : '#388e3c'
+                            color: form.status === 'rejected' ? '#d32f2f' : '#388e3c'
                           }}>
                             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
                               <span style={{ fontWeight: 'bold' }}>
-                                {form.status === 'manager_rejected' ? '❌ ' + t('forms.rejectedBy') : '✅ ' + t('forms.approvedBy')} 👔 {form.managerApprovedBy.name}
+                                {form.status === 'rejected' ? '❌ ' + t('forms.rejectedBy') : '✅ ' + t('forms.approvedBy')} 👔 {form.managerApprovedBy.name}
                               </span>
                             </div>
                             {form.managerApprovedAt && (

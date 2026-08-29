@@ -8,6 +8,7 @@
 @import './styles/saasTheme.css';
 @import './styles/dashboardNav.css';
 @import './styles/mobile-responsive.css';
+@import './styles/attendanceKpi.css';
 
 /* RTL Support for Arabic */
 [dir="rtl"] {

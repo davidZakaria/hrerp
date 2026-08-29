@@ -341,7 +341,7 @@ const AttendanceManagement = () => {
 
       {/* View Attendance Section */}
       <div className="elegant-card">
-        <h3 style={{ marginBottom: '1rem', color: '#333' }}>Attendance report</h3>
+        <h3 className="attendance-section-title" style={{ marginBottom: '1rem' }}>Attendance report</h3>
         
         {/* Controls Row */}
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'flex-end' }}>
@@ -422,30 +422,22 @@ const AttendanceManagement = () => {
         {attendanceReport && !loading && (
           <div>
             {attendanceReport.kpi && (
-              <div
-                className="attendance-kpi-grid"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-                  gap: '1rem',
-                  marginBottom: '1.5rem'
-                }}
-              >
-                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#E8F5E9', borderRadius: '10px', border: '2px solid #4CAF50', textAlign: 'center', color: '#111827' }}>
-                  <div className="kpi-value kpi-value--present" style={{ fontSize: '2rem', fontWeight: 'bold', color: '#14532d' }}>{attendanceReport.kpi.totalPresent}</div>
-                  <div className="kpi-label" style={{ fontSize: '0.85rem', color: '#111827', fontWeight: 600 }}>Total present (days)</div>
+              <div className="attendance-kpi-grid">
+                <div className="attendance-kpi-card attendance-kpi-card--present">
+                  <div className="kpi-value kpi-value--present">{attendanceReport.kpi.totalPresent}</div>
+                  <div className="kpi-label">Total present (days)</div>
                 </div>
-                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#FFEBEE', borderRadius: '10px', border: '2px solid #F44336', textAlign: 'center', color: '#111827' }}>
-                  <div className="kpi-value kpi-value--absences" style={{ fontSize: '2rem', fontWeight: 'bold', color: '#991b1b' }}>{attendanceReport.kpi.totalAbsences}</div>
-                  <div className="kpi-label" style={{ fontSize: '0.85rem', color: '#111827', fontWeight: 600 }}>Total absences</div>
+                <div className="attendance-kpi-card attendance-kpi-card--absences">
+                  <div className="kpi-value kpi-value--absences">{attendanceReport.kpi.totalAbsences}</div>
+                  <div className="kpi-label">Total absences</div>
                 </div>
-                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#FFF3E0', borderRadius: '10px', border: '2px solid #FF9800', textAlign: 'center', color: '#111827' }}>
-                  <div className="kpi-value kpi-value--late" style={{ fontSize: '2rem', fontWeight: 'bold', color: '#9a3412' }}>{attendanceReport.kpi.totalLateHours}h</div>
-                  <div className="kpi-label" style={{ fontSize: '0.85rem', color: '#111827', fontWeight: 600 }}>Total late hours</div>
+                <div className="attendance-kpi-card attendance-kpi-card--late">
+                  <div className="kpi-value kpi-value--late">{attendanceReport.kpi.totalLateHours}h</div>
+                  <div className="kpi-label">Total late hours</div>
                 </div>
-                <div className="attendance-kpi-card" style={{ padding: '1rem', background: '#F3E5F5', borderRadius: '10px', border: '2px solid #9C27B0', textAlign: 'center', color: '#111827' }}>
-                  <div className="kpi-value kpi-value--missed" style={{ fontSize: '2rem', fontWeight: 'bold', color: '#581c87' }}>{attendanceReport.kpi.pendingMissedPunches}</div>
-                  <div className="kpi-label" style={{ fontSize: '0.85rem', color: '#111827', fontWeight: 600 }}>Missed punch events</div>
+                <div className="attendance-kpi-card attendance-kpi-card--missed">
+                  <div className="kpi-value kpi-value--missed">{attendanceReport.kpi.pendingMissedPunches}</div>
+                  <div className="kpi-label">Missed punch events</div>
                 </div>
               </div>
             )}

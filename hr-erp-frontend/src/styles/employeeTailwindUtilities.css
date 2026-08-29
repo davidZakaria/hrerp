@@ -139,8 +139,17 @@
 .focus\:ring-2:focus { outline: 2px solid transparent; box-shadow: 0 0 0 2px #4f46e5; }
 .focus\:ring-indigo-500:focus { box-shadow: 0 0 0 2px #6366f1; }
 
+[data-theme='dark'] .dark\:bg-emerald-900\/20 { background-color: rgba(6, 78, 59, 0.2); }
 [data-theme='dark'] .dark\:bg-emerald-900\/30 { background-color: rgba(6, 78, 59, 0.3); }
+[data-theme='dark'] .dark\:bg-amber-900\/20 { background-color: rgba(120, 53, 15, 0.2); }
 [data-theme='dark'] .dark\:bg-amber-900\/30 { background-color: rgba(120, 53, 15, 0.3); }
+[data-theme='dark'] .dark\:bg-slate-900\/60 { background-color: rgba(15, 23, 42, 0.6); }
+[data-theme='dark'] .dark\:border-emerald-800 { border-color: #065f46; }
+[data-theme='dark'] .dark\:border-emerald-200 { border-color: #065f46; }
+.border-emerald-200 { border-color: #a7f3d0; }
+.border-emerald-500 { border-color: #10b981; }
+.border-amber-500 { border-color: #f59e0b; }
+.text-amber-600 { color: #d97706; }
 [data-theme='dark'] .dark\:bg-rose-900\/30 { background-color: rgba(136, 19, 55, 0.3); }
 [data-theme='dark'] .dark\:text-emerald-400 { color: #34d399; }
 [data-theme='dark'] .dark\:text-amber-400 { color: #fbbf24; }

@@ -9,6 +9,7 @@
 @import './styles/dashboardNav.css';
 @import './styles/mobile-responsive.css';
 @import './styles/attendanceKpi.css';
+@import './styles/formSubmission.css';
 
 /* RTL Support for Arabic */
 [dir="rtl"] {

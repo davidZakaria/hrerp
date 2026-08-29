@@ -1,0 +1,291 @@
+/* Employee form submission — fix ghost text on light-tint cards in dark mode */
+
+.employee-form-submission {
+  max-width: 600px;
+  margin: 0 auto;
+  text-shadow: none !important;
+}
+
+.employee-form-submission__title {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.employee-form-submission__title h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-form-submission__title h2 {
+  color: #f8fafc !important;
+}
+
+.employee-form-intro {
+  background: #ecfdf5 !important;
+  border: 1px solid #a7f3d0 !important;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-form-intro {
+  background: rgba(6, 78, 59, 0.45) !important;
+  border-color: #059669 !important;
+}
+
+.employee-form-intro__heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.employee-form-intro__heading h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #047857 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-form-intro__heading h3 {
+  color: #6ee7b7 !important;
+}
+
+.employee-form-intro__greeting {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #065f46 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-form-intro__greeting {
+  color: #a7f3d0 !important;
+}
+
+.employee-form-intro__role {
+  font-size: 0.75rem;
+  color: #475569 !important;
+  margin-left: 0.5rem;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-form-intro__role {
+  color: #cbd5e1 !important;
+}
+
+.employee-form-intro__body {
+  font-size: 0.875rem;
+  color: #334155 !important;
+  margin: 0;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-form-intro__body {
+  color: #e2e8f0 !important;
+}
+
+.employee-form-intro__note {
+  font-size: 0.75rem;
+  color: #64748b !important;
+  font-style: italic;
+  display: block;
+  margin-top: 0.5rem;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-form-intro__note {
+  color: #cbd5e1 !important;
+}
+
+.employee-form-excuse-balance {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='dark'] .employee-form-excuse-balance {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.employee-form-excuse-balance h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-form-excuse-balance h4 {
+  color: #f1f5f9 !important;
+}
+
+.employee-form-excuse-balance__count {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-form-excuse-balance__count {
+  color: #ffffff !important;
+}
+
+.employee-form-excuse-balance__hint {
+  font-size: 0.875rem;
+  color: #64748b !important;
+  display: block;
+  margin-top: 0.5rem;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-form-excuse-balance__hint {
+  color: #94a3b8 !important;
+}
+
+.employee-excuse-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .employee-excuse-options {
+    flex-direction: row;
+  }
+}
+
+.employee-excuse-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+  text-shadow: none !important;
+  background: transparent;
+}
+
+[data-theme='dark'] .employee-excuse-option {
+  border-color: #475569;
+}
+
+.employee-excuse-option.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.employee-excuse-option--paid.is-selected {
+  border-color: #10b981 !important;
+  background: #ecfdf5 !important;
+}
+
+[data-theme='dark'] .employee-excuse-option--paid.is-selected {
+  background: rgba(6, 78, 59, 0.5) !important;
+  border-color: #34d399 !important;
+}
+
+.employee-excuse-option--unpaid.is-selected {
+  border-color: #f59e0b !important;
+  background: #fffbeb !important;
+}
+
+[data-theme='dark'] .employee-excuse-option--unpaid.is-selected {
+  background: rgba(120, 53, 15, 0.45) !important;
+  border-color: #fbbf24 !important;
+}
+
+.employee-excuse-option__title {
+  font-weight: 600;
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-excuse-option:not(.is-selected) .employee-excuse-option__title {
+  color: #e2e8f0 !important;
+}
+
+[data-theme='dark'] .employee-excuse-option--paid.is-selected .employee-excuse-option__title {
+  color: #d1fae5 !important;
+}
+
+[data-theme='dark'] .employee-excuse-option--unpaid.is-selected .employee-excuse-option__title {
+  color: #fef3c7 !important;
+}
+
+.employee-excuse-option__desc {
+  display: block;
+  font-size: 0.875rem;
+  color: #64748b !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-excuse-option:not(.is-selected) .employee-excuse-option__desc {
+  color: #94a3b8 !important;
+}
+
+[data-theme='dark'] .employee-excuse-option--paid.is-selected .employee-excuse-option__desc {
+  color: #a7f3d0 !important;
+}
+
+[data-theme='dark'] .employee-excuse-option--unpaid.is-selected .employee-excuse-option__desc {
+  color: #fde68a !important;
+}
+
+.employee-form-warning {
+  display: block;
+  margin-top: 0.5rem;
+  color: #b45309 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-form-warning {
+  color: #fbbf24 !important;
+}
+
+[data-theme='dark'] .employee-dashboard-v2 .employee-form-submission .form-label-elegant {
+  color: #cbd5e1 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-dashboard-v2 .employee-form-submission .form-section-title {
+  color: #a5b4fc !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-dashboard-v2 .employee-form-submission .input-helper,
+[data-theme='dark'] .employee-dashboard-v2 .employee-form-submission .form-elegant small.input-helper {
+  color: #94a3b8 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .employee-dashboard-v2 .employee-form-submission .time-selection-section,
+[data-theme='dark'] .employee-dashboard-v2 .employee-form-submission .date-selection-section {
+  background: rgba(15, 23, 42, 0.55) !important;
+  border-color: #334155 !important;
+}
+
+[data-theme='dark'] .employee-dashboard-v2 .employee-form-submission .summary-card {
+  background: rgba(15, 23, 42, 0.65) !important;
+  border-color: #334155 !important;
+}
+
+[data-theme='dark'] .employee-dashboard-v2 .employee-form-submission .summary-card h5,
+[data-theme='dark'] .employee-dashboard-v2 .employee-form-submission .summary-card .summary-details {
+  color: #e2e8f0 !important;
+  text-shadow: none !important;
+}

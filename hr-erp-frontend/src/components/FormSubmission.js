@@ -264,55 +264,51 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl p-6" style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h2 className="!text-slate-900 dark:!text-white text-xl font-bold mb-2">
-          {t('login.title')}
-        </h2>
-                 <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 mb-4">
-           <div className="flex items-center justify-center gap-2 mb-2">
-             <span className="text-xl">👤</span>
-             <h3 className="m-0 text-emerald-700 dark:text-emerald-400 text-base font-semibold">
-               {userInfo?.role === 'manager' ? t('forms.managerPersonalLeaveRequest') : 
+    <div className="employee-form-submission">
+      <div className="employee-form-submission__title">
+        <h2>{t('login.title')}</h2>
+        <div className="employee-form-intro">
+          <div className="employee-form-intro__heading">
+            <span className="text-xl">👤</span>
+            <h3>
+              {userInfo?.role === 'manager' ? t('forms.managerPersonalLeaveRequest') :
                 userInfo?.role === 'admin' ? t('forms.adminPersonalLeaveRequest') :
                 t('forms.personalLeaveRequest')}
-             </h3>
-           </div>
-           {userInfo && (
-             <div className="mb-2">
-               <span className="text-sm text-emerald-700 dark:text-emerald-400 font-semibold">
-                 👋 {t('forms.hello')}, {userInfo.name}
-               </span>
-               {(userInfo.role === 'manager' || userInfo.role === 'admin') && (
-                 <span className="text-xs !text-slate-600 dark:!text-slate-400 ml-2">
-                   ({userInfo.role === 'manager' ? t('dashboard.manager') : t('dashboard.admin')})
-                 </span>
-               )}
-             </div>
-           )}
-           <p className="text-sm !text-slate-700 dark:!text-slate-300 m-0">
-             {t('forms.submitPersonalRequests')}
-           </p>
-           <small className="text-xs !text-slate-500 dark:!text-slate-400 italic block mt-2">
-             {userInfo?.role === 'manager' ? 
-               t('forms.managerPersonalNote') :
-               userInfo?.role === 'admin' ?
-               t('forms.adminPersonalNote') :
-               t('forms.employeePersonalNote')
-             }
-           </small>
-         </div>
+            </h3>
+          </div>
+          {userInfo && (
+            <div className="mb-2">
+              <span className="employee-form-intro__greeting">
+                👋 {t('forms.hello')}, {userInfo.name}
+              </span>
+              {(userInfo.role === 'manager' || userInfo.role === 'admin') && (
+                <span className="employee-form-intro__role">
+                  ({userInfo.role === 'manager' ? t('dashboard.manager') : t('dashboard.admin')})
+                </span>
+              )}
+            </div>
+          )}
+          <p className="employee-form-intro__body">
+            {t('forms.submitPersonalRequests')}
+          </p>
+          <small className="employee-form-intro__note">
+            {userInfo?.role === 'manager' ?
+              t('forms.managerPersonalNote') :
+              userInfo?.role === 'admin' ?
+              t('forms.adminPersonalNote') :
+              t('forms.employeePersonalNote')
+            }
+          </small>
+        </div>
       </div>
 
       {form.type === 'excuse' && excuseRequestsLeft !== null && (
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 mb-4 text-center shadow-sm">
-          <h4 className="m-0 mb-2 text-sm font-semibold !text-slate-900 dark:!text-white">
-            ⏰ Paid Excuse Requests This Month
-          </h4>
-          <div className="text-2xl font-bold !text-slate-900 dark:!text-white">
+        <div className="employee-form-excuse-balance">
+          <h4>⏰ Paid Excuse Requests This Month</h4>
+          <div className="employee-form-excuse-balance__count">
             {excuseRequestsLeft} / 2 {t('forms.requestsRemaining')}
           </div>
-          <small className="text-sm !text-slate-500 dark:!text-slate-400 block mt-2">
+          <small className="employee-form-excuse-balance__hint">
             {excuseRequestsLeft > 0 ? 'Each paid request is exactly 2 hours' : 'You can still submit unpaid excuse requests'}
           </small>
         </div>
@@ -502,12 +498,10 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
 
             <div className="form-group-elegant">
               <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">💳 Excuse Type</label>
-              <div className="flex flex-col sm:flex-row gap-3 mt-2">
-                <label className={`flex items-start gap-2 flex-1 p-3 rounded-lg border-2 cursor-pointer ${
-                  form.excuseType === 'paid'
-                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                    : 'border-slate-200 dark:border-slate-700'
-                } ${(excuseRequestsLeft ?? 0) <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              <div className="employee-excuse-options">
+                <label className={`employee-excuse-option employee-excuse-option--paid ${
+                  form.excuseType === 'paid' ? 'is-selected' : ''
+                } ${(excuseRequestsLeft ?? 0) <= 0 ? 'is-disabled' : ''}`}>
                   <input
                     type="radio"
                     name="excuseType"
@@ -519,17 +513,15 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
                     className="mt-1"
                   />
                   <div>
-                    <span className="font-semibold !text-slate-900 dark:!text-white">💰 Paid Excuse</span>
-                    <small className="block text-sm !text-slate-500 dark:!text-slate-400">
+                    <span className="employee-excuse-option__title">💰 Paid Excuse</span>
+                    <small className="employee-excuse-option__desc">
                       Exactly 2 hours ({excuseRequestsLeft ?? '—'} of 2 left this month)
                     </small>
                   </div>
                 </label>
 
-                <label className={`flex items-start gap-2 flex-1 p-3 rounded-lg border-2 cursor-pointer ${
-                  form.excuseType === 'unpaid'
-                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
-                    : 'border-slate-200 dark:border-slate-700'
+                <label className={`employee-excuse-option employee-excuse-option--unpaid ${
+                  form.excuseType === 'unpaid' ? 'is-selected' : ''
                 }`}>
                   <input
                     type="radio"
@@ -541,15 +533,15 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
                     className="mt-1"
                   />
                   <div>
-                    <span className="font-semibold !text-slate-900 dark:!text-white">📝 Unpaid Excuse</span>
-                    <small className="block text-sm !text-slate-500 dark:!text-slate-400">
+                    <span className="employee-excuse-option__title">📝 Unpaid Excuse</span>
+                    <small className="employee-excuse-option__desc">
                       Any duration - deducts 0.5 vacation day
                     </small>
                   </div>
                 </label>
               </div>
               {(excuseRequestsLeft ?? 0) <= 0 && (
-                <small className="block text-amber-600 dark:text-amber-400 mt-2">
+                <small className="employee-form-warning">
                   ⚠️ No paid excuse requests remaining this month. Use unpaid option to deduct from vacation days.
                 </small>
               )}

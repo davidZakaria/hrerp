@@ -525,8 +525,9 @@ const SuperAdminDashboard = () => {
     }
   };
 
-  const handleCreateBackup = async (encrypt = false) => {
-    if (!window.confirm(`Create a new backup${encrypt ? ' (encrypted)' : ''}? This may take a few minutes.`)) {
+  const handleCreateBackup = async (encrypt = false, detailed = false) => {
+    const label = detailed ? 'detailed backup' : 'backup';
+    if (!window.confirm(`Create a new ${label}${encrypt ? ' (encrypted)' : ''}? This may take a few minutes.`)) {
       return;
     }
     
@@ -541,14 +542,20 @@ const SuperAdminDashboard = () => {
           'Content-Type': 'application/json',
           'x-auth-token': token
         },
-        body: JSON.stringify({ encrypt })
+        body: JSON.stringify({ encrypt, detailed })
       });
       const data = await res.json();
       
       if (res.ok) {
-        setSuccess(`Backup created successfully! ID: ${data.backup.id} (${data.backup.size})`);
+        let msg = `Backup created successfully! ID: ${data.backup.id} (${data.backup.size})`;
+        if (data.backup.changeReport) {
+          const cr = data.backup.changeReport.summary;
+          msg += ` — ${cr.commitCount} commits, ${cr.filesChanged} files changed`;
+          if (cr.uncommitted) msg += ` (${cr.uncommitted} uncommitted locally)`;
+        }
+        setSuccess(msg);
         fetchBackups();
-        setTimeout(() => setSuccess(''), 5000);
+        setTimeout(() => setSuccess(''), 8000);
       } else {
         setError(data.msg || 'Failed to create backup');
       }
@@ -556,6 +563,31 @@ const SuperAdminDashboard = () => {
       setError('Error creating backup: ' + err.message);
     }
     setCreatingBackup(false);
+  };
+
+  const handleDownloadChangeReport = async (backupId, format = 'md') => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/backup/${backupId}/change-report?format=${format}`, {
+        headers: { 'x-auth-token': token }
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.msg || 'Change report not available for this backup');
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${backupId}-change-report.${format === 'json' ? 'json' : 'md'}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError('Error downloading change report: ' + err.message);
+    }
   };
 
   const handleVerifyBackup = async (backupId) => {
@@ -2367,7 +2399,7 @@ const SuperAdminDashboard = () => {
                       </div>
                       
                       <div className="audit-log-content">
-                        <div className="audit-log-description !text-slate-800 dark:!text-slate-200">
+                        <div className="audit-log-description">
                           {log.description}
                         </div>
 
@@ -3000,6 +3032,15 @@ const SuperAdminDashboard = () => {
               >
                 {creatingBackup ? 'Creating...' : '+ Create Backup'}
               </button>
+              <button 
+                className="btn-elegant"
+                onClick={() => handleCreateBackup(false, true)}
+                disabled={creatingBackup}
+                style={{ background: 'linear-gradient(135deg, #00897B, #00695C)' }}
+                title="Full backup plus change-report.md showing git and data updates vs previous backup"
+              >
+                {creatingBackup ? 'Creating...' : '+ Detailed Backup'}
+              </button>
               {backupConfig?.encryptionAvailable && (
                 <button 
                   className="btn-elegant"
@@ -3225,6 +3266,18 @@ const SuperAdminDashboard = () => {
                               {backup.manifest.files} files
                             </span>
                           )}
+                          {backup.manifest?.hasChangeReport && (
+                            <span style={{
+                              background: '#00897B',
+                              color: '#ffffff',
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              fontSize: '0.75rem',
+                              fontWeight: '600'
+                            }}>
+                              Report
+                            </span>
+                          )}
                           {backup.encrypted && (
                             <span style={{
                               background: '#9c27b0',
@@ -3253,6 +3306,20 @@ const SuperAdminDashboard = () => {
                           >
                             Export
                           </button>
+                          {backup.manifest?.hasChangeReport && (
+                            <button
+                              onClick={() => handleDownloadChangeReport(backup.id, 'md')}
+                              className="btn-elegant btn-sm"
+                              style={{
+                                padding: '6px 12px',
+                                background: 'linear-gradient(135deg, #00897B, #00695C)',
+                                fontSize: '0.8rem'
+                              }}
+                              title="Download change report (what changed in files & data)"
+                            >
+                              Report
+                            </button>
+                          )}
                           <button
                             onClick={() => handleVerifyBackup(backup.id)}
                             disabled={verifyingBackup === backup.id}

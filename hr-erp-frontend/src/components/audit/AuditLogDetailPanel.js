@@ -97,20 +97,16 @@ function AuditFieldDiff({ oldValues, newValues }) {
   if (!keys.length) return null;
 
   return (
-    <div className="audit-field-diff mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 overflow-hidden">
-      <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80">
-        <span className="text-xs font-bold uppercase tracking-wider !text-slate-600 dark:!text-slate-400">
-          Data changes
-        </span>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
+    <div className="audit-field-diff">
+      <div className="audit-field-diff__header">Data changes</div>
+      <div className="audit-field-diff__scroll">
+        <table className="audit-field-diff__table">
           <thead>
-            <tr className="border-b border-slate-200 dark:border-slate-700">
-              <th className="text-left px-4 py-2 !text-slate-500 dark:!text-slate-400 font-semibold">Field</th>
-              <th className="text-left px-4 py-2 !text-slate-500 dark:!text-slate-400 font-semibold">Before</th>
-              <th className="text-left px-4 py-2 !text-slate-500 dark:!text-slate-400 font-semibold">After</th>
-              <th className="text-left px-4 py-2 !text-slate-500 dark:!text-slate-400 font-semibold">Δ</th>
+            <tr>
+              <th>Field</th>
+              <th>Before</th>
+              <th>After</th>
+              <th>Δ</th>
             </tr>
           </thead>
           <tbody>
@@ -119,23 +115,17 @@ function AuditFieldDiff({ oldValues, newValues }) {
               const after = newValues?.[key];
               const delta = formatDiff(before, after);
               return (
-                <tr key={key} className="border-b border-slate-100 dark:border-slate-800 last:border-0">
-                  <td className="px-4 py-2 font-medium !text-slate-800 dark:!text-slate-200 whitespace-nowrap">
-                    {humanizeKey(key)}
-                  </td>
-                  <td className="px-4 py-2 !text-rose-700 dark:!text-rose-400 font-mono text-xs break-all">
-                    {formatDisplayValue(before)}
-                  </td>
-                  <td className="px-4 py-2 !text-emerald-700 dark:!text-emerald-400 font-mono text-xs break-all">
-                    {formatDisplayValue(after)}
-                  </td>
-                  <td className="px-4 py-2 font-semibold whitespace-nowrap">
+                <tr key={key}>
+                  <td className="audit-field-diff__field">{humanizeKey(key)}</td>
+                  <td className="audit-field-diff__before">{formatDisplayValue(before)}</td>
+                  <td className="audit-field-diff__after">{formatDisplayValue(after)}</td>
+                  <td className="audit-field-diff__delta">
                     {delta != null ? (
-                      <span className={Number(delta) >= 0 ? '!text-emerald-600' : '!text-rose-600'}>
+                      <span className={Number(delta) >= 0 ? 'audit-field-diff__delta--up' : 'audit-field-diff__delta--down'}>
                         {delta}
                       </span>
                     ) : (
-                      <span className="!text-slate-400">—</span>
+                      '—'
                     )}
                   </td>
                 </tr>
@@ -157,32 +147,26 @@ function AuditDetailsBlock({ details, reason, targetResource, targetResourceId }
   if (!detailEntries.length && !hasMeta) return null;
 
   return (
-    <div className="audit-details-block mt-3 rounded-xl border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-950/20 p-4">
-      <div className="text-xs font-bold uppercase tracking-wider !text-indigo-700 dark:!text-indigo-300 mb-3">
-        Additional context
-      </div>
+    <div className="audit-details-block">
+      <div className="audit-details-block__title">Additional context</div>
       {reason && (
-        <p className="text-sm mb-3 !text-slate-800 dark:!text-slate-200">
-          <strong className="!text-slate-900 dark:!text-white">Reason:</strong> {reason}
+        <p className="audit-details-block__line">
+          <strong>Reason:</strong> {reason}
         </p>
       )}
       {(targetResource || targetResourceId) && (
-        <p className="text-sm mb-3 !text-slate-700 dark:!text-slate-300">
-          <strong className="!text-slate-900 dark:!text-white">Resource:</strong>{' '}
+        <p className="audit-details-block__line">
+          <strong>Resource:</strong>{' '}
           {targetResource || '—'}
           {targetResourceId ? ` · ${String(targetResourceId)}` : ''}
         </p>
       )}
       {detailEntries.length > 0 && (
-        <dl className="grid gap-2 sm:grid-cols-2 text-sm">
+        <dl className="audit-details-block__grid">
           {detailEntries.map(([key, value]) => (
-            <div key={key} className="min-w-0">
-              <dt className="font-semibold !text-slate-600 dark:!text-slate-400 text-xs uppercase tracking-wide">
-                {humanizeKey(key)}
-              </dt>
-              <dd className="mt-0.5 !text-slate-900 dark:!text-slate-100 font-mono text-xs break-all whitespace-pre-wrap">
-                {formatDisplayValue(value)}
-              </dd>
+            <div key={key} className="audit-details-block__item">
+              <dt>{humanizeKey(key)}</dt>
+              <dd>{formatDisplayValue(value)}</dd>
             </div>
           ))}
         </dl>
@@ -195,7 +179,7 @@ const AuditLogDetailPanel = ({ log }) => {
   if (!log) return null;
 
   return (
-    <>
+    <div className="audit-log-detail-panel">
       <AuditFieldDiff oldValues={log.oldValues} newValues={log.newValues} />
       <AuditDetailsBlock
         details={log.details}
@@ -203,7 +187,7 @@ const AuditLogDetailPanel = ({ log }) => {
         targetResource={log.targetResource}
         targetResourceId={log.targetResourceId}
       />
-    </>
+    </div>
   );
 };
 

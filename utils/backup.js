@@ -660,7 +660,8 @@ async function createBackup(options = {}) {
   const {
     encryptionKey = process.env.BACKUP_ENCRYPTION_KEY,
     skipCleanup = false,
-    performedBy = 'SYSTEM'
+    performedBy = 'SYSTEM',
+    detailed = false
   } = options;
   
   console.log('\n' + '='.repeat(60));
@@ -673,6 +674,16 @@ async function createBackup(options = {}) {
   const startTime = Date.now();
   const backupId = generateBackupId();
   const backupPath = path.join(BACKUP_CONFIG.backupDir, backupId);
+
+  let baselineBeforeBackup = null;
+  if (detailed) {
+    try {
+      const { getPreviousBackupBaseline } = require('./changeReport');
+      baselineBeforeBackup = getPreviousBackupBaseline();
+    } catch (e) {
+      console.warn('⚠️  Could not load previous backup baseline:', e.message);
+    }
+  }
   
   try {
     // Ensure backup directory exists
@@ -694,7 +705,30 @@ async function createBackup(options = {}) {
     }
     
     // Generate manifest
-    const manifest = generateManifest(backupPath, results);
+    let manifest = generateManifest(backupPath, results);
+
+    // Optional detailed change report (git + data deltas)
+    let changeReportResult = null;
+    if (detailed) {
+      try {
+        const { generateChangeReport } = require('./changeReport');
+        changeReportResult = await generateChangeReport(backupId, backupPath, {
+          baseline: baselineBeforeBackup
+        });
+        manifest.changeReport = {
+          json: 'change-report.json',
+          markdown: 'change-report.md',
+          generatedAt: changeReportResult.report.generatedAt
+        };
+        manifest.git = changeReportResult.gitForManifest;
+        manifest.dataSnapshot = changeReportResult.dataSnapshotForManifest;
+        const manifestPath = path.join(backupPath, 'manifest.json');
+        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+        console.log(`📊 Change report: ${changeReportResult.mdPath}`);
+      } catch (reportErr) {
+        console.warn('⚠️  Change report generation failed:', reportErr.message);
+      }
+    }
     
     // Create encrypted archive if key provided
     let encryptionResult = { encrypted: false };
@@ -733,7 +767,18 @@ async function createBackup(options = {}) {
       encrypted: encryptionResult.encrypted,
       results,
       manifest,
-      cleanup: cleanupResult
+      cleanup: cleanupResult,
+      changeReport: changeReportResult
+        ? {
+            markdown: changeReportResult.mdPath,
+            json: changeReportResult.jsonPath,
+            summary: {
+              commitCount: changeReportResult.report.gitChanges?.commitCount ?? 0,
+              filesChanged: changeReportResult.report.gitChanges?.filesChanged?.length ?? 0,
+              uncommitted: changeReportResult.report.git?.uncommitted?.count ?? 0
+            }
+          }
+        : null
     };
     
   } catch (error) {

@@ -1641,10 +1641,12 @@ body::after {
 .stats-number {
   font-size: 3rem;
   font-weight: 700;
-  background: var(--gradient-light);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  text-shadow: none !important;
   margin-bottom: 0.5rem;
 }
 
@@ -2417,10 +2419,19 @@ form select:focus {
 }
 
 /* Light pastel KPI cards (attendance dashboards): force readable dark text */
+.saas-attendance .attendance-kpi-grid .attendance-kpi-card .kpi-label,
+.modern-dash .attendance-kpi-grid .attendance-kpi-card .kpi-label,
 .main-content .attendance-kpi-grid .attendance-kpi-card .kpi-label {
   color: #111827 !important;
   text-shadow: none !important;
   font-weight: 600 !important;
+  opacity: 1 !important;
+}
+.saas-attendance .attendance-kpi-grid .attendance-kpi-card .kpi-value,
+.modern-dash .attendance-kpi-grid .attendance-kpi-card .kpi-value,
+.main-content .attendance-kpi-grid .attendance-kpi-card .kpi-value {
+  text-shadow: none !important;
+  -webkit-text-fill-color: currentColor !important;
 }
 .main-content .attendance-kpi-grid .attendance-kpi-card .kpi-value--present {
   color: #14532d !important;

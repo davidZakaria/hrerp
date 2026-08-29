@@ -22,7 +22,23 @@ The HR-ERP Backup System provides comprehensive data protection with the followi
 # Run a manual backup
 node utils/backup.js
 
-# With encryption (requires BACKUP_ENCRYPTION_KEY in .env)
+# Detailed backup: full dump + change-report.md (git + data deltas)
+node scripts/detailed-backup.js
+
+# Report only (no mongodump) — quick snapshot of what changed
+node scripts/detailed-backup.js --report-only
+
+# Windows shortcut
+DETAILED_BACKUP.bat
+```
+
+Each **detailed backup** writes into the backup folder:
+- `change-report.md` — human-readable summary
+- `change-report.json` — machine-readable full report
+- Compares against the **previous backup** (git commits, file list, DB counts, audit activity)
+
+With encryption (requires BACKUP_ENCRYPTION_KEY in .env):
+```bash
 BACKUP_ENCRYPTION_KEY=your-secret-key node utils/backup.js
 ```
 
@@ -112,9 +128,12 @@ Creates a new backup. Super admin only.
 **Request Body:**
 ```json
 {
-  "encrypt": true  // Optional: encrypt the backup
+  "encrypt": true,
+  "detailed": true
 }
 ```
+
+`detailed: true` adds `change-report.md` / `change-report.json` to the backup folder (git + data change summary vs previous backup).
 
 **Response:**
 ```json

@@ -109,14 +109,15 @@ const requireSuperAdmin = async (req, res, next) => {
  */
 router.post('/create', auth, requireSuperAdmin, async (req, res) => {
   try {
-    const { encrypt = false } = req.body;
+    const { encrypt = false, detailed = false } = req.body;
     
-    console.log(`\n🔒 Backup requested by: ${req.adminUser.name} (${req.adminUser.email})`);
+    console.log(`\n🔒 Backup requested by: ${req.adminUser.name} (${req.adminUser.email})${detailed ? ' [detailed]' : ''}`);
     
-    // Create backup with optional encryption
+    // Create backup with optional encryption and change report
     const result = await createBackup({
       encryptionKey: encrypt ? process.env.BACKUP_ENCRYPTION_KEY : null,
-      performedBy: req.adminUser.email
+      performedBy: req.adminUser.email,
+      detailed: Boolean(detailed)
     });
     
     if (result.success) {
@@ -155,7 +156,8 @@ router.post('/create', auth, requireSuperAdmin, async (req, res) => {
             database: result.results.database?.success || false,
             files: result.results.files?.totalFiles || 0,
             config: result.results.config?.fileCount || 0
-          }
+          },
+          changeReport: result.changeReport || null
         }
       });
     } else {
@@ -209,7 +211,9 @@ router.get('/list', auth, requireSuperAdmin, async (req, res) => {
         manifest: b.manifest ? {
           database: b.manifest.database?.success,
           files: b.manifest.files?.totalFiles,
-          config: b.manifest.config?.fileCount
+          config: b.manifest.config?.fileCount,
+          hasChangeReport: Boolean(b.manifest.changeReport),
+          gitCommit: b.manifest.git?.shortCommit || null
         } : null
       }))
     });
@@ -218,6 +222,41 @@ router.get('/list', auth, requireSuperAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       msg: 'Error listing backups',
+      error: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/backup/:backupId/change-report
+ * Download detailed change report (markdown or json)
+ */
+router.get('/:backupId/change-report', auth, requireSuperAdmin, async (req, res) => {
+  try {
+    const { backupId } = req.params;
+    const format = (req.query.format || 'md').toLowerCase();
+    const backupPath = path.join(BACKUP_CONFIG.backupDir, backupId);
+
+    if (!fs.existsSync(backupPath)) {
+      return res.status(404).json({ success: false, msg: 'Backup not found' });
+    }
+
+    const fileName = format === 'json' ? 'change-report.json' : 'change-report.md';
+    const filePath = path.join(backupPath, fileName);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        msg: 'Change report not found. Create a detailed backup to generate one.'
+      });
+    }
+
+    res.download(filePath, `${backupId}-${fileName}`);
+  } catch (err) {
+    console.error('Download change report error:', err);
+    res.status(500).json({
+      success: false,
+      msg: 'Error downloading change report',
       error: err.message
     });
   }
@@ -250,7 +289,8 @@ router.get('/:backupId', auth, requireSuperAdmin, async (req, res) => {
         sizeBytes: backup.size,
         fileCount: backup.fileCount,
         encrypted: backup.hasEncrypted,
-        manifest: backup.manifest
+        manifest: backup.manifest,
+        hasChangeReport: Boolean(backup.manifest?.changeReport)
       }
     });
   } catch (err) {

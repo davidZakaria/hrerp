@@ -462,8 +462,12 @@
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 8px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  color: #ffffff;
+  text-shadow: none !important;
+  color: #ffffff !important;
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 .stats-label {
@@ -2804,20 +2808,51 @@
   }
 }
 
-/* Attendance KPI: .elegant-card sets color:#fff — backup dark text for stat cards (inline styles are primary) */
-.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-label {
-  color: #111827 !important;
+/* Attendance KPI: .elegant-card sets color:#fff — force readable dark text on pastel cards */
+.saas-attendance .attendance-kpi-grid .attendance-kpi-card,
+.modern-dash .attendance-kpi-grid .attendance-kpi-card,
+.elegant-card .attendance-kpi-grid .attendance-kpi-card,
+.main-content .attendance-kpi-grid .attendance-kpi-card {
+  text-shadow: none !important;
 }
-.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value--present {
+.saas-attendance .attendance-kpi-grid .attendance-kpi-card .kpi-label,
+.modern-dash .attendance-kpi-grid .attendance-kpi-card .kpi-label,
+.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-label,
+.main-content .attendance-kpi-grid .attendance-kpi-card .kpi-label {
+  color: #111827 !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+  font-weight: 600 !important;
+}
+.saas-attendance .attendance-kpi-grid .attendance-kpi-card .kpi-value,
+.modern-dash .attendance-kpi-grid .attendance-kpi-card .kpi-value,
+.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value,
+.main-content .attendance-kpi-grid .attendance-kpi-card .kpi-value {
+  text-shadow: none !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+.saas-attendance .attendance-kpi-grid .attendance-kpi-card .kpi-value--present,
+.modern-dash .attendance-kpi-grid .attendance-kpi-card .kpi-value--present,
+.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value--present,
+.main-content .attendance-kpi-grid .attendance-kpi-card .kpi-value--present {
   color: #14532d !important;
 }
-.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value--absences {
+.saas-attendance .attendance-kpi-grid .attendance-kpi-card .kpi-value--absences,
+.modern-dash .attendance-kpi-grid .attendance-kpi-card .kpi-value--absences,
+.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value--absences,
+.main-content .attendance-kpi-grid .attendance-kpi-card .kpi-value--absences {
   color: #991b1b !important;
 }
-.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value--late {
+.saas-attendance .attendance-kpi-grid .attendance-kpi-card .kpi-value--late,
+.modern-dash .attendance-kpi-grid .attendance-kpi-card .kpi-value--late,
+.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value--late,
+.main-content .attendance-kpi-grid .attendance-kpi-card .kpi-value--late {
   color: #9a3412 !important;
 }
-.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value--missed {
+.saas-attendance .attendance-kpi-grid .attendance-kpi-card .kpi-value--missed,
+.modern-dash .attendance-kpi-grid .attendance-kpi-card .kpi-value--missed,
+.elegant-card .attendance-kpi-grid .attendance-kpi-card .kpi-value--missed,
+.main-content .attendance-kpi-grid .attendance-kpi-card .kpi-value--missed {
   color: #581c87 !important;
 }
 
@@ -3582,11 +3617,22 @@
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08) !important;
 }
 
-[data-theme='light'] .action-text,
+[data-theme='light'] .action-text {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
 [data-theme='light'] .audit-log-description {
   color: #0f172a !important;
   text-shadow: none !important;
   background: #f8fafc !important;
+  border-left-color: #6366f1 !important;
+}
+
+[data-theme='dark'] .audit-log-description {
+  color: #e2e8f0 !important;
+  text-shadow: none !important;
+  background: rgba(15, 23, 42, 0.6) !important;
   border-left-color: #6366f1 !important;
 }
 
@@ -3621,3 +3667,239 @@
   text-shadow: none !important;
 }
 
+/* ===== Shadow-text fixes: audit stats, detail panel, attendance search ===== */
+
+.main-content .stats-card .stats-number,
+.stats-card .stats-number {
+  color: #ffffff !important;
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: #ffffff !important;
+  text-shadow: none !important;
+}
+
+.main-content .stats-card .stats-label {
+  color: rgba(255, 255, 255, 0.92) !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .saas-attendance .form-input-elegant::placeholder,
+[data-theme='dark'] .saas-attendance .saas-input::placeholder,
+[data-theme='dark'] .modern-dash .form-input-elegant::placeholder,
+[data-theme='dark'] .modern-dash .saas-input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+
+.saas-attendance .saas-table thead th,
+[data-theme='dark'] .saas-attendance .saas-table thead th {
+  text-shadow: none !important;
+}
+
+/* Audit log expanded detail — semantic classes beat GlobalStyles white-text / th glow */
+.audit-log-detail-panel {
+  text-shadow: none !important;
+}
+
+.audit-field-diff {
+  margin-top: 0.75rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+[data-theme='dark'] .audit-field-diff {
+  border-color: #334155;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.audit-field-diff__header {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .audit-field-diff__header {
+  border-bottom-color: #334155;
+  background: rgba(30, 41, 59, 0.85);
+  color: #cbd5e1 !important;
+}
+
+.audit-field-diff__scroll {
+  overflow-x: auto;
+}
+
+.audit-field-diff__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.audit-field-diff__table th {
+  text-align: left;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b !important;
+  text-shadow: none !important;
+  border-bottom: 1px solid #e2e8f0;
+  background: transparent !important;
+}
+
+[data-theme='dark'] .audit-field-diff__table th {
+  color: #94a3b8 !important;
+  border-bottom-color: #334155;
+}
+
+.audit-field-diff__table td {
+  padding: 0.5rem 1rem;
+  text-shadow: none !important;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: top;
+}
+
+[data-theme='dark'] .audit-field-diff__table td {
+  border-bottom-color: #1e293b;
+}
+
+.audit-field-diff__field {
+  font-weight: 500;
+  color: #1e293b !important;
+  white-space: nowrap;
+}
+
+[data-theme='dark'] .audit-field-diff__field {
+  color: #e2e8f0 !important;
+}
+
+.audit-field-diff__before {
+  color: #be123c !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  word-break: break-all;
+}
+
+[data-theme='dark'] .audit-field-diff__before {
+  color: #fb7185 !important;
+}
+
+.audit-field-diff__after {
+  color: #047857 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  word-break: break-all;
+}
+
+[data-theme='dark'] .audit-field-diff__after {
+  color: #34d399 !important;
+}
+
+.audit-field-diff__delta {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #64748b !important;
+}
+
+.audit-field-diff__delta--up {
+  color: #059669 !important;
+}
+
+.audit-field-diff__delta--down {
+  color: #dc2626 !important;
+}
+
+.audit-details-block {
+  margin-top: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #c7d2fe;
+  background: rgba(238, 242, 255, 0.65);
+  padding: 1rem;
+}
+
+[data-theme='dark'] .audit-details-block {
+  border-color: rgba(67, 56, 202, 0.45);
+  background: rgba(30, 27, 75, 0.35);
+}
+
+.audit-details-block__title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4338ca !important;
+  text-shadow: none !important;
+  margin-bottom: 0.75rem;
+}
+
+[data-theme='dark'] .audit-details-block__title {
+  color: #a5b4fc !important;
+}
+
+.audit-details-block__line {
+  font-size: 0.875rem;
+  margin: 0 0 0.75rem;
+  color: #1e293b !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .audit-details-block__line {
+  color: #e2e8f0 !important;
+}
+
+.audit-details-block__line strong {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .audit-details-block__line strong {
+  color: #f8fafc !important;
+}
+
+.audit-details-block__grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  margin: 0;
+}
+
+.audit-details-block__item dt {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .audit-details-block__item dt {
+  color: #94a3b8 !important;
+}
+
+.audit-details-block__item dd {
+  margin: 0.15rem 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  color: #0f172a !important;
+  word-break: break-all;
+  white-space: pre-wrap;
+  text-shadow: none !important;
+}
+
+[data-theme='dark'] .audit-details-block__item dd {
+  color: #f1f5f9 !important;
+}
+
+.audit-log-detail-panel .audit-field-diff *,
+.audit-log-detail-panel .audit-details-block * {
+  text-shadow: none !important;
+}

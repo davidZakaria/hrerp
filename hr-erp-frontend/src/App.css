@@ -3510,3 +3510,114 @@
   border: 1px solid #cbd5e1 !important;
 }
 
+/* ===== Light theme: ghost / shadow text fixes ===== */
+
+[data-theme='light'] .text-elegant {
+  color: #334155 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .glass-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-theme='light'] .employee-dashboard-v2 .form-label-elegant,
+[data-theme='light'] .glass-card .form-label-elegant,
+[data-theme='light'] .form-elegant .form-label-elegant,
+[data-theme='light'] .form-section-title {
+  color: #334155 !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .form-elegant .input-helper,
+[data-theme='light'] .form-elegant small,
+[data-theme='light'] .form-elegant label {
+  color: #64748b !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .employee-dashboard-v2 textarea.form-input-elegant,
+[data-theme='light'] .glass-card .form-input-elegant,
+[data-theme='light'] .form-elegant .form-input-elegant,
+[data-theme='light'] .form-elegant input,
+[data-theme='light'] .form-elegant select,
+[data-theme='light'] .form-elegant textarea {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-theme='light'] .summary-label {
+  color: #64748b !important;
+}
+
+[data-theme='light'] .summary-value,
+[data-theme='light'] .summary-card h5 {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+[data-theme='light'] .form-elegant label span {
+  color: inherit !important;
+}
+
+/* Audit logs — readable in light mode */
+[data-theme='light'] .audit-log-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+  backdrop-filter: none !important;
+}
+
+[data-theme='light'] .audit-log-card:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08) !important;
+}
+
+[data-theme='light'] .action-text,
+[data-theme='light'] .audit-log-description {
+  color: #0f172a !important;
+  text-shadow: none !important;
+  background: #f8fafc !important;
+  border-left-color: #6366f1 !important;
+}
+
+[data-theme='light'] .audit-timestamp,
+[data-theme='light'] .audit-log-footer,
+[data-theme='light'] .performer-label,
+[data-theme='light'] .target-label,
+[data-theme='light'] .ip-label {
+  color: #64748b !important;
+}
+
+[data-theme='light'] .performer-name,
+[data-theme='light'] .target-name,
+[data-theme='light'] .ip-address {
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .no-logs-message h3,
+[data-theme='light'] .no-logs-message p {
+  color: #334155 !important;
+}
+
+[data-theme='light'] .vacation-change-details {
+  background: #fffbeb !important;
+  border-color: #fcd34d !important;
+}
+
+[data-theme='light'] .vacation-change-header,
+[data-theme='light'] .change-item label,
+[data-theme='light'] .change-item span {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+

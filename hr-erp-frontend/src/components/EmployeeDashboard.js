@@ -260,39 +260,39 @@ const EmployeeDashboard = () => {
             {forms.length > 0 && (
               <div className="grid-2">
                 {forms.map(form => (
-                  <div key={form._id} className="glass-card hover-lift">
+                  <div key={form._id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl p-5">
                     <div style={{ marginBottom: '1rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <span className="form-label-elegant">{t('common.type')}:</span>
-                        <span className="text-elegant">
+                        <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('common.type')}:</span>
+                        <span className="!text-slate-900 dark:!text-white">
                           {form.type === 'vacation' ? 'Annual Vacation' :
                            t(`formTypes.${form.type}`) || form.type}
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <span className="form-label-elegant">{t('common.status')}:</span>
+                        <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('common.status')}:</span>
                         {getStatusBadge(form.status)}
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <span className="form-label-elegant">{t('forms.submitted')}:</span>
-                        <span className="text-elegant">{new Date(form.createdAt).toLocaleDateString()}</span>
+                        <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.submitted')}:</span>
+                        <span className="!text-slate-900 dark:!text-white">{new Date(form.createdAt).toLocaleDateString()}</span>
                       </div>
                       
                       {form.type === 'vacation' && (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{form.isHalfDay ? t('forms.date') : t('forms.startDate')}:</span>
-                            <span className="text-elegant">{new Date(form.startDate).toLocaleDateString()}</span>
+                            <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{form.isHalfDay ? t('forms.date') : t('forms.startDate')}:</span>
+                            <span className="!text-slate-900 dark:!text-white">{new Date(form.startDate).toLocaleDateString()}</span>
                           </div>
                           {!form.isHalfDay && (
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                              <span className="form-label-elegant">{t('forms.endDate')}:</span>
-                              <span className="text-elegant">{new Date(form.endDate).toLocaleDateString()}</span>
+                              <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.endDate')}:</span>
+                              <span className="!text-slate-900 dark:!text-white">{new Date(form.endDate).toLocaleDateString()}</span>
                             </div>
                           )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.days')}:</span>
-                            <span className="text-elegant">
+                            <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.days')}:</span>
+                            <span className="!text-slate-900 dark:!text-white">
                               {formatVacationDeductionDays(form)} {t('forms.days')}
                               {form.isHalfDay ? ` (${t('forms.halfDay')})` : ''}
                             </span>
@@ -303,12 +303,12 @@ const EmployeeDashboard = () => {
                       {form.type === 'wfh' && (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.date')}:</span>
-                            <span className="text-elegant">{new Date(form.wfhDate).toLocaleDateString()}</span>
+                            <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.date')}:</span>
+                            <span className="!text-slate-900 dark:!text-white">{new Date(form.wfhDate).toLocaleDateString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.workingOn')}:</span>
-                            <span className="text-elegant">{form.wfhWorkingOn?.substring(0, 50) || form.wfhDescription?.substring(0, 50)}...</span>
+                            <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.workingOn')}:</span>
+                            <span className="!text-slate-900 dark:!text-white">{form.wfhWorkingOn?.substring(0, 50) || form.wfhDescription?.substring(0, 50)}...</span>
                           </div>
                         </>
                       )}
@@ -316,26 +316,26 @@ const EmployeeDashboard = () => {
                       {form.type === 'extra_hours' && (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.extraHoursDate')}:</span>
-                            <span className="text-elegant">{new Date(form.extraHoursDate).toLocaleDateString()}</span>
+                            <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.extraHoursDate')}:</span>
+                            <span className="!text-slate-900 dark:!text-white">{new Date(form.extraHoursDate).toLocaleDateString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.requestedOtHours')}:</span>
-                            <span className="text-elegant" style={{ color: '#E65100', fontWeight: 'bold' }}>
+                            <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.requestedOtHours')}:</span>
+                            <span className="!text-amber-600 dark:!text-amber-400 font-bold">
                               ⏱️ {form.extraHoursWorked} {t('forms.hours')}
                             </span>
                           </div>
                           {form.status === 'approved' && form.approvedHours != null && (
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                              <span className="form-label-elegant">{t('forms.approvedOtHours')}:</span>
-                              <span className="text-elegant" style={{ color: '#2E7D32', fontWeight: 'bold' }}>
+                              <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.approvedOtHours')}:</span>
+                              <span className="!text-emerald-600 dark:!text-emerald-400 font-bold">
                                 ✅ {form.approvedHours} {t('forms.hours')}
                               </span>
                             </div>
                           )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.extraHoursDescription')}:</span>
-                            <span className="text-elegant">{form.extraHoursDescription?.substring(0, 50)}...</span>
+                            <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.extraHoursDescription')}:</span>
+                            <span className="!text-slate-900 dark:!text-white">{form.extraHoursDescription?.substring(0, 50)}...</span>
                           </div>
                         </>
                       )}
@@ -343,16 +343,16 @@ const EmployeeDashboard = () => {
                       {form.type === 'sick_leave' && (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.startDate')}:</span>
-                            <span className="text-elegant">{new Date(form.sickLeaveStartDate).toLocaleDateString()}</span>
+                            <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.startDate')}:</span>
+                            <span className="!text-slate-900 dark:!text-white">{new Date(form.sickLeaveStartDate).toLocaleDateString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.endDate')}:</span>
-                            <span className="text-elegant">{new Date(form.sickLeaveEndDate).toLocaleDateString()}</span>
+                            <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.endDate')}:</span>
+                            <span className="!text-slate-900 dark:!text-white">{new Date(form.sickLeaveEndDate).toLocaleDateString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.duration')}:</span>
-                            <span className="text-elegant">{Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} {t('forms.days')}</span>
+                            <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.duration')}:</span>
+                            <span className="!text-slate-900 dark:!text-white">{Math.ceil((new Date(form.sickLeaveEndDate) - new Date(form.sickLeaveStartDate)) / (1000 * 60 * 60 * 24)) + 1} {t('forms.days')}</span>
                           </div>
                           <div style={{ marginTop: '1rem' }}>
                             <MedicalDocumentViewer form={form} userRole="employee" />
@@ -363,35 +363,30 @@ const EmployeeDashboard = () => {
                       {form.type === 'mission' && (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.startDate')}:</span>
-                            <span className="text-elegant">{new Date(form.missionStartDate).toLocaleDateString()}</span>
+                            <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.startDate')}:</span>
+                            <span className="!text-slate-900 dark:!text-white">{new Date(form.missionStartDate).toLocaleDateString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.endDate')}:</span>
-                            <span className="text-elegant">{new Date(form.missionEndDate).toLocaleDateString()}</span>
+                            <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.endDate')}:</span>
+                            <span className="!text-slate-900 dark:!text-white">{new Date(form.missionEndDate).toLocaleDateString()}</span>
                           </div>
                           {(form.missionFromTime || form.missionToTime) && (
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                              <span className="form-label-elegant">{t('forms.time') || 'Time'}:</span>
-                              <span className="text-elegant">{form.missionFromTime || '--'} {t('forms.to')} {form.missionToTime || '--'}</span>
+                              <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.time') || 'Time'}:</span>
+                              <span className="!text-slate-900 dark:!text-white">{form.missionFromTime || '--'} {t('forms.to')} {form.missionToTime || '--'}</span>
                             </div>
                           )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="form-label-elegant">{t('forms.missionDestination')}:</span>
-                            <span className="text-elegant">📍 {form.missionDestination}</span>
+                            <span className="form-label-elegant !text-slate-600 dark:!text-slate-400">{t('forms.missionDestination')}:</span>
+                            <span className="!text-slate-900 dark:!text-white">📍 {form.missionDestination}</span>
                           </div>
                         </>
                       )}
                       
                       {form.reason && (
                         <div style={{ marginTop: '1rem' }}>
-                          <div className="form-label-elegant" style={{ marginBottom: '0.5rem' }}>{t('forms.reason')}:</div>
-                          <div className="text-elegant" style={{ 
-                            background: 'rgba(255, 255, 255, 0.5)', 
-                            padding: '0.75rem', 
-                            borderRadius: '8px',
-                            fontSize: '0.9rem'
-                          }}>
+                          <div className="form-label-elegant !text-slate-600 dark:!text-slate-400" style={{ marginBottom: '0.5rem' }}>{t('forms.reason')}:</div>
+                          <div className="!text-slate-800 dark:!text-slate-200 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg text-sm">
                             {form.reason}
                           </div>
                         </div>

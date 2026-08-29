@@ -264,42 +264,36 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
   };
 
   return (
-    <div className="glass-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
+    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl p-6" style={{ maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
+        <h2 className="!text-slate-900 dark:!text-white text-xl font-bold mb-2">
           {t('login.title')}
         </h2>
-                 <div style={{ 
-           background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(129, 199, 132, 0.2))',
-           border: '1px solid rgba(76, 175, 80, 0.3)',
-           borderRadius: '12px',
-           padding: '1rem',
-           marginBottom: '1rem'
-         }}>
-           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-             <span style={{ fontSize: '1.2rem' }}>👤</span>
-             <h3 style={{ margin: 0, color: '#4caf50', fontSize: '1.1rem' }}>
+                 <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 mb-4">
+           <div className="flex items-center justify-center gap-2 mb-2">
+             <span className="text-xl">👤</span>
+             <h3 className="m-0 text-emerald-700 dark:text-emerald-400 text-base font-semibold">
                {userInfo?.role === 'manager' ? t('forms.managerPersonalLeaveRequest') : 
                 userInfo?.role === 'admin' ? t('forms.adminPersonalLeaveRequest') :
                 t('forms.personalLeaveRequest')}
              </h3>
            </div>
            {userInfo && (
-             <div style={{ marginBottom: '0.5rem' }}>
-               <span style={{ fontSize: '0.8rem', color: '#4caf50', fontWeight: 'bold' }}>
+             <div className="mb-2">
+               <span className="text-sm text-emerald-700 dark:text-emerald-400 font-semibold">
                  👋 {t('forms.hello')}, {userInfo.name}
                </span>
                {(userInfo.role === 'manager' || userInfo.role === 'admin') && (
-                 <span style={{ fontSize: '0.75rem', opacity: 0.8, marginLeft: '0.5rem' }}>
+                 <span className="text-xs !text-slate-600 dark:!text-slate-400 ml-2">
                    ({userInfo.role === 'manager' ? t('dashboard.manager') : t('dashboard.admin')})
                  </span>
                )}
              </div>
            )}
-           <p className="text-elegant" style={{ fontSize: '0.85rem', opacity: 0.9, margin: 0 }}>
+           <p className="text-sm !text-slate-700 dark:!text-slate-300 m-0">
              {t('forms.submitPersonalRequests')}
            </p>
-           <small style={{ fontSize: '0.75rem', opacity: 0.7, fontStyle: 'italic' }}>
+           <small className="text-xs !text-slate-500 dark:!text-slate-400 italic block mt-2">
              {userInfo?.role === 'manager' ? 
                t('forms.managerPersonalNote') :
                userInfo?.role === 'admin' ?
@@ -326,7 +320,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
 
       <form className="form-elegant" onSubmit={handleSubmit}>
         <div className="form-group-elegant">
-          <label className="form-label-elegant">
+          <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
             <span className="label-icon">📋</span>
             {t('forms.requestType')}
           </label>
@@ -359,7 +353,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
         {/* Vacation type: annual or casual */}
         {form.type === 'vacation' && (
           <div className="form-group-elegant" style={{ marginBottom: '1rem' }}>
-            <label className="form-label-elegant">
+            <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
               <span className="label-icon">🏖️</span>
               {t('forms.vacationType')}
             </label>
@@ -428,7 +422,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
             </div>
             <div className={form.isHalfDay ? '' : 'grid-2'}>
               <div className="form-group-elegant">
-                <label className="form-label-elegant">
+                <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                   <span className="label-icon">📅</span>
                   {form.isHalfDay ? t('forms.date') : t('forms.startDate')}
                 </label>
@@ -449,7 +443,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
               </div>
               {!form.isHalfDay && (
                 <div className="form-group-elegant">
-                  <label className="form-label-elegant">
+                  <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                     <span className="label-icon">📅</span>
                     {t('forms.endDate')}
                   </label>
@@ -507,7 +501,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
             <h4 className="form-section-title">🕐 {t('forms.selectExcuseDetails')}</h4>
 
             <div className="form-group-elegant">
-              <label className="form-label-elegant">💳 Excuse Type</label>
+              <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">💳 Excuse Type</label>
               <div className="flex flex-col sm:flex-row gap-3 mt-2">
                 <label className={`flex items-start gap-2 flex-1 p-3 rounded-lg border-2 cursor-pointer ${
                   form.excuseType === 'paid'
@@ -562,7 +556,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
             </div>
 
             <div className="form-group-elegant">
-              <label className="form-label-elegant">
+              <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                 <span className="label-icon">📅</span>
                 {t('forms.excuseDate')}
               </label>
@@ -581,7 +575,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
 
             <div className="grid-2">
               <div className="form-group-elegant">
-                <label className="form-label-elegant">
+                <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                   <span className="label-icon">🕐</span>
                   {t('forms.fromTime')}
                 </label>
@@ -597,7 +591,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
                 <small className="input-helper">{t('forms.selectStartTime')}</small>
               </div>
               <div className="form-group-elegant">
-                <label className="form-label-elegant">
+                <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                   <span className="label-icon">🕐</span>
                   {t('forms.toTime')}
                 </label>
@@ -633,7 +627,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
             <h4 className="form-section-title">🏥 {t('forms.sickLeaveDetails')}</h4>
             <div className="grid-2">
               <div className="form-group-elegant">
-                <label className="form-label-elegant">
+                <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                   <span className="label-icon">📅</span>
                   {t('forms.startDate')}
                 </label>
@@ -649,7 +643,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
                 <small className="input-helper">{t('forms.selectFirstDaySickLeave')}</small>
               </div>
               <div className="form-group-elegant">
-                <label className="form-label-elegant">
+                <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                   <span className="label-icon">📅</span>
                   {t('forms.endDate')}
                 </label>
@@ -668,7 +662,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
             </div>
             
             <div className="form-group-elegant">
-              <label className="form-label-elegant">
+              <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                 <span className="label-icon">📄</span>
                 {t('forms.medicalDocumentOptional')}
               </label>
@@ -720,7 +714,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
             </p>
             
             <div className="form-group-elegant">
-              <label className="form-label-elegant">
+              <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                 <span className="label-icon">📅</span>
                 {t('forms.date')}
               </label>
@@ -737,7 +731,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
             </div>
             
             <div className="form-group-elegant">
-              <label className="form-label-elegant">
+              <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                 <span className="label-icon">💼</span>
                 {t('forms.workingOn')}
               </label>
@@ -783,7 +777,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
             </p>
             
             <div className="form-group-elegant">
-              <label className="form-label-elegant">
+              <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                 <span className="label-icon">📅</span>
                 {t('forms.date')}
               </label>
@@ -800,7 +794,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
             </div>
             
             <div className="form-group-elegant">
-              <label className="form-label-elegant">
+              <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                 <span className="label-icon">⏰</span>
                 {t('forms.numberOfExtraHours')}
               </label>
@@ -821,7 +815,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
             </div>
             
             <div className="form-group-elegant">
-              <label className="form-label-elegant">
+              <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                 <span className="label-icon">💼</span>
                 {t('forms.workDoneDescription')}
               </label>
@@ -871,7 +865,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
             
             <div className="grid-2">
               <div className="form-group-elegant">
-                <label className="form-label-elegant">
+                <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                   <span className="label-icon">📅</span>
                   {t('forms.startDate')}
                 </label>
@@ -889,7 +883,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
                 <small className="input-helper">{t('forms.selectMissionStartDate')} ({t('forms.submissionMonthRangeHelp')})</small>
               </div>
               <div className="form-group-elegant">
-                <label className="form-label-elegant">
+                <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                   <span className="label-icon">📅</span>
                   {t('forms.endDate')}
                 </label>
@@ -909,7 +903,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
             </div>
             
             <div className="form-group-elegant">
-              <label className="form-label-elegant">
+              <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                 <span className="label-icon">📍</span>
                 {t('forms.missionDestination')}
               </label>
@@ -928,7 +922,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
 
             <div className="grid-2">
               <div className="form-group-elegant">
-                <label className="form-label-elegant">
+                <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                   <span className="label-icon">🕐</span>
                   {t('forms.missionFromTime') || 'Time From'}
                 </label>
@@ -943,7 +937,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
                 <small className="input-helper">{t('forms.missionFromTimeHelp') || 'e.g. 09:00'}</small>
               </div>
               <div className="form-group-elegant">
-                <label className="form-label-elegant">
+                <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
                   <span className="label-icon">🕔</span>
                   {t('forms.missionToTime') || 'Time To'}
                 </label>
@@ -993,7 +987,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
         {/* Reason field - not shown for WFH or Extra Hours since their description fields serve as the reason */}
         {form.type !== 'wfh' && form.type !== 'extra_hours' && (
           <div className="form-group-elegant">
-            <label className="form-label-elegant">
+            <label className="form-label-elegant !text-slate-700 dark:!text-slate-300">
               <span className="label-icon">✏️</span>
               {t('forms.reasonForRequest')}
             </label>

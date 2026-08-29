@@ -178,10 +178,25 @@ router.get('/download', auth, async (req, res) => {
       'Performer Role',
       'Target User',
       'Target Email',
+      'Target Resource',
+      'Target Resource ID',
       'Description',
+      'Reason',
+      'Old Values',
+      'New Values',
+      'Details',
       'Severity',
       'IP Address'
     ];
+
+    const serializeJson = (obj) => {
+      if (!obj || (typeof obj === 'object' && !Object.keys(obj).length)) return '';
+      try {
+        return JSON.stringify(obj);
+      } catch {
+        return String(obj);
+      }
+    };
 
     const csvRows = audits.map(audit => [
       new Date(audit.timestamp).toLocaleString(),
@@ -190,7 +205,13 @@ router.get('/download', auth, async (req, res) => {
       audit.performedBy?.role || 'N/A',
       audit.targetUser?.name || 'N/A',
       audit.targetUser?.email || 'N/A',
+      audit.targetResource || '',
+      audit.targetResourceId != null ? String(audit.targetResourceId) : '',
       (audit.description || '').replace(/"/g, '""'),
+      (audit.reason || '').replace(/"/g, '""'),
+      serializeJson(audit.oldValues).replace(/"/g, '""'),
+      serializeJson(audit.newValues).replace(/"/g, '""'),
+      serializeJson(audit.details).replace(/"/g, '""'),
       audit.severity || 'LOW',
       audit.ipAddress || 'N/A'
     ]);

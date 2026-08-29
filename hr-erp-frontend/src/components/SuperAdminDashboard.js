@@ -25,6 +25,7 @@ import UserCardDetails from './users/UserCardDetails';
 import UserAvatar from './UserAvatar';
 import SystemSettings from './SystemSettings';
 import { DashboardStatCard, DashboardStatGrid } from './dashboard/DashboardStatCard';
+import AuditLogDetailPanel from './audit/AuditLogDetailPanel';
 
 const SuperAdminDashboard = () => {
   const { t } = useTranslation();
@@ -2366,35 +2367,11 @@ const SuperAdminDashboard = () => {
                       </div>
                       
                       <div className="audit-log-content">
-                        <div className="audit-log-description">
+                        <div className="audit-log-description !text-slate-800 dark:!text-slate-200">
                           {log.description}
                         </div>
-                        
-                        {log.action === 'VACATION_DAYS_MODIFIED' && log.oldValues && log.newValues && (
-                          <div className="vacation-change-details">
-                            <div className="vacation-change-header">
-                              <span className="vacation-icon">🏖️</span>
-                              <span>Vacation Days Change Details</span>
-                            </div>
-                            <div className="vacation-change-grid">
-                              <div className="change-item from">
-                                <label>From:</label>
-                                <span>{log.oldValues.vacationDaysLeft} days</span>
-                              </div>
-                              <div className="change-item to">
-                                <label>To:</label>
-                                <span>{log.newValues.vacationDaysLeft} days</span>
-                              </div>
-                              <div className="change-item difference">
-                                <label>Change:</label>
-                                <span className={log.newValues.vacationDaysLeft - log.oldValues.vacationDaysLeft >= 0 ? 'positive' : 'negative'}>
-                                  {log.newValues.vacationDaysLeft - log.oldValues.vacationDaysLeft > 0 ? '+' : ''}
-                                  {log.newValues.vacationDaysLeft - log.oldValues.vacationDaysLeft} days
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+
+                        <AuditLogDetailPanel log={log} />
                       </div>
                       
                       <div className="audit-log-footer">

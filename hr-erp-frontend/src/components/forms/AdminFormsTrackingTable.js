@@ -24,6 +24,11 @@ function formatDuration(form, t) {
   if (form.type === 'vacation') {
     return `${formatVacationDateRange(form)} (${formatVacationDeductionDays(form)} days${form.isHalfDay ? ', half day' : ''})`;
   }
+  if (form.type === 'excuse') {
+    const date = form.excuseDate?.slice?.(0, 10) || '—';
+    const hours = form.fromHour && form.toHour ? `${form.fromHour}–${form.toHour}` : '—';
+    return `${date} · ${hours}${form.excuseType ? ` · ${form.excuseType}` : ''}`;
+  }
   if (form.type === 'wfh') {
     return form.wfhDate?.slice(0, 10) || '—';
   }
@@ -90,6 +95,7 @@ const AdminFormsTrackingTable = ({
               onChange={(e) => onActiveFormTypeChange(e.target.value)}
             >
               <option value="vacation">{t('forms.vacation')} ({typeCounts?.vacation ?? 0})</option>
+              <option value="excuse">{t('forms.excuse')} ({typeCounts?.excuse ?? 0})</option>
               <option value="wfh">{t('forms.workFromHome')} ({typeCounts?.wfh ?? 0})</option>
               <option value="sick_leave">{t('forms.sickLeave')} ({typeCounts?.sick_leave ?? 0})</option>
               <option value="extra_hours">{t('forms.extra_hours')} ({typeCounts?.extra_hours ?? 0})</option>

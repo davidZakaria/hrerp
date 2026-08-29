@@ -37,6 +37,11 @@ const {
 } = require('../utils/detailedLeavesCalculator');
 const { getEffectiveManagedDepartmentsForQueries } = require('../utils/effectiveManagedDepartments');
 
+const ACTIVE_EMPLOYEE_FILTER = {
+    employeeCode: { $exists: true, $ne: '' },
+    status: 'active'
+};
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -845,7 +850,7 @@ router.get('/deduction-report', auth, async (req, res) => {
         const extendedStart = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1, 0, 0, 0, 0);
 
         const [users, attendanceRecords, waiverForms, otForms] = await Promise.all([
-            User.find({ employeeCode: { $exists: true, $ne: '' } })
+            User.find(ACTIVE_EMPLOYEE_FILTER)
                 .select('name department employeeCode workSchedule jobTitle location')
                 .sort({ name: 1 }),
             Attendance.find({
@@ -937,7 +942,7 @@ router.get('/detailed-leaves-report', auth, async (req, res) => {
         const casualQuota = settings.casualVacationDays ?? 6;
 
         const [users, attendanceRecords, forms] = await Promise.all([
-            User.find({ employeeCode: { $exists: true, $ne: '' } })
+            User.find(ACTIVE_EMPLOYEE_FILTER)
                 .select('name department employeeCode jobTitle location')
                 .sort({ name: 1 }),
             Attendance.find({
@@ -1534,9 +1539,7 @@ router.get('/data-summary/:month', auth, async (req, res) => {
         const { month } = req.params;
         
         // Get all users with employee codes
-        const users = await User.find({ 
-            employeeCode: { $exists: true, $ne: null } 
-        }).select('name employeeCode department');
+        const users = await User.find(ACTIVE_EMPLOYEE_FILTER).select('name employeeCode department');
         
         // Get all attendance records for the month
         const records = await Attendance.find({ month: month })

@@ -947,9 +947,9 @@ const ManagerDashboard = ({ onLogout }) => {
                     {form.type === 'extra_hours' && (
                       <>
                         <p><strong>{t('forms.date')}:</strong> {formatDate(form.extraHoursDate)}</p>
-                        <p><strong>{t('forms.requestedOtHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked} {t('forms.hours')}</span></p>
+                        <p><strong>{t('forms.requestedOtHours')}:</strong> <span className="!text-amber-600 dark:!text-amber-400 font-bold">{form.extraHoursWorked} {t('forms.hours')}</span></p>
                         {form.approvedHours != null && (
-                          <p><strong>{t('forms.approvedOtHours')}:</strong> <span style={{ color: '#2E7D32', fontWeight: 'bold' }}>{form.approvedHours} {t('forms.hours')}</span></p>
+                          <p><strong>{t('forms.approvedOtHours')}:</strong> <span className="!text-emerald-600 dark:!text-emerald-400 font-bold">{form.approvedHours} {t('forms.hours')}</span></p>
                         )}
                         <p><strong>{t('forms.workDone')}:</strong> {form.extraHoursDescription?.substring(0, 50)}...</p>
                       </>
@@ -1093,9 +1093,9 @@ const ManagerDashboard = ({ onLogout }) => {
                     {form.type === 'extra_hours' && (
                       <>
                         <p><strong>{t('forms.date')}:</strong> {formatDate(form.extraHoursDate)}</p>
-                        <p><strong>{t('forms.requestedOtHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked} {t('forms.hours')}</span></p>
+                        <p><strong>{t('forms.requestedOtHours')}:</strong> <span className="!text-amber-600 dark:!text-amber-400 font-bold">{form.extraHoursWorked} {t('forms.hours')}</span></p>
                         {form.approvedHours != null && (
-                          <p><strong>{t('forms.approvedOtHours')}:</strong> <span style={{ color: '#2E7D32', fontWeight: 'bold' }}>{form.approvedHours} {t('forms.hours')}</span></p>
+                          <p><strong>{t('forms.approvedOtHours')}:</strong> <span className="!text-emerald-600 dark:!text-emerald-400 font-bold">{form.approvedHours} {t('forms.hours')}</span></p>
                         )}
                         <p><strong>{t('forms.workDone')}:</strong> {form.extraHoursDescription?.substring(0, 50)}...</p>
                       </>
@@ -1324,9 +1324,9 @@ const ManagerDashboard = ({ onLogout }) => {
                   {form.type === 'extra_hours' && (
                     <>
                       <p><strong>{t('forms.date')}:</strong> {form.extraHoursDate?.slice(0,10) || 'N/A'}</p>
-                      <p><strong>{t('forms.requestedOtHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{form.extraHoursWorked} {t('forms.hours')}</span></p>
+                      <p><strong>{t('forms.requestedOtHours')}:</strong> <span className="!text-amber-600 dark:!text-amber-400 font-bold">{form.extraHoursWorked} {t('forms.hours')}</span></p>
                       {form.approvedHours != null && (
-                        <p><strong>{t('forms.approvedOtHours')}:</strong> <span style={{ color: '#2E7D32', fontWeight: 'bold' }}>{form.approvedHours} {t('forms.hours')}</span></p>
+                        <p><strong>{t('forms.approvedOtHours')}:</strong> <span className="!text-emerald-600 dark:!text-emerald-400 font-bold">{form.approvedHours} {t('forms.hours')}</span></p>
                       )}
                       <p><strong>{t('forms.workDone')}:</strong> {form.extraHoursDescription}</p>
                     </>
@@ -1445,7 +1445,7 @@ const ManagerDashboard = ({ onLogout }) => {
                   {selectedForm.type === 'extra_hours' && (
                     <>
                       <p><strong>{t('forms.date')}:</strong> {selectedForm.extraHoursDate?.slice(0,10) || 'N/A'}</p>
-                      <p><strong>{t('forms.requestedOtHours')}:</strong> <span style={{ color: '#E65100', fontWeight: 'bold' }}>{selectedForm.extraHoursWorked} {t('forms.hours')}</span></p>
+                      <p><strong>{t('forms.requestedOtHours')}:</strong> <span className="!text-amber-600 dark:!text-amber-400 font-bold">{selectedForm.extraHoursWorked} {t('forms.hours')}</span></p>
                       <p><strong>{t('forms.workDone')}:</strong> {selectedForm.extraHoursDescription}</p>
                     </>
                   )}

@@ -36,6 +36,10 @@ const {
     deductVacationBalanceOnApproval
 } = require('../utils/vacationBalance');
 const { findOverlappingForm } = require('../utils/formOverlapCheck');
+const {
+    validateExcuseDeductionOnApproval,
+    persistExcuseDeductionOnApproval
+} = require('../utils/excuseApproval');
 
 const APPROVED_FORM_STATUSES = ['approved'];
 
@@ -162,14 +166,6 @@ const setCachedData = (key, data) => {
     });
 };
 
-/** Hide legacy excuse forms from all list APIs (data remains in DB). */
-function applyHideExcuseFilter(filter = {}) {
-    if (filter.type) {
-        return filter;
-    }
-    return { ...filter, type: { $ne: 'excuse' } };
-}
-
 // Custom multer error handler
 const handleMulterError = (err, req, res, next) => {
     if (err instanceof multer.MulterError) {
@@ -236,11 +232,7 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
         } = req.body;
 
         // Enhanced validation
-        if (type === 'excuse') {
-            return res.status(400).json({ msg: 'Excuse requests are no longer available' });
-        }
-
-        const validFormTypes = ['vacation', 'wfh', 'sick_leave', 'extra_hours', 'mission'];
+        const validFormTypes = ['vacation', 'excuse', 'wfh', 'sick_leave', 'extra_hours', 'mission'];
         if (!validFormTypes.includes(type)) {
             return res.status(400).json({ msg: 'Invalid form type' });
         }
@@ -353,6 +345,55 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
             }
         }
 
+        if (type === 'excuse') {
+            if (!excuseDate || !fromHour || !toHour || !excuseType || !reason?.trim()) {
+                return res.status(400).json({ msg: 'Date, from hour, to hour, excuse type, and reason are required for excuse requests' });
+            }
+
+            const normalizedExcuseType = normalizeExcuseType({
+                type: 'excuse',
+                excuseType,
+                fromHour,
+                toHour
+            });
+
+            const fullUser = await User.findById(req.user.id);
+            if (!fullUser) {
+                return res.status(404).json({ msg: 'User not found' });
+            }
+
+            const hoursRequested = getExcuseDurationHours(fromHour, toHour);
+            if (hoursRequested === null || Number.isNaN(hoursRequested) || hoursRequested <= 0) {
+                return res.status(400).json({ msg: 'Invalid from/to time for excuse request' });
+            }
+
+            if (normalizedExcuseType === 'paid') {
+                if (hoursRequested !== 2) {
+                    return res.status(400).json({
+                        msg: `Paid excuse requests must be exactly 2 hours. You requested ${hoursRequested.toFixed(1)} hours.`
+                    });
+                }
+
+                if (shouldResetExcuseRequests(fullUser.excuseRequestsResetDate)) {
+                    fullUser.excuseRequestsLeft = 2;
+                    fullUser.excuseRequestsResetDate = new Date();
+                    await fullUser.save();
+                }
+
+                if ((fullUser.excuseRequestsLeft ?? 0) <= 0) {
+                    return res.status(400).json({
+                        msg: 'You have exhausted your 2 paid excuse requests for this month.'
+                    });
+                }
+            } else if (normalizedExcuseType === 'unpaid') {
+                if ((fullUser.vacationDaysLeft ?? 0) < 0.5) {
+                    return res.status(400).json({
+                        msg: `Insufficient vacation days for unpaid excuse. You need at least 0.5 days. Available: ${(fullUser.vacationDaysLeft ?? 0).toFixed(1)} days.`
+                    });
+                }
+            }
+        }
+
         // Create form with optimized structure
         const formData = {
             user: req.user.id,
@@ -387,6 +428,17 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
                 missionDestination: missionDestination?.trim(),
                 missionFromTime: missionFromTime?.trim() || undefined,
                 missionToTime: missionToTime?.trim() || undefined
+            }),
+            ...(type === 'excuse' && {
+                excuseDate: new Date(excuseDate),
+                excuseType: normalizeExcuseType({
+                    type: 'excuse',
+                    excuseType,
+                    fromHour,
+                    toHour
+                }),
+                fromHour,
+                toHour
             })
         };
 
@@ -407,6 +459,9 @@ router.post('/', auth, upload.single('medicalDocument'), handleMulterError, asyn
         } else if (type === 'extra_hours') {
             overlapStart = extraHoursDate;
             overlapEnd = extraHoursDate;
+        } else if (type === 'excuse') {
+            overlapStart = excuseDate;
+            overlapEnd = excuseDate;
         }
 
         if (overlapStart && overlapEnd) {
@@ -482,11 +537,11 @@ router.get('/admin', auth, async (req, res) => {
             baseFilter.user = { $in: users.map(u => u._id) };
         }
 
-        const filter = applyHideExcuseFilter(mergeFormMonthFilters(
+        const filter = mergeFormMonthFilters(
             baseFilter,
             submittedMonth,
             eventMonth
-        ));
+        );
 
         // Month-filtered lists must not use a stale short-TTL cache (easy to confuse with "all months")
         const cacheKey = `forms-admin-${JSON.stringify({
@@ -551,8 +606,7 @@ router.get('/manager/pending', auth, async (req, res) => {
 
         const forms = await Form.find({
             user: { $in: teamMemberIds },
-            status: 'pending',
-            type: { $ne: 'excuse' }
+            status: 'pending'
         })
             .populate('user', 'name email department')
             .sort({ createdAt: -1 });
@@ -591,9 +645,38 @@ router.get('/vacation-days', auth, async (req, res) => {
     }
 });
 
-// Excuse requests removed — endpoint disabled
+// Excuse requests quota endpoint with caching
 router.get('/excuse-hours', auth, async (req, res) => {
-    return res.status(404).json({ msg: 'Excuse requests are no longer available' });
+    try {
+        const cacheKey = `excuse-requests-${req.user.id}`;
+        const cachedData = getCachedData(cacheKey);
+        if (cachedData) {
+            return res.json(cachedData);
+        }
+
+        const user = await User.findById(req.user.id).select('excuseRequestsLeft excuseRequestsResetDate');
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        if (shouldResetExcuseRequests(user.excuseRequestsResetDate)) {
+            user.excuseRequestsLeft = 2;
+            user.excuseRequestsResetDate = new Date();
+            await user.save();
+        }
+
+        const result = {
+            excuseRequestsLeft: user.excuseRequestsLeft || 0,
+            excuseRequestsResetDate: user.excuseRequestsResetDate,
+            nextResetDate: getNextResetDate()
+        };
+        setCachedData(cacheKey, result);
+
+        res.json(result);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
 });
 
 // Get all forms from manager's team (all statuses)
@@ -619,12 +702,12 @@ router.get('/manager/team-forms', auth, async (req, res) => {
         const teamMemberIds = teamMembers.map(member => member._id);
 
         // Find all forms from team members and manager's own forms
-        const forms = await Form.find(applyHideExcuseFilter({
+        const forms = await Form.find({
             $or: [
                 { user: { $in: teamMemberIds } },
                 { user: manager._id, status: { $in: ['pending', 'approved', 'rejected'] } }
             ]
-        }))
+        })
         .populate('user', 'name email department')
         .populate('managerApprovedBy', 'name')
         .populate('adminApprovedBy', 'name')
@@ -662,7 +745,7 @@ router.put('/manager/:id', auth, validateObjectId('id'), async (req, res) => {
         }
 
         if (form.type === 'excuse') {
-            return res.status(404).json({ msg: 'Form not found' });
+            form.excuseType = normalizeExcuseType(form);
         }
 
         if (actor.role === 'manager') {
@@ -726,6 +809,7 @@ router.put('/manager/:id', auth, validateObjectId('id'), async (req, res) => {
         }
 
         let pendingDeduction = null;
+        let pendingExcuseDeduction = null;
         let pendingEmployee = null;
 
         if (action === 'approve') {
@@ -741,18 +825,26 @@ router.put('/manager/:id', auth, validateObjectId('id'), async (req, res) => {
 
             pendingEmployee = await User.findById(form.user._id || form.user);
             if (pendingEmployee) {
-                const deductResult = await applyVacationDeductionOnApproval(
-                    form,
-                    pendingEmployee,
-                    actor._id,
-                    req,
-                    actor.role,
-                    { persist: false }
-                );
-                if (!deductResult.ok) {
-                    return res.status(400).json({ msg: deductResult.error });
+                if (form.type === 'excuse') {
+                    const excuseResult = validateExcuseDeductionOnApproval(form, pendingEmployee);
+                    if (!excuseResult.ok) {
+                        return res.status(400).json({ msg: excuseResult.error });
+                    }
+                    pendingExcuseDeduction = excuseResult.deduction;
+                } else {
+                    const deductResult = await applyVacationDeductionOnApproval(
+                        form,
+                        pendingEmployee,
+                        actor._id,
+                        req,
+                        actor.role,
+                        { persist: false }
+                    );
+                    if (!deductResult.ok) {
+                        return res.status(400).json({ msg: deductResult.error });
+                    }
+                    pendingDeduction = deductResult.deduction;
                 }
-                pendingDeduction = deductResult.deduction;
             }
 
             form.status = 'approved';
@@ -830,6 +922,13 @@ router.put('/manager/:id', auth, validateObjectId('id'), async (req, res) => {
             }
         }
 
+        if (action === 'approve' && pendingExcuseDeduction) {
+            const freshEmployee = await User.findById(form.user._id || form.user);
+            if (freshEmployee) {
+                await persistExcuseDeductionOnApproval(saved, freshEmployee, pendingExcuseDeduction, actor, req);
+            }
+        }
+
         cache.delete(`forms-${form.user._id}`);
         cache.delete('forms-admin');
 
@@ -863,10 +962,6 @@ router.put('/manager/:id/edit', auth, validateObjectId('id'), async (req, res) =
 
         const form = await Form.findById(req.params.id).populate('user');
         if (!form) {
-            return res.status(404).json({ msg: 'Form not found' });
-        }
-
-        if (form.type === 'excuse') {
             return res.status(404).json({ msg: 'Form not found' });
         }
 
@@ -1013,7 +1108,7 @@ router.get('/my-forms', auth, async (req, res) => {
             userDepartments: currentUser?.managedDepartments
         });
 
-        const forms = await Form.find(applyHideExcuseFilter({ user: req.user.id }))
+        const forms = await Form.find({ user: req.user.id })
             .populate('managerApprovedBy', 'name')
             .populate('adminApprovedBy', 'name')
             .populate('user', 'name email department')
@@ -1048,9 +1143,9 @@ router.get('/manager/personal-forms', auth, async (req, res) => {
         });
 
         // Get ONLY the manager's own submitted forms
-        const personalForms = await Form.find(applyHideExcuseFilter({
+        const personalForms = await Form.find({
             user: manager._id
-        }))
+        })
         .populate('managerApprovedBy', 'name')
         .populate('adminApprovedBy', 'name')
         .populate('user', 'name email department')
@@ -1444,11 +1539,11 @@ router.get('/all', auth, async (req, res) => {
         }
         const submittedMonth = firstQueryParam(req.query.submittedMonth);
         const eventMonth = firstQueryParam(req.query.eventMonth);
-        const filter = applyHideExcuseFilter(mergeFormMonthFilters(
+        const filter = mergeFormMonthFilters(
             {},
             submittedMonth,
             eventMonth
-        ));
+        );
         const forms = await Form.find(filter)
             .populate('user', 'name email department')
             .sort({ createdAt: -1 });

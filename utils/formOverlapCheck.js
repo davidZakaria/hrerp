@@ -45,6 +45,10 @@ function overlapFilterForType(type, rangeStart, rangeEnd) {
             return {
                 extraHoursDate: { $gte: start, $lte: end }
             };
+        case 'excuse':
+            return {
+                excuseDate: { $gte: start, $lte: end }
+            };
         default:
             return null;
     }

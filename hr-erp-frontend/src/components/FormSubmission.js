@@ -37,7 +37,25 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
   });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [excuseRequestsLeft, setExcuseRequestsLeft] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
+
+  const fetchExcuseRequests = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_URL}/api/forms/excuse-hours`, {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setExcuseRequestsLeft(data.excuseRequestsLeft);
+      }
+    } catch (err) {
+      logger.error('Failed to fetch excuse requests:', err);
+    }
+  };
 
   // Fetch user info
   const fetchUserInfo = async () => {
@@ -59,6 +77,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
 
   useEffect(() => {
     fetchUserInfo();
+    fetchExcuseRequests();
   }, []);
 
   useEffect(() => {
@@ -111,6 +130,32 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
         startDate: form.startDate,
         endDate: form.isHalfDay ? form.startDate : form.endDate,
         isHalfDay: form.isHalfDay,
+        reason: form.reason
+      };
+    } else if (form.type === 'excuse') {
+      const fromTime = new Date(`2000-01-01T${form.fromHour}`);
+      const toTime = new Date(`2000-01-01T${form.toHour}`);
+      const hoursRequested = (toTime - fromTime) / (1000 * 60 * 60);
+
+      if (form.excuseType === 'paid') {
+        if (hoursRequested !== 2) {
+          setMessage(`Paid excuse requests must be exactly 2 hours. You requested ${hoursRequested.toFixed(1)} hours.`);
+          setLoading(false);
+          return;
+        }
+        if (excuseRequestsLeft !== null && excuseRequestsLeft <= 0) {
+          setMessage('You have exhausted your 2 paid excuse requests for this month. Please submit an unpaid excuse request instead.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      payload = {
+        type: 'excuse',
+        excuseDate: form.excuseDate,
+        excuseType: form.excuseType,
+        fromHour: form.fromHour,
+        toHour: form.toHour,
         reason: form.reason
       };
     } else if (form.type === 'sick_leave') {
@@ -200,6 +245,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
           missionToTime: ''
         });
         if (onFormSubmitted) onFormSubmitted();
+        fetchExcuseRequests();
       } else {
         // Provide specific error messages for common issues
         let errorMessage = data.msg || t('messages.errorOccurred');
@@ -264,6 +310,20 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
          </div>
       </div>
 
+      {form.type === 'excuse' && excuseRequestsLeft !== null && (
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 mb-4 text-center shadow-sm">
+          <h4 className="m-0 mb-2 text-sm font-semibold !text-slate-900 dark:!text-white">
+            ⏰ Paid Excuse Requests This Month
+          </h4>
+          <div className="text-2xl font-bold !text-slate-900 dark:!text-white">
+            {excuseRequestsLeft} / 2 {t('forms.requestsRemaining')}
+          </div>
+          <small className="text-sm !text-slate-500 dark:!text-slate-400 block mt-2">
+            {excuseRequestsLeft > 0 ? 'Each paid request is exactly 2 hours' : 'You can still submit unpaid excuse requests'}
+          </small>
+        </div>
+      )}
+
       <form className="form-elegant" onSubmit={handleSubmit}>
         <div className="form-group-elegant">
           <label className="form-label-elegant">
@@ -274,27 +334,11 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
             name="type" 
             value={form.type} 
             onChange={handleChange} 
-            className="form-input-elegant"
+            className="form-input-elegant bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 !text-slate-900 dark:!text-white rounded-lg px-4 py-3 text-base font-medium min-h-[50px] w-full"
             required
-            style={{ 
-              background: 'rgba(0, 0, 0, 0.7)',
-              border: '2px solid rgba(76, 175, 80, 0.3)',
-              fontWeight: '500',
-              padding: '12px 16px',
-              fontSize: '1rem',
-              color: '#ffffff',
-              borderRadius: '8px',
-              minHeight: '50px',
-              appearance: 'none',
-              backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 12px center',
-              backgroundSize: '20px',
-              paddingRight: '50px',
-              backdropFilter: 'blur(10px)'
-            }}
           >
             <option value="vacation">🏖️ {t('forms.vacationRequestOption')}</option>
+            <option value="excuse">⏰ {t('forms.excuseRequestOption')}</option>
             <option value="mission">✈️ {t('forms.missionRequestOption')}</option>
             <option value="sick_leave">🏥 {t('forms.sickLeaveRequestOption')}</option>
             {userInfo?.department === 'Marketing' && (
@@ -304,6 +348,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
           </select>
           <small className="input-helper" style={{ marginTop: '0.5rem', display: 'block' }}>
             {form.type === 'vacation' && t('forms.vacationRequestHelp')}
+            {form.type === 'excuse' && t('forms.excuseRequestHelp')}
             {form.type === 'wfh' && t('forms.wfhRequestHelp')}
             {form.type === 'extra_hours' && t('forms.extraHoursRequestHelp')}
             {form.type === 'sick_leave' && t('forms.sickLeaveRequestHelp')}
@@ -452,6 +497,132 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
                         {form.isHalfDay && ` (${t('forms.halfDay')})`}
                       </span>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : form.type === 'excuse' ? (
+          <div className="time-selection-section">
+            <h4 className="form-section-title">🕐 {t('forms.selectExcuseDetails')}</h4>
+
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">💳 Excuse Type</label>
+              <div className="flex flex-col sm:flex-row gap-3 mt-2">
+                <label className={`flex items-start gap-2 flex-1 p-3 rounded-lg border-2 cursor-pointer ${
+                  form.excuseType === 'paid'
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                    : 'border-slate-200 dark:border-slate-700'
+                } ${(excuseRequestsLeft ?? 0) <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <input
+                    type="radio"
+                    name="excuseType"
+                    value="paid"
+                    checked={form.excuseType === 'paid'}
+                    onChange={handleChange}
+                    disabled={(excuseRequestsLeft ?? 0) <= 0}
+                    required
+                    className="mt-1"
+                  />
+                  <div>
+                    <span className="font-semibold !text-slate-900 dark:!text-white">💰 Paid Excuse</span>
+                    <small className="block text-sm !text-slate-500 dark:!text-slate-400">
+                      Exactly 2 hours ({excuseRequestsLeft ?? '—'} of 2 left this month)
+                    </small>
+                  </div>
+                </label>
+
+                <label className={`flex items-start gap-2 flex-1 p-3 rounded-lg border-2 cursor-pointer ${
+                  form.excuseType === 'unpaid'
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                    : 'border-slate-200 dark:border-slate-700'
+                }`}>
+                  <input
+                    type="radio"
+                    name="excuseType"
+                    value="unpaid"
+                    checked={form.excuseType === 'unpaid'}
+                    onChange={handleChange}
+                    required
+                    className="mt-1"
+                  />
+                  <div>
+                    <span className="font-semibold !text-slate-900 dark:!text-white">📝 Unpaid Excuse</span>
+                    <small className="block text-sm !text-slate-500 dark:!text-slate-400">
+                      Any duration - deducts 0.5 vacation day
+                    </small>
+                  </div>
+                </label>
+              </div>
+              {(excuseRequestsLeft ?? 0) <= 0 && (
+                <small className="block text-amber-600 dark:text-amber-400 mt-2">
+                  ⚠️ No paid excuse requests remaining this month. Use unpaid option to deduct from vacation days.
+                </small>
+              )}
+            </div>
+
+            <div className="form-group-elegant">
+              <label className="form-label-elegant">
+                <span className="label-icon">📅</span>
+                {t('forms.excuseDate')}
+              </label>
+              <input
+                name="excuseDate"
+                type="date"
+                value={form.excuseDate}
+                onChange={handleChange}
+                className="form-input-elegant date-input"
+                max={new Date().toISOString().split('T')[0]}
+                required
+                title={t('forms.chooseDateExcuse')}
+              />
+              <small className="input-helper">{t('forms.chooseDateExcuse')}</small>
+            </div>
+
+            <div className="grid-2">
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">
+                  <span className="label-icon">🕐</span>
+                  {t('forms.fromTime')}
+                </label>
+                <input
+                  name="fromHour"
+                  type="time"
+                  value={form.fromHour}
+                  onChange={handleChange}
+                  className="form-input-elegant time-input"
+                  required
+                  title={t('forms.selectStartTime')}
+                />
+                <small className="input-helper">{t('forms.selectStartTime')}</small>
+              </div>
+              <div className="form-group-elegant">
+                <label className="form-label-elegant">
+                  <span className="label-icon">🕐</span>
+                  {t('forms.toTime')}
+                </label>
+                <input
+                  name="toHour"
+                  type="time"
+                  value={form.toHour}
+                  onChange={handleChange}
+                  className="form-input-elegant time-input"
+                  required
+                  title={t('forms.mustBeAfterStartTime')}
+                />
+                <small className="input-helper">{t('forms.mustBeAfterStartTime')}</small>
+              </div>
+            </div>
+
+            {form.excuseDate && form.fromHour && form.toHour && (
+              <div className="time-summary mt-4">
+                <div className="summary-card bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+                  <h5 className="!text-slate-900 dark:!text-white m-0 mb-3">⏰ {t('forms.excuseSummary')}</h5>
+                  <div className="summary-details space-y-1 text-sm !text-slate-700 dark:!text-slate-300">
+                    <div><strong>Type:</strong> {form.excuseType === 'paid' ? '💰 Paid' : '📝 Unpaid'}</div>
+                    <div><strong>{t('forms.date')}:</strong> {new Date(form.excuseDate).toLocaleDateString()}</div>
+                    <div><strong>{t('forms.from')}:</strong> {form.fromHour}</div>
+                    <div><strong>{t('forms.to')}:</strong> {form.toHour}</div>
                   </div>
                 </div>
               </div>
@@ -838,12 +1009,7 @@ const FormSubmission = ({ onFormSubmitted, initialType = 'vacation', initialVaca
               className="form-input-elegant"
               rows="4"
               required 
-              style={{ 
-                border: '2px solid rgba(76, 175, 80, 0.3)',
-                background: 'rgba(0, 0, 0, 0.7)',
-                color: '#ffffff',
-                backdropFilter: 'blur(10px)'
-              }}
+              className="form-input-elegant bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 !text-slate-900 dark:!text-white rounded-lg"
             />
             <small className="input-helper">
               {userInfo?.role === 'manager' ? 

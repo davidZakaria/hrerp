@@ -370,22 +370,22 @@ const DetailedLeavesReport = () => {
         <>
           <ReportScrollTable>
             <table className="ot-reconciliation-table report-scroll-table">
-              <thead>
+              <thead className="bg-slate-100 dark:bg-slate-900/50 border-y border-slate-200 dark:border-slate-700">
                 <tr>
-                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.employeeCode')}</th>
-                  <th className="detailed-leaves-name-col">{t('detailedLeavesReport.employeeName')}</th>
-                  <th className="detailed-leaves-meta-col">{t('detailedLeavesReport.jobTitle')}</th>
-                  <th className="detailed-leaves-meta-col">{t('detailedLeavesReport.department')}</th>
-                  <th className="detailed-leaves-meta-col">{t('detailedLeavesReport.location')}</th>
-                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.approvedAnnual', { quota: annualQuota })}</th>
-                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.approvedCasual', { quota: casualQuota })}</th>
-                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.approvedSick')}</th>
-                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.absentRaw')}</th>
-                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.absentActual')}</th>
-                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.variance')}</th>
-                  <th className="detailed-leaves-compact-col">{t('detailedLeavesReport.deduction')}</th>
-                  <th className="detailed-leaves-summary-reason-col">{t('detailedLeavesReport.reason')}</th>
-                  <th className="detailed-leaves-actions-col">{t('detailedLeavesReport.actions')}</th>
+                  <th className="detailed-leaves-compact-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.employeeCode')}</th>
+                  <th className="detailed-leaves-name-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.employeeName')}</th>
+                  <th className="detailed-leaves-meta-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.jobTitle')}</th>
+                  <th className="detailed-leaves-meta-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.department')}</th>
+                  <th className="detailed-leaves-meta-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.location')}</th>
+                  <th className="detailed-leaves-compact-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.approvedAnnual', { quota: annualQuota })}</th>
+                  <th className="detailed-leaves-compact-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.approvedCasual', { quota: casualQuota })}</th>
+                  <th className="detailed-leaves-compact-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.approvedSick')}</th>
+                  <th className="detailed-leaves-compact-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.absentRaw')}</th>
+                  <th className="detailed-leaves-compact-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.absentActual')}</th>
+                  <th className="detailed-leaves-compact-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.variance')}</th>
+                  <th className="detailed-leaves-compact-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.deduction')}</th>
+                  <th className="detailed-leaves-summary-reason-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.reason')}</th>
+                  <th className="detailed-leaves-actions-col !text-slate-600 dark:!text-slate-400 text-xs font-bold uppercase tracking-wider">{t('detailedLeavesReport.actions')}</th>
                 </tr>
               </thead>
               <tbody>
